@@ -232,6 +232,8 @@ class MultimediaUpload
             $fileData = $this->processProUploadImage();
           } else {
             $fileData = $this->processFreeUploadImage();
+            // We need to detect the file type again, because it may have changed du to conversion
+            $fileType = detectFileExt($this->file['tmp_name']);
           }
         } else {
           $fileData = [];
@@ -485,7 +487,8 @@ class MultimediaUpload
   protected function processFreeUploadImage(): array
   {
     $img = new ImageProcessor($this->file['tmp_name']);
-    $img->fixImageOrientation()
+    $img->convertToJpeg() // Convert to JPEG for images that are not visually affected by the conversion
+      ->fixImageOrientation()
       ->resizeImage(1920, 1920) // Resize to 1920x1920 (HD)
       ->reduceQuality(75) // 75 should be a good balance between quality and size
       ->stripImageMetadata()
