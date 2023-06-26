@@ -1,4 +1,7 @@
 <?php
+require_once $_SERVER['DOCUMENT_ROOT'] . '/config.php';
+require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/MultiFileUpload.class.php';
+require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/S3Service.class.php';
 
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
@@ -31,7 +34,14 @@ use Slim\Exception\HttpBadRequestException;
 
 // Route to handle free upload of standard image or video
 $app->post('/upload', function (Request $request, Response $response, $args) {
+  global $link;
+  global $awsConfig;
   $contentType = $request->getHeaderLine('Content-Type');
+
+  // Instantiate S3Service class
+  $s3 = new S3Service($awsConfig);
+  // Instantiate MultimediaUpload class
+  $upload = new MultimediaUpload($link, $s3);
 
   if (strstr($contentType, 'application/json')) {
     $payload = $request->getParsedBody();
