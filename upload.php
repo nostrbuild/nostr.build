@@ -232,7 +232,7 @@ $total_size_gb = round($stats['total_size'] / (1024 * 1024 * 1024), 2); // Conve
 
 						$sizes = '(max-width: 426px) 100vw, (max-width: 640px) 100vw, (max-width: 854px) 100vw, (max-width: 1280px) 50vw, 33vw';
 					?>
-						<img src="<?= $images['240p'] ?>" srcset="<?= $srcset ?>" sizes="<?= $sizes ?>" alt="Responsive image">
+						<img style="max-width: 100%" height="250" src="<?= $images['240p'] ?>" srcset="<?= $srcset ?>" sizes="<?= $sizes ?>" alt="Responsive image">
 					<?php
 					endif;
 					?>
