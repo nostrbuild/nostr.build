@@ -150,7 +150,7 @@ $total_size_gb = round($stats['total_size'] / (1024 * 1024 * 1024), 2); // Conve
 	// if everything is ok, try to upload file
 	else :
 	?>
-	<!--
+		<!--
 		<?= print_r($uploadData, true) ?>
 	-->
 		<main>
@@ -214,8 +214,25 @@ $total_size_gb = round($stats['total_size'] / (1024 * 1024 * 1024), 2); // Conve
 						</video>
 					<?php
 					else :
+						// Map dimentions to API resolutions
+						$images = $uploadData['responsive'];
+						$resolutionToWidth = [
+							"240p"  => "426",
+							"360p"  => "640",
+							"480p"  => "854",
+							"720p"  => "1280",
+							"1080p" => "1920",
+						];
+						$srcset = [];
+						foreach ($images as $resolution => $url) {
+							$width = $resolutionToWidth[$resolution];
+							$srcset[] = "$url {$width}w";
+						}
+						$srcset = implode(", ", $srcset);
+
+						$sizes = '(max-width: 426px) 100vw, (max-width: 640px) 100vw, (max-width: 854px) 100vw, (max-width: 1280px) 50vw, 33vw';
 					?>
-						<img class="uploaded_img" style="max-width: 100%" height="250" src="<?= $uploadData['thumbnail'] ?>" alt="uploaded image" />' . "&nbsp; &nbsp;
+						<img src="<?= $images['240p'] ?>" srcset="<?= $srcset ?>" sizes="<?= $sizes ?>" alt="Responsive image">
 					<?php
 					endif;
 					?>
