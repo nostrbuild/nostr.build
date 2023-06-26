@@ -126,11 +126,17 @@ $total_size_gb = round($stats['total_size'] / (1024 * 1024 * 1024), 2); // Conve
 	// Instantiates MultimediaUpload class
 	$upload = new MultimediaUpload($link, $s3);
 	// Set the $_FILES array or initiate file download from the URL
-	if (isset($_POST['img_url']) && !empty($_POST['img_url'])) {
-		$result = $upload->uploadFileFromUrl($_POST['img_url']);
-	} else {
-		$upload->setFiles($_FILES);
-		$result = $upload->uploadFiles();
+	$error = "Success";
+	try {
+		if (isset($_POST['img_url']) && !empty($_POST['img_url'])) {
+			$result = $upload->uploadFileFromUrl($_POST['img_url']);
+		} else {
+			$upload->setFiles($_FILES);
+			$result = $upload->uploadFiles();
+		}
+	} catch (Exception $e) {
+		$erro = $e->getMessage();
+		$result = false;
 	}
 	// Even if result is true, it doesn't mean that the file was uploaded successfully
 	$uploadData = $upload->getUploadedFiles();
