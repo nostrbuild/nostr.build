@@ -1,0 +1,254 @@
+:root {
+	background: #1e1e1e;
+}
+
+body {
+	padding: 50px 16px 0 16px;
+}
+
+.top_img {
+	width: 100px;
+	height: 100px;
+}
+
+h1 {
+	font-weight: 700;
+	font-size: 24px;
+	line-height: 31px;
+	/* identical to box height */
+
+	text-align: center;
+
+	background: linear-gradient(184.15deg, #ffffff 47.52%, #884ea4 96.61%);
+	-webkit-background-clip: text;
+	-webkit-text-fill-color: transparent;
+	background-clip: text;
+	text-fill-color: transparent;
+
+	text-shadow: 0px 4px 32px rgba(159, 108, 209, 0.46);
+	padding: 30px 0 16px;
+}
+
+.information ul {
+	display: flex;
+	flex-direction: row;
+	flex-wrap: wrap;
+	justify-content: center;
+	align-items: center;
+	gap: 16px;
+}
+
+.information ul li {
+	list-style: none;
+	display: flex;
+	flex-direction: row;
+	justify-content: center;
+	align-items: center;
+	padding: 5px 16px;
+	gap: 10px;
+	height: fit-content;
+	min-height: 32px;
+
+	background: #150d29;
+	/* Solid/Borders */
+
+	border: 1px solid #362d69;
+	border-radius: 8px;
+	width: fit-content;
+}
+
+.information ul li span {
+	font-weight: 400;
+	font-size: 14px;
+	line-height: 160%;
+	/* or 22px */
+
+	text-align: center;
+
+	/* Solid/Text Secondary */
+
+	color: #a58ead;
+
+	text-shadow: 0px 2px 16px rgba(159, 108, 209, 0.32);
+}
+
+.cards_list {
+	display: flex;
+	flex-direction: row;
+	justify-content: center;
+	align-items: center;
+	gap: 16px;
+	padding: 61px 0;
+	flex-wrap: wrap;
+}
+
+.cards_list .card {
+	box-sizing: border-box;
+	list-style: none;
+	width: 340px;
+	height: 503px;
+	padding: 32px;
+	display: flex;
+	flex-direction: column;
+	justify-content: flex-start;
+	gap: 16px;
+	align-items: center;
+
+	border-radius: 24px;
+	position: relative;
+	overflow: hidden;
+	background-position: center;
+	background-size: cover;
+	box-shadow: 0px 6px 24px rgba(143, 139, 164, 0.2);
+}
+
+.bg {
+	position: absolute;
+	top: 0;
+	left: 0;
+	width: 100%;
+	height: 100%;
+
+	z-index: 0;
+}
+
+.creator {
+	background: linear-gradient(180deg, rgba(29, 184, 138, 0.32) 0%, rgba(0, 0, 0, 0.4) 100%);
+}
+
+.pro {
+	background: linear-gradient(180deg, rgba(41, 37, 86, 0.6) 0%, rgba(30, 21, 48, 0.56) 100%);
+}
+
+.gb {
+	background: linear-gradient(180deg, rgba(0, 0, 0, 0.4) 0%, rgba(0, 0, 0, 0.4) 100%);
+}
+
+.all {
+	background: linear-gradient(180deg, rgba(0, 0, 0, 0.4) 0%, rgba(0, 0, 0, 0.4) 100%);
+}
+
+.card img {
+	position: relative;
+	z-index: 3;
+	height: 120px;
+	width: 120px;
+}
+
+.card_creator {
+	background-image: url(../assets/signup/cards/creator_bg.png);
+}
+
+.card_pro {
+	background-image: url(../assets/signup/cards/pro_bg.png);
+}
+
+.card_5gb {
+	background-image: url(../assets/signup/cards/5gb_img.png);
+}
+
+.card_all {
+	background-image: url(../assets/signup/cards/view_all.png);
+}
+
+.card h2 {
+	font-weight: 700;
+	font-size: 20px;
+	line-height: 25px;
+	/* identical to box height */
+
+	text-align: center;
+
+	color: #ffffff;
+}
+
+.card h3 {
+	font-weight: 500;
+	font-size: 12px;
+	line-height: 15px;
+	text-align: center;
+
+	color: #ffffff;
+
+	opacity: 0.8;
+	text-transform: uppercase;
+}
+
+.card h3 span {
+	font-weight: 700;
+	font-size: 40px;
+	line-height: 51px;
+	/* identical to box height */
+
+	text-align: center;
+
+	color: #ffffff;
+}
+
+.card p {
+	height: 245px;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 8px;
+}
+
+.card p span {
+	text-align: center;
+	font-weight: 400;
+	font-size: 13px;
+	line-height: 160%;
+	/* identical to box height, or 21px */
+
+	text-align: center;
+
+	color: #ffffff;
+
+	opacity: 0.8;
+	text-shadow: 0px 2px 16px rgba(159, 108, 209, 0.32);
+}
+
+.card button {
+	position: relative;
+	z-index: 3;
+	cursor: pointer;
+	border: none;
+	padding: 11px 16px;
+	gap: 8px;
+
+	width: 276px;
+	height: 40px;
+	color: #120a24;
+	background: linear-gradient(95.49deg, #ffffff 0%, #b098bb 100%);
+	box-shadow: 0px 4px 24px rgba(183, 161, 194, 0.3);
+	border-radius: 24px;
+	font-weight: 500;
+}
+
+.card button:hover {
+	box-shadow: 0px 4px 24px rgba(183, 161, 194, 0.9);
+}
+
+.powered {
+	display: flex;
+	flex-direction: row;
+	gap: 10px;
+	font-weight: 400;
+	font-size: 12px;
+	line-height: 15px;
+	text-align: center;
+
+	/* Solid/Text Primary */
+
+	color: #d0bed8;
+
+	opacity: 0.5;
+}
+
+main {
+	display: flex;
+
+	flex-direction: column;
+	justify-content: flex-start;
+	align-items: center;
+}

@@ -1,0 +1,10 @@
+{
+    "require": {
+        "aws/aws-sdk-php": "^3.33",
+        "spatie/image-optimizer": "^1.6",
+        "slim/slim": "^4.0",
+        "kornrunner/blurhash": "^1.2",
+        "slim/psr7": "^1.6",
+        "respect/validation": "^2.2"
+    }
+}

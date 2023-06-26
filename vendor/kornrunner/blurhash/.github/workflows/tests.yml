@@ -1,0 +1,74 @@
+name: Tests
+
+on: [push, pull_request]
+
+jobs:
+
+  linux:
+    name: Test on Linux
+    runs-on: ubuntu-20.04
+    strategy:
+      fail-fast: false
+      matrix:
+        php-version: ['7.4', '8.0', '8.1']
+
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 1
+
+      - run: php${{ matrix.php-version }} -v
+      - run: php${{ matrix.php-version }} -m
+      - run: composer -V
+      - run: composer install --no-progress
+      - run: php${{ matrix.php-version }} vendor/bin/phpunit
+
+  windows:
+    name: Test on Windows
+    defaults:
+      run:
+        shell: cmd
+    runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        php-version: ['7.4', '8.0', '8.1']
+        arch: [x64]
+        ts: [nts]
+
+    steps:
+      - name: Setup PHP
+        id: setup-php
+        uses: cmb69/setup-php-sdk@v0.1
+        with:
+          version: ${{matrix.php-version}}
+          arch: ${{matrix.arch}}
+          ts: ${{matrix.ts}}
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 1
+
+      - run: php -v
+      - run: echo extension=gd>>C:\tools\php\php.ini
+      - run: php -m
+      - run: composer -V
+      - run: composer install --no-progress
+      - run: php vendor/bin/phpunit
+
+  code_coverage:
+    name: Code Coverage
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: 8.0
+          coverage: none
+
+      - run: composer install --no-progress
+      - run: mkdir -p build/logs
+      - run: phpdbg -qrr vendor/bin/phpunit
+      - run: wget https://github.com/php-coveralls/php-coveralls/releases/download/v2.4.3/php-coveralls.phar
+      - env:
+          COVERALLS_REPO_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: php php-coveralls.phar --verbose

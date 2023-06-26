@@ -1,0 +1,114 @@
+.images_container {
+	display: flex;
+
+	flex-direction: row;
+	flex-wrap: wrap;
+	gap: 10px;
+	justify-content: center;
+	max-width: 1200px;
+}
+
+main {
+	justify-content: flex-start;
+	align-items: center;
+}
+
+.image {
+	border: 2px solid #2f2c52;
+	border-radius: 8px;
+}
+
+.information {
+	background: rgba(35, 28, 63, 0.84);
+	/* Solid/Borders */
+	flex-wrap: wrap;
+	border: 1px solid #362d69;
+	box-shadow: 0px 4px 24px rgba(57, 47, 113, 0.2);
+	backdrop-filter: blur(7px);
+	/* Note: backdrop-filter has minimal browser support */
+
+	border-radius: 10px;
+	height: fit-content;
+	width: 70%;
+	min-height: 48px;
+	display: flex;
+	flex-direction: row;
+	padding: 12px 16px;
+	gap: 16px;
+	align-items: center;
+	margin-top: 24px;
+	justify-content: center;
+}
+
+.information li {
+	font-style: normal;
+	font-weight: 400;
+	font-size: 13px;
+	line-height: 120%;
+	/* identical to box height, or 16px */
+	color: #a58ead;
+}
+
+.information li span {
+	font-weight: 500;
+	color: #ffffff;
+}
+
+h1 {
+	font-weight: 700;
+	font-size: 32px;
+	line-height: 41px;
+	/* identical to box height */
+
+	text-align: left;
+
+	/* Gradients/pinkish */
+
+	background: linear-gradient(184.15deg, #ffffff 30.23%, #884ea4 96.61%);
+	-webkit-background-clip: text;
+	-webkit-text-fill-color: transparent;
+	background-clip: text;
+	text-fill-color: transparent;
+	display: flex;
+	flex-direction: row;
+	align-items: center;
+	justify-content: flex-start;
+}
+
+.title_section {
+	display: flex;
+	flex-direction: row;
+	justify-content: space-between;
+	align-items: center;
+	width: 100%;
+	max-width: 900px;
+	flex-wrap: wrap;
+	padding: 40px 0 28px;
+	gap: 24px;
+}
+
+.donate_button {
+	all: unset;
+	cursor: pointer;
+	box-sizing: border-box;
+	display: flex;
+	flex-direction: row;
+	justify-content: center;
+	align-items: center;
+	padding: 11px 16px;
+	gap: 8px;
+
+	width: 129px;
+	height: 40px;
+
+	/* Gradients/Orange */
+
+	background: linear-gradient(103.7deg, #dabd55 0%, #f78533 100%);
+	box-shadow: 0px 4px 24px rgba(57, 47, 113, 0.2);
+	border-radius: 8px;
+	transition: all 0.3s;
+}
+
+.donate_button:hover {
+	box-shadow: 0px 4px 24px rgba(134, 127, 174, 0.4);
+}

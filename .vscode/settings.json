@@ -1,0 +1,7 @@
+{
+  "php.stubs": [
+    "*",
+    "sodium",
+    "imagick"
+  ]
+}

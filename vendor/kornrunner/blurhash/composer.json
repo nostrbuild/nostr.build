@@ -1,0 +1,42 @@
+{
+    "name": "kornrunner/blurhash",
+    "description": "Pure PHP implementation of Blurhash",
+    "type": "library",
+    "license": "MIT",
+    "homepage": "https://github.com/kornrunner/php-blurhash",
+    "authors": [
+        {
+            "name": "Boris Momčilović",
+            "email": "boris.momcilovic@gmail.com"
+        }
+    ],
+    "autoload": {
+        "psr-4": {
+            "kornrunner\\Blurhash\\": "src"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "kornrunner\\Blurhash\\": "test"
+        }
+    },
+    "require": {
+        "php": "^7.3|^8.0"
+    },
+    "require-dev": {
+        "ext-gd": "*",
+        "ocramius/package-versions": "^1.4|^2.0",
+        "phpstan/phpstan": "^0.12",
+        "phpunit/phpunit": "^9",
+        "vimeo/psalm": "^4.3"
+    },
+    "archive": {
+        "exclude": ["/vendor", "/test", "/build"]
+    },
+    "support": {
+        "source": "https://github.com/kornrunner/php-blurhash.git"
+    },
+    "config": {
+        "sort-packages": true
+    }
+}
