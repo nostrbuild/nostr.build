@@ -275,6 +275,7 @@ class MultimediaUpload
           'name' => $newFileName,
           'url' => $this->generateMediaURL($newFileName, $fileType['type'], $pro), // Construct URL
           'thumbnail' => $this->generateImageThumbnailURL($newFileName, $fileType['type'], $pro), // Construct thumbnail URL
+          'responsive' => $this->generateResponsiveImagesURL($newFileName, $fileType['type'], $pro), // Construct responsive images URLs
           'blurhash' => $fileData['blurhash'] ?? '',
           'sha256' => $this->generateFileName(0), // Reuse method to generate a hash of transformed file
           'type' => $newFileType,
@@ -462,6 +463,7 @@ class MultimediaUpload
         'name' => $data['filename'],
         'url' => $this->generateMediaURL($data['filename'], $data['type'], false), // Construct URL
         'thumbnail' => $this->generateImageThumbnailURL($data['filename'], $data['type'], false), // Construct thumbnail URL
+        'responsive' => $this->generateResponsiveImagesURL($data['filename'], $data['type'], false), // Construct responsive images URLs
         'blurhash' => '', // We do not store blurhash in the database, should we?
         'sha256' => $filehash,
         'type' => $data['type'],
@@ -576,11 +578,31 @@ class MultimediaUpload
     // We only support thumbnailing of images and profile pictures
     $path = match ($type) {
       'image' => $pro ? 'thumbnail/p/' : 'thumbnail/i/',
+      'picture' => $pro ? 'thumbnail/p/' : 'thumbnail/i/',
       'profile' => 'thumbnail/i/p/',
       default => $this->determinePrefix($type, $pro),
     };
     // Assemble the URL and return it
     return $scheme . '://' . $host . '/' . $path . $fileName;
+  }
+
+  protected function generateResponsiveImagesURL(string $fileName, string $type, bool $pro = false): array
+  {
+    $scheme = $_SERVER['REQUEST_SCHEME'];
+    $host = $_SERVER['HTTP_HOST'];
+    $resolutions = ['240p', '360p', '480p', '720p', '1080p'];
+    $urls = [];
+    foreach ($resolutions as $resolution) {
+      if ($type === 'image' || $type === 'picture') {
+        $path = $pro ? "responsive/{$resolution}/p/" : "responsive/{$resolution}/i/";
+      } else {
+        $path = $this->determinePrefix($type, $pro);
+      }
+      // Assemble the URL and return it
+      $urls[$resolution] = $scheme . '://' . $host . '/' . $path . $fileName;
+    }
+    // Assemble the URL and return it
+    return $urls;
   }
 
   protected function generateMediaURL(string $fileName, string $type, bool $pro = false): string
