@@ -11,11 +11,17 @@ $s3 = new S3Service($awsConfig);
 // Instantiates MultimediaUpload class
 $upload = new MultimediaUpload($link, $s3);
 // Set the $_FILES array or initiate file download from the URL
+$error = "Success";
 if (isset($_POST['img_url']) && !empty($_POST['img_url'])) {
   $result = $upload->uploadFileFromUrl($_POST['img_url']);
 } else {
-  $upload->setFiles($_FILES);
-  $result = $upload->uploadFiles();
+  try {
+    $upload->setFiles($_FILES);
+    $result = $upload->uploadFiles();
+  } catch (Exception $e) {
+    $error = $e->getMessage();
+    $result = false;
+  }
 }
 // Even if result is true, it doesn't mean that the file was uploaded successfully
 $uploadData = $upload->getUploadedFiles();
@@ -30,7 +36,7 @@ if (sizeof($uploadData) > 0 && $uploadData[0]['url'] != null) {
 header('Content-Type: application/json; charset=utf-8');
 if ($result === false) {
   http_response_code(400);
-  echo json_encode("Upload failed!");
+  echo json_encode("Upload failed: " . $error);
   exit();
 }
 echo json_encode($uploadData['url']);
