@@ -13,7 +13,7 @@ $imageExtensions = [
   "bmp",
   "tiff",
   "webp",
-  //"heic", // HEIF image is not supported by many OSes
+  "heic", // HEIF image is not supported by many OSes
   "jfif"
 ];
 
@@ -168,36 +168,73 @@ class ImageProcessor
 
   public function cropSquare(): self
   {
-      // Fetch dimensions of the first frame
-      $width = $this->imagick->getImageWidth();
-      $height = $this->imagick->getImageHeight();
-  
-      // If the image is not a square
-      if ($width !== $height) {
-          $imagick = $this->imagick->coalesceImages();
-  
-          foreach ($imagick as $frame) {
-              $width = $frame->getImageWidth();
-              $height = $frame->getImageHeight();
-  
-              // find smallest dimension
-              $min = min($width, $height);
-  
-              // calculate coordinates for a centered square crop
-              $x = ($width - $min) / 2;
-              $y = ($height - $min) / 2;
-  
-              // crop the image
-              $frame->cropImage($min, $min, $x, $y);
-          }
-  
-          $this->imagick = $imagick->deconstructImages();
-  
-          // The image dimensions are changed, we should unset saved flag
-          $this->isSaved = false;
+    // Fetch dimensions of the first frame
+    $width = $this->imagick->getImageWidth();
+    $height = $this->imagick->getImageHeight();
+
+    // If the image is not a square
+    if ($width !== $height) {
+      $imagick = $this->imagick->coalesceImages();
+
+      foreach ($imagick as $frame) {
+        $width = $frame->getImageWidth();
+        $height = $frame->getImageHeight();
+
+        // find smallest dimension
+        $min = min($width, $height);
+
+        // calculate coordinates for a centered square crop
+        $x = ($width - $min) / 2;
+        $y = ($height - $min) / 2;
+
+        // crop the image
+        $frame->cropImage($min, $min, $x, $y);
       }
-  
+
+      $this->imagick = $imagick->deconstructImages();
+
+      // The image dimensions are changed, we should unset saved flag
+      $this->isSaved = false;
+    }
+
+    return $this;
+  }
+
+  public function convertToJpeg(): self
+  {
+    $imageFormat = strtolower($this->imagick->getImageFormat());
+
+    // Check if the image format is already JPEG
+    if ($imageFormat === 'jpeg') {
       return $this;
+    }
+
+    // For the animation check, we'll use getNumberImages() which returns 1 for non-animated images.
+    // For animated GIFs, it will return the number of animation frames (more than 1)
+    $isAnimated = $this->imagick->getNumberImages() > 1;
+
+    // Check if the image format is one of the formats that support animation and if it's animated
+    if (($imageFormat === 'gif' || $imageFormat === 'png' || $imageFormat === 'mng' || $imageFormat === 'tiff') && $isAnimated) {
+      return $this;
+    }
+
+    // If the image is PNG, check for transparency
+    if ($imageFormat === 'png') {
+      $isTransparent = $this->imagick->getImageAlphaChannel();
+
+      // If image is transparent, return without converting
+      if ($isTransparent) {
+        return $this;
+      }
+    }
+
+    // If we got to this point, it's safe to convert the image to JPEG
+    $this->imagick->setImageFormat('jpeg');
+
+    // The image format has changed, we should unset saved flag
+    $this->isSaved = false;
+
+    return $this;
   }
 
   public function stripImageMetadata(): self
