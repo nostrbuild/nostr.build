@@ -147,50 +147,57 @@ class ImageProcessor
 
   public function resizeImage($width, $height): self
   {
-    $imagick = $this->imagick->coalesceImages();
+    // Fetch dimensions of the first frame
+    $currentWidth = $this->imagick->getImageWidth();
+    $currentHeight = $this->imagick->getImageHeight();
 
-    foreach ($imagick as $frame) {
-      $currentWidth = $frame->getImageWidth();
-      $currentHeight = $frame->getImageHeight();
+    // Resize is required
+    if ($currentWidth > $width || $currentHeight > $height) {
+      $imagick = $this->imagick->coalesceImages();
 
-      if ($currentWidth > $width || $currentHeight > $height) {
+      foreach ($imagick as $frame) {
         $frame->resizeImage($width, $height, Imagick::FILTER_LANCZOS, 1, true);
       }
+
+      $this->imagick = $imagick->deconstructImages();
+      $this->isSaved = false;  // The image dimensions are changed
     }
-
-    $this->imagick = $imagick->deconstructImages();
-
-    // The image dimensions are changed, we should unset saved flag
-    $this->isSaved = false;
 
     return $this;
   }
 
   public function cropSquare(): self
   {
-    $imagick = $this->imagick->coalesceImages();
-
-    foreach ($imagick as $frame) {
-      $width = $frame->getImageWidth();
-      $height = $frame->getImageHeight();
-
-      // find smallest dimension
-      $min = min($width, $height);
-
-      // calculate coordinates for a centered square crop
-      $x = ($width - $min) / 2;
-      $y = ($height - $min) / 2;
-
-      // crop the image
-      $frame->cropImage($min, $min, $x, $y);
-    }
-
-    $this->imagick = $imagick->deconstructImages();
-
-    // The image dimensions are changed, we should unset saved flag
-    $this->isSaved = false;
-
-    return $this;
+      // Fetch dimensions of the first frame
+      $width = $this->imagick->getImageWidth();
+      $height = $this->imagick->getImageHeight();
+  
+      // If the image is not a square
+      if ($width !== $height) {
+          $imagick = $this->imagick->coalesceImages();
+  
+          foreach ($imagick as $frame) {
+              $width = $frame->getImageWidth();
+              $height = $frame->getImageHeight();
+  
+              // find smallest dimension
+              $min = min($width, $height);
+  
+              // calculate coordinates for a centered square crop
+              $x = ($width - $min) / 2;
+              $y = ($height - $min) / 2;
+  
+              // crop the image
+              $frame->cropImage($min, $min, $x, $y);
+          }
+  
+          $this->imagick = $imagick->deconstructImages();
+  
+          // The image dimensions are changed, we should unset saved flag
+          $this->isSaved = false;
+      }
+  
+      return $this;
   }
 
   public function stripImageMetadata(): self
