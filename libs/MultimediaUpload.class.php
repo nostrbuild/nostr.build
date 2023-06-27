@@ -381,6 +381,7 @@ class MultimediaUpload
         ]);
         $this->db->commit();
       } catch (Exception $e) {
+        error_log("File loop exception: " . $e->getMessage());
         $this->db->rollback();
         // We want to loop over all files and not stop on the errors
         continue;
