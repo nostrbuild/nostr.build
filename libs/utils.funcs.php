@@ -110,3 +110,62 @@ function detectFileExt($file)
 
   return ['type' => $fileType, 'extension' => $fileExtension, 'mime' => $mimeType];
 }
+
+// Function to check URL sanity
+function checkUrlSanity(string $url): bool
+{
+  $parsedUrl = parse_url($url);
+
+  // Checking if URL is valid
+  if ($parsedUrl === false) {
+    throw new InvalidArgumentException('Invalid URL');
+  }
+
+  // Checking for private IPs and localhost
+  $hostname = $parsedUrl['host'] ?? '';
+
+  // Checking for private IPs and localhost
+  if (
+    filter_var($hostname, FILTER_VALIDATE_IP) !== false &&
+    filter_var($hostname, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE) === false
+  ) {
+    throw new InvalidArgumentException('Access to the private IP ranges or localhost is not allowed');
+  }
+
+
+  // Checking for server IP
+  if ($hostname === $_SERVER['SERVER_ADDR']) {
+    throw new InvalidArgumentException('Access to the server\'s IP address is not allowed');
+  }
+
+  // Checking for server hostname
+  if ($hostname === $_SERVER['SERVER_NAME']) {
+    throw new InvalidArgumentException('Access to the server\'s hostname is not allowed');
+  }
+
+  // Checking for server domain
+  $serverDomain = substr($_SERVER['SERVER_NAME'], strpos($_SERVER['SERVER_NAME'], '.') + 1);
+  if (strpos($hostname, $serverDomain) !== false) {
+    throw new InvalidArgumentException('Access to the server\'s domain name is not allowed');
+  }
+
+  // Checking for http host
+  $httpHostDomain = substr($_SERVER['HTTP_HOST'], strpos($_SERVER['HTTP_HOST'], '.') + 1);
+  if (strpos($hostname, $httpHostDomain) !== false) {
+    throw new InvalidArgumentException('Access to the HTTP host\'s domain is not allowed');
+  }
+
+  // Checking for non-standard ports
+  if (isset($parsedUrl['port']) && !in_array($parsedUrl['port'], [80, 443])) {
+    throw new InvalidArgumentException('Access to non-standard ports is not allowed');
+  }
+
+  // Checking for username and password in URL
+  if (isset($parsedUrl['user']) || isset($parsedUrl['pass'])) {
+    throw new InvalidArgumentException('URLs with username and password specs are not allowed');
+  }
+
+  // Proceed with file upload
+
+  return true;
+}
