@@ -6,6 +6,9 @@ require_once $_SERVER['DOCUMENT_ROOT'] . "/libs/db/UploadsData.class.php";
 require_once $_SERVER['DOCUMENT_ROOT'] . "/libs/db/UsersImages.class.php";
 require_once $_SERVER['DOCUMENT_ROOT'] . "/config.php"; // Size limits
 
+// Vendor autoload
+require_once $_SERVER['DOCUMENT_ROOT'] . "/vendor/autoload.php";
+
 // Globals
 global $link;
 
@@ -45,6 +48,14 @@ class MultimediaUpload
    *       'width' => <width of the file in pixels>,
    *       'height' => <height of the file in pixels>,
    *      },
+   *      'responsive' => {
+   *        '240p' => <url of the 428x426 responsive image>,
+   *        '360p' => <url of the 640x640 responsive image>,
+   *        '480p' => <url of the 854x854 responsive image>,
+   *        '720p' => <url of the 1280x1280 responsive image>,
+   *        '1080p' => <url of the 1920x1920 responsive image>,
+   *       },
+   *     },
    *      ...
    *     ]
    */
@@ -60,6 +71,7 @@ class MultimediaUpload
    * Summary of __construct
    * @param mysqli $db
    * @param S3Service $s3Service
+   * @param string $userNpub
    */
   public function __construct(mysqli $db, S3Service $s3Service, string $userNpub = '')
   {
@@ -86,6 +98,30 @@ class MultimediaUpload
     }
   }
 
+  /**
+   * Summary of setFiles
+   * @param mixed $files
+   * @param mixed $tempDirectory
+   * @throws \InvalidArgumentException
+   * @return void
+   * 
+   * This method will set the files array to be used for processing.
+   * It will also move the uploaded files to a temporary directory.
+   * It is independent of the file field names, so it will work with any form.
+   * It accepts two types of input:
+   * 1) An array of files, e.g., $_FILES
+   * 2) An instance of UploadedFileInterface
+   * 
+   * Example iteration of the returned array:
+   * foreach ($files as $file) {
+   *  $file['input_name']; // The name of the file input field
+   *  $file['name']; // The original name of the file
+   *  $file['type']; // The MIME type of the file
+   *  $file['tmp_name']; // The path to the temporary file
+   *  $file['error']; // The error code
+   *  $file['size']; // The file size in bytes
+   * }
+   */
   public function setFiles($files, $tempDirectory = null)
   {
     // We make temp directory optional, and use the system's temp directory by default
@@ -93,14 +129,33 @@ class MultimediaUpload
       $tempDirectory = sys_get_temp_dir();
     }
 
-    $this->filesArray = $this->restructureFilesArray($files, $tempDirectory);
+    // If it's an instance of UploadedFileInterface, handle it accordingly.
+    if ($files instanceof \Psr\Http\Message\UploadedFileInterface) {
+      $this->filesArray = $this->restructurePsrFilesArray($files, $tempDirectory);
+    }
+    // If it's an array, assume it's from $_FILES and handle accordingly.
+    elseif (is_array($files)) {
+      $this->filesArray = $this->restructureFilesArray($files, $tempDirectory);
+    }
+    // Throw an exception if the input is neither an array nor an UploadedFileInterface
+    else {
+      throw new \InvalidArgumentException('Invalid input: expected an array or an instance of UploadedFileInterface.');
+    }
   }
 
+  /**
+   * Summary of getUploadedFiles
+   * @return array
+   */
   public function getUploadedFiles(): array
   {
     return $this->uploadedFiles;
   }
 
+  /**
+   * Summary of getFileUrls
+   * @return array
+   */
   public function getFileUrls(): array
   {
     $urls = [];
@@ -110,6 +165,11 @@ class MultimediaUpload
     return $urls;
   }
 
+  /**
+   * Summary of addFileToUploadedFilesArray
+   * @param mixed $file
+   * @return void
+   */
   protected function addFileToUploadedFilesArray($file)
   {
     // We could probably do more checking here, but for now we just check if it's an array
@@ -137,7 +197,7 @@ class MultimediaUpload
    *   $file['size']; // The file size in bytes
    * }
    */
-  protected function restructureFilesArray($files, $tempDirectory)
+  protected function restructureFilesArray($files, $tempDirectory): array
   {
     $restructured = [];
 
@@ -175,6 +235,57 @@ class MultimediaUpload
     return $restructured;
   }
 
+  /**
+   * Summary of restructurePsrFilesArray
+   * @param mixed $files
+   * @param mixed $tempDirectory
+   * @return array<array>
+   */
+  protected function restructurePsrFilesArray($files, $tempDirectory): array
+  {
+    $restructured = [];
+
+    foreach ($files as $fileInputName => $file) {
+      if (is_array($file)) {
+        foreach ($file as $fileItem) {
+          $restructured[] = $this->handlePsrUploadedFile($fileInputName, $fileItem, $tempDirectory);
+        }
+      } else {
+        $restructured[] = $this->handlePsrUploadedFile($fileInputName, $file, $tempDirectory);
+      }
+    }
+
+    return $restructured;
+  }
+
+  /**
+   * Summary of handlePsrUploadedFile
+   * @param mixed $fileInputName
+   * @param mixed $file
+   * @param mixed $tempDirectory
+   * @return array
+   */
+  private function handlePsrUploadedFile($fileInputName, $file, $tempDirectory): array
+  {
+    $tempFilePath = $tempDirectory . '/' . uniqid('file_upload_');
+
+    // Move the file to the temporary directory
+    $file->moveTo($tempFilePath);
+
+    return [
+      'input_name' => $fileInputName,
+      'name' => $file->getClientFilename(),
+      'type' => $file->getClientMediaType(),
+      'tmp_name' => $tempFilePath,
+      'error' => $file->getError(),
+      'size' => $file->getSize(),
+    ];
+  }
+
+  /**
+   * Summary of uploadProfilePicture
+   * @return bool
+   */
   public function uploadProfilePicture(): bool
   {
     // TODO: Implement method for uploading profile pictures
@@ -182,6 +293,12 @@ class MultimediaUpload
     return false;
   }
 
+  /**
+   * Summary of uploadFiles
+   * @param bool $pro
+   * @throws \Exception
+   * @return bool
+   */
   public function uploadFiles(bool $pro = false): bool
   {
     // Check if $this->filesArray is empty, and throw an exception if it is
@@ -313,6 +430,14 @@ class MultimediaUpload
   public function uploadFileFromUrl(string $url): bool
   {
     global $freeUploadLimit;
+    // Perform check of the URL to avoid common explots:
+    try {
+      $sanity = checkUrlSanity($url);
+    } catch (Exception $e) {
+      error_log($e->getMessage());
+      throw new Exception($e->getMessage());
+    }
+
     // Create a curl instance
     $ch = curl_init($url);
 
@@ -438,6 +563,11 @@ class MultimediaUpload
     return $this->uploadFiles(false); // URL uploads are always free
   }
 
+  /**
+   * Summary of validateFile
+   * @param bool $pro
+   * @return bool
+   */
   protected function validateFile(bool $pro): bool
   {
     global $freeUploadLimit;
@@ -455,6 +585,11 @@ class MultimediaUpload
     return true;
   }
 
+  /**
+   * Summary of checkForDuplicates
+   * @param string $filehash
+   * @return bool
+   */
   protected function checkForDuplicates(string $filehash): bool
   {
     // Check if the file already exists in the database
@@ -555,6 +690,12 @@ class MultimediaUpload
     return $id === 0 ? hash_file('sha256', realpath($this->file['tmp_name'])) : 'nb' . $id;
   }
 
+  /**
+   * Summary of determinePrefix
+   * @param string $type
+   * @param bool $pro
+   * @return string
+   */
   protected function determinePrefix(string $type = 'unknown', bool $pro): string
   {
     if ($pro) {
@@ -573,6 +714,13 @@ class MultimediaUpload
     }
   }
 
+  /**
+   * Summary of generateImageThumbnailURL
+   * @param string $fileName
+   * @param string $type
+   * @param bool $pro
+   * @return string
+   */
   protected function generateImageThumbnailURL(string $fileName, string $type, bool $pro = false): string
   {
 
@@ -589,6 +737,13 @@ class MultimediaUpload
     return $scheme . '://' . $host . '/' . $path . $fileName;
   }
 
+  /**
+   * Summary of generateResponsiveImagesURL
+   * @param string $fileName
+   * @param string $type
+   * @param bool $pro
+   * @return array
+   */
   protected function generateResponsiveImagesURL(string $fileName, string $type, bool $pro = false): array
   {
     $scheme = $_SERVER['REQUEST_SCHEME'];
@@ -608,6 +763,13 @@ class MultimediaUpload
     return $urls;
   }
 
+  /**
+   * Summary of generateMediaURL
+   * @param string $fileName
+   * @param string $type
+   * @param bool $pro
+   * @return string
+   */
   protected function generateMediaURL(string $fileName, string $type, bool $pro = false): string
   {
     $scheme = $_SERVER['REQUEST_SCHEME'];
@@ -621,6 +783,10 @@ class MultimediaUpload
     return $scheme . '://' . $host . '/' . $path . $fileName;
   }
 
+  /**
+   * Summary of storeInDatabasePro
+   * @return int|bool
+   */
   protected function storeInDatabasePro(): int | bool
   {
     // Insert the file data into the database but don't commit yet
@@ -640,6 +806,14 @@ class MultimediaUpload
     }
   }
 
+  /**
+   * Summary of storeInDatabaseFree
+   * @param string $filename
+   * @param string $metadata
+   * @param int $file_size
+   * @param string $type
+   * @return int|bool
+   */
   protected function storeInDatabaseFree(
     string $filename,
     string $metadata,
@@ -665,6 +839,12 @@ class MultimediaUpload
     }
   }
 
+  /**
+   * Summary of updateDatabasePro
+   * @param int $id
+   * @param string $newName
+   * @return bool
+   */
   protected function updateDatabasePro(int $id, string $newName): bool
   {
     // Update the database with the new file name and size
@@ -680,7 +860,12 @@ class MultimediaUpload
     return true;
   }
 
-  // Method that will upload the file to S3
+  /**
+   * Summary of uploadToS3
+   * @param string $objectName
+   * @return bool
+   * Method that will upload the file to S3
+   */
   protected function uploadToS3(string $objectName): bool
   {
     try {
