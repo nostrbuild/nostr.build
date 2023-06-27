@@ -1,11 +1,41 @@
 <?php
 require_once $_SERVER['DOCUMENT_ROOT'] . '/config.php';
-require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/MultiFileUpload.class.php';
+require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/MultimediaUpload.class.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/S3Service.class.php';
+
+require $_SERVER['DOCUMENT_ROOT'] . '/vendor/autoload.php';
 
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
-use Slim\Exception\HttpBadRequestException;
+use Slim\Routing\RouteCollectorProxy;
+
+global $awsConfig;
+global $link;
+// Instantiate S3Service
+$s3 = new S3Service($awsConfig);
+$upload = new MultimediaUpload($link, $s3);
+
+/**
+ * Summary of jsonResponse
+ * @param Psr\Http\Message\ResponseInterface $response
+ * @param string $status
+ * @param string $message
+ * @param mixed $data
+ * @param int $statusCode
+ * @return Psr\Http\Message\ResponseInterface
+ * Utility function to return a JSON response
+ */
+function jsonResponse(Response $response, string $status, string $message, $data, int $statusCode = 200): Response
+{
+  $responseBody = [
+    'status' => $status,
+    'message' => $message,
+    'data' => $data,
+  ];
+  $response->getBody()->write(json_encode($responseBody));
+  return $response->withHeader('Content-Type', 'application/json')->withStatus($statusCode);
+}
+
 
 /**
  * Route to upload a file via from or URL
@@ -14,7 +44,8 @@ use Slim\Exception\HttpBadRequestException;
  *   {
  *    'status' => <'success' or 'error'>,
  *    'message' => <message about the status of the request>,
- *    'data' => { /* data about the file, or empty object in case of error * /
+ *    'data' => {
+ *    { /* data about the file, or empty object in case of error * /
  *      'fileName' => <name of the file with extention>,
  *      'url' => <url of the file>,
  *      'thumbnail' => <url of the thumbnail of the file>,
@@ -35,145 +66,195 @@ use Slim\Exception\HttpBadRequestException;
  *        '720p' => <url of the 1280x1280 responsive image>,
  *        '1080p' => <url of the 1920x1920 responsive image>,
  *     },
- *    }
+ *    },
+ *    ...
  *  }
+ * }
  */
 
-// Route to handle free upload of standard image or video
-$app->post('/upload', function (Request $request, Response $response, $args) {
-  global $link;
-  global $awsConfig;
-  $contentType = $request->getHeaderLine('Content-Type');
+/*
+CURL command to test the upload API with multiple files:
+curl --location --request POST 'https://nostr.build/api/v2/upload/files' \
+--header 'Content-Type: multipart/form-data' \
+--form 'file[]=@"/path/to/image1.png"' \
+--form 'file[]=@"/path/to/image2.png"' \
+--form 'file[]=@"/path/to/image3.png"'
 
-  // Instantiate S3Service class
-  $s3 = new S3Service($awsConfig);
-  // Instantiate MultimediaUpload class
-  $upload = new MultimediaUpload($link, $s3);
-
-  if (strstr($contentType, 'application/json')) {
-    $payload = $request->getParsedBody();
-
-    // Download the file from the URL and get the path and size
-    $fileInfo = downloadFile($payload['url']);
-
-    if (!$fileInfo) {
-      throw new HttpBadRequestException($request, 'Failed to download file');
+Actual full output of the upload API with multiple files:
+{
+  "status": "success",
+  "message": "Files uploaded successfully",
+  "data": [
+    {
+      "input_name": "APIv2",
+      "name": "2489ee648a4fef6943f4a7c88349477e78a91e28232246b801fe8ce86e64624e.png",
+      "url": "https://nostr.build/i/2489ee648a4fef6943f4a7c88349477e78a91e28232246b801fe8ce86e64624e.png",
+      "thumbnail": "https://nostr.build/thumbnail/i/2489ee648a4fef6943f4a7c88349477e78a91e28232246b801fe8ce86e64624e.png",
+      "responsive": {
+        "240p": "https://nostr.build/responsive/240p/i/2489ee648a4fef6943f4a7c88349477e78a91e28232246b801fe8ce86e64624e.png",
+        "360p": "https://nostr.build/responsive/360p/i/2489ee648a4fef6943f4a7c88349477e78a91e28232246b801fe8ce86e64624e.png",
+        "480p": "https://nostr.build/responsive/480p/i/2489ee648a4fef6943f4a7c88349477e78a91e28232246b801fe8ce86e64624e.png",
+        "720p": "https://nostr.build/responsive/720p/i/2489ee648a4fef6943f4a7c88349477e78a91e28232246b801fe8ce86e64624e.png",
+        "1080p": "https://nostr.build/responsive/1080p/i/2489ee648a4fef6943f4a7c88349477e78a91e28232246b801fe8ce86e64624e.png"
+      },
+      "blurhash": "LBDIUov100y??v9tIU-p0{GEr?v#",
+      "sha256": "17c3bef58e3c3608615f81a1e5b58174c20ce0338837cd7f66f2b44f852ea8c2",
+      "type": "picture",
+      "mime": "image/png",
+      "size": 21988,
+      "metadata": {
+        "date:create": "2023-06-27T21:36:48+00:00",
+        "date:modify": "2023-06-27T21:36:48+00:00",
+        "png:IHDR.bit-depth-orig": "8",
+        "png:IHDR.bit_depth": "8",
+        "png:IHDR.color-type-orig": "3",
+        "png:IHDR.color_type": "3 (Indexed)",
+        "png:IHDR.interlace_method": "0 (Not interlaced)",
+        "png:IHDR.width,height": "432, 432",
+        "png:PLTE.number_colors": "94",
+        "png:sRGB": "intent=0 (Perceptual Intent)",
+        "png:tRNS": "chunk was found"
+      },
+      "dimensions": {
+        "width": 432,
+        "height": 432
+      }
+    },
+    {
+      "input_name": "APIv2",
+      "name": "4b5c01baeb8381a4de353886c5adfbeb61a16b3fef8e06b45e4b64e5c1bf1ab5.png",
+      "url": "https://nostr.build/i/4b5c01baeb8381a4de353886c5adfbeb61a16b3fef8e06b45e4b64e5c1bf1ab5.png",
+      "thumbnail": "https://nostr.build/thumbnail/i/4b5c01baeb8381a4de353886c5adfbeb61a16b3fef8e06b45e4b64e5c1bf1ab5.png",
+      "responsive": {
+        "240p": "https://nostr.build/responsive/240p/i/4b5c01baeb8381a4de353886c5adfbeb61a16b3fef8e06b45e4b64e5c1bf1ab5.png",
+        "360p": "https://nostr.build/responsive/360p/i/4b5c01baeb8381a4de353886c5adfbeb61a16b3fef8e06b45e4b64e5c1bf1ab5.png",
+        "480p": "https://nostr.build/responsive/480p/i/4b5c01baeb8381a4de353886c5adfbeb61a16b3fef8e06b45e4b64e5c1bf1ab5.png",
+        "720p": "https://nostr.build/responsive/720p/i/4b5c01baeb8381a4de353886c5adfbeb61a16b3fef8e06b45e4b64e5c1bf1ab5.png",
+        "1080p": "https://nostr.build/responsive/1080p/i/4b5c01baeb8381a4de353886c5adfbeb61a16b3fef8e06b45e4b64e5c1bf1ab5.png"
+      },
+      "blurhash": "LBDR]Ov200y?.S9tIU-p0{GEr?v#",
+      "sha256": "4b123a35e8979f88ec84dbc3cafbcbf7a817848a928d4c1484dc144aadc6f51f",
+      "type": "picture",
+      "mime": "image/png",
+      "size": 13949,
+      "metadata": {
+        "date:create": "2023-06-27T21:36:49+00:00",
+        "date:modify": "2023-06-27T21:36:49+00:00",
+        "png:IHDR.bit-depth-orig": "8",
+        "png:IHDR.bit_depth": "8",
+        "png:IHDR.color-type-orig": "3",
+        "png:IHDR.color_type": "3 (Indexed)",
+        "png:IHDR.interlace_method": "0 (Not interlaced)",
+        "png:IHDR.width,height": "288, 288",
+        "png:PLTE.number_colors": "120",
+        "png:sRGB": "intent=0 (Perceptual Intent)",
+        "png:tRNS": "chunk was found"
+      },
+      "dimensions": {
+        "width": 288,
+        "height": 288
+      }
+    },
+    {
+      "input_name": "APIv2",
+      "name": "30e9887f155c0f083affa60660ece63b0848f27a45ab4004a438d98cf2b40497.png",
+      "url": "https://nostr.build/i/30e9887f155c0f083affa60660ece63b0848f27a45ab4004a438d98cf2b40497.png",
+      "thumbnail": "https://nostr.build/thumbnail/i/30e9887f155c0f083affa60660ece63b0848f27a45ab4004a438d98cf2b40497.png",
+      "responsive": {
+        "240p": "https://nostr.build/responsive/240p/i/30e9887f155c0f083affa60660ece63b0848f27a45ab4004a438d98cf2b40497.png",
+        "360p": "https://nostr.build/responsive/360p/i/30e9887f155c0f083affa60660ece63b0848f27a45ab4004a438d98cf2b40497.png",
+        "480p": "https://nostr.build/responsive/480p/i/30e9887f155c0f083affa60660ece63b0848f27a45ab4004a438d98cf2b40497.png",
+        "720p": "https://nostr.build/responsive/720p/i/30e9887f155c0f083affa60660ece63b0848f27a45ab4004a438d98cf2b40497.png",
+        "1080p": "https://nostr.build/responsive/1080p/i/30e9887f155c0f083affa60660ece63b0848f27a45ab4004a438d98cf2b40497.png"
+      },
+      "blurhash": "LBDIUou*00y?.S9tMx-p0{GEr?v#",
+      "sha256": "b02328535060e12014abda70df62a9c5d2ec7ef28e6a673cff2360046a765ec0",
+      "type": "picture",
+      "mime": "image/png",
+      "size": 9630,
+      "metadata": {
+        "date:create": "2023-06-27T21:36:49+00:00",
+        "date:modify": "2023-06-27T21:36:49+00:00",
+        "png:IHDR.bit-depth-orig": "8",
+        "png:IHDR.bit_depth": "8",
+        "png:IHDR.color-type-orig": "3",
+        "png:IHDR.color_type": "3 (Indexed)",
+        "png:IHDR.interlace_method": "0 (Not interlaced)",
+        "png:IHDR.width,height": "216, 216",
+        "png:PLTE.number_colors": "134",
+        "png:sRGB": "intent=0 (Perceptual Intent)",
+        "png:tRNS": "chunk was found"
+      },
+      "dimensions": {
+        "width": 216,
+        "height": 216
+      }
     }
-  } elseif (strstr($contentType, 'multipart/form-data')) {
-    $uploadedFiles = $request->getUploadedFiles();
+  ]
+}
 
-    // Validate the file and get the path and size
-    $fileInfo = handleUploadedFile($uploadedFiles['file']);
+*/
 
-    if (!$fileInfo) {
-      throw new HttpBadRequestException($request, 'Failed to upload file');
+$app->group('/upload', function (RouteCollectorProxy $group) use ($upload) {
+  // Route to upload file(s) via form
+  $group->post('/files', function (Request $request, Response $response) use ($upload) {
+    $files = $request->getUploadedFiles();
+
+    // If no files are provided, return a 400 response
+    if (empty($files)) {
+      return jsonResponse($response, 'error', 'No files provided', new stdClass(), 400);
     }
-  } else {
-    throw new HttpBadRequestException($request, 'Unsupported content type');
-  }
 
-  $payload = [
-    'status' => 'success',
-    'message' => 'File processed successfully',
-    'data' => [
-      'fileName' => $fileInfo['fileName'],
-      'url' => $fileInfo['url'],
-      'blurhash' => $fileInfo['blurhash'],
-      'sha256' => $fileInfo['sha256'],
-      'type' => $fileInfo['type'],
-      'storage' => [
-        'dimentions' => $fileInfo['dimentions'],
-        'size' => $fileInfo['size']
-      ]
-    ]
-  ];
-
-  $response->getBody()->write(json_encode($payload));
-  return $response->withHeader('Content-Type', 'application/json');
-});
-
-// Route to handle upload of pictures, videos, and music from URL
-$app->post('/upload/url', function (Request $request, Response $response, $args) {
-  $contentType = $request->getHeaderLine('Content-Type');
-
-  if (strstr($contentType, 'application/json')) {
-    $payload = $request->getParsedBody();
-
-    // Download the file from the URL and get the path and size
-    $fileInfo = downloadFile($payload['url']);
-
-    if (!$fileInfo) {
-      throw new HttpBadRequestException($request, 'Failed to download file');
+    try {
+      // Handle exceptions thrown by the MultimediaUpload class
+      $upload->setPsrFiles($files);
+      $data = ($upload->uploadFiles()) ? $upload->getUploadedFiles() : new stdClass();
+      return jsonResponse($response, 'success', 'Files uploaded successfully', $data);
+    } catch (\Exception $e) {
+      return jsonResponse($response, 'error', 'Upload failed: ' . $e->getMessage(), new stdClass(), 500);
     }
-  } elseif (strstr($contentType, 'multipart/form-data')) {
-    $uploadedFiles = $request->getUploadedFiles();
+  });
 
-    // Validate the file and get the path and size
-    $fileInfo = handleUploadedFile($uploadedFiles['file']);
+  // Route to upload a profile picture via form
+  // TODO: Not implemented yet
+  $group->post('/profile', function (Request $request, Response $response) use ($upload) {
+    $files = $request->getUploadedFiles();
 
-    if (!$fileInfo) {
-      throw new HttpBadRequestException($request, 'Failed to upload file');
+    // If no files or more than one file are provided, return a 400 response
+    if (empty($files) || count($files) > 1) {
+      return jsonResponse($response, 'error', 'Either no file or more than one file provided. Only one file is expected.', new stdClass(), 400);
     }
-  } else {
-    throw new HttpBadRequestException($request, 'Unsupported content type');
-  }
 
-  $payload = [
-    'status' => 'success',
-    'message' => 'File processed successfully',
-    'data' => [
-      'fileName' => $fileInfo['fileName'],
-      'url' => $fileInfo['url'],
-      'storage' => [
-        'directory' => $fileInfo['directory'],
-        'size' => $fileInfo['size']
-      ]
-    ]
-  ];
-
-  $response->getBody()->write(json_encode($payload));
-  return $response->withHeader('Content-Type', 'application/json');
-});
-
-// Route to handle upload of profile pictures for users
-$app->post('/upload/profile', function (Request $request, Response $response, $args) {
-  $contentType = $request->getHeaderLine('Content-Type');
-
-  if (strstr($contentType, 'application/json')) {
-    $payload = $request->getParsedBody();
-
-    // Download the file from the URL and get the path and size
-    $fileInfo = downloadFile($payload['url']);
-
-    if (!$fileInfo) {
-      throw new HttpBadRequestException($request, 'Failed to download file');
+    try {
+      // Handle exceptions thrown by the MultimediaUpload class
+      $upload->setPsrFiles(reset($files));
+      $data = ($upload->uploadFiles()) ? $upload->getUploadedFiles() : new stdClass();
+      return jsonResponse($response, 'success', 'Profile uploaded successfully', $data);
+    } catch (\Exception $e) {
+      return jsonResponse($response, 'error', 'Upload failed: ' . $e->getMessage(), new stdClass(), 500);
     }
-  } elseif (strstr($contentType, 'multipart/form-data')) {
-    $uploadedFiles = $request->getUploadedFiles();
+  });
 
-    // Validate the file and get the path and size
-    $fileInfo = handleUploadedFile($uploadedFiles['file']);
+  // Route to upload a file via URL
+  $group->post('/url', function (Request $request, Response $response) use ($upload) {
+    $data = $request->getParsedBody();
 
-    if (!$fileInfo) {
-      throw new HttpBadRequestException($request, 'Failed to upload file');
+    // If no URL is provided, return a 400 response
+    if (empty($data['url'])) {
+      return jsonResponse($response, 'error', 'No URL provided', new stdClass(), 400);
     }
-  } else {
-    throw new HttpBadRequestException($request, 'Unsupported content type');
-  }
 
-  $payload = [
-    'status' => 'success',
-    'message' => 'File processed successfully',
-    'data' => [
-      'fileName' => $fileInfo['fileName'],
-      'url' => $fileInfo['url'],
-      'storage' => [
-        'directory' => $fileInfo['directory'],
-        'size' => $fileInfo['size']
-      ]
-    ]
-  ];
+    try {
+      // Handle exceptions thrown by the MultimediaUpload class
+      $result = ($upload->uploadFileFromUrl($data['url'])) ? $upload->getUploadedFiles() : new stdClass();
+      return jsonResponse($response, 'success', 'URL processed successfully', $result);
+    } catch (\Exception $e) {
+      return jsonResponse($response, 'error', 'URL processing failed: ' . $e->getMessage(), new stdClass(), 500);
+    }
+  });
 
-  $response->getBody()->write(json_encode($payload));
-  return $response->withHeader('Content-Type', 'application/json');
+  $group->get('/ping', function (Request $request, Response $response) {
+    $response->getBody()->write('pong');
+    return $response;
+  });
 });
