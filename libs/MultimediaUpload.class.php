@@ -98,49 +98,22 @@ class MultimediaUpload
     }
   }
 
-  /**
-   * Summary of setFiles
-   * @param mixed $files
-   * @param mixed $tempDirectory
-   * @throws \InvalidArgumentException
-   * @return void
-   * 
-   * This method will set the files array to be used for processing.
-   * It will also move the uploaded files to a temporary directory.
-   * It is independent of the file field names, so it will work with any form.
-   * It accepts two types of input:
-   * 1) An array of files, e.g., $_FILES
-   * 2) An instance of UploadedFileInterface
-   * 
-   * Example iteration of the returned array:
-   * foreach ($files as $file) {
-   *  $file['input_name']; // The name of the file input field
-   *  $file['name']; // The original name of the file
-   *  $file['type']; // The MIME type of the file
-   *  $file['tmp_name']; // The path to the temporary file
-   *  $file['error']; // The error code
-   *  $file['size']; // The file size in bytes
-   * }
-   */
-  public function setFiles($files, $tempDirectory = null)
+  public function setFiles(array $files, string $tempDirectory = null): void
   {
     // We make temp directory optional, and use the system's temp directory by default
     if ($tempDirectory === null) {
       $tempDirectory = sys_get_temp_dir();
     }
+    $this->filesArray = $this->restructureFilesArray($files, $tempDirectory);
+  }
 
-    // If it's an instance of UploadedFileInterface, handle it accordingly.
-    if ($files instanceof \Psr\Http\Message\UploadedFileInterface) {
-      $this->filesArray = $this->restructurePsrFilesArray($files, $tempDirectory);
+  public function setPsrFiles(array $files, string $tempDirectory = null): void
+  {
+    // We make temp directory optional, and use the system's temp directory by default
+    if ($tempDirectory === null) {
+      $tempDirectory = sys_get_temp_dir();
     }
-    // If it's an array, assume it's from $_FILES and handle accordingly.
-    elseif (is_array($files)) {
-      $this->filesArray = $this->restructureFilesArray($files, $tempDirectory);
-    }
-    // Throw an exception if the input is neither an array nor an UploadedFileInterface
-    else {
-      throw new \InvalidArgumentException('Invalid input: expected an array or an instance of UploadedFileInterface.');
-    }
+    $this->filesArray = $this->restructurePsrFilesArray($files, $tempDirectory);
   }
 
   /**
@@ -239,19 +212,22 @@ class MultimediaUpload
    * Summary of restructurePsrFilesArray
    * @param mixed $files
    * @param mixed $tempDirectory
-   * @return array<array>
+   * @return array
    */
   protected function restructurePsrFilesArray($files, $tempDirectory): array
   {
     $restructured = [];
 
-    foreach ($files as $fileInputName => $file) {
+    foreach ($files as $file) {
+      // check if $file is an array and handle accordingly
       if (is_array($file)) {
-        foreach ($file as $fileItem) {
-          $restructured[] = $this->handlePsrUploadedFile($fileInputName, $fileItem, $tempDirectory);
+        foreach ($file as $individualFile) {
+          // The $individualFile here is an instance of UploadedFileInterface
+          $restructured[] = $this->handlePsrUploadedFile('APIv2', $individualFile, $tempDirectory);
         }
       } else {
-        $restructured[] = $this->handlePsrUploadedFile($fileInputName, $file, $tempDirectory);
+        // The $file here is an instance of UploadedFileInterface
+        $restructured[] = $this->handlePsrUploadedFile('APIv2', $file, $tempDirectory);
       }
     }
 
