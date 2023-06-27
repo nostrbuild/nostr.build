@@ -25,9 +25,16 @@ use Slim\Exception\HttpBadRequestException;
  *      'size' => <size of the file in bytes>,
  *      'metadata' => <metadata of the file>,
  *      'dimentions' => {
- *       'width' => <width of the file in pixels>,
- *       'height' => <height of the file in pixels>,
- *      }
+ *        'width' => <width of the file in pixels>,
+ *        'height' => <height of the file in pixels>,
+ *      },
+ *      'responsive' => {
+ *        '240p' => <url of the 428x426 responsive image>,
+ *        '360p' => <url of the 640x640 responsive image>,
+ *        '480p' => <url of the 854x854 responsive image>,
+ *        '720p' => <url of the 1280x1280 responsive image>,
+ *        '1080p' => <url of the 1920x1920 responsive image>,
+ *     },
  *    }
  *  }
  */
