@@ -189,6 +189,10 @@ class ImageProcessor
 
         // crop the image
         $frame->cropImage($min, $min, $x, $y);
+        // Reset the image page to the new dimensions
+        $frame->setImagePage($min, $min, 0, 0);
+        // Resize the cropped image to square dimensions
+        $frame->resizeImage($min, $min, Imagick::FILTER_LANCZOS, 1);
       }
 
       $this->imagick = $imagick->deconstructImages();
