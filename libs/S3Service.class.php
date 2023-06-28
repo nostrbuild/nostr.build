@@ -103,7 +103,12 @@ class S3Service
   }
 
   // Retrieve the object metadata from S3
-  public function getObjectMetadataFromS3($objectKey)
+  /**
+   * Summary of getObjectMetadataFromS3
+   * @param mixed $objectKey
+   * @return Aws\Result|bool
+   */
+  public function getObjectMetadataFromS3($objectKey): bool | Aws\Result
   {
     try {
       // Get the object metadata from the specified bucket
@@ -122,7 +127,7 @@ class S3Service
       return false;
     }
 
-    return $result['Metadata'];
+    return $result;
   }
 
   // List all objects in a specific bucket with optional prefix filtering
