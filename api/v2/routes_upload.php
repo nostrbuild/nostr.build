@@ -215,6 +215,26 @@ $app->group('/upload', function (RouteCollectorProxy $group) use ($upload) {
     }
   });
 
+  // Route to upload a profile picture
+  /*
+  Example returned value in JSON format:
+  {
+    "status": "success",
+    "message": "Profile picture uploaded successfully",
+    "data": [
+      {
+        "input_name": "APIv2",
+        "name": "83d5d416ed0ee14ac03eea5e9ee530de6fded94632143aee026677718a331c53.png",
+        "url": "https://test.nostr.build/i/p/83d5d416ed0ee14ac03eea5e9ee530de6fded94632143aee026677718a331c53.png",
+        "sha256": "83d5d416ed0ee14ac03eea5e9ee530de6fded94632143aee026677718a331c53",
+        "type": "profile",
+        "mime": "image/png",
+        "size": 20465
+      }
+    ]
+  }
+
+  */
   $group->post('/profile', function (Request $request, Response $response) use ($upload) {
     $files = $request->getUploadedFiles();
 
