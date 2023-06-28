@@ -261,12 +261,98 @@ class MultimediaUpload
   /**
    * Summary of uploadProfilePicture
    * @return bool
+   * For profile picture we only accept pictures and only a single file
+   * The flow should be as follows:
+   * 1) Accept file from user
+   * 2) Validate file (size, type, etc.)
+   * 3) Perform file transformations (crop, resize, compress, etc.)
+   * 4) Store file in database (filename, metadata, file size, type)
+   * 
    */
   public function uploadProfilePicture(): bool
   {
-    // TODO: Implement method for uploading profile pictures
-    // We should reuse main upload method, but with a few changes
-    return false;
+    // Check if $this->filesArray is empty, and throw an exception if it is
+    if (!is_array($this->filesArray) || empty($this->filesArray)) {
+      throw new Exception('No files to upload');
+    }
+
+    // Work only with the single file, there is no need to loop over the whole array
+    try {
+      // Begin a database transaction, so that we can rollback if anything fails
+      $this->db->begin_transaction();
+      $this->file = $this->filesArray[0];
+      $fileType = detectFileExt($this->file['tmp_name']);
+      if ($fileType['type'] === 'image') {
+        $fileData = $this->processProfileImage();
+      } else {
+        throw new Exception('Invalid file type, only images are allowed');
+      }
+
+      // Calculate the sha256 hash of the file before any transformations
+      $fileSha256 = $this->generateFileName(0);
+      $this->file['sha256'] = $fileSha256;
+
+      // Check uploads_data table for duplicates of profile pictures;
+      if ($this->checkForDuplicates($fileSha256, true)) {
+        // If duplicate was detected, our data are already populated with the file info
+        // It is safe to return true here, and rollback the transaction
+        error_log('Duplicate file');
+        $this->db->rollback();
+        return true;
+      }
+
+      // Validate the file before we proceed
+      if (!$this->validateFile(false)) {
+        throw new Exception('File validation failed');
+      }
+      // Perform image manipulations
+      $fileData = $this->processProfileImage();
+
+      // We use original file hash as the file name, so that we can detect duplicates later
+      $newFileName = $fileSha256 . '.' . $fileType['extension'];
+      $newFilePrefix = $this->determinePrefix('profile', false);
+      $newFileSize = filesize($this->file['tmp_name']); // Capture the file size after transformations
+      $newFileType = 'profile';
+
+      // Insert the file data into the database
+      $insert_id = $this->storeInDatabaseFree(
+        $newFileName,
+        json_encode($fileData['metadata'] ?? []),
+        $newFileSize,
+        $newFileType
+      );
+
+      // Confirm successful insert
+      if ($insert_id === false) {
+        throw new Exception('Failed to insert into database');
+      }
+
+      // Upload the file to S3
+      if (!$this->uploadToS3($newFilePrefix . $newFileName)) {
+        throw new Exception('Upload to S3 failed');
+      }
+
+      // Populate the uploadedFiles array with the file data
+      $this->addFileToUploadedFilesArray([
+        'input_name' => $this->file['input_name'],
+        'name' => $newFileName,
+        'url' => $this->generateMediaURL($newFileName, 'profile', false), // Construct URL
+        'sha256' => $fileSha256,
+        'type' => $newFileType,
+        'mime' => $fileType['mime'],
+        'size' => $newFileSize,
+      ]);
+
+      // Commit
+      $this->db->commit();
+    } catch (Exception $e) {
+      error_log("Profile picture upload failed: " . $e->getMessage());
+      $this->db->rollback();
+      return false;
+    }
+
+    // If we reached this far, upload was successful
+    return true;
   }
 
   /**
@@ -363,6 +449,7 @@ class MultimediaUpload
           }
         } else {
           // TODO: Implement pro uploads
+          throw new Exception('Pro uploads are not implemented yet');
         }
         // Populate the uploadedFiles array with the file data
         $this->addFileToUploadedFilesArray([
@@ -543,9 +630,10 @@ class MultimediaUpload
   /**
    * Summary of validateFile
    * @param bool $pro
+   * @param bool $profile
    * @return bool
    */
-  protected function validateFile(bool $pro): bool
+  protected function validateFile(bool $pro = false): bool
   {
     global $freeUploadLimit;
     // Perform size validation, 15MB for free users, remaining space for pro users
@@ -565,27 +653,63 @@ class MultimediaUpload
   /**
    * Summary of checkForDuplicates
    * @param string $filehash
+   * @param bool $profile
    * @return bool
    */
-  protected function checkForDuplicates(string $filehash): bool
+  protected function checkForDuplicates(string $filehash, bool $profile = false): bool
   {
     // Check if the file already exists in the database
     $data = $this->uploadsData->getUploadData($filehash);
     if ($data !== false) {
-      $this->addFileToUploadedFilesArray([
-        'input_name' => $this->file['input_name'],
-        'name' => $data['filename'],
-        'url' => $this->generateMediaURL($data['filename'], $data['type'], false), // Construct URL
-        'thumbnail' => $this->generateImageThumbnailURL($data['filename'], $data['type'], false), // Construct thumbnail URL
-        'responsive' => $this->generateResponsiveImagesURL($data['filename'], $data['type'], false), // Construct responsive images URLs
-        'blurhash' => '', // We do not store blurhash in the database, should we?
-        'sha256' => $filehash,
-        'type' => $data['type'],
-        'mime' => $this->file['type'],
-        'size' => $data['file_size'],
-        'metadata' => $data['metadata'],
-        'dimensions' => [], // We do not store image dimensions in the database, should we?
-      ]);
+      // Construct S3 object key so we can fetch metadata to help with acurate duplicate detection
+      // 
+      try {
+        // We probably want to check if returned data is an array and not false
+        $key = $this->determinePrefix($data['type'], false) . $data['filename'];
+        $fileS3Metadata = $this->s3Service->getObjectMetadataFromS3($key);
+        if ($fileS3Metadata === false) {
+          throw new Exception('Failed to get S3 metadata');
+        }
+      } catch (Exception $e) {
+        // If this didn't work, we might want to re-upload it.
+        error_log("Failed to get S3 metadata: " . $e->getMessage());
+        return false;
+      }
+
+      if ($profile) {
+        // We need to handle profile pictures differently,
+        // since it is possible to upload the same picture that is already in the database but with picture type
+        if ($data['type'] === 'profile') {
+          // We already have a profile picture, so we will reject the upload
+          $this->addFileToUploadedFilesArray([
+            'input_name' => $this->file['input_name'],
+            'name' => $data['filename'],
+            'url' => $this->generateMediaURL($data['filename'], 'profile', false), // Construct URL
+            'sha256' => $filehash,
+            'type' => $data['type'],
+            'mime' => $fileS3Metadata->get('ContentType'),
+            'size' => $data['file_size'],
+          ]);
+          return true;
+        } else {
+          return false;
+        }
+      } else {
+        $this->addFileToUploadedFilesArray([
+          'input_name' => $this->file['input_name'],
+          'name' => $data['filename'],
+          'url' => $this->generateMediaURL($data['filename'], $data['type'], false), // Construct URL
+          'thumbnail' => $this->generateImageThumbnailURL($data['filename'], $data['type'], false), // Construct thumbnail URL
+          'responsive' => $this->generateResponsiveImagesURL($data['filename'], $data['type'], false), // Construct responsive images URLs
+          'blurhash' => '', // We do not store blurhash in the database, should we?
+          'sha256' => $filehash,
+          'type' => $data['type'],
+          'mime' => $fileS3Metadata->get('ContentType'),
+          'size' => $data['file_size'],
+          'metadata' => $data['metadata'],
+          'dimensions' => [], // We do not store image dimensions in the database, should we?
+        ]);
+      }
       return true;
     }
     return false;

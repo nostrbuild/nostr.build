@@ -215,8 +215,6 @@ $app->group('/upload', function (RouteCollectorProxy $group) use ($upload) {
     }
   });
 
-  // Route to upload a profile picture via form
-  // TODO: Not implemented yet
   $group->post('/profile', function (Request $request, Response $response) use ($upload) {
     $files = $request->getUploadedFiles();
 
@@ -228,8 +226,8 @@ $app->group('/upload', function (RouteCollectorProxy $group) use ($upload) {
     try {
       // Handle exceptions thrown by the MultimediaUpload class
       $upload->setPsrFiles(reset($files));
-      $data = ($upload->uploadFiles()) ? $upload->getUploadedFiles() : new stdClass();
-      return jsonResponse($response, 'success', 'Profile uploaded successfully', $data);
+      $data = ($upload->uploadProfilePicture()) ? $upload->getUploadedFiles() : new stdClass();
+      return jsonResponse($response, 'success', 'Profile picture uploaded successfully', $data);
     } catch (\Exception $e) {
       return jsonResponse($response, 'error', 'Upload failed: ' . $e->getMessage(), new stdClass(), 500);
     }
