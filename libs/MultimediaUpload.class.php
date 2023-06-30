@@ -494,15 +494,29 @@ class MultimediaUpload
   public function uploadFileFromUrl(string $url): bool
   {
     global $freeUploadLimit;
-    // Perform check of the URL to avoid common explots:
+
+    // Get the metadata from the URL
     try {
-      $sanity = checkUrlSanity($url);
+      $metadata = $this->getUrlMetadata($url);
     } catch (Exception $e) {
       error_log($e->getMessage());
       throw new Exception($e->getMessage());
     }
 
-    // Create a curl instance
+    // Extract the file type from the MIME type
+    list($fileType) = explode("/", $metadata['type'], 2);
+
+    // Ensure the file is of a valid type (image, video, or audio)
+    if (!in_array($fileType, ['image', 'video', 'audio'])) {
+      throw new Exception('Invalid file type: ' . $fileType);
+    }
+
+    // Check the file size against the limit
+    if (intval($metadata['size']) > $freeUploadLimit) {
+      throw new Exception('File size exceeds the limit of ' . formatSizeUnits($freeUploadLimit));
+    }
+
+    // Create a curl instance for the actual download
     $ch = curl_init($url);
 
     // Fail if the URL is not found or not accessible
@@ -510,57 +524,10 @@ class MultimediaUpload
       throw new Exception('Failed to initialize cURL');
     }
 
-    // Set curl options for a HEAD request
-    curl_setopt($ch, CURLOPT_NOBODY, true);
-    curl_setopt($ch, CURLOPT_HEADER, true);
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-    curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
-
-    // Execute the HEAD request
-    $headers = curl_exec($ch);
-
-    // Extract headers from the response
-    $headerList = explode("\n", $headers);
-    $headerMap = [];
-    foreach ($headerList as $header) {
-      $parts = explode(": ", $header, 2);
-      if (count($parts) == 2) {
-        // Convert the header name to lowercase
-        $headerName = strtolower($parts[0]);
-        $headerMap[$headerName] = trim($parts[1]);
-      }
-    }
-
-    // Check if Content-Length header is present
-    if (!isset($headerMap['content-length'])) {
-      throw new Exception('Unable to determine file size');
-    }
-
-    // Check the file size against the limit
-    // This is not a foolproof method, but it should be good enough at this point
-    // You must also check the file size after the download is complete
-    if (intval($headerMap['content-length']) > $freeUploadLimit) {
-      throw new Exception('File size exceeds the limit of ' . formatSizeUnits($freeUploadLimit));
-    }
-
-    // Check if Content-Type header is present
-    if (!isset($headerMap['content-type'])) {
-      throw new Exception('Unable to determine file type');
-    }
-
-    // Extract file type from the MIME type
-    list($fileType) = explode("/", $headerMap['content-type'], 2);
-
-    // Ensure the file is of a valid type (image, video, or audio)
-    if (!in_array($fileType, ['image', 'video', 'audio'])) {
-      throw new Exception('Invalid file type: ' . $fileType);
-    }
-
-    // Re-initialize curl for the actual download
+    // Set options for the actual download
     curl_setopt($ch, CURLOPT_NOBODY, false);
     curl_setopt($ch, CURLOPT_HEADER, false);
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, false);
-
 
     // Create a new file in the system's temp directory
     $tempFile = tempnam(sys_get_temp_dir(), 'url_download');
@@ -607,7 +574,7 @@ class MultimediaUpload
       if ($fileSize > $freeUploadLimit) {
         throw new Exception('File size exceeds the limit of ' . formatSizeUnits($freeUploadLimit));
       }
-      // Throw any other errors
+      // Throw the error
       throw new Exception('cURL error: ' . curl_error($ch));
     }
 
@@ -617,14 +584,88 @@ class MultimediaUpload
     // Set the file property
     $this->filesArray[] = [
       'input_name' => 'url',
-      'name' => basename($url),
-      'type' => $headerMap['content-type'],
+      'name' => $metadata['name'],
+      'type' => $metadata['type'],
       'tmp_name' => realpath($tempFile),
       'error' => UPLOAD_ERR_OK, // No error
       'size' => filesize($tempFile),
     ];
+
     // Lastly, trigger the uploadFiles method to process and store the file
     return $this->uploadFiles(false); // URL uploads are always free
+  }
+
+  /**
+   * Summary of getUrlMetadata
+   * @param string $url
+   * @throws \Exception
+   * @return array
+   */
+  public function getUrlMetadata(string $url): array
+  {
+    // Perform check of the URL to avoid common exploits:
+    try {
+      $sanity = checkUrlSanity($url);
+    } catch (Exception $e) {
+      error_log($e->getMessage());
+      throw new Exception($e->getMessage());
+    }
+
+    // Create a curl instance
+    $ch = curl_init($url);
+
+    // Fail if the URL is not found or not accessible
+    if ($ch === false) {
+      throw new Exception('Failed to initialize cURL');
+    }
+
+    // Set curl options for a HEAD request
+    curl_setopt($ch, CURLOPT_NOBODY, true);
+    curl_setopt($ch, CURLOPT_HEADER, true);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
+
+    // Execute the HEAD request
+    $headers = curl_exec($ch);
+
+    // Check if any error occurred
+    if (curl_errno($ch)) {
+      throw new Exception('Curl error: ' . curl_error($ch));
+    }
+
+    // Extract headers from the response
+    $headerList = explode("\n", $headers);
+    $headerMap = [];
+    foreach ($headerList as $header) {
+      $parts = explode(": ", $header, 2);
+      if (count($parts) == 2) {
+        // Convert the header name to lowercase
+        $headerName = strtolower($parts[0]);
+        $headerMap[$headerName] = trim($parts[1]);
+      }
+    }
+
+    // Close the cURL resource
+    curl_close($ch);
+
+    // Check if Content-Length header is present
+    if (!isset($headerMap['content-length'])) {
+      throw new Exception('Unable to determine file size');
+    }
+
+    // Check if Content-Type header is present
+    if (!isset($headerMap['content-type'])) {
+      throw new Exception('Unable to determine file type');
+    }
+
+    // Prepare result to return
+    $result = [
+      'name' => basename($url),
+      'type' => $headerMap['content-type'],
+      'size' => $headerMap['content-length']
+    ];
+
+    return $result;
   }
 
   /**
@@ -726,7 +767,7 @@ class MultimediaUpload
     $img->convertToJpeg() // Convert to JPEG for images that are not visually affected by the conversion
       ->fixImageOrientation()
       ->resizeImage(1920, 1920) // Resize to 1920x1920 (HD)
-      ->reduceQuality(75) // 75 should be a good balance between quality and size
+      ->reduceQuality(60) // 60 should be a good balance between quality and size
       ->stripImageMetadata()
       ->save();
     $img->optimiseImage(); // Optimise the image, can take upto 60 seconds
@@ -767,7 +808,7 @@ class MultimediaUpload
     $img->fixImageOrientation()
       ->cropSquare()
       ->resizeImage(256, 256) // Resize to 256x256
-      ->reduceQuality(75) // 75 should be a good balance between quality and size
+      ->reduceQuality(60) // 60 should be a good balance between quality and size
       ->stripImageMetadata()
       ->save();
     $img->optimiseImage(); // Optimise the image, can take upto 60 seconds
