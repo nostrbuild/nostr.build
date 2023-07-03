@@ -1,5 +1,7 @@
 # not needed
 .well-known/
+.parcel-cache/
+node_modules/
 
 # WIP
 account/
