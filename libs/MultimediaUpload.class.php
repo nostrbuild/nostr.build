@@ -64,22 +64,29 @@ class MultimediaUpload
   protected $file; // Used for temporary storage of the current file in the loop
   protected $uploadsData; // Used for free uploads; instance of the UploadsData class
   protected $usersImages; // Used for authenticated uploads; instance of the UsersImages class
+  protected $usersImagesFolders; // Used for authenticated uploads; instance of the UsersImagesFolders class
   protected $s3Service; // Instance of the S3Service class
   protected $userNpub; // Used for authenticated uploads.
+  protected $pro; // Used to determine if the upload is pro or free
 
   /**
    * Summary of __construct
    * @param mysqli $db
    * @param S3Service $s3Service
+   * @param bool $pro
    * @param string $userNpub
    */
-  public function __construct(mysqli $db, S3Service $s3Service, string $userNpub = '')
+  public function __construct(mysqli $db, S3Service $s3Service, bool $pro = false, string $userNpub = '')
   {
     $this->db = $db;
     $this->s3Service = $s3Service;
     $this->userNpub = $userNpub;
+    $this->pro = $pro;
     $this->uploadsData = new UploadsData($db);
-    $this->usersImages = new UsersImages($db);
+    if ($pro) {
+      $this->usersImages = new UsersImages($db);
+      $this->usersImagesFolders = new UsersImagesFolders($db);
+    }
   }
 
   /**
@@ -302,7 +309,7 @@ class MultimediaUpload
       }
 
       // Validate the file before we proceed
-      if (!$this->validateFile(false)) {
+      if (!$this->validateFile()) {
         throw new Exception('File validation failed');
       }
       // Perform image manipulations
@@ -310,7 +317,7 @@ class MultimediaUpload
 
       // We use original file hash as the file name, so that we can detect duplicates later
       $newFileName = $fileSha256 . '.' . $fileType['extension'];
-      $newFilePrefix = $this->determinePrefix('profile', false);
+      $newFilePrefix = $this->determinePrefix('profile');
       $newFileSize = filesize($this->file['tmp_name']); // Capture the file size after transformations
       $newFileType = 'profile';
 
@@ -319,7 +326,10 @@ class MultimediaUpload
         $newFileName,
         json_encode($fileData['metadata'] ?? []),
         $newFileSize,
-        $newFileType
+        $newFileType,
+        $fileData['dimensions']['width'] ?? 0,
+        $fileData['dimensions']['height'] ?? 0,
+        $fileData['blurhash'] ?? null
       );
 
       // Confirm successful insert
@@ -336,11 +346,13 @@ class MultimediaUpload
       $this->addFileToUploadedFilesArray([
         'input_name' => $this->file['input_name'],
         'name' => $newFileName,
-        'url' => $this->generateMediaURL($newFileName, 'profile', false), // Construct URL
+        'url' => $this->generateMediaURL($newFileName, 'profile'), // Construct URL
         'sha256' => $fileSha256,
         'type' => $newFileType,
         'mime' => $fileType['mime'],
         'size' => $newFileSize,
+        'dimensions' => $fileData['dimensions'] ?? [],
+        'blurhash' => $fileData['blurhash'] ?? '',
       ]);
 
       // Commit
@@ -357,11 +369,10 @@ class MultimediaUpload
 
   /**
    * Summary of uploadFiles
-   * @param bool $pro
    * @throws \Exception
    * @return bool
    */
-  public function uploadFiles(bool $pro = false): bool
+  public function uploadFiles(): bool
   {
     // Check if $this->filesArray is empty, and throw an exception if it is
     if (!is_array($this->filesArray) || empty($this->filesArray)) {
@@ -393,7 +404,7 @@ class MultimediaUpload
         // All initial validations are performed here, e.g., file size, type, etc.
         // This also should validate against the table of known rejected files,
         // or files that were requested to be deleted by the user
-        if (!$this->validateFile($pro)) {
+        if (!$this->validateFile()) {
           throw new Exception('File validation failed');
         }
 
@@ -407,7 +418,7 @@ class MultimediaUpload
         // ];
         $fileType = detectFileExt($this->file['tmp_name']);
         if ($fileType['type'] === 'image') {
-          if ($pro) {
+          if ($this->pro) {
             $fileData = $this->processProUploadImage();
           } else {
             $fileData = $this->processFreeUploadImage();
@@ -419,11 +430,11 @@ class MultimediaUpload
         }
         // By this time the image has been processed and saved to a temporary location
         // It is now ready to be uploaded to S3 and information about it stored in the database
-        if (!$pro) {
+        if (!$this->pro) {
           // Handle free uploads
           // We use original file hash as the file name, so that we can detect duplicates later
           $newFileName = $fileSha256 . '.' . $fileType['extension'];
-          $newFilePrefix = $this->determinePrefix($fileType['type'], $pro);
+          $newFilePrefix = $this->determinePrefix($fileType['type']);
           $newFileSize = filesize($this->file['tmp_name']); // Capture the file size after transformations
           // Make DB compatible file type
           // Accepted values are: 'picture', 'video', 'profile', 'unknown'
@@ -439,7 +450,10 @@ class MultimediaUpload
             $newFileName,
             json_encode($fileData['metadata'] ?? []),
             $newFileSize,
-            $newFileType
+            $newFileType,
+            (int)($fileData['dimensions']['width'] ?? 0),
+            (int)($fileData['dimensions']['height'] ?? 0),
+            $fileData['blurhash'] ?? null
           );
           if ($insert_id === false) {
             throw new Exception('Failed to insert into database');
@@ -455,9 +469,9 @@ class MultimediaUpload
         $this->addFileToUploadedFilesArray([
           'input_name' => $this->file['input_name'],
           'name' => $newFileName,
-          'url' => $this->generateMediaURL($newFileName, $fileType['type'], $pro), // Construct URL
-          'thumbnail' => $this->generateImageThumbnailURL($newFileName, $fileType['type'], $pro), // Construct thumbnail URL
-          'responsive' => $this->generateResponsiveImagesURL($newFileName, $fileType['type'], $pro), // Construct responsive images URLs
+          'url' => $this->generateMediaURL($newFileName, $fileType['type']), // Construct URL
+          'thumbnail' => $this->generateImageThumbnailURL($newFileName, $fileType['type']), // Construct thumbnail URL
+          'responsive' => $this->generateResponsiveImagesURL($newFileName, $fileType['type']), // Construct responsive images URLs
           'blurhash' => $fileData['blurhash'] ?? '',
           'sha256' => $this->generateFileName(0), // Reuse method to generate a hash of transformed file
           'type' => $newFileType,
@@ -592,7 +606,7 @@ class MultimediaUpload
     ];
 
     // Lastly, trigger the uploadFiles method to process and store the file
-    return $this->uploadFiles(false); // URL uploads are always free
+    return $this->uploadFiles(); // URL uploads are always free
   }
 
   /**
@@ -670,18 +684,17 @@ class MultimediaUpload
 
   /**
    * Summary of validateFile
-   * @param bool $pro
    * @param bool $profile
    * @return bool
    */
-  protected function validateFile(bool $pro = false): bool
+  protected function validateFile(): bool
   {
     global $freeUploadLimit;
     // Perform size validation, 15MB for free users, remaining space for pro users
     if ($this->file['error'] == UPLOAD_ERR_OK) {
-      if ($this->file['size'] > $freeUploadLimit && !$pro) {
+      if ($this->file['size'] > $freeUploadLimit && !$this->pro) {
         return false;
-      } elseif (!$pro) {
+      } elseif (!$this->pro) {
         // Check rejection status
         if ($this->uploadsData->checkRejected($this->file['sha256'])) {
           return false;
@@ -699,61 +712,84 @@ class MultimediaUpload
    */
   protected function checkForDuplicates(string $filehash, bool $profile = false): bool
   {
-    // Check if the file already exists in the database
     $data = $this->uploadsData->getUploadData($filehash);
-    if ($data !== false) {
-      // Construct S3 object key so we can fetch metadata to help with acurate duplicate detection
-      // 
-      try {
-        // We probably want to check if returned data is an array and not false
-        $key = $this->determinePrefix($data['type'], false) . $data['filename'];
-        $fileS3Metadata = $this->s3Service->getObjectMetadataFromS3($key);
-        if ($fileS3Metadata === false) {
-          throw new Exception('Failed to get S3 metadata');
-        }
-      } catch (Exception $e) {
-        // If this didn't work, we might want to re-upload it.
-        error_log("Failed to get S3 metadata: " . $e->getMessage());
+
+    if ($data === false) {
+      return false;
+    }
+
+    $width = $data['media_width'] ?? 0;
+    $height = $data['media_height'] ?? 0;
+    $blurhash = $data['blurhash'] ?? "LEHV6nWB2yk8pyo0adR*.7kCMdnj"; // Default blurhash
+
+    if (
+      in_array($data['type'], ['picture']) &&
+      ($width === 0 || $height === 0 || $blurhash === "LEHV6nWB2yk8pyo0adR*.7kCMdnj")
+    ) {
+      $img = new ImageProcessor($this->file['tmp_name']);
+      $dimensions = $img->getImageDimensions();
+      $blurhash = $img->calculateBlurhash();
+
+      $width = $dimensions['width'];
+      $height = $dimensions['height'];
+
+      // DEBUG log
+      error_log("Updating uploads_data table with width: $width, height: $height, blurhash: $blurhash");
+
+      $this->uploadsData->update(
+        $data['id'],
+        [
+          'media_width' => $width,
+          'media_height' => $height,
+          'blurhash' => $blurhash
+        ]
+      );
+    }
+
+    try {
+      $key = $this->determinePrefix($data['type']) . $data['filename'];
+      $fileS3Metadata = $this->s3Service->getObjectMetadataFromS3($key);
+
+      if ($fileS3Metadata === false) {
+        throw new Exception('Failed to get S3 metadata');
+      }
+    } catch (Exception $e) {
+      error_log("Failed to get S3 metadata: " . $e->getMessage());
+      return false;
+    }
+
+    $fileData = [
+      'input_name' => $this->file['input_name'],
+      'name' => $data['filename'],
+      'sha256' => $filehash,
+      'type' => $data['type'],
+      'mime' => $fileS3Metadata->get('ContentType'),
+      'size' => $data['file_size'],
+      'blurhash' => $blurhash,
+      'dimensions' => ['width' => $width, 'height' => $height],
+    ];
+
+    if ($profile) {
+      if ($data['type'] !== 'profile') {
         return false;
       }
 
-      if ($profile) {
-        // We need to handle profile pictures differently,
-        // since it is possible to upload the same picture that is already in the database but with picture type
-        if ($data['type'] === 'profile') {
-          // We already have a profile picture, so we will reject the upload
-          $this->addFileToUploadedFilesArray([
-            'input_name' => $this->file['input_name'],
-            'name' => $data['filename'],
-            'url' => $this->generateMediaURL($data['filename'], 'profile', false), // Construct URL
-            'sha256' => $filehash,
-            'type' => $data['type'],
-            'mime' => $fileS3Metadata->get('ContentType'),
-            'size' => $data['file_size'],
-          ]);
-          return true;
-        } else {
-          return false;
-        }
-      } else {
-        $this->addFileToUploadedFilesArray([
-          'input_name' => $this->file['input_name'],
-          'name' => $data['filename'],
-          'url' => $this->generateMediaURL($data['filename'], $data['type'], false), // Construct URL
-          'thumbnail' => $this->generateImageThumbnailURL($data['filename'], $data['type'], false), // Construct thumbnail URL
-          'responsive' => $this->generateResponsiveImagesURL($data['filename'], $data['type'], false), // Construct responsive images URLs
-          'blurhash' => '', // We do not store blurhash in the database, should we?
-          'sha256' => $filehash,
-          'type' => $data['type'],
-          'mime' => $fileS3Metadata->get('ContentType'),
-          'size' => $data['file_size'],
-          'metadata' => $data['metadata'],
-          'dimensions' => [], // We do not store image dimensions in the database, should we?
-        ]);
+      $fileData['url'] = $this->generateMediaURL($data['filename'], 'profile');
+    } else {
+      $fileData['url'] = $this->generateMediaURL($data['filename'], $data['type']);
+      $fileData['thumbnail'] = $this->generateImageThumbnailURL($data['filename'], $data['type']);
+      $fileData['responsive'] = $this->generateResponsiveImagesURL($data['filename'], $data['type']);
+      try {
+        $fileData['metadata'] = json_decode($data['metadata'], true);
+      } catch (Exception $e) {
+        error_log("Failed to decode metadata: " . $e->getMessage());
+        $fileData['metadata'] = [];
       }
-      return true;
     }
-    return false;
+
+    $this->addFileToUploadedFilesArray($fileData);
+
+    return true;
   }
 
   /**
@@ -835,12 +871,11 @@ class MultimediaUpload
   /**
    * Summary of determinePrefix
    * @param string $type
-   * @param bool $pro
    * @return string
    */
-  protected function determinePrefix(string $type = 'unknown', bool $pro): string
+  protected function determinePrefix(string $type = 'unknown'): string
   {
-    if ($pro) {
+    if ($this->pro) {
       // Pro accounts store files under the same prefix, regardless of the file type
       return 'p/';
     } elseif ($type === 'video' || $type === 'audio') {
@@ -860,20 +895,19 @@ class MultimediaUpload
    * Summary of generateImageThumbnailURL
    * @param string $fileName
    * @param string $type
-   * @param bool $pro
    * @return string
    */
-  protected function generateImageThumbnailURL(string $fileName, string $type, bool $pro = false): string
+  protected function generateImageThumbnailURL(string $fileName, string $type): string
   {
 
     $scheme = $_SERVER['REQUEST_SCHEME'];
     $host = $_SERVER['HTTP_HOST'];
     // We only support thumbnailing of images and profile pictures
     $path = match ($type) {
-      'image' => $pro ? 'thumbnail/p/' : 'thumbnail/i/',
-      'picture' => $pro ? 'thumbnail/p/' : 'thumbnail/i/',
+      'image' => $this->pro ? 'thumbnail/p/' : 'thumbnail/i/',
+      'picture' => $this->pro ? 'thumbnail/p/' : 'thumbnail/i/',
       'profile' => 'thumbnail/i/p/',
-      default => $this->determinePrefix($type, $pro),
+      default => $this->determinePrefix($type),
     };
     // Assemble the URL and return it
     return $scheme . '://' . $host . '/' . $path . $fileName;
@@ -883,10 +917,9 @@ class MultimediaUpload
    * Summary of generateResponsiveImagesURL
    * @param string $fileName
    * @param string $type
-   * @param bool $pro
    * @return array
    */
-  protected function generateResponsiveImagesURL(string $fileName, string $type, bool $pro = false): array
+  protected function generateResponsiveImagesURL(string $fileName, string $type): array
   {
     $scheme = $_SERVER['REQUEST_SCHEME'];
     $host = $_SERVER['HTTP_HOST'];
@@ -894,9 +927,9 @@ class MultimediaUpload
     $urls = [];
     foreach ($resolutions as $resolution) {
       if ($type === 'image' || $type === 'picture') {
-        $path = $pro ? "responsive/{$resolution}/p/" : "responsive/{$resolution}/i/";
+        $path = $this->pro ? "responsive/{$resolution}/p/" : "responsive/{$resolution}/i/";
       } else {
-        $path = $this->determinePrefix($type, $pro);
+        $path = $this->determinePrefix($type);
       }
       // Assemble the URL and return it
       $urls[$resolution] = $scheme . '://' . $host . '/' . $path . $fileName;
@@ -909,17 +942,16 @@ class MultimediaUpload
    * Summary of generateMediaURL
    * @param string $fileName
    * @param string $type
-   * @param bool $pro
    * @return string
    */
-  protected function generateMediaURL(string $fileName, string $type, bool $pro = false): string
+  protected function generateMediaURL(string $fileName, string $type): string
   {
     $scheme = $_SERVER['REQUEST_SCHEME'];
     $host = $_SERVER['HTTP_HOST'];
     // We only support thumbnailing of images and profile pictures
     $path = match ($type) {
       'profile' => 'i/p/',
-      default => $this->determinePrefix($type, $pro),
+      default => $this->determinePrefix($type),
     };
     // Assemble the URL and return it
     return $scheme . '://' . $host . '/' . $path . $fileName;
@@ -939,6 +971,7 @@ class MultimediaUpload
         // Private by default
         'flag' => 0, // 0 - private, 1 - public
         'file_size' => $this->file['size'],
+        'folder_id' => null, // null - root folder
       ], false); // false parameter to not commit yet
 
       return $insert_id;
@@ -954,13 +987,19 @@ class MultimediaUpload
    * @param string $metadata
    * @param int $file_size
    * @param string $type
+   * @param int $media_width
+   * @param int $media_height
+   * @param string $blurhash
    * @return int|bool
    */
   protected function storeInDatabaseFree(
     string $filename,
     string $metadata,
     int $file_size,
-    string $type = 'unknown'
+    string $type = 'unknown',
+    int $media_width = 0,
+    int $media_height = 0,
+    string $blurhash = null,
   ): int | bool {
     // Insert the file data into the database but don't commit yet
     try {
@@ -968,11 +1007,14 @@ class MultimediaUpload
         'filename' => $filename,
         'metadata' => $metadata, // metadata to be updated later
         'file_size' => $file_size,
+        'media_width' => $media_width,
+        'media_height' => $media_height,
+        'blurhash' => $blurhash,
         'type' => $type, // 'picture', 'video', 'unknown', 'profile'
-        // All new free apploads are pending approval by default
+        // All new free uploads are pending approval by default
         // Rejected files are not stored in the database
         'approval_status' => 'pending', // 'approved', 'pending', 'rejected', 'adult'
-      ], false); // false parameter to not commit yet
+      ], false); // false parameter to do not commit yet
 
       return $insert_id;
     } catch (Exception $e) {
@@ -987,13 +1029,18 @@ class MultimediaUpload
    * @param string $newName
    * @return bool
    */
-  protected function updateDatabasePro(int $id, string $newName): bool
+  protected function updateDatabasePro(int $id, string $newName, string | null $folder_name = null): bool
   {
     // Update the database with the new file name and size
+    $folder_id = null;
+    if ($folder_name !== null) {
+      $folder_id = $this->usersImagesFolders->findFolderByNameOrCreate($folder_name);
+    }
     try {
       $this->usersImages->update($id, [
         'image' => $newName,
         'size' => $this->file['size'], // Capture the file size after transformations
+        'folder_id' => $folder_id,
       ]);
     } catch (Exception $e) {
       error_log($e->getMessage());
