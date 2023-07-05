@@ -5,6 +5,7 @@
         "slim/slim": "^4.0",
         "kornrunner/blurhash": "^1.2",
         "slim/psr7": "^1.6",
-        "respect/validation": "^2.2"
+        "respect/validation": "^2.2",
+        "hashids/hashids": "^5.0"
     }
 }
