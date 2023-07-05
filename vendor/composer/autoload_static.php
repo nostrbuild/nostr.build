@@ -50,6 +50,10 @@ class ComposerStaticInitd84b9ad25db27c0cce0ffcf6c71b28b7
         array (
             'JmesPath\\' => 9,
         ),
+        'H' => 
+        array (
+            'Hashids\\' => 8,
+        ),
         'G' => 
         array (
             'GuzzleHttp\\Psr7\\' => 16,
@@ -129,6 +133,10 @@ class ComposerStaticInitd84b9ad25db27c0cce0ffcf6c71b28b7
         'JmesPath\\' => 
         array (
             0 => __DIR__ . '/..' . '/mtdowling/jmespath.php/src',
+        ),
+        'Hashids\\' => 
+        array (
+            0 => __DIR__ . '/..' . '/hashids/hashids/src',
         ),
         'GuzzleHttp\\Psr7\\' => 
         array (
