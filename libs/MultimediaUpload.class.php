@@ -9,8 +9,11 @@ require_once $_SERVER['DOCUMENT_ROOT'] . "/config.php"; // Size limits
 // Vendor autoload
 require_once $_SERVER['DOCUMENT_ROOT'] . "/vendor/autoload.php";
 
+use Hashids\Hashids;
+
 // Globals
 global $link;
+global $storageLimits;
 
 /**
  * Summary of MultimediaUpload
@@ -28,6 +31,10 @@ global $link;
  * $upload->uploadFiles();
  * $urls = $upload->getFileUrls();
  */
+
+// TODO: Once the full functionality is rewritten, this class needs major refactoring
+// and splitting into multiple classes, with the MultimediaUpload class being the
+// base class that will be extended by the other classes.
 
 class MultimediaUpload
 {
@@ -86,6 +93,10 @@ class MultimediaUpload
     if ($pro) {
       $this->usersImages = new UsersImages($db);
       $this->usersImagesFolders = new UsersImagesFolders($db);
+    }
+    // Check if the upload is pro and userNpub is not set or empty
+    if ($pro && empty($this->userNpub)) {
+      throw new Exception('UserNpub is required for pro uploads');
     }
   }
 
@@ -397,7 +408,7 @@ class MultimediaUpload
         // Check uploads_data table for duplicates
         // If the file already exists, we will skip it
         // Populate the uploadedFiles array with the file data
-        if ($this->checkForDuplicates($fileSha256)) {
+        if (!$this->pro && $this->checkForDuplicates($fileSha256)) {
           throw new Exception('Duplicate file');
         }
 
@@ -458,12 +469,45 @@ class MultimediaUpload
           if ($insert_id === false) {
             throw new Exception('Failed to insert into database');
           }
-          if (!$this->uploadToS3($newFilePrefix . $newFileName)) {
-            throw new Exception('Upload to S3 failed');
-          }
         } else {
-          // TODO: Implement pro uploads
-          throw new Exception('Pro uploads are not implemented yet');
+          // Pro upload uses different file naming scheme and relies on the database ID,
+          // hence we need to insert file info with "dummy" name and update it later
+          // as part of the database transaction
+          // To enhance security and prevent people from "walking" the incrementing IDs
+          // and retrieving files in sequence, we will use a hashid of the ID
+
+          // Insert the file data into the database but don't commit yet
+          $insert_id = $this->storeInDatabasePro();
+          if ($insert_id === false) {
+            throw new Exception('Failed to insert into database');
+          }
+
+          $newFileName = $this->generateFileName($insert_id) . '.' . $fileType['extension'];
+          $newFilePrefix = $this->determinePrefix($fileType['type']);
+          $newFileSize = filesize($this->file['tmp_name']); // Capture the file size after transformations
+          // Irrelevant for pro uploads for now
+          $newFileType = match ($fileType['type']) {
+            'image' => 'picture',
+            'video' => 'video',
+            'audio' => 'video',
+            default => 'unknown',
+          };
+
+          // Update the file data in the database
+          if (!$this->updateDatabasePro(
+            $insert_id,
+            $newFileName,
+            $newFileSize,
+            $fileData['dimensions']['width'] ?? 0,
+            $fileData['dimensions']['height'] ?? 0,
+            $fileData['blurhash'] ?? null,
+            $fileType['mime'],
+          )) {
+            throw new Exception('Failed to update database');
+          }
+        }
+        if (!$this->uploadToS3($newFilePrefix . $newFileName)) {
+          throw new Exception('Upload to S3 failed');
         }
         // Populate the uploadedFiles array with the file data
         $this->addFileToUploadedFilesArray([
@@ -484,6 +528,8 @@ class MultimediaUpload
       } catch (Exception $e) {
         error_log("File loop exception: " . $e->getMessage());
         $this->db->rollback();
+        // Since upload to S3 happenese last, we should be safe to do not delete the file from S3
+        // unless something goes wrong with DB commit.
         // We want to loop over all files and not stop on the errors
         continue;
       }
@@ -684,28 +730,46 @@ class MultimediaUpload
 
   /**
    * Summary of validateFile
-   * @param bool $profile
    * @return bool
    */
   protected function validateFile(): bool
   {
     global $freeUploadLimit;
-    // Perform size validation, 15MB for free users, remaining space for pro users
-    if ($this->file['error'] == UPLOAD_ERR_OK) {
-      if ($this->file['size'] > $freeUploadLimit && !$this->pro) {
+    global $storageLimits;
+
+    // Validate if file upload is OK
+    if ($this->file['error'] !== UPLOAD_ERR_OK) {
+      return false;
+    }
+
+    // Check if the file size exceeds the upload limit for free users
+    if (!$this->pro && $this->file['size'] > $freeUploadLimit) {
+      return false;
+    }
+
+    // Check if file has been rejected for free users
+    if (!$this->pro && $this->uploadsData->checkRejected($this->file['sha256'])) {
+      return false;
+    }
+
+    // Calculate remaining space and check if file size exceeds the remaining space for pro users
+    if ($this->pro) {
+      $totalUsed = $this->usersImages->getTotalSize($this->userNpub);
+      // Allow for 2% overage to account for any optimizations
+      $accountLevelQuota = (int)($storageLimits[$_SESSION['acctlevel']]['limit'] ?? 5 * 1024) * 1.02;
+      $remainingSpace = $accountLevelQuota - $totalUsed;
+
+      if ($this->file['size'] > $remainingSpace) {
         return false;
-      } elseif (!$this->pro) {
-        // Check rejection status
-        if ($this->uploadsData->checkRejected($this->file['sha256'])) {
-          return false;
-        }
       }
     }
+
     return true;
   }
 
   /**
    * Summary of checkForDuplicates
+   * Only used for free uploads
    * @param string $filehash
    * @param bool $profile
    * @return bool
@@ -864,8 +928,9 @@ class MultimediaUpload
    */
   protected function generateFileName(int $id = 0): string
   {
+    $hashids = new Hashids($_SERVER['HASHIDS_SALT']); // The salt must be the same to do not have collisions
     // This method should be called before any other file transformations are performed.
-    return $id === 0 ? hash_file('sha256', realpath($this->file['tmp_name'])) : 'nb' . $id;
+    return $id === 0 ? hash_file('sha256', realpath($this->file['tmp_name'])) : $hashids->encode($id);
   }
 
   /**
@@ -876,19 +941,14 @@ class MultimediaUpload
   protected function determinePrefix(string $type = 'unknown'): string
   {
     if ($this->pro) {
-      // Pro accounts store files under the same prefix, regardless of the file type
       return 'p/';
-    } elseif ($type === 'video' || $type === 'audio') {
-      // Video and audio files are stored under the same prefix
-      return 'av/';
-    } elseif ($type === 'profile') {
-      // Profile pictures are stored under the same prefix, no video or audio allowed
-      return 'i/p/';
-    } else {
-      // Images are stored under the same prefix
-      // It's default to catch 'picture' and 'unknown' types
-      return 'i/';
     }
+
+    return match ($type) {
+      'video', 'audio' => 'av/',
+      'profile' => 'i/p/',
+      default => 'i/',
+    };
   }
 
   /**
@@ -899,19 +959,19 @@ class MultimediaUpload
    */
   protected function generateImageThumbnailURL(string $fileName, string $type): string
   {
-
     $scheme = $_SERVER['REQUEST_SCHEME'];
     $host = $_SERVER['HTTP_HOST'];
-    // We only support thumbnailing of images and profile pictures
-    $path = match ($type) {
-      'image' => $this->pro ? 'thumbnail/p/' : 'thumbnail/i/',
-      'picture' => $this->pro ? 'thumbnail/p/' : 'thumbnail/i/',
-      'profile' => 'thumbnail/i/p/',
-      default => $this->determinePrefix($type),
-    };
-    // Assemble the URL and return it
-    return $scheme . '://' . $host . '/' . $path . $fileName;
+    $thumbnailType = ($type === 'image' || $type === 'picture')
+      ? 'thumbnail/' . ($this->pro ? 'p/' : 'i/')
+      : 'thumbnail/i/p/';
+
+    $path = $type === 'profile'
+      ? $thumbnailType
+      : $this->determinePrefix($type);
+
+    return "{$scheme}://{$host}/{$path}{$fileName}";
   }
+
 
   /**
    * Summary of generateResponsiveImagesURL
@@ -925,16 +985,15 @@ class MultimediaUpload
     $host = $_SERVER['HTTP_HOST'];
     $resolutions = ['240p', '360p', '480p', '720p', '1080p'];
     $urls = [];
+
     foreach ($resolutions as $resolution) {
-      if ($type === 'image' || $type === 'picture') {
-        $path = $this->pro ? "responsive/{$resolution}/p/" : "responsive/{$resolution}/i/";
-      } else {
-        $path = $this->determinePrefix($type);
-      }
-      // Assemble the URL and return it
-      $urls[$resolution] = $scheme . '://' . $host . '/' . $path . $fileName;
+      $path = ($type === 'image' || $type === 'picture')
+        ? "responsive/{$resolution}/" . ($this->pro ? 'p/' : 'i/')
+        : $this->determinePrefix($type);
+
+      $urls[$resolution] = "{$scheme}://{$host}/{$path}{$fileName}";
     }
-    // Assemble the URL and return it
+
     return $urls;
   }
 
@@ -970,7 +1029,6 @@ class MultimediaUpload
         'image' => uniqid('tmp_'), // Temporary name, will be updated later
         // Private by default
         'flag' => 0, // 0 - private, 1 - public
-        'file_size' => $this->file['size'],
         'folder_id' => null, // null - root folder
       ], false); // false parameter to not commit yet
 
@@ -1029,7 +1087,7 @@ class MultimediaUpload
    * @param string $newName
    * @return bool
    */
-  protected function updateDatabasePro(int $id, string $newName, string | null $folder_name = null): bool
+  protected function updateDatabasePro(int $id, string $newName, int $fileSize, int $mediaWidth, int $mediaHeight, string $blurhash, string $fileMimeType, ?string $folder_name = null): bool
   {
     // Update the database with the new file name and size
     $folder_id = null;
@@ -1039,8 +1097,12 @@ class MultimediaUpload
     try {
       $this->usersImages->update($id, [
         'image' => $newName,
-        'size' => $this->file['size'], // Capture the file size after transformations
+        'file_size' => $fileSize,
         'folder_id' => $folder_id,
+        'media_width' => $mediaWidth,
+        'media_height' => $mediaHeight,
+        'blurhash' => $blurhash,
+        'mime_type' => $fileMimeType,
       ]);
     } catch (Exception $e) {
       error_log($e->getMessage());

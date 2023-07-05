@@ -17,14 +17,19 @@ class UsersImagesFolders extends DatabaseTable
     ];
   }
 
-  public function getFoldersByUsernpub(string $usernpub): array
+  /**
+   * Summary of getFolders
+   * @param string $usernpub
+   * @return array
+   */
+  public function getFolders(string $usernpub): array
   {
     $stmt = $this->db->prepare("SELECT * FROM {$this->tableName} WHERE usernpub = ?");
     $stmt->bind_param("s", $usernpub);
     $stmt->execute();
     $result = $stmt->get_result();
     $stmt->close();
-    return $result->fetch_assoc();
+    return $result->fetch_all(MYSQLI_ASSOC);
   }
 
   public function findFolderByNameOrCreate(string $folder_name): int

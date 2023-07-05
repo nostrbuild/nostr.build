@@ -47,7 +47,10 @@ class UploadsData extends DatabaseTable
       'upload_date' => v::dateTime(),
       'metadata' => v::json(),
       'file_size' => v::numericVal(),
-      'type' => v::in(['picture', 'video', 'unknown', 'profile'])
+      'type' => v::in(['picture', 'video', 'unknown', 'profile']),
+      'media_width' => v::optional(v::intType()->min(0)),
+      'media_height' => v::optional(v::intType()->min(0)),
+      'blurhash' => v::optional(v::stringType()->length(1, 255)),
     ];
   }
 
