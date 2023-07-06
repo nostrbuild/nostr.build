@@ -90,12 +90,12 @@ class MultimediaUpload
     $this->userNpub = $userNpub;
     $this->pro = $pro;
     $this->uploadsData = new UploadsData($db);
-    if ($pro) {
+    if ($this->pro) {
       $this->usersImages = new UsersImages($db);
       $this->usersImagesFolders = new UsersImagesFolders($db);
     }
     // Check if the upload is pro and userNpub is not set or empty
-    if ($pro && empty($this->userNpub)) {
+    if ($this->pro && empty($this->userNpub)) {
       throw new Exception('UserNpub is required for pro uploads');
     }
   }
