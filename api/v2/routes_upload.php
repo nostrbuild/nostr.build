@@ -1,7 +1,5 @@
 <?php
 require_once $_SERVER['DOCUMENT_ROOT'] . '/config.php';
-require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/MultimediaUpload.class.php';
-require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/S3Service.class.php';
 require_once __DIR__ . '/helper_functions.php';
 
 require $_SERVER['DOCUMENT_ROOT'] . '/vendor/autoload.php';
@@ -9,9 +7,6 @@ require $_SERVER['DOCUMENT_ROOT'] . '/vendor/autoload.php';
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
 use Slim\Routing\RouteCollectorProxy;
-
-global $awsConfig;
-global $link;
 
 /**
  * Route to upload a file via from or URL
@@ -171,18 +166,19 @@ Actual full output of the upload API with multiple files:
 
 */
 
-$app->group('/upload', function (RouteCollectorProxy $group) use ($awsConfig, $link) {
-  // Instantiate S3Service
-  $s3 = new S3Service($awsConfig);
-  $upload = new MultimediaUpload($link, $s3);
+$app->group('/upload', function (RouteCollectorProxy $group) {
   // Route to upload file(s) via form
-  $group->post('/files', function (Request $request, Response $response) use ($upload) {
+  $group->post('/files', function (Request $request, Response $response) {
     $files = $request->getUploadedFiles();
+
+    // Log request route
+    error_log('Route: /upload/files');
 
     // If no files are provided, return a 400 response
     if (empty($files)) {
       return jsonResponse($response, 'error', 'No files provided', new stdClass(), 400);
     }
+    $upload = $this->get('freeUpload');
 
     try {
       // Handle exceptions thrown by the MultimediaUpload class
@@ -214,13 +210,14 @@ $app->group('/upload', function (RouteCollectorProxy $group) use ($awsConfig, $l
   }
 
   */
-  $group->post('/profile', function (Request $request, Response $response) use ($upload) {
+  $group->post('/profile', function (Request $request, Response $response) {
     $files = $request->getUploadedFiles();
 
     // If no files or more than one file are provided, return a 400 response
     if (empty($files) || count($files) > 1) {
       return jsonResponse($response, 'error', 'Either no file or more than one file provided. Only one file is expected.', new stdClass(), 400);
     }
+    $upload = $this->get('freeUpload');
 
     try {
       // Handle exceptions thrown by the MultimediaUpload class
@@ -233,13 +230,14 @@ $app->group('/upload', function (RouteCollectorProxy $group) use ($awsConfig, $l
   });
 
   // Route to upload a file via URL
-  $group->post('/url', function (Request $request, Response $response) use ($upload) {
+  $group->post('/url', function (Request $request, Response $response) {
     $data = $request->getParsedBody();
 
     // If no URL is provided, return a 400 response
     if (empty($data['url'])) {
       return jsonResponse($response, 'error', 'No URL provided', new stdClass(), 400);
     }
+    $upload = $this->get('freeUpload');
 
     try {
       // Handle exceptions thrown by the MultimediaUpload class
