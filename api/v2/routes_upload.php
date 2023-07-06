@@ -2,6 +2,7 @@
 require_once $_SERVER['DOCUMENT_ROOT'] . '/config.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/MultimediaUpload.class.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/S3Service.class.php';
+require_once __DIR__ . '/helper_functions.php';
 
 require $_SERVER['DOCUMENT_ROOT'] . '/vendor/autoload.php';
 
@@ -11,31 +12,6 @@ use Slim\Routing\RouteCollectorProxy;
 
 global $awsConfig;
 global $link;
-// Instantiate S3Service
-$s3 = new S3Service($awsConfig);
-$upload = new MultimediaUpload($link, $s3);
-
-/**
- * Summary of jsonResponse
- * @param Psr\Http\Message\ResponseInterface $response
- * @param string $status
- * @param string $message
- * @param mixed $data
- * @param int $statusCode
- * @return Psr\Http\Message\ResponseInterface
- * Utility function to return a JSON response
- */
-function jsonResponse(Response $response, string $status, string $message, $data, int $statusCode = 200): Response
-{
-  $responseBody = [
-    'status' => $status,
-    'message' => $message,
-    'data' => $data,
-  ];
-  $response->getBody()->write(json_encode($responseBody));
-  return $response->withHeader('Content-Type', 'application/json')->withStatus($statusCode);
-}
-
 
 /**
  * Route to upload a file via from or URL
@@ -195,7 +171,10 @@ Actual full output of the upload API with multiple files:
 
 */
 
-$app->group('/upload', function (RouteCollectorProxy $group) use ($upload) {
+$app->group('/upload', function (RouteCollectorProxy $group) use ($awsConfig, $link) {
+  // Instantiate S3Service
+  $s3 = new S3Service($awsConfig);
+  $upload = new MultimediaUpload($link, $s3);
   // Route to upload file(s) via form
   $group->post('/files', function (Request $request, Response $response) use ($upload) {
     $files = $request->getUploadedFiles();
