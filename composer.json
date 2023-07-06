@@ -6,6 +6,7 @@
         "kornrunner/blurhash": "^1.2",
         "slim/psr7": "^1.6",
         "respect/validation": "^2.2",
-        "hashids/hashids": "^5.0"
+        "hashids/hashids": "^5.0",
+        "php-di/php-di": "^7.0"
     }
 }

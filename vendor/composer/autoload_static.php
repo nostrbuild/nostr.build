@@ -17,6 +17,7 @@ class ComposerStaticInitd84b9ad25db27c0cce0ffcf6c71b28b7
         '2df68f9e79c919e2d88506611769ed2e' => __DIR__ . '/..' . '/respect/stringifier/src/stringify.php',
         'a4a119a56e50fbb293281d9a48007e0e' => __DIR__ . '/..' . '/symfony/polyfill-php80/bootstrap.php',
         '8a9dc1de0ca7e01f3e08231539562f61' => __DIR__ . '/..' . '/aws/aws-sdk-php/src/functions.php',
+        'b33e3d135e5d9e47d845c576147bda89' => __DIR__ . '/..' . '/php-di/php-di/src/functions.php',
     );
 
     public static $prefixLengthsPsr4 = array (
@@ -46,9 +47,17 @@ class ComposerStaticInitd84b9ad25db27c0cce0ffcf6c71b28b7
             'Psr\\Http\\Client\\' => 16,
             'Psr\\Container\\' => 14,
         ),
+        'L' => 
+        array (
+            'Laravel\\SerializableClosure\\' => 28,
+        ),
         'J' => 
         array (
             'JmesPath\\' => 9,
+        ),
+        'I' => 
+        array (
+            'Invoker\\' => 8,
         ),
         'H' => 
         array (
@@ -64,6 +73,10 @@ class ComposerStaticInitd84b9ad25db27c0cce0ffcf6c71b28b7
         array (
             'Fig\\Http\\Message\\' => 17,
             'FastRoute\\' => 10,
+        ),
+        'D' => 
+        array (
+            'DI\\' => 3,
         ),
         'A' => 
         array (
@@ -130,9 +143,17 @@ class ComposerStaticInitd84b9ad25db27c0cce0ffcf6c71b28b7
         array (
             0 => __DIR__ . '/..' . '/psr/container/src',
         ),
+        'Laravel\\SerializableClosure\\' => 
+        array (
+            0 => __DIR__ . '/..' . '/laravel/serializable-closure/src',
+        ),
         'JmesPath\\' => 
         array (
             0 => __DIR__ . '/..' . '/mtdowling/jmespath.php/src',
+        ),
+        'Invoker\\' => 
+        array (
+            0 => __DIR__ . '/..' . '/php-di/invoker/src',
         ),
         'Hashids\\' => 
         array (
@@ -157,6 +178,10 @@ class ComposerStaticInitd84b9ad25db27c0cce0ffcf6c71b28b7
         'FastRoute\\' => 
         array (
             0 => __DIR__ . '/..' . '/nikic/fast-route/src',
+        ),
+        'DI\\' => 
+        array (
+            0 => __DIR__ . '/..' . '/php-di/php-di/src',
         ),
         'Aws\\' => 
         array (
