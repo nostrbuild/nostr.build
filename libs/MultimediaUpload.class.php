@@ -125,13 +125,13 @@ class MultimediaUpload
     $this->filesArray = $this->restructureFilesArray($files, $tempDirectory);
   }
 
-  public function setPsrFiles(array $files, string $tempDirectory = null): void
+  public function setPsrFiles(array $files, mixed $meta = [], string $tempDirectory = null): void
   {
     // We make temp directory optional, and use the system's temp directory by default
     if ($tempDirectory === null) {
       $tempDirectory = sys_get_temp_dir();
     }
-    $this->filesArray = $this->restructurePsrFilesArray($files, $tempDirectory);
+    $this->filesArray = $this->restructurePsrFilesArray($files, $meta, $tempDirectory);
   }
 
   /**
@@ -226,26 +226,30 @@ class MultimediaUpload
     return $restructured;
   }
 
+
   /**
    * Summary of restructurePsrFilesArray
-   * @param mixed $files
-   * @param mixed $tempDirectory
+   * @param array $files
+   * @param array $meta
+   * @param string $tempDirectory
    * @return array
    */
-  protected function restructurePsrFilesArray($files, $tempDirectory): array
+  protected function restructurePsrFilesArray(mixed $files, mixed $meta, string $tempDirectory): array
   {
     $restructured = [];
 
-    foreach ($files as $file) {
+    foreach ($files as $index => $file) {
       // check if $file is an array and handle accordingly
       if (is_array($file)) {
-        foreach ($file as $individualFile) {
+        foreach ($file as $i => $individualFile) {
           // The $individualFile here is an instance of UploadedFileInterface
-          $restructured[] = $this->handlePsrUploadedFile('APIv2', $individualFile, $tempDirectory);
+          $fileMeta = isset($meta[$index]) ? $meta[$index] : null;
+          $restructured[] = $this->handlePsrUploadedFile('APIv2', $individualFile, $tempDirectory, $fileMeta);
         }
       } else {
         // The $file here is an instance of UploadedFileInterface
-        $restructured[] = $this->handlePsrUploadedFile('APIv2', $file, $tempDirectory);
+        $fileMeta = is_array($meta) ? $meta : [];
+        $restructured[] = $this->handlePsrUploadedFile('APIv2', $file, $tempDirectory, $fileMeta);
       }
     }
 
@@ -254,12 +258,13 @@ class MultimediaUpload
 
   /**
    * Summary of handlePsrUploadedFile
-   * @param mixed $fileInputName
+   * @param string $fileInputName
    * @param mixed $file
-   * @param mixed $tempDirectory
+   * @param string $tempDirectory
+   * @param mixed $metadata
    * @return array
    */
-  private function handlePsrUploadedFile($fileInputName, $file, $tempDirectory): array
+  private function handlePsrUploadedFile(string $fileInputName, mixed $file, string $tempDirectory, mixed $metadata): array
   {
     $tempFilePath = $tempDirectory . '/' . uniqid('file_upload_');
 
@@ -273,6 +278,7 @@ class MultimediaUpload
       'tmp_name' => $tempFilePath,
       'error' => $file->getError(),
       'size' => $file->getSize(),
+      'metadata' => $metadata, // Include the metadata for the file
     ];
   }
 
@@ -393,6 +399,7 @@ class MultimediaUpload
     // Wrap in a try-catch block to catch any exceptions and handle what we can
     // Loop through the files array that was passed in
     foreach ($this->filesArray as $file) {
+      error_log('Processing file: ' . print_r($file, true) . PHP_EOL);
       try {
         // Begin a database transaction, so that we can rollback if anything fails
         $this->db->begin_transaction();
@@ -739,27 +746,34 @@ class MultimediaUpload
 
     // Validate if file upload is OK
     if ($this->file['error'] !== UPLOAD_ERR_OK) {
+      error_log('File upload error: ' . $this->file['error']);
       return false;
     }
 
     // Check if the file size exceeds the upload limit for free users
     if (!$this->pro && $this->file['size'] > $freeUploadLimit) {
+      error_log('File size exceeds the limit of ' . formatSizeUnits($freeUploadLimit));
       return false;
     }
 
     // Check if file has been rejected for free users
     if (!$this->pro && $this->uploadsData->checkRejected($this->file['sha256'])) {
+      error_log('File has been flagged as rejected');
       return false;
     }
 
     // Calculate remaining space and check if file size exceeds the remaining space for pro users
     if ($this->pro) {
       $totalUsed = $this->usersImages->getTotalSize($this->userNpub);
-      // Allow for 2% overage to account for any optimizations
-      $accountLevelQuota = (int)($storageLimits[$_SESSION['acctlevel']]['limit'] ?? 5 * 1024) * 1.02;
-      $remainingSpace = $accountLevelQuota - $totalUsed;
+      error_log('Total used: ' . formatSizeUnits($totalUsed));
+      $accountLimit = (int)($storageLimits[$_SESSION['acctlevel']]['limit']);
+      // Handle special case of '-1' for unlimited storage
+      $accountLimit = $accountLimit === -1 ? PHP_INT_MAX : $accountLimit;
+      $remainingSpace = $accountLimit - $totalUsed;
+      error_log('Remaining space: ' . formatSizeUnits($remainingSpace));
 
       if ($this->file['size'] > $remainingSpace) {
+        error_log('File size exceeds the remaining space of ' . formatSizeUnits($remainingSpace));
         return false;
       }
     }
