@@ -1061,7 +1061,7 @@ class MultimediaUpload
    * @param string $type
    * @param int $media_width
    * @param int $media_height
-   * @param string $blurhash
+   * @param mixed $blurhash
    * @return int|bool
    */
   protected function storeInDatabaseFree(
@@ -1071,7 +1071,7 @@ class MultimediaUpload
     string $type = 'unknown',
     int $media_width = 0,
     int $media_height = 0,
-    string $blurhash = null,
+    ?string $blurhash = null,
   ): int | bool {
     // Insert the file data into the database but don't commit yet
     try {
@@ -1099,10 +1099,24 @@ class MultimediaUpload
    * Summary of updateDatabasePro
    * @param int $id
    * @param string $newName
+   * @param int $fileSize
+   * @param int $mediaWidth
+   * @param int $mediaHeight
+   * @param mixed $blurhash
+   * @param string $fileMimeType
+   * @param mixed $folder_name
    * @return bool
    */
-  protected function updateDatabasePro(int $id, string $newName, int $fileSize, int $mediaWidth, int $mediaHeight, string $blurhash, string $fileMimeType, ?string $folder_name = null): bool
-  {
+  protected function updateDatabasePro(
+    int $id,
+    string $newName,
+    int $fileSize,
+    int $mediaWidth,
+    int $mediaHeight,
+    ?string $blurhash,
+    string $fileMimeType,
+    ?string $folder_name = null
+  ): bool {
     // Update the database with the new file name and size
     $folder_id = null;
     if ($folder_name !== null) {
