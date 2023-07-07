@@ -4,6 +4,7 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/config.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/MultimediaUpload.class.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/S3Service.class.php';
 
+// TODO: THIS WILL BE GONE IN THE FUTURE RELEASES
 // Fetch statistics
 $uploadsData = new UploadsData($link);
 $stats = $uploadsData->getStats();
