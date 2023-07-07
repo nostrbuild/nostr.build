@@ -1,50 +1,51 @@
 <?php
-    // Initialize the session
-    require_once $_SERVER['DOCUMENT_ROOT'] . '/config.php';
-    require_once $_SERVER['DOCUMENT_ROOT'] . '/functions/session.php';
-    require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/permissions.class.php';
+// Initialize the session
+require_once $_SERVER['DOCUMENT_ROOT'] . '/config.php';
+require_once $_SERVER['DOCUMENT_ROOT'] . '/functions/session.php';
+require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/permissions.class.php';
 
-    $perm = new Permission();
+global $link;
+$perm = new Permission();
 
-    // Check if the user is logged in, if not then redirect to login page
-    if (!$perm->validateLoggedin()) {
-        header("location: /login");
-        $link->close();
-        exit;
-    }
+// Check if the user is logged in, if not then redirect to login page
+if (!$perm->validateLoggedin()) {
+    header("location: /login");
+    $link->close();
+    exit;
+}
 
-    // Assign session values
-    $user =  $_SESSION["usernpub"];
-    $ppic = $_SESSION["ppic"];
-    $nym = $_SESSION["nym"];
-    $wallet = $_SESSION["wallet"];
+// Assign session values
+$user =  $_SESSION["usernpub"];
+$ppic = $_SESSION["ppic"];
+$nym = $_SESSION["nym"];
+$wallet = $_SESSION["wallet"];
 
-    // Handle form submission
-    if ($_SERVER["REQUEST_METHOD"] == "POST") {
-        $nym = $_POST['nym'] ?? $nym;
-        $ppic = $_POST['ppic'] ?? $ppic;
-        $wallet = $_POST['wallet'] ?? $wallet;
+// Handle form submission
+if ($_SERVER["REQUEST_METHOD"] == "POST") {
+    $nym = $_POST['nym'] ?? $nym;
+    $ppic = $_POST['ppic'] ?? $ppic;
+    $wallet = $_POST['wallet'] ?? $wallet;
 
-        // Prepare SQL statement to update users
-        if ($stmt = $link->prepare("UPDATE users SET nym=?, ppic=?, wallet=? WHERE usernpub=?")) {
-            $stmt->bind_param("ssss", $nym, $ppic, $wallet, $user);
+    // Prepare SQL statement to update users
+    if ($stmt = $link->prepare("UPDATE users SET nym=?, ppic=?, wallet=? WHERE usernpub=?")) {
+        $stmt->bind_param("ssss", $nym, $ppic, $wallet, $user);
 
-            // Attempt to execute prepared statement
-            if ($stmt->execute()) {
-                echo "Updated successfully!";
-                header("location: /account");
-            } else {
-                echo "Error updating: " . $link->error;
-            }
-
-            // Close statement
-            $stmt->close();
+        // Attempt to execute prepared statement
+        if ($stmt->execute()) {
+            echo "Updated successfully!";
+            header("location: /account");
         } else {
-            echo "Error preparing SQL: " . $link->error;
+            echo "Error updating: " . $link->error;
         }
-        $link->close();
+
+        // Close statement
+        $stmt->close();
+    } else {
+        echo "Error preparing SQL: " . $link->error;
     }
-    ?>
+    $link->close();
+}
+?>
 <!DOCTYPE html>
 <html lang="en">
 

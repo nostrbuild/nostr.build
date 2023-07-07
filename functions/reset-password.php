@@ -1,53 +1,54 @@
-i<?php
-    require_once $_SERVER['DOCUMENT_ROOT'] . '/config.php';
-    require_once $_SERVER['DOCUMENT_ROOT'] . '/functions/session.php';
-    require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/permissions.class.php';
+<?php
+require_once $_SERVER['DOCUMENT_ROOT'] . '/config.php';
+require_once $_SERVER['DOCUMENT_ROOT'] . '/functions/session.php';
+require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/permissions.class.php';
 
-    $perm = new Permission();
+global $link;
+$perm = new Permission();
 
-    if (!$perm->validateLoggedin()) {
-        header("location: /login");
-        $link->close();
-        exit;
-    }
+if (!$perm->validateLoggedin()) {
+    header("location: /login");
+    $link->close();
+    exit;
+}
 
-    $new_password_err = $confirm_password_err = "";
+$new_password_err = $confirm_password_err = "";
 
-    if ($_SERVER["REQUEST_METHOD"] == "POST") {
-        $new_password = trim($_POST["new_password"] ?? '');
-        $confirm_password = trim($_POST["confirm_password"] ?? '');
+if ($_SERVER["REQUEST_METHOD"] == "POST") {
+    $new_password = trim($_POST["new_password"] ?? '');
+    $confirm_password = trim($_POST["confirm_password"] ?? '');
 
-        if (empty($new_password)) {
-            $new_password_err = "Please enter the new password.";
-        } elseif (!preg_match('/^(?=.*\d)(?=.*[A-Z])(?=.*[a-z])(?=.*[^a-zA-Z0-9])(?!.*\s).{8,}$/', $new_password)) {
-            $new_password_err = "Password must be at least 8 characters long and include at least one uppercase letter, one lowercase letter, one digit, and one special character.";
-        } elseif (empty($confirm_password)) {
-            $confirm_password_err = "Please confirm the password.";
-        } elseif ($new_password !== $confirm_password) {
-            $confirm_password_err = "Passwords did not match.";
-        } else {
-            $sql = "UPDATE users SET password = ? WHERE id = ?";
+    if (empty($new_password)) {
+        $new_password_err = "Please enter the new password.";
+    } elseif (!preg_match('/^(?=.*\d)(?=.*[A-Z])(?=.*[a-z])(?=.*[^a-zA-Z0-9])(?!.*\s).{8,}$/', $new_password)) {
+        $new_password_err = "Password must be at least 8 characters long and include at least one uppercase letter, one lowercase letter, one digit, and one special character.";
+    } elseif (empty($confirm_password)) {
+        $confirm_password_err = "Please confirm the password.";
+    } elseif ($new_password !== $confirm_password) {
+        $confirm_password_err = "Passwords did not match.";
+    } else {
+        $sql = "UPDATE users SET password = ? WHERE id = ?";
 
-            if ($stmt = $link->prepare($sql)) {
-                $hashed_password = password_hash($new_password, PASSWORD_DEFAULT);
-                $stmt->bind_param("si", $hashed_password, $_SESSION["id"]);
+        if ($stmt = $link->prepare($sql)) {
+            $hashed_password = password_hash($new_password, PASSWORD_DEFAULT);
+            $stmt->bind_param("si", $hashed_password, $_SESSION["id"]);
 
-                if ($stmt->execute()) {
-                    session_destroy();
-                    $link->close();
-                    header("location: /login");
-                    exit();
-                } else {
-                    echo "Oops! Something went wrong. Please try again later.";
-                }
-
-                $stmt->close();
+            if ($stmt->execute()) {
+                session_destroy();
+                $link->close();
+                header("location: /login");
+                exit();
+            } else {
+                echo "Oops! Something went wrong. Please try again later.";
             }
-        }
 
-        $link->close();
+            $stmt->close();
+        }
     }
-    ?>
+
+    $link->close();
+}
+?>
 
 <!DOCTYPE html>
 <html lang="en">

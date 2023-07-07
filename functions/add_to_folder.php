@@ -4,6 +4,7 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/config.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/functions/session.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/permissions.class.php';
 
+global $link;
 $perm = new Permission();
 
 // Check if the user is logged in, if not then redirect to login page
@@ -41,5 +42,3 @@ $link->close();
 
 header("location: /account");
 exit;
-
-?>
