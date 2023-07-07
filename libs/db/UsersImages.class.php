@@ -84,7 +84,8 @@ class UsersImages extends DatabaseTable
       ui.folder_id,
       ui.media_width,
       ui.media_height,
-      ui.blurhash
+      ui.blurhash,
+      ui.mime_type
     FROM {$this->tableName} ui
     WHERE ((? IS NULL AND ui.folder_id IS NULL) OR ui.folder_id = ?)
     AND ui.usernpub = ?
