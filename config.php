@@ -7,15 +7,16 @@ define('DB_PASSWORD', $_SERVER['DB_PASSWORD']);
 define('DB_NAME', $_SERVER['DB_NAME']);
 
 // TODO: It may be better move limits to a separate file so we do not create a link to the database every time
-// User Storage limits
+// Account storage limit configurations
 $storageLimits = [
-    '99' => ['limit' => -1, 'message' => 'no limit'],
-    '89' => ['limit' => 100, 'message' => '100MB'],
-    '5' => ['limit' => 5 * 1024, 'message' => '5GB'],
-    '3' => ['limit' => 5 * 1024, 'message' => '5GB'],
-    '2' => ['limit' => 10 * 1024, 'message' => '10GB'],
-    '1' => ['limit' => 20 * 1024, 'message' => '20GB'],
-    '0' => ['limit' => 5 * 1024, 'message' => 'unknown'],
+    '99' => ['limit' => -1, 'message' => 'Unlimited'],
+    '89' => ['limit' => 100 * 1024, 'message' => '100MiB'],
+    '5' => ['limit' => 5 * 1024 * 1024 * 1024, 'message' => '5GiB'],
+    '4' => ['limit' => 0, 'message' => 'No storage'],
+    '3' => ['limit' => 5 * 1024 * 1024 * 1024, 'message' => '5GiB'],
+    '2' => ['limit' => 10 * 1024 * 1024 * 1024, 'message' => '10GiB'],
+    '1' => ['limit' => 20 * 1024 * 1024 * 1024, 'message' => '20GiB'],
+    '0' => ['limit' => 5 * 1024 * 1024 * 1024, 'message' => 'unknown'],
 ];
 
 // Upload limits
