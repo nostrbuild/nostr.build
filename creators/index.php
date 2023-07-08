@@ -124,7 +124,7 @@ if (mysqli_error($link)) {
 			</a>
 
 			<a href="../login" class="nav_button">
-				<span><img src="../assets/nav/login.png" alt="login image" /> </span>
+				<span><img src="/assets/nav/login.png" alt="login image" /> </span>
 				Login
 			</a>
 		</nav>
@@ -177,6 +177,9 @@ if (mysqli_error($link)) {
 
 				while ($row_images = mysqli_fetch_array($result_images)) {
 					if ($count == $randId) {
+						if (substr($row_images['image'], 0, 8) != "https://") {
+							$row_images['image'] = "https://nostr.build/p/" . $row_images['image'];
+						}
 						$ext = pathinfo($row_images['image'], PATHINFO_EXTENSION);
 						$src = parse_url($row_images['image'], PHP_URL_PATH);
 						if ($src[0] !== '/') {

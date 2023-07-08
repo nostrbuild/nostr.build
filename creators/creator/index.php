@@ -206,6 +206,9 @@ while ($row = mysqli_fetch_array($result)) {
 			$allowed_img_ext = ["jpg", "webp", "jpeg", "avif", "heic", "gif", "png", "tiff", "jfif"];
 
 			while ($row = mysqli_fetch_array($result_images)) {
+				if (substr($row['image'], 0, 8) != "https://") {
+					$row['image'] = "https://nostr.build/p/" . $row['image'];
+				}
 				$ext = pathinfo($row['image'], PATHINFO_EXTENSION);
 
 				// Parse the URL and get only the path
