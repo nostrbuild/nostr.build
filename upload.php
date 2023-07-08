@@ -223,6 +223,10 @@ $total_size_gb = round($stats['total_size'] / (1024 * 1024 * 1024), 2); // Conve
 							<source src="<?= $uploadData['url'] ?>" type="video/mp4">
 						</video>
 					<?php
+					elseif (isset($_POST["submit_ppic"])) :
+					?>
+						<img style="max-width: 100%" height="250" src="<?= $uploadData['url'] ?>" alt="Profile image">
+					<?php
 					else :
 						// Map dimentions to API resolutions
 						$images = $uploadData['responsive'];
