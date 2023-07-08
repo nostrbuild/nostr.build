@@ -89,7 +89,7 @@ class S3Service
         'Key'    => $objectKey,
       ]);
 
-      if ($result['DeleteMarker'] != true) {
+      if ($result['@metadata']['statusCode'] != 204) {
         error_log("The object was not deleted.\n");
         return false;
       }
