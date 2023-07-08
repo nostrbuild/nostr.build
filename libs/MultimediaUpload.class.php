@@ -4,6 +4,7 @@ require_once $_SERVER['DOCUMENT_ROOT'] . "/libs/utils.funcs.php";
 require_once $_SERVER['DOCUMENT_ROOT'] . "/libs/S3Service.class.php";
 require_once $_SERVER['DOCUMENT_ROOT'] . "/libs/db/UploadsData.class.php";
 require_once $_SERVER['DOCUMENT_ROOT'] . "/libs/db/UsersImages.class.php";
+require_once $_SERVER['DOCUMENT_ROOT'] . "/libs/db/UsersImagesFolders.class.php";
 require_once $_SERVER['DOCUMENT_ROOT'] . "/config.php"; // Size limits
 
 // Vendor autoload
