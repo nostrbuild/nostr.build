@@ -765,14 +765,20 @@ class MultimediaUpload
 
     // Calculate remaining space and check if file size exceeds the remaining space for pro users
     if ($this->pro) {
+      // Calculate and log total used space
       $totalUsed = $this->usersImages->getTotalSize($this->userNpub);
       error_log('Total used: ' . formatSizeUnits($totalUsed));
-      $accountLimit = (int)($storageLimits[$_SESSION['acctlevel']]['limit']);
-      // Handle special case of '-1' for unlimited storage
+
+      // Determine account limit (handle '-1' as unlimited) and log it
+      $accountLimit = $storageLimits[$_SESSION['acctlevel']]['limit'] ?? 0;
       $accountLimit = $accountLimit === -1 ? PHP_INT_MAX : $accountLimit;
+      error_log('Account limit: ' . formatSizeUnits($accountLimit));
+
+      // Calculate remaining space and log it
       $remainingSpace = $accountLimit - $totalUsed;
       error_log('Remaining space: ' . formatSizeUnits($remainingSpace));
 
+      // Check if the file size exceeds the remaining space and log if it does
       if ($this->file['size'] > $remainingSpace) {
         error_log('File size exceeds the remaining space of ' . formatSizeUnits($remainingSpace));
         return false;
