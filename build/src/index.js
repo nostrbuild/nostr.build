@@ -216,7 +216,7 @@ const uppy = new Uppy({
     trigger: '#open-account-dropzone-button',
     showLinkToFileUploadResult: true,
     showProgressDetails: true,
-    note: 'Images, video and audio only, up to 15 MB each',
+    note: 'Images, video and audio only, up to your storage limit',
     fileManagerSelectionType: 'both',
     proudlyDisplayPoweredByUppy: false,
     theme: 'dark',
