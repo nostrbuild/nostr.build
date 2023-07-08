@@ -6,7 +6,7 @@ include "header.php";
    &emsp;- Adds profile image to a private folder<BR>
    &emsp;- Strips personal and location metadata<BR>
 </p>
-<form action="../upload.php" method="post" enctype="multipart/form-data">
+<form action="/upload.php" method="post" enctype="multipart/form-data">
    <BR>
    &ensp;<input type="file" name="fileToUpload" id="fileToUpload" style="color:#C0C0C0"> <BR><BR><BR><BR>
    &ensp;<input type="submit" value="Upload Image" name="submit_ppic">

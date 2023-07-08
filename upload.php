@@ -131,6 +131,9 @@ $total_size_gb = round($stats['total_size'] / (1024 * 1024 * 1024), 2); // Conve
 	try {
 		if (isset($_POST['img_url']) && !empty($_POST['img_url'])) {
 			$result = $upload->uploadFileFromUrl($_POST['img_url']);
+		} elseif (isset($_POST["submit_ppic"])) {
+			$upload->setFiles($_FILES);
+			$result = $upload->uploadProfilePicture();
 		} else {
 			$upload->setFiles($_FILES);
 			$result = $upload->uploadFiles();
