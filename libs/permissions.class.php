@@ -94,8 +94,8 @@ class Permission
    * To grant Moderator permissions, use the following SQL query (for now)
    * UPDATE users SET accflags = '{"canModerate": true, "canViewStats": false, "canManageUsers": false, "canEditContent": true}' WHERE usernpub = '<npub>';
    */
-  function hasPrivilege($privilege)
+  function hasPrivilege($privilege): bool
   {
-    return $this->isLoggedIn && isset($this->accFlags->{$privilege}) && $this->accFlags->{$privilege} === true;
+    return $this->isLoggedIn && isset($this->accFlags[$privilege]) && $this->accFlags[$privilege] === true;
   }
 }
