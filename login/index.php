@@ -67,6 +67,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                             $_SESSION["wallet"] = $wallet;
                             $_SESSION["flag"] = $flag;
                             $_SESSION["accflags"] = json_decode($accflags, true); // Account flags, e.g., moderator, etc.
+                            error_log("User " . $_SESSION["usernpub"] . " logged in successfully." . PHP_EOL);
+                            error_log("User " . $_SESSION["usernpub"] . " has the following permissions: " . print_r($_SESSION["accflags"], true) . PHP_EOL);
                             /**
                              * JSON:
                              * {
@@ -81,7 +83,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                              */
 
                             // Auto populate nym and ppic - Read npub1 user's JSON file, Decode JSON data into PHP array, all user data exists in 'data' object
-                            $api_url = 'https://nostrstuff.com/api/users/' . $user;
+                            $api_url = 'https://nostrstuff.com/api/users/' . $_SESSION["usernpub"];
 
                             try {
                                 $response_data = @file_get_contents($api_url);
