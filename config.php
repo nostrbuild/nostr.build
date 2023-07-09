@@ -16,7 +16,7 @@ $storageLimits = [
     '3' => ['limit' => 5 * 1024 * 1024 * 1024, 'message' => '5GiB'],
     '2' => ['limit' => 10 * 1024 * 1024 * 1024, 'message' => '10GiB'],
     '1' => ['limit' => 20 * 1024 * 1024 * 1024, 'message' => '20GiB'],
-    '0' => ['limit' => 5 * 1024 * 1024 * 1024, 'message' => 'unknown'],
+    '0' => ['limit' => 0, 'message' => 'No Strage'],
 ];
 
 // Upload limits
