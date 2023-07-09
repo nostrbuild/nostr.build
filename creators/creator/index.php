@@ -199,39 +199,39 @@ while ($row = mysqli_fetch_array($result)) {
 			<a class="donate_button" href="lightning:<?php echo $wallet; ?>">Donate ⚡</a>
 		</section>
 
-
 		<div style="display: flex; flex-flow: wrap;">
 			<?php
 			$allowed_video_ext = ["wmv", "mp4", "avi", "mp3", "mov", "webm"];
 			$allowed_img_ext = ["jpg", "webp", "jpeg", "avif", "heic", "gif", "png", "tiff", "jfif"];
 
 			while ($row = mysqli_fetch_array($result_images)) {
-				if (substr($row['image'], 0, 8) != "https://") {
-					$row['image'] = "https://nostr.build/p/" . $row['image'];
-				}
-				$ext = pathinfo($row['image'], PATHINFO_EXTENSION);
+				$image = $row['image'];
 
-				// Parse the URL and get only the path
-				$path = parse_url($row['image'], PHP_URL_PATH);
-				if ($path[0] != '/') {
-					$path = '/' . $path;
+				// Parse URL and get only the filename
+				$parsed_url = parse_url($image);
+				$filename = pathinfo($parsed_url['path'], PATHINFO_BASENAME);
+				$ext = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
+
+				// Construct new URL based on the file type
+				if (in_array($ext, $allowed_img_ext)) {
+					$new_url = "https://cdn.nostr.build/thumbnail/p/" . $filename;
+				} else {
+					// For other types (video and etc.), keep the path unchanged
+					$new_url = "https://cdn.nostr.build/p/" . $filename;
 				}
-				$image_url = htmlspecialchars($path);
+
+				$image_url = htmlspecialchars($new_url);
+
+				// Construct the link for the image
+				$link = "/p/" . $filename;
+				$link = htmlspecialchars($link);
 
 				$html = '<div class="image-container">';
 
 				if (in_array($ext, $allowed_video_ext)) {
-					$html .= '<video class="media" controls>
-                <source src="' . $image_url . '">
-              </video>';
-				} elseif (in_array($ext, $allowed_img_ext)) {
-					$html .= '<a href="' . $image_url . '" target="_blank">';
-					$html .= '<img loading="lazy" class="media" src="/thumbnail' . $image_url . '">';
-					$html .= '</a>';
+					$html .= '<video class="media" controls><source src="' . $image_url . '"></video>';
 				} else {
-					$html .= '<a href="' . $image_url . '" target="_blank">';
-					$html .= '<img loading="lazy" class="media" src="' . $image_url . '">';
-					$html .= '</a>';
+					$html .= '<a href="' . $link . '" target="_blank"><img loading="lazy" class="media" src="' . $image_url . '"></a>';
 				}
 
 				$html .= '</div>';
@@ -239,9 +239,7 @@ while ($row = mysqli_fetch_array($result)) {
 			}
 			?>
 		</div>
-
 	</main>
-
 	<?= include $_SERVER['DOCUMENT_ROOT'] . '/components/footer.php'; ?>
 	<script src="/scripts/images.js"></script>
 </body>

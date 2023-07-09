@@ -133,90 +133,54 @@ if (mysqli_error($link)) {
 	<main>
 		<h1>Creators</h1>
 		<div class="builders_container">
-
 			<?php
-			$all_row_users = $result_users;
-			// TODO: Replace with the globally defined array
 			$allowed_video_ext = ["wmv", "mp4", "avi", "mp3", "mov", "webm"];
 			$allowed_img_ext = ["jpg", "webp", "jpeg", "avif", "heic", "gif", "png", "tiff", "jfif"];
-			shuffle($all_row_users);
 
-			while ($row_users = array_pop($all_row_users)) {
-				$usernick = $row_users['usernpub'];
+			$stmt = mysqli_prepare($link, "SELECT u.*, i.image FROM users AS u 
+            INNER JOIN (SELECT *, RAND() AS r FROM users_images WHERE flag=1) AS i ON u.usernpub = i.usernpub
+            GROUP BY u.usernpub ORDER BY i.r");
+			mysqli_stmt_execute($stmt);
+			$result = mysqli_stmt_get_result($stmt);
 
-				// Prepare a select statement
-				$stmt = mysqli_prepare($link, "SELECT * FROM users WHERE usernpub=? GROUP BY usernpub");
+			while ($row = mysqli_fetch_array($result)) {
+				// Parse URL and get only the path
+				$parsed_url = parse_url($row['image']);
+				$filename = pathinfo($parsed_url['path'], PATHINFO_BASENAME);
+				$ext = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
 
-				// Bind variables to the prepared statement as parameters
-				mysqli_stmt_bind_param($stmt, "s", $param_usernpub);
-
-				// Set parameters
-				$param_usernpub = $usernick;
-
-				// Attempt to execute the prepared statement
-				mysqli_stmt_execute($stmt);
-				$result_usernames = mysqli_stmt_get_result($stmt);
-				$row_username = mysqli_fetch_array($result_usernames);
-				$username = $row_username[3];
-
-				$randId = (int) rand(0, $row_users['countImage'] - 1);
-				$count = 0;
-
-				// Prepare a select statement
-				$stmt = mysqli_prepare($link, "SELECT * FROM users_images WHERE flag=1 AND usernpub=?");
-
-				// Bind variables to the prepared statement as parameters
-				mysqli_stmt_bind_param($stmt, "s", $param_usernpub);
-
-				// Set parameters
-				$param_usernpub = $usernick;
-
-				// Attempt to execute the prepared statement
-				mysqli_stmt_execute($stmt);
-				$result_images = mysqli_stmt_get_result($stmt);
-
-				while ($row_images = mysqli_fetch_array($result_images)) {
-					if ($count == $randId) {
-						if (substr($row_images['image'], 0, 8) != "https://") {
-							$row_images['image'] = "https://nostr.build/p/" . $row_images['image'];
-						}
-						$ext = pathinfo($row_images['image'], PATHINFO_EXTENSION);
-						$src = parse_url($row_images['image'], PHP_URL_PATH);
-						if ($src[0] !== '/') {
-							$src = '/' . $src;
-						}
-						break;
-					}
-					$count++;
+				// Construct new URL based on the file type
+				if (in_array($ext, $allowed_img_ext)) {
+					$new_url = "https://cdn.nostr.build/thumbnail/p/" . $filename;
+				} else {
+					// For other types, keep the path unchanged
+					$new_url = "https://cdn.nostr.build/p/" . $filename;
 				}
 
-				echo '
-<figure class="builder_card">
-    <div class="card_header">
-        <figcaption class="card_title">' . htmlspecialchars($username) . '</figcaption>
-        <div class="info"> ' . mysqli_num_rows($result_images) . ' images</div>
-    </div>';
+				$src = htmlspecialchars($new_url);
 
-				$src = htmlspecialchars($src);
+				echo '<figure class="builder_card">
+            <div class="card_header">
+                <figcaption class="card_title">' . htmlspecialchars($row[3]) . '</figcaption>
+                <div class="info"> ' . $row['countImage'] . ' images</div>
+            </div>';
 
 				if (in_array($ext, $allowed_img_ext)) {
-					echo '<a href="/creators/creator/?user=' . htmlspecialchars($row_username[0]) . '"><img loading="lazy" style="max-height: 325px; max-width: 414px; align: middle" id="' . htmlspecialchars($usernick) . '" src="/thumbnail' . $src . '"></a>';
+					echo '<a href="/creators/creator/?user=' . htmlspecialchars($row[0]) . '"><img loading="lazy" style="max-height: 325px; max-width: 414px; align: middle" id="' . htmlspecialchars($row['usernpub']) . '" src="' . $src . '"></a>';
 				} elseif (in_array($ext, $allowed_video_ext)) {
-					echo '<a href="/creators/creator/?user=' . htmlspecialchars($row_username[0]) . '"><video style="max-height: 325px; max-width: 350px; align: center" controls preload="metadata">
-        <source id="' . htmlspecialchars($usernick) . '" src="' . $src . '" type="video/mp4"></a></video>';
+					echo '<a href="/creators/creator/?user=' . htmlspecialchars($row[0]) . '"><video style="max-height: 325px; max-width: 350px; align: center" controls preload="metadata"><source id="' . htmlspecialchars($row['usernpub']) . '" src="' . $src . '" type="video/mp4"></video></a>';
 				} else {
-					echo '<a href="/creators/creator/?user=' . htmlspecialchars($row_username[0]) . '"><img loading="lazy" style="max-height: 325px; max-width: 414px; align: middle" id="' . htmlspecialchars($usernick) . '" src="' . $src . '"></a>';
+					echo '<a href="/creators/creator/?user=' . htmlspecialchars($row[0]) . '"><img loading="lazy" style="max-height: 325px; max-width: 414px; align: middle" id="' . htmlspecialchars($row['usernpub']) . '" src="' . $src . '"></a>';
 				}
-				echo '
-</figure>
-</a>';
+
+				echo '</figure>';
 			}
+			?>
+		</div>
+	</main>
 
-			echo '</div>
-</main>';
-
-			include $_SERVER['DOCUMENT_ROOT'] . '/components/footer.php'; ?>
-			<script src="/scripts/index.js"></script>
+	include $_SERVER['DOCUMENT_ROOT'] . '/components/footer.php'; ?>
+	<script src="/scripts/index.js"></script>
 </body>
 
 </html>
