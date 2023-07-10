@@ -980,7 +980,7 @@ class MultimediaUpload
    */
   protected function generateImageThumbnailURL(string $fileName, string $type): string
   {
-    $scheme = $_SERVER['REQUEST_SCHEME'];
+    $scheme = 'https'; // We always use HTTPS
     $host = $_SERVER['HTTP_HOST'];
     $thumbnailType = ($type === 'image' || $type === 'picture')
       ? 'thumbnail/' . ($this->pro ? 'p/' : 'i/')
@@ -1002,7 +1002,7 @@ class MultimediaUpload
    */
   protected function generateResponsiveImagesURL(string $fileName, string $type): array
   {
-    $scheme = $_SERVER['REQUEST_SCHEME'];
+    $scheme = 'https'; // We always use HTTPS
     $host = $_SERVER['HTTP_HOST'];
     $resolutions = ['240p', '360p', '480p', '720p', '1080p'];
     $urls = [];
@@ -1026,7 +1026,7 @@ class MultimediaUpload
    */
   protected function generateMediaURL(string $fileName, string $type): string
   {
-    $scheme = $_SERVER['REQUEST_SCHEME'];
+    $scheme = 'https'; // We always use HTTPS
     $host = $_SERVER['HTTP_HOST'];
     // We only support thumbnailing of images and profile pictures
     $path = match ($type) {
