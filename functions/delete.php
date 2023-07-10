@@ -59,6 +59,13 @@ foreach ($idList as $index => $id) {
                 }
             }
         } elseif ($prefix == 'idr_') { // if it's a folder
+            // TODO: This is a temp hack to delete the folder while old folder structure is in place
+            // Delete the folder from users_images_folders table
+            $del_folder_stmt = mysqli_prepare($link, "DELETE FROM users_images_folders WHERE folder = ? AND usernpub = ?");
+            mysqli_stmt_bind_param($del_folder_stmt, "ss", $row['folder'], $_SESSION['usernpub']);
+            mysqli_stmt_execute($del_folder_stmt);
+            mysqli_stmt_close($del_folder_stmt);
+
             // Update all images from the same usernpub to have NULL in the folder column
             error_log("Updating images from the same usernpub to have NULL in the folder column: " . $row['folder'] . PHP_EOL);
             $update_stmt = mysqli_prepare($link, "UPDATE users_images SET folder = NULL WHERE usernpub = ? AND folder = ?");
