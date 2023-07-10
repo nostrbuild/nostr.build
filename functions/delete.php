@@ -80,10 +80,40 @@ foreach ($idList as $index => $id) {
             mysqli_stmt_close($del_stmt);
         }
     } else {
-        echo "Error: Record not found";
-        mysqli_stmt_close($stmt);
-        mysqli_close($link);
-        exit;
+        // TODO: Workaround, should be gone ASAP
+        $select_folder_stmt = mysqli_prepare($link, "SELECT * FROM users_images_folders WHERE id = ? AND usernpub = ?");
+        mysqli_stmt_bind_param($select_folder_stmt, "is", $id, $_SESSION['usernpub']);
+        mysqli_stmt_execute($select_folder_stmt);
+        $select_folder_result = mysqli_stmt_get_result($select_folder_stmt);
+        $row = null;
+        if ($select_folder_result && mysqli_num_rows($select_folder_result) > 0) {
+            $row = mysqli_fetch_array($select_folder_result);
+        } else {
+            echo "Error: No such image or folder";
+            mysqli_stmt_close($stmt);
+            mysqli_stmt_close($select_folder_stmt);
+            mysqli_close($link);
+            exit;
+        }
+
+        // Delete the folder from users_images_folders table
+        $del_folder_stmt = mysqli_prepare($link, "DELETE FROM users_images_folders WHERE id = ? AND usernpub = ?");
+        mysqli_stmt_bind_param($del_folder_stmt, "is", $id, $_SESSION['usernpub']);
+        mysqli_stmt_execute($del_folder_stmt);
+        mysqli_stmt_close($del_folder_stmt);
+
+        // Update all images from the same usernpub to have NULL in the folder column
+        error_log("Updating images from the same usernpub to have NULL in the folder column: " . $row['folder'] . PHP_EOL);
+        $update_stmt = mysqli_prepare($link, "UPDATE users_images SET folder = NULL WHERE usernpub = ? AND folder = ?");
+        mysqli_stmt_bind_param($update_stmt, "ss", $_SESSION['usernpub'], $row['folder']);
+        mysqli_stmt_execute($update_stmt);
+        mysqli_stmt_close($update_stmt);
+
+        // Delete the record with the ID
+        $del_stmt = mysqli_prepare($link, "DELETE FROM users_images WHERE folder = ? AND image = 'https://nostr.build/p/Folder.png' AND usernpub = ?");
+        mysqli_stmt_bind_param($del_stmt, "ss", $row['folder'], $_SESSION['usernpub']);
+        mysqli_stmt_execute($del_stmt);
+        mysqli_stmt_close($del_stmt);
     }
     mysqli_stmt_close($stmt);
 }
