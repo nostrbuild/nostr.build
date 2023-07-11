@@ -77,6 +77,15 @@ class MultimediaUpload
   protected $s3Service; // Instance of the S3Service class
   protected $userNpub; // Used for authenticated uploads.
   protected $pro; // Used to determine if the upload is pro or free
+  // Workaround for type matchin, needs fixing
+  protected $typeMap = [
+    'picture' => 'image',
+    'image' => 'image',
+    'video' => 'video',
+    'audio' => 'audio',
+    'profile' => 'profile_picture',
+    'unknown' => 'unknown',
+  ];
 
   /**
    * Summary of __construct
@@ -957,8 +966,9 @@ class MultimediaUpload
 
   protected function determinePrefix(string $type = 'unknown'): string
   {
+    $mappedType = $this->typeMap[$type] ?? $type;
     try {
-      return SiteConfig::getPath(($this->pro ? 'professional_account_' : '') . $type);
+      return SiteConfig::getPath(($this->pro ? 'professional_account_' : '') . $mappedType);
     } catch (Exception $e) {
       error_log($e->getMessage() . PHP_EOL . $e->getTraceAsString());
       return SiteConfig::getPath('unknown');
@@ -968,8 +978,9 @@ class MultimediaUpload
 
   protected function generateImageThumbnailURL(string $fileName, string $type): string
   {
+    $mappedType = $this->typeMap[$type] ?? $type;
     try {
-      return SiteConfig::getThumbnailUrl(($this->pro ? 'professional_account_' : '') . $type) . $fileName;
+      return SiteConfig::getThumbnailUrl(($this->pro ? 'professional_account_' : '') . $mappedType) . $fileName;
     } catch (Exception $e) {
       error_log($e->getMessage() . PHP_EOL . $e->getTraceAsString());
       return SiteConfig::getThumbnailUrl('unknown') . $fileName;
@@ -978,12 +989,13 @@ class MultimediaUpload
 
   protected function generateResponsiveImagesURL(string $fileName, string $type): array
   {
+    $mappedType = $this->typeMap[$type] ?? $type;
     $resolutions = ['240p', '360p', '480p', '720p', '1080p'];
     $urls = [];
 
     foreach ($resolutions as $resolution) {
       try {
-        $urls[$resolution] = SiteConfig::getResponsiveUrl(($this->pro ? 'professional_account_' : '') . $type, $resolution) . $fileName;
+        $urls[$resolution] = SiteConfig::getResponsiveUrl(($this->pro ? 'professional_account_' : '') . $mappedType, $resolution) . $fileName;
       } catch (Exception $e) {
         error_log($e->getMessage() . PHP_EOL . $e->getTraceAsString());
         $urls[$resolution] = SiteConfig::getResponsiveUrl('unknown', $resolution) . $fileName;
@@ -995,8 +1007,9 @@ class MultimediaUpload
 
   protected function generateMediaURL(string $fileName, string $type): string
   {
-    try{
-      return SiteConfig::getFullyQualifiedUrl(($this->pro ? 'professional_account_' : '') . $type) . $fileName;
+    $mappedType = $this->typeMap[$type] ?? $type;
+    try {
+      return SiteConfig::getFullyQualifiedUrl(($this->pro ? 'professional_account_' : '') . $mappedType) . $fileName;
     } catch (Exception $e) {
       error_log($e->getMessage() . PHP_EOL . $e->getTraceAsString());
       return SiteConfig::getFullyQualifiedUrl('unknown') . $fileName;

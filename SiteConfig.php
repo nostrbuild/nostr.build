@@ -16,7 +16,7 @@ class SiteConfig
       'path' => 'i/',
       'thumbnail_path' => 'thumbnail/',
       'responsive_path' => 'responsive/',
-      'use_cdn' => false,
+      'use_cdn' => true,
     ],
     'video' => [
       'cdn_host' => 'cdn.nostr.build',
@@ -37,7 +37,7 @@ class SiteConfig
       'path' => 'i/p/',
       'thumbnail_path' => '/', // not needed
       'responsive_path' => '/', // not needed
-      'use_cdn' => false,
+      'use_cdn' => true,
     ],
     'professional_account_image' => [
       'cdn_host' => 'cdn.nostr.build',
