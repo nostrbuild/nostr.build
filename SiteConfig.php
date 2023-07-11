@@ -147,6 +147,10 @@ class SiteConfig
     $base_url = self::getBaseUrl($mediaType);
     $thumbnail_path = self::CDN_CONFIGS[$mediaType]['thumbnail_path'];
     $path = self::getPath($mediaType);
+    // If media type doesn't support responsive images, return the original path
+    if ($thumbnail_path === '/' || $thumbnail_path === '') {
+      return self::getFullyQualifiedUrl($mediaType);
+    }
 
     return "{$base_url}{$thumbnail_path}{$path}";
   }
