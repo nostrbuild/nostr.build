@@ -49,61 +49,22 @@ if (isset($_GET['user'])) {
 
     $array = array('user_info' => array('nym' => $nym, 'ppic' => $ppic, 'wallet' => $wallet), 'images' => $imgarray);
 } else {
-    $stmt = $link->prepare("
-    SELECT 
-        u.nym as nym, 
-        u.usernpub as usernpub, 
-        RAND_IMAGES.countImage as countImage, 
-        RAND_IMAGES.image as image,
-        RAND_IMAGES.mime_type as mime_type
-    FROM 
-        users u 
-    INNER JOIN (
-        SELECT 
-            RAND_ROW.usernpub, 
-            COUNT_FLAG.countImage AS countImage, 
-            RAND_ROW.image AS image,
-            RAND_ROW.mime_type AS mime_type
-        FROM 
-            (
-                SELECT 
-                    usernpub, 
-                    image, 
-                    mime_type
-                FROM 
-                    (
-                        SELECT 
-                            usernpub, 
-                            image, 
-                            mime_type,
-                            @user_rank := IF(@current_user = usernpub, @user_rank + 1, 1) AS user_rank,
-                            @current_user := usernpub
-                        FROM 
-                            users_images, 
-                            (SELECT @current_user := NULL, @user_rank := NULL) r
-                        WHERE 
-                            flag=1 
-                        ORDER BY 
-                            usernpub, 
-                            RAND()
-                    ) ranked_images
-                WHERE 
-                    user_rank = 1
-            ) RAND_ROW 
+    $stmt = $link->prepare(
+        "SELECT u.*, i.image, i.mime_type, c.countImage
+        FROM users AS u
         INNER JOIN (
-            SELECT 
-                usernpub, 
-                COUNT(id) AS countImage
-            FROM 
-                users_images
-            WHERE 
-                flag=1 
-            GROUP BY 
-                usernpub
-        ) COUNT_FLAG ON RAND_ROW.usernpub = COUNT_FLAG.usernpub
-    ) RAND_IMAGES ON u.usernpub = RAND_IMAGES.usernpub
-    ORDER by RAND()
-");
+            SELECT *, ROW_NUMBER() OVER(PARTITION BY usernpub ORDER BY RAND()) as rn 
+            FROM users_images 
+            WHERE flag=1
+        ) AS i ON u.usernpub = i.usernpub
+        INNER JOIN (
+            SELECT usernpub, COUNT(*) as countImage 
+            FROM users_images
+            WHERE flag=1
+            GROUP BY usernpub
+        ) AS c ON u.usernpub = c.usernpub
+        WHERE i.rn = 1
+        ORDER BY RAND()");
 
     $stmt->execute();
     $result_users = $stmt->get_result();
