@@ -6,6 +6,7 @@ require_once $_SERVER['DOCUMENT_ROOT'] . "/libs/db/UploadsData.class.php";
 require_once $_SERVER['DOCUMENT_ROOT'] . "/libs/db/UsersImages.class.php";
 require_once $_SERVER['DOCUMENT_ROOT'] . "/libs/db/UsersImagesFolders.class.php";
 require_once $_SERVER['DOCUMENT_ROOT'] . "/config.php"; // Size limits
+require_once $_SERVER['DOCUMENT_ROOT'] . "/SiteConfig.php";
 
 // Vendor autoload
 require_once $_SERVER['DOCUMENT_ROOT'] . "/vendor/autoload.php";
@@ -954,87 +955,52 @@ class MultimediaUpload
     return $id === 0 ? hash_file('sha256', realpath($this->file['tmp_name'])) : $hashids->encode($id);
   }
 
-  /**
-   * Summary of determinePrefix
-   * @param string $type
-   * @return string
-   */
   protected function determinePrefix(string $type = 'unknown'): string
   {
-    if ($this->pro) {
-      return 'p/';
+    try {
+      return SiteConfig::getPath(($this->pro ? 'professional_account_' : '') . $type);
+    } catch (Exception $e) {
+      error_log($e->getMessage() . PHP_EOL . $e->getTraceAsString());
+      return SiteConfig::getPath('unknown');
     }
-
-    return match ($type) {
-      'video', 'audio' => 'av/',
-      'profile' => 'i/p/',
-      default => 'i/',
-    };
   }
 
-  /**
-   * Summary of generateImageThumbnailURL
-   * @param string $fileName
-   * @param string $type
-   * @return string
-   */
+
   protected function generateImageThumbnailURL(string $fileName, string $type): string
   {
-    $scheme = 'https'; // We always use HTTPS
-    $host = $_SERVER['HTTP_HOST'];
-    $thumbnailType = ($type === 'image' || $type === 'picture')
-      ? 'thumbnail/' . ($this->pro ? 'p/' : 'i/')
-      : 'thumbnail/i/p/';
-
-    $path = $type === 'profile'
-      ? $thumbnailType
-      : $this->determinePrefix($type);
-
-    return "{$scheme}://{$host}/{$path}{$fileName}";
+    try {
+      return SiteConfig::getThumbnailUrl(($this->pro ? 'professional_account_' : '') . $type) . $fileName;
+    } catch (Exception $e) {
+      error_log($e->getMessage() . PHP_EOL . $e->getTraceAsString());
+      return SiteConfig::getThumbnailUrl('unknown') . $fileName;
+    }
   }
 
-
-  /**
-   * Summary of generateResponsiveImagesURL
-   * @param string $fileName
-   * @param string $type
-   * @return array
-   */
   protected function generateResponsiveImagesURL(string $fileName, string $type): array
   {
-    $scheme = 'https'; // We always use HTTPS
-    $host = $_SERVER['HTTP_HOST'];
     $resolutions = ['240p', '360p', '480p', '720p', '1080p'];
     $urls = [];
 
     foreach ($resolutions as $resolution) {
-      $path = ($type === 'image' || $type === 'picture')
-        ? "responsive/{$resolution}/" . ($this->pro ? 'p/' : 'i/')
-        : $this->determinePrefix($type);
-
-      $urls[$resolution] = "{$scheme}://{$host}/{$path}{$fileName}";
+      try {
+        $urls[$resolution] = SiteConfig::getResponsiveUrl(($this->pro ? 'professional_account_' : '') . $type, $resolution) . $fileName;
+      } catch (Exception $e) {
+        error_log($e->getMessage() . PHP_EOL . $e->getTraceAsString());
+        $urls[$resolution] = SiteConfig::getResponsiveUrl('unknown', $resolution) . $fileName;
+      }
     }
 
     return $urls;
   }
 
-  /**
-   * Summary of generateMediaURL
-   * @param string $fileName
-   * @param string $type
-   * @return string
-   */
   protected function generateMediaURL(string $fileName, string $type): string
   {
-    $scheme = 'https'; // We always use HTTPS
-    $host = $_SERVER['HTTP_HOST'];
-    // We only support thumbnailing of images and profile pictures
-    $path = match ($type) {
-      'profile' => 'i/p/',
-      default => $this->determinePrefix($type),
-    };
-    // Assemble the URL and return it
-    return $scheme . '://' . $host . '/' . $path . $fileName;
+    try{
+      return SiteConfig::getFullyQualifiedUrl(($this->pro ? 'professional_account_' : '') . $type) . $fileName;
+    } catch (Exception $e) {
+      error_log($e->getMessage() . PHP_EOL . $e->getTraceAsString());
+      return SiteConfig::getFullyQualifiedUrl('unknown') . $fileName;
+    }
   }
 
   /**
