@@ -2,29 +2,7 @@
 require_once $_SERVER['DOCUMENT_ROOT'] . '/config.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/SiteConfig.php';
 
-// Create a prepared statement
-//TODO: use db classes for all SQL queries
-$stmt = mysqli_prepare($link, "SELECT COUNT(id) AS countImage, usernpub FROM users_images WHERE flag=1 GROUP BY usernpub");
-
-// Execute the statement
-mysqli_stmt_execute($stmt);
-
-// Bind the result variables
-mysqli_stmt_bind_result($stmt, $countImage, $usernpub);
-
-// Fetch the values into the bound variables
-$result_users = [];
-while (mysqli_stmt_fetch($stmt)) {
-	$result_users[] = ['countImage' => $countImage, 'usernpub' => $usernpub];
-}
-
-// Close the statement
-mysqli_stmt_close($stmt);
-
-// Check for errors
-if (mysqli_error($link)) {
-	die("ERROR: Could not execute:" . mysqli_error($link));
-}
+global $link;
 ?>
 
 <!DOCTYPE html>
@@ -136,47 +114,59 @@ if (mysqli_error($link)) {
 		<h1>Creators</h1>
 		<div class="builders_container">
 			<?php
-			$allowed_video_ext = ["wmv", "mp4", "avi", "mp3", "mov", "webm"];
-			$allowed_img_ext = ["jpg", "webp", "jpeg", "avif", "heic", "gif", "png", "tiff", "jfif"];
+			$stmt = $link->prepare("
+							SELECT u.*, i.image, i.mime_type FROM users AS u
+				INNER JOIN (
+						SELECT *, ROW_NUMBER() OVER(PARTITION BY usernpub ORDER BY RAND()) as rn 
+						FROM users_images 
+						WHERE flag=1
+				) AS i ON u.usernpub = i.usernpub
+				WHERE i.rn = 1
+			");
+			$stmt->execute();
+			$result = $stmt->get_result();
 
-			$stmt = mysqli_prepare($link, "SELECT u.*, i.image FROM users AS u 
-            INNER JOIN (SELECT *, RAND() AS r FROM users_images WHERE flag=1) AS i ON u.usernpub = i.usernpub
-            GROUP BY u.usernpub ORDER BY i.r");
-			mysqli_stmt_execute($stmt);
-			$result = mysqli_stmt_get_result($stmt);
-
-			while ($row = mysqli_fetch_array($result)) {
-				// Parse URL and get only the path
+			while ($row = $result->fetch_assoc()) :
+				// Parse URL and get only the filename
 				$parsed_url = parse_url($row['image']);
 				$filename = pathinfo($parsed_url['path'], PATHINFO_BASENAME);
-				$ext = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
+				// Extract the main type from the mime_type
+				$mime_main_type = explode('/', $row['mime_type'])[0];
 
-				// Construct new URL based on the file type
-				if (in_array($ext, $allowed_img_ext)) {
-					$new_url = "https://cdn.nostr.build/thumbnail/p/" . $filename;
-				} else {
-					// For other types, keep the path unchanged
-					$new_url = "https://cdn.nostr.build/p/" . $filename;
-				}
+				// Construct new URL based on the main mime_type
+				$new_url = SiteConfig::getThumbnailUrl('professional_account_' . $mime_main_type);
+				$new_url .= $filename;
 
 				$src = htmlspecialchars($new_url);
+				$userId = htmlspecialchars($row['id']);
+				$usernpub = htmlspecialchars($row['usernpub']);
+				$title = htmlspecialchars($row['nym']);
+			?>
+				<figure class="builder_card">
+					<div class="card_header">
+						<figcaption class="card_title"><?= $title ?></figcaption>
+						<div class="info"><?= $row['countImage'] ?> images</div>
+					</div>
 
-				echo '<figure class="builder_card">
-            <div class="card_header">
-                <figcaption class="card_title">' . htmlspecialchars($row[3]) . '</figcaption>
-                <div class="info"> ' . $row['countImage'] . ' images</div>
-            </div>';
-
-				if (in_array($ext, $allowed_img_ext)) {
-					echo '<a href="/creators/creator/?user=' . htmlspecialchars($row[0]) . '"><img loading="lazy" style="max-height: 325px; max-width: 414px; align: middle" id="' . htmlspecialchars($row['usernpub']) . '" src="' . $src . '"></a>';
-				} elseif (in_array($ext, $allowed_video_ext)) {
-					echo '<a href="/creators/creator/?user=' . htmlspecialchars($row[0]) . '"><video style="max-height: 325px; max-width: 350px; align: center" controls preload="metadata"><source id="' . htmlspecialchars($row['usernpub']) . '" src="' . $src . '" type="video/mp4"></video></a>';
-				} else {
-					echo '<a href="/creators/creator/?user=' . htmlspecialchars($row[0]) . '"><img loading="lazy" style="max-height: 325px; max-width: 414px; align: middle" id="' . htmlspecialchars($row['usernpub']) . '" src="' . $src . '"></a>';
-				}
-
-				echo '</figure>';
-			}
+					<a href="/creators/creator/?user=<?= $userId ?>">
+						<?php if ($mime_main_type === 'video') : ?>
+							<video style="max-height: 325px; max-width: 350px; align: center" controls preload="metadata">
+								<!-- Fake mime type to force the browser to use the video player -->
+								<source id="<?= $usernpub ?>" src="<?= $src ?>" type="video/mp4">
+							</video>
+						<?php elseif ($mime_main_type === 'audio') : ?>
+							<audio style="max-height: 325px; max-width: 350px; align: center" controls>
+								<source id="<?= $usernpub ?>" src="<?= $src ?>" type="<?= $row['mime_type'] ?>">
+							</audio>
+						<?php else : ?>
+							<!-- default to image if the type is not recognized -->
+							<img loading="lazy" style="max-height: 325px; max-width: 414px; align: middle" id="<?= $usernpub ?>" src="<?= $src ?>">
+						<?php endif; ?>
+					</a>
+				</figure>
+			<?php
+			endwhile;
+			$stmt->close();
 			?>
 		</div>
 	</main>
