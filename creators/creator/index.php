@@ -1,43 +1,33 @@
 <?php
 // TODO: Migrate to use Table class
 require_once $_SERVER['DOCUMENT_ROOT'] . '/config.php';
+require_once $_SERVER['DOCUMENT_ROOT'] . '/SiteConfig.php';
 
 $userId = $_GET['user'];
 
-// Prepare an SQL statement
-$stmt = $link->prepare("SELECT * FROM users WHERE id = ?");
+$stmt = $link->prepare("
+    SELECT users.id AS user_id, users_images.id AS image_id, users.*, users_images.* 
+    FROM users 
+    LEFT JOIN users_images ON users.usernpub = users_images.usernpub AND users_images.flag = 1
+    WHERE users.id = ? 
+    ORDER BY users_images.id DESC
+");
 $stmt->bind_param("s", $userId);
-
-// Execute the statement
-$stmt->execute();
-
-// Get the result
-$result_user = $stmt->get_result();
-
-$user = mysqli_fetch_array($result_user);
-$username = $user['usernpub'];
-
-// Prepare an SQL statement
-$stmt = $link->prepare("SELECT * FROM users_images WHERE usernpub = ? AND flag=1 ORDER BY id desc");
-$stmt->bind_param("s", $username);
-
-// Execute the statement
-$stmt->execute();
-
-// Get the result
-$result_images = $stmt->get_result();
-
-$stmt = $link->prepare("SELECT * FROM users WHERE usernpub = ?");
-$stmt->bind_param("s", $username);
 
 $stmt->execute();
 
 $result = $stmt->get_result();
 
-while ($row = mysqli_fetch_array($result)) {
-	$nym = $row['nym'];
-	$ppic = $row['ppic'];
-	$wallet = $row['wallet'];
+// Fetch all rows into an associative array
+$rows = $result->fetch_all(MYSQLI_ASSOC);
+
+$stmt->close();
+$link->close();
+
+if (!empty($rows)) {
+	$nym = $rows[0]['nym'];
+	$ppic = $rows[0]['ppic'];
+	$wallet = $rows[0]['wallet'];
 }
 ?>
 
@@ -50,12 +40,12 @@ while ($row = mysqli_fetch_array($result)) {
 	<meta name="description" content="nostr.build" />
 	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-	<link rel="stylesheet" href="../../styles/index.css" />
-	<link rel="stylesheet" href="../../styles/profile.css" />
-	<link rel="stylesheet" href="../../styles/header.css" />
-	<link rel="icon" href="../../assets/01.png">
+	<link rel="stylesheet" href="/styles/index.css" />
+	<link rel="stylesheet" href="/styles/profile.css" />
+	<link rel="stylesheet" href="/styles/header.css" />
+	<link rel="icon" href="/assets/01.png">
 
-	<title>nostr.build - <?php echo $nym; ?></title>
+	<title>nostr.build - <?= htmlentities($nym) ?></title>
 	<style>
 		.image-container {
 			margin: auto;
@@ -95,7 +85,7 @@ while ($row = mysqli_fetch_array($result)) {
 				</span>
 				Home
 			</a>
-			<a href="../../builders/" class="nav_button">
+			<a href="/builders/" class="nav_button">
 				<span>
 					<svg width="21" height="20" viewBox="0 0 21 20" fill="none" xmlns="http://www.w3.org/2000/svg">
 						<path fill-rule="evenodd" clip-rule="evenodd" d="M14.0774 5.24426C14.4029 4.91882 14.9305 4.91882 15.2559 5.24426L19.4226 9.41092C19.748 9.73633 19.748 10.264 19.4226 10.5894L15.2559 14.7561C14.9305 15.0815 14.4029 15.0815 14.0774 14.7561C13.752 14.4307 13.752 13.903 14.0774 13.5776L17.6549 10.0002L14.0774 6.42277C13.752 6.09733 13.752 5.56969 14.0774 5.24426Z" fill="url(#paint0_linear_220_715)" />
@@ -119,7 +109,7 @@ while ($row = mysqli_fetch_array($result)) {
 				</span>
 				Builders
 			</a>
-			<a href="../" class="nav_button active_button">
+			<a href="/creators" class="nav_button active_button">
 				<span>
 					<svg width="21" height="20" viewBox="0 0 21 20" fill="none" xmlns="http://www.w3.org/2000/svg">
 						<path opacity="0.12" d="M2.16669 10C2.16669 14.6023 5.89765 18.3333 10.5 18.3333C11.8808 18.3333 13 17.2141 13 15.8333V15.4167C13 15.0297 13 14.8362 13.0214 14.6737C13.1691 13.5518 14.0519 12.6691 15.1737 12.5214C15.3362 12.5 15.5297 12.5 15.9167 12.5H16.3334C17.7141 12.5 18.8334 11.3807 18.8334 10C18.8334 5.39763 15.1024 1.66667 10.5 1.66667C5.89765 1.66667 2.16669 5.39763 2.16669 10Z" fill="url(#paint0_linear_220_726)" />
@@ -154,32 +144,13 @@ while ($row = mysqli_fetch_array($result)) {
 				Creators
 			</a>
 
-			<a href="../../login/" class="nav_button">
-				<span><img src="../../assets/nav/login.png" alt="login image" /> </span>
+			<a href="/login/" class="nav_button">
+				<span><img src="/assets/nav/login.png" alt="login image" /> </span>
 				Login
 			</a>
 		</nav>
 	</header>
 	<main>
-		<!-- <ul class="information">
-				<li>
-					<span>907 </span>
-					page hits
-				</li>
-				<li>
-					<span>3.53 GB </span>
-					used
-				</li>
-				<li>
-					<span>3.477 </span>
-					pictures
-				</li>
-
-				<li>
-					<span>163 </span>
-					profile pictures
-				</li>
-			</ul> -->
 		<section class="title_section">
 			<h1>
 				Creators
@@ -194,50 +165,52 @@ while ($row = mysqli_fetch_array($result)) {
 						</linearGradient>
 					</defs>
 				</svg>
-				<span><?php echo $nym; ?></span>
+				<span><?= htmlentities($nym) ?></span>
 			</h1>
-			<a class="donate_button" href="lightning:<?php echo $wallet; ?>">Donate ⚡</a>
+			<a class="donate_button" href="lightning:<?= htmlentities($wallet) ?>">Donate ⚡</a>
 		</section>
 
 		<div style="display: flex; flex-flow: wrap;">
 			<?php
-			$allowed_video_ext = ["wmv", "mp4", "avi", "mp3", "mov", "webm"];
-			$allowed_img_ext = ["jpg", "webp", "jpeg", "avif", "heic", "gif", "png", "tiff", "jfif"];
-
-			while ($row = mysqli_fetch_array($result_images)) {
-				$image = $row['image'];
-
+			foreach ($rows as $row) :
 				// Parse URL and get only the filename
-				$parsed_url = parse_url($image);
+				$parsed_url = parse_url($row['image']);
 				$filename = pathinfo($parsed_url['path'], PATHINFO_BASENAME);
-				$ext = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
+				// Extract the main type from the mime_type
+				$mime_main_type = explode('/', $row['mime_type'])[0];
 
-				// Construct new URL based on the file type
-				if (in_array($ext, $allowed_img_ext)) {
-					$new_url = "https://cdn.nostr.build/thumbnail/p/" . $filename;
-				} else {
-					// For other types (video and etc.), keep the path unchanged
-					$new_url = "https://cdn.nostr.build/p/" . $filename;
-				}
-
-				$image_url = htmlspecialchars($new_url);
+				// Construct new URL based on the main mime_type
+				$new_url = SiteConfig::getThumbnailUrl('professional_account_' . $mime_main_type);
+				$new_url .= $filename;
+				$src = htmlspecialchars($new_url);
 
 				// Construct the link for the image
-				$link = "/p/" . $filename;
-				$link = htmlspecialchars($link);
-
-				$html = '<div class="image-container">';
-
-				if (in_array($ext, $allowed_video_ext)) {
-					$html .= '<video class="media" controls><source src="' . $image_url . '"></video>';
-				} else {
-					$html .= '<a href="' . $link . '" target="_blank"><img loading="lazy" class="media" src="' . $image_url . '"></a>';
-				}
-
-				$html .= '</div>';
-				echo $html;
-			}
+				$media_link = SiteConfig::getFullyQualifiedUrl('professional_account_' . $mime_main_type);
+				$media_link .= $filename;
+				$media_link = htmlspecialchars($media_link);
 			?>
+				<div class="image-container">
+					<a href="<?= $media_link ?>" target="_blank">
+						<?php if ($mime_main_type === 'video') : ?>
+							<video class="media" controls preload="metadata">
+								<!-- Fake mime type to force the browser to use the video player -->
+								<source src="<?= $src ?>" type="video/mp4">
+							</video>
+						<?php elseif ($mime_main_type === 'audio') : ?>
+							<audio class="media" controls>
+								<source src="<?= $src ?>" type="<?= $row['mime_type'] ?>">
+							</audio>
+						<?php else : ?>
+							<!-- default to image if the type is not recognized -->
+							<img loading="lazy" class="media" src="<?= $src ?>">
+						<?php endif; ?>
+					</a>
+				</div>
+			<?php
+			endforeach;
+			$stmt->close();
+			?>
+
 		</div>
 	</main>
 	<?= include $_SERVER['DOCUMENT_ROOT'] . '/components/footer.php'; ?>
