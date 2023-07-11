@@ -3,7 +3,6 @@
 .parcel-cache/
 node_modules/
 
-# WIP
-account/
+# Generated files
 scripts/dist/
 styles/twbuild.css
