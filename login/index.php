@@ -189,7 +189,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             <input placeholder="Your public key(npub)" type="text" name="usernpub" class="login_key <?= (!empty($usernpub_err)) ? 'is-invalid' : ''; ?>" value="<?= $usernpub; ?>">
             <input placeholder="Password" type="password" name="password" class="login_password <?= (!empty($password_err)) ? 'is-invalid' : ''; ?>">
             <input class="login_button" type="submit" value="Login">
-            <p class="sign_up_link">Don’t have an account? <a href="https://btcpay.nostr.build/apps/3wVEKS3ujs7H7a57DUbLDH4u891z/pos"> Sign up now </a></p>
+            <p class="sign_up_link">Don’t have an account? <a href="https://btcpay.nostr.build/apps/4Nyftv3DHxjJYanPEdyC2ikpNdmk/pos"> Sign up now </a></p>
         </form>
 
         <div class="warning">
