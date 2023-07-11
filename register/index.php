@@ -129,7 +129,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             <h1 class="login_title">Register</h1>
             <p class="login_text signup_text">
                 If you have not yet chosen and paid for your account, <br />
-                <a href="https://btcpay.nostr.build/apps/3wVEKS3ujs7H7a57DUbLDH4u891z/pos" class="link_to_create">please go here</a>
+                <a href="https://btcpay.nostr.build/apps/4Nyftv3DHxjJYanPEdyC2ikpNdmk/pos" class="link_to_create">please go here</a>
             </p>
 
             <input name="usernpub" placeholder="Your public key(npub)" class="login_key" type="text" class="text" class="form-control <?php echo (!empty($usernpub_err)) ? 'is-invalid' : ''; ?>" value="<?php echo $usernpub; ?>" />
