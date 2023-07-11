@@ -1,7 +1,9 @@
 <?php
 require_once $_SERVER['DOCUMENT_ROOT'] . '/config.php';
+require_once $_SERVER['DOCUMENT_ROOT'] . '/SiteConfig.php';
 
 // Create a prepared statement
+//TODO: use db classes for all SQL queries
 $stmt = mysqli_prepare($link, "SELECT COUNT(id) AS countImage, usernpub FROM users_images WHERE flag=1 GROUP BY usernpub");
 
 // Execute the statement
