@@ -11,6 +11,10 @@ use Slim\Middleware\ContentLengthMiddleware;
 
 require $_SERVER['DOCUMENT_ROOT'] . '/vendor/autoload.php';
 
+// Get user-agent
+$userAgent = $_SERVER['HTTP_USER_AGENT'];
+error_log('User agent: ' . $userAgent . PHP_EOL);
+
 // Create Container using PHP-DI
 $container = new Container();
 
