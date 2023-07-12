@@ -10,6 +10,7 @@ global $awsConfig;
 $s3 = new S3Service($awsConfig);
 // Instantiates MultimediaUpload class
 $upload = new MultimediaUpload($link, $s3);
+$upload->setApiClient('android'); // Special treatment, thanks NIP-94!
 // Set the $_FILES array or initiate file download from the URL
 $error = "Success";
 if (isset($_POST['img_url']) && !empty($_POST['img_url'])) {
