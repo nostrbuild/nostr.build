@@ -8,10 +8,10 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/permissions.class.php';
 $perm = new Permission();
 
 // Check if the user is not logged in, if not then redirect him to login page
-if (!$perm->validateLoggedin()) {
-    header("location: /login");
-    $link->close();
-    exit;
+if (!$perm->validatePermissionsLevelAny(1, 2, 3, 4) && !$perm->hasPrivilege('canModerate') && !$perm->isAdmin()) {
+	header("location: /login");
+	$link->close();
+	exit;
 }
 
 
