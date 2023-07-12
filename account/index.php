@@ -783,44 +783,14 @@ $userStorageRemaining = $userOverLimit ? 0 : $userStorageLimit - $storageUsed;
 			window.location.replace(`${ipAddress}?idList=${checkedList}`);
 		}
 
-		function clear() {
-			document.getElementById('fileToUpload');
-		}
-
-		function loading() {
-			if (document.getElementById('fileToUpload').value.length !== 0) {
-				document.getElementById('loadingDiv').style.display = 'block';
-
-				return true;
-			} else {
-				alert("No file selected!");
-
-				return false;
-			}
-		}
-
-		function uploadFile() {
-			document.getElementById('fileToUpload').addEventListener('change', function(e) {
-				const files = e.target.files;
-				if (files.length > 1) {
-					document.getElementById('fileChosen').textContent = files.length;
-					document.getElementById('fileChosen').textContent += " files are selected.";
-				} else
-				if (files.length == 1) {
-					document.getElementById('fileChosen').textContent = files[0].name;
-				}
-			})
-		}
-
-
 		// Get the modal
-		var modal = document.getElementById("myModal");
+		const modal = document.getElementById("myModal");
 
 		// Get the button that opens the modal
-		var btn = document.getElementById("myBtn");
+		const btn = document.getElementById("myBtn");
 
 		// Get the <span> element that closes the modal
-		var span = document.getElementsByClassName("close")[0];
+		const span = document.getElementsByClassName("close")[0];
 
 		// When the user clicks on the button, open the modal
 		btn.onclick = function() {
