@@ -18,6 +18,13 @@ class SiteConfig
       'responsive_path' => 'responsive/',
       'use_cdn' => true,
     ],
+    'android_image' => [
+      'cdn_host' => 'cdn.nostr.build',
+      'path' => 'i/',
+      'thumbnail_path' => 'thumbnail/',
+      'responsive_path' => 'responsive/',
+      'use_cdn' => false, // You want your NIP-94 to work, you got it!
+    ],
     'video' => [
       'cdn_host' => 'cdn.nostr.build',
       'path' => 'av/',
