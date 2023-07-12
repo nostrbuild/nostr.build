@@ -86,6 +86,8 @@ class MultimediaUpload
     'profile' => 'profile_picture',
     'unknown' => 'unknown',
   ];
+  // Per client handling of the file types
+  protected $apiClient;
 
   /**
    * Summary of __construct
@@ -967,6 +969,7 @@ class MultimediaUpload
   protected function determinePrefix(string $type = 'unknown'): string
   {
     $mappedType = $this->typeMap[$type] ?? $type;
+    $mappedType = $this->apiClient ? $this->apiClient . '_' . $mappedType : $mappedType;
     try {
       return SiteConfig::getPath(($this->pro ? 'professional_account_' : '') . $mappedType);
     } catch (Exception $e) {
@@ -979,6 +982,7 @@ class MultimediaUpload
   protected function generateImageThumbnailURL(string $fileName, string $type): string
   {
     $mappedType = $this->typeMap[$type] ?? $type;
+    $mappedType = $this->apiClient ? $this->apiClient . '_' . $mappedType : $mappedType;
     try {
       return SiteConfig::getThumbnailUrl(($this->pro ? 'professional_account_' : '') . $mappedType) . $fileName;
     } catch (Exception $e) {
@@ -990,6 +994,7 @@ class MultimediaUpload
   protected function generateResponsiveImagesURL(string $fileName, string $type): array
   {
     $mappedType = $this->typeMap[$type] ?? $type;
+    $mappedType = $this->apiClient ? $this->apiClient . '_' . $mappedType : $mappedType;
     $resolutions = ['240p', '360p', '480p', '720p', '1080p'];
     $urls = [];
 
@@ -1008,6 +1013,7 @@ class MultimediaUpload
   protected function generateMediaURL(string $fileName, string $type): string
   {
     $mappedType = $this->typeMap[$type] ?? $type;
+    $mappedType = $this->apiClient ? $this->apiClient . '_' . $mappedType : $mappedType;
     try {
       return SiteConfig::getFullyQualifiedUrl(($this->pro ? 'professional_account_' : '') . $mappedType) . $fileName;
     } catch (Exception $e) {
@@ -1141,4 +1147,20 @@ class MultimediaUpload
     }
     return true;
   }
+
+	/**
+	 * @param mixed $apiClient 
+	 * @return self
+	 */
+	public function setApiClient($apiClient): self {
+		$this->apiClient = $apiClient;
+		return $this;
+	}
+
+	/**
+	 * @return mixed
+	 */
+	public function getApiClient() {
+		return $this->apiClient;
+	}
 }
