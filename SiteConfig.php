@@ -11,19 +11,33 @@ class SiteConfig
   const ACCESS_SCHEME = 'https';
   const DOMAIN_NAME = 'nostr.build';
   const CDN_CONFIGS = [
-    'image' => [
-      'cdn_host' => 'cdn.nostr.build',
-      'path' => 'i/',
-      'thumbnail_path' => 'thumbnail/',
-      'responsive_path' => 'responsive/',
-      'use_cdn' => true,
-    ],
     'android_image' => [
       'cdn_host' => 'cdn.nostr.build',
       'path' => 'i/',
       'thumbnail_path' => 'thumbnail/',
       'responsive_path' => 'responsive/',
       'use_cdn' => false, // You want your NIP-94 to work, you got it!
+    ],
+    'android_video' => [
+      'cdn_host' => 'cdn.nostr.build',
+      'path' => 'av/',
+      'thumbnail_path' => 'thumbnail/',
+      'responsive_path' => 'responsive/',
+      'use_cdn' => false, // You want your NIP-94 to work, you got it!
+    ],
+    'android_audio' => [
+      'cdn_host' => 'cdn.nostr.build',
+      'path' => 'av/',
+      'thumbnail_path' => '/', // not possible or needed
+      'responsive_path' => '/', // not possible or needed
+      'use_cdn' => false,
+    ],
+    'image' => [
+      'cdn_host' => 'cdn.nostr.build',
+      'path' => 'i/',
+      'thumbnail_path' => 'thumbnail/',
+      'responsive_path' => 'responsive/',
+      'use_cdn' => true,
     ],
     'video' => [
       'cdn_host' => 'cdn.nostr.build',
