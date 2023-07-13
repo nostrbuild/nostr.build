@@ -288,7 +288,7 @@ $userStorageRemaining = $userOverLimit ? 0 : $userStorageLimit - $storageUsed;
 		</nav>
 
 		<div class="folder_info">
-			<p>Your folders (<span> <?= $foldercount; ?> </span>)</p>
+			<p>Your folders (<span> <?= $foldercount ?? 0 ?> </span>)</p>
 			<button class="edit_folder_button" onclick="window.location.href='?editfolder=true';">
 				<svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
 					<g clip-path="url(#clip0_419_1457)">
