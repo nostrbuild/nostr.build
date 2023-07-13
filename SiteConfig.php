@@ -21,8 +21,8 @@ class SiteConfig
     'android_video' => [
       'cdn_host' => 'cdn.nostr.build',
       'path' => 'av/',
-      'thumbnail_path' => 'thumbnail/',
-      'responsive_path' => 'responsive/',
+      'thumbnail_path' => '/',
+      'responsive_path' => '/',
       'use_cdn' => false, // You want your NIP-94 to work, you got it!
     ],
     'android_audio' => [
