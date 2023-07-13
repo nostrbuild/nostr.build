@@ -593,7 +593,7 @@ $userStorageRemaining = $userOverLimit ? 0 : $userStorageLimit - $storageUsed;
 									<img id="<?= $element ?>" src="<?= $image_url ?>" alt="" class="image <?= $images_row['flag'] ? "publicly-shared" : "" ?>" />
 								<?php elseif ($type == 'video') : ?>
 									<video id="img<?= $element ?>" src="<?= $image_url ?>" alt="" class="image <?= $images_row['flag'] ? "publicly-shared" : "" ?>" controls>
-										<source id="<?= $element ?>" src="<?= $image_url ?>" type="<?= $images_row['$mime_type'] ?>">
+										<source id="<?= $element ?>" src="<?= $image_url ?>" type="<?= $images_row['mime_type'] ?>">
 									</video>
 								<?php elseif ($type == 'audio') : ?>
 									<audio id="img<?= $element ?>" src="<?= $image_url ?>" alt="" class="image <?= $images_row['flag'] ? "publicly-shared" : "" ?>" controls>
