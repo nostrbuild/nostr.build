@@ -360,6 +360,4 @@
 		</nav>
 	</footer>
 </body>
-
 </html>
-<?php
