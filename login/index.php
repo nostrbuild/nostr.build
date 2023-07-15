@@ -221,8 +221,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         </div>
     </main>
     <?= include $_SERVER['DOCUMENT_ROOT'] . '/components/footer.php'; ?>
-    <script src="../scripts/index.js"></script>
-    <script src="../scripts/login.js"></script>
+    <script src="/scripts/index.js"></script>
+    <script src="/scripts/login.js"></script>
 </body>
-
 </html>
