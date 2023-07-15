@@ -222,6 +222,19 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     </main>
     <?= include $_SERVER['DOCUMENT_ROOT'] . '/components/footer.php'; ?>
     <script src="/scripts/index.js"></script>
-    <script src="/scripts/login.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', (event) => {
+            let closeButton = document.querySelector(".close");
+            if (closeButton) {
+                closeButton.addEventListener("click", () => {
+                    let warning = document.querySelector(".warning");
+                    if (warning) {
+                        warning.classList.add("hidden_element");
+                    }
+                });
+            }
+        });
+    </script>
 </body>
+
 </html>
