@@ -122,6 +122,7 @@ global $link;
 						WHERE flag=1
 				) AS i ON u.usernpub = i.usernpub
 				WHERE i.rn = 1
+				ORDER BY RAND()
 			");
 			$stmt->execute();
 			$result = $stmt->get_result();
