@@ -2,6 +2,7 @@
 require_once $_SERVER['DOCUMENT_ROOT'] . "/libs/imageproc.class.php";
 require_once $_SERVER['DOCUMENT_ROOT'] . "/libs/utils.funcs.php";
 require_once $_SERVER['DOCUMENT_ROOT'] . "/libs/S3Service.class.php";
+require_once $_SERVER['DOCUMENT_ROOT'] . "/libs/GifConverter.class.php";
 require_once $_SERVER['DOCUMENT_ROOT'] . "/libs/db/UploadsData.class.php";
 require_once $_SERVER['DOCUMENT_ROOT'] . "/libs/db/UsersImages.class.php";
 require_once $_SERVER['DOCUMENT_ROOT'] . "/libs/db/UsersImagesFolders.class.php";
@@ -40,6 +41,10 @@ global $storageLimits;
 
 class MultimediaUpload
 {
+  /**
+   * Summary of db
+   * @var 
+   */
   protected $db; // Instance of the mysqli class used to instantiate this table classes, e.g., UploadsData, UsersImages
   /**
    * The structure of the array for proccessed files:
@@ -69,15 +74,51 @@ class MultimediaUpload
    *     ]
    */
   protected $filesArray; // The $_FILES reconstructed array
+  /**
+   * Summary of uploadedFiles
+   * @var array
+   */
   protected $uploadedFiles = []; // Array of uploaded files with URLs and other info
+  /**
+   * Summary of file
+   * @var 
+   */
   protected $file; // Used for temporary storage of the current file in the loop
+  /**
+   * Summary of uploadsData
+   * @var 
+   */
   protected $uploadsData; // Used for free uploads; instance of the UploadsData class
+  /**
+   * Summary of usersImages
+   * @var 
+   */
   protected $usersImages; // Used for authenticated uploads; instance of the UsersImages class
+  /**
+   * Summary of usersImagesFolders
+   * @var 
+   */
   protected $usersImagesFolders; // Used for authenticated uploads; instance of the UsersImagesFolders class
+  /**
+   * Summary of s3Service
+   * @var 
+   */
   protected $s3Service; // Instance of the S3Service class
+  /**
+   * Summary of userNpub
+   * @var 
+   */
   protected $userNpub; // Used for authenticated uploads.
+  /**
+   * Summary of pro
+   * @var 
+   */
   protected $pro; // Used to determine if the upload is pro or free
   // Workaround for type matchin, needs fixing
+  /**
+   * Summary of typeMap
+   * @var array
+   */
   protected $typeMap = [
     'picture' => 'image',
     'image' => 'image',
@@ -87,7 +128,16 @@ class MultimediaUpload
     'unknown' => 'unknown',
   ];
   // Per client handling of the file types
+  /**
+   * Summary of apiClient
+   * @var 
+   */
   protected $apiClient;
+  /**
+   * Summary of gifConverter
+   * @var 
+   */
+  protected $gifConverter;
 
   /**
    * Summary of __construct
@@ -103,6 +153,7 @@ class MultimediaUpload
     $this->userNpub = $userNpub;
     $this->pro = $pro;
     $this->uploadsData = new UploadsData($db);
+    $this->gifConverter = new GifConverter();
     if ($this->pro) {
       $this->usersImages = new UsersImages($db);
       $this->usersImagesFolders = new UsersImagesFolders($db);
@@ -129,6 +180,12 @@ class MultimediaUpload
     }
   }
 
+  /**
+   * Summary of setFiles
+   * @param array $files
+   * @param string $tempDirectory
+   * @return void
+   */
   public function setFiles(array $files, string $tempDirectory = null): void
   {
     // We make temp directory optional, and use the system's temp directory by default
@@ -138,6 +195,13 @@ class MultimediaUpload
     $this->filesArray = $this->restructureFilesArray($files, $tempDirectory);
   }
 
+  /**
+   * Summary of setPsrFiles
+   * @param array $files
+   * @param mixed $meta
+   * @param string $tempDirectory
+   * @return void
+   */
   public function setPsrFiles(array $files, mixed $meta = [], string $tempDirectory = null): void
   {
     // We make temp directory optional, and use the system's temp directory by default
@@ -319,10 +383,8 @@ class MultimediaUpload
       $this->db->begin_transaction();
       $this->file = $this->filesArray[0];
       $fileType = detectFileExt($this->file['tmp_name']);
-      if ($fileType['type'] === 'image') {
-        $fileData = $this->processProfileImage();
-      } else {
-        throw new Exception('Invalid file type, only images are allowed');
+      if ($fileType['type'] !== 'image' && $fileType['type'] !== 'video') {
+        throw new Exception('Invalid file type, only images and videos are allowed');
       }
 
       // Calculate the sha256 hash of the file before any transformations
@@ -343,7 +405,9 @@ class MultimediaUpload
         throw new Exception('File validation failed');
       }
       // Perform image manipulations
-      $fileData = $this->processProfileImage();
+      $fileData = $this->processProfileImage($fileType);
+      // Rediscover filedata after conversion
+      $fileType = detectFileExt($this->file['tmp_name']);
 
       // We use original file hash as the file name, so that we can detect duplicates later
       $newFileName = $fileSha256 . '.' . $fileType['extension'];
@@ -391,6 +455,10 @@ class MultimediaUpload
       error_log("Profile picture upload failed: " . $e->getMessage());
       $this->db->rollback();
       return false;
+    }
+    // Remove temp file if exists
+    if (file_exists($this->file['tmp_name'])) {
+      unlink($this->file['tmp_name']);
     }
 
     // If we reached this far, upload was successful
@@ -932,25 +1000,46 @@ class MultimediaUpload
 
   /**
    * Summary of processProfileImage
+   * @param array $fileType
    * @return array
    * We resize and crop profile pictures, strip metadata, and optimize
    */
-  protected function processProfileImage(): array
+  protected function processProfileImage($fileType): array
   {
-    $img = new ImageProcessor($this->file['tmp_name']);
-    $img->fixImageOrientation()
-      ->cropSquare()
-      ->resizeImage(256, 256) // Resize to 256x256
-      ->reduceQuality(60) // 60 should be a good balance between quality and size
-      ->stripImageMetadata()
+    // Determine if submitted file is animated image or video
+    if (
+      ($fileType['type'] === 'image' && in_array($fileType['extension'], ['gif', 'apng'])) ||
+      $fileType['type'] === 'video'
+    ) {
+      // Process animated image or video with GifConverter class
+      $tmp_gif = $this->gifConverter->convertToGif($this->file['tmp_name']);
+      // Unlink old file.
+      if (file_exists($this->file['tmp_name'])) {
+        unlink($this->file['tmp_name']);
+      }
+      $this->file['tmp_name'] = $tmp_gif;
+    } else {
+      // Process static image with ImageProcessor class
+      $img = new ImageProcessor($this->file['tmp_name']);
+      $img->fixImageOrientation()
+        ->cropSquare()
+        ->resizeImage(256, 256) // Resize to 256x256
+        ->reduceQuality(60); // 60 should be a good balance between quality and size
+    }
+
+    // Common image processing steps
+    $img = $img ?? new ImageProcessor($this->file['tmp_name']);
+    $img->stripImageMetadata()
       ->save();
-    $img->optimiseImage(); // Optimise the image, can take upto 60 seconds
+    $img->optimiseImage();
+
     return [
       'metadata' => $img->getImageMetadata(),
       'dimensions' => $img->getImageDimensions(),
       'blurhash' => $img->calculateBlurhash(),
     ];
   }
+
 
   /**
    * Summary of generateFileName
@@ -966,6 +1055,11 @@ class MultimediaUpload
     return $id === 0 ? hash_file('sha256', realpath($this->file['tmp_name'])) : $hashids->encode($id);
   }
 
+  /**
+   * Summary of determinePrefix
+   * @param string $type
+   * @return string
+   */
   protected function determinePrefix(string $type = 'unknown'): string
   {
     $mappedType = $this->typeMap[$type] ?? $type;
@@ -979,6 +1073,12 @@ class MultimediaUpload
   }
 
 
+  /**
+   * Summary of generateImageThumbnailURL
+   * @param string $fileName
+   * @param string $type
+   * @return string
+   */
   protected function generateImageThumbnailURL(string $fileName, string $type): string
   {
     $mappedType = $this->typeMap[$type] ?? $type;
@@ -991,6 +1091,12 @@ class MultimediaUpload
     }
   }
 
+  /**
+   * Summary of generateResponsiveImagesURL
+   * @param string $fileName
+   * @param string $type
+   * @return array
+   */
   protected function generateResponsiveImagesURL(string $fileName, string $type): array
   {
     $mappedType = $this->typeMap[$type] ?? $type;
@@ -1010,6 +1116,12 @@ class MultimediaUpload
     return $urls;
   }
 
+  /**
+   * Summary of generateMediaURL
+   * @param string $fileName
+   * @param string $type
+   * @return string
+   */
   protected function generateMediaURL(string $fileName, string $type): string
   {
     $mappedType = $this->typeMap[$type] ?? $type;
@@ -1148,19 +1260,21 @@ class MultimediaUpload
     return true;
   }
 
-	/**
-	 * @param mixed $apiClient 
-	 * @return self
-	 */
-	public function setApiClient($apiClient): self {
-		$this->apiClient = $apiClient;
-		return $this;
-	}
+  /**
+   * @param mixed $apiClient 
+   * @return self
+   */
+  public function setApiClient($apiClient): self
+  {
+    $this->apiClient = $apiClient;
+    return $this;
+  }
 
-	/**
-	 * @return mixed
-	 */
-	public function getApiClient() {
-		return $this->apiClient;
-	}
+  /**
+   * @return mixed
+   */
+  public function getApiClient()
+  {
+    return $this->apiClient;
+  }
 }
