@@ -173,6 +173,8 @@ SVG;
 	<link rel="stylesheet" href="/styles/builders.css" />
 	<link rel="icon" href="/assets/01.png">
 
+	<script defer src="/scripts/index.js?v=2"></script>
+
 	<title>nostr.build media uploader</title>
 
 </head>
@@ -273,9 +275,6 @@ SVG;
 				<div class="info"><span><?= $total_size_gb ?></span>GB used</div>
 				<div class="info"><span><?= number_format($total_files) ?></span> total uploads</div>
 			</div>
-			<div class="terms profilepic">
-				profile pictures go <a href="v1/profilepic.php"><span>HERE!</span></a>
-			</div>
 		</div>
 
 		<div class="drag-area">
@@ -322,7 +321,8 @@ SVG;
 					</button>
 					<p class="supported_file">supports: <span>jpg, png, webp, gif, mov, mp4 or mp3</span></p>
 					<input id="input_file" class="hidden_input" hidden type="file" accept=".jpeg, .jpg, .png, .gif, .mov, .mp4, .webp, .mp3" name="fileToUpload" id="fileToUpload" />
-					<input type="submit" value="Upload Now" name="submit" class="import_button" disabled />
+					<input type="submit" value="Upload Media" name="submit" class="import_button" disabled />
+					<input type="submit" value="Upload Profile Pic" name="submit_ppic" class="import_button" disabled />
 					<div class="media_container">
 						<img src="" alt="" class="uploaded_img">
 						<video id="video-player" class="uploaded_video hidden_element" controls=""></video>
@@ -348,7 +348,6 @@ SVG;
 	</main>
 
 	<?= include $_SERVER['DOCUMENT_ROOT'] . '/components/footer.php'; ?>
-	<script src="/scripts/index.js"></script>
 
 </body>
 
