@@ -629,6 +629,7 @@ class MultimediaUpload
   /**
    * Summary of uploadFileFromUrl
    * @param string $url
+   * @param bool $pfp
    * @throws \Exception
    * @return bool
    * 
@@ -639,7 +640,7 @@ class MultimediaUpload
    * 4) Download the file to a temporary location
    * 5) Set the file property to the downloaded file
    */
-  public function uploadFileFromUrl(string $url): bool
+  public function uploadFileFromUrl(string $url, $pfp = false): bool
   {
     global $freeUploadLimit;
 
@@ -740,7 +741,11 @@ class MultimediaUpload
     ];
 
     // Lastly, trigger the uploadFiles method to process and store the file
-    return $this->uploadFiles(); // URL uploads are always free
+    if ($pfp) {
+      return $this->uploadProfilePicture();
+    } else {
+      return $this->uploadFiles(); // URL uploads are always free
+    }
   }
 
   /**
@@ -935,12 +940,17 @@ class MultimediaUpload
     ];
 
     if ($profile) {
+      // If we have a duplicate in non-profile uploads, we should not count it as a duplicate
       if ($data['type'] !== 'profile') {
         return false;
       }
 
       $fileData['url'] = $this->generateMediaURL($data['filename'], 'profile');
     } else {
+      // if we have a duplicate in profile uploads, we should not count it as a duplicate
+      if ($data['type'] === 'profile') {
+        return false;
+      }
       $fileData['url'] = $this->generateMediaURL($data['filename'], $data['type']);
       $fileData['thumbnail'] = $this->generateImageThumbnailURL($data['filename'], $data['type']);
       $fileData['responsive'] = $this->generateResponsiveImagesURL($data['filename'], $data['type']);
