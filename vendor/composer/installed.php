@@ -3,7 +3,7 @@
         'name' => '__root__',
         'pretty_version' => 'dev-main',
         'version' => 'dev-main',
-        'reference' => '772c9d93338384d1e027eb842c7de0329bb160c9',
+        'reference' => 'eb38cdf8f0d3313fc9a97784cd1f8060d0dbdde9',
         'type' => 'library',
         'install_path' => __DIR__ . '/../../',
         'aliases' => array(),
@@ -13,7 +13,7 @@
         '__root__' => array(
             'pretty_version' => 'dev-main',
             'version' => 'dev-main',
-            'reference' => '772c9d93338384d1e027eb842c7de0329bb160c9',
+            'reference' => 'eb38cdf8f0d3313fc9a97784cd1f8060d0dbdde9',
             'type' => 'library',
             'install_path' => __DIR__ . '/../../',
             'aliases' => array(),
@@ -118,6 +118,15 @@
             'aliases' => array(),
             'dev_requirement' => false,
         ),
+        'nyholm/psr7' => array(
+            'pretty_version' => '1.8.0',
+            'version' => '1.8.0.0',
+            'reference' => '3cb4d163b58589e47b35103e8e5e6a6a475b47be',
+            'type' => 'library',
+            'install_path' => __DIR__ . '/../nyholm/psr7',
+            'aliases' => array(),
+            'dev_requirement' => false,
+        ),
         'php-di/invoker' => array(
             'pretty_version' => '2.3.3',
             'version' => '2.3.3.0',
@@ -135,6 +144,12 @@
             'install_path' => __DIR__ . '/../php-di/php-di',
             'aliases' => array(),
             'dev_requirement' => false,
+        ),
+        'php-http/message-factory-implementation' => array(
+            'dev_requirement' => false,
+            'provided' => array(
+                0 => '1.0',
+            ),
         ),
         'psr/container' => array(
             'pretty_version' => '2.0.2',
@@ -310,6 +325,15 @@
             'reference' => '8741e3ed7fe2e91ec099e02446fb86667a0f1628',
             'type' => 'library',
             'install_path' => __DIR__ . '/../symfony/process',
+            'aliases' => array(),
+            'dev_requirement' => false,
+        ),
+        'toshy/bunnynet-php' => array(
+            'pretty_version' => '3.4.0',
+            'version' => '3.4.0.0',
+            'reference' => 'b0e9dd433053c1cfd70ac42ab0be7509954be821',
+            'type' => 'library',
+            'install_path' => __DIR__ . '/../toshy/bunnynet-php',
             'aliases' => array(),
             'dev_requirement' => false,
         ),

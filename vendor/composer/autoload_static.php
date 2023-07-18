@@ -25,6 +25,10 @@ class ComposerStaticInitd84b9ad25db27c0cce0ffcf6c71b28b7
         array (
             'kornrunner\\Blurhash\\' => 20,
         ),
+        'T' => 
+        array (
+            'ToshY\\BunnyNet\\' => 15,
+        ),
         'S' => 
         array (
             'Symfony\\Polyfill\\Php80\\' => 23,
@@ -46,6 +50,10 @@ class ComposerStaticInitd84b9ad25db27c0cce0ffcf6c71b28b7
             'Psr\\Http\\Message\\' => 17,
             'Psr\\Http\\Client\\' => 16,
             'Psr\\Container\\' => 14,
+        ),
+        'N' => 
+        array (
+            'Nyholm\\Psr7\\' => 12,
         ),
         'L' => 
         array (
@@ -88,6 +96,10 @@ class ComposerStaticInitd84b9ad25db27c0cce0ffcf6c71b28b7
         'kornrunner\\Blurhash\\' => 
         array (
             0 => __DIR__ . '/..' . '/kornrunner/blurhash/src',
+        ),
+        'ToshY\\BunnyNet\\' => 
+        array (
+            0 => __DIR__ . '/..' . '/toshy/bunnynet-php/src',
         ),
         'Symfony\\Polyfill\\Php80\\' => 
         array (
@@ -142,6 +154,10 @@ class ComposerStaticInitd84b9ad25db27c0cce0ffcf6c71b28b7
         'Psr\\Container\\' => 
         array (
             0 => __DIR__ . '/..' . '/psr/container/src',
+        ),
+        'Nyholm\\Psr7\\' => 
+        array (
+            0 => __DIR__ . '/..' . '/nyholm/psr7/src',
         ),
         'Laravel\\SerializableClosure\\' => 
         array (

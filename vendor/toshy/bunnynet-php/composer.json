@@ -1,0 +1,53 @@
+{
+  "name": "toshy/bunnynet-php",
+  "description": "BunnyNet API client for PHP",
+  "keywords": [
+    "Bunny.net",
+    "BunnyCDN",
+    "BunnyWay",
+    "BunnyNet-PHP",
+    "BunnyWay-PHP",
+    "Bunny PHP",
+    "Bunny CDN PHP",
+    "BunnyNet PHP client",
+    "ToshY"
+  ],
+  "type": "library",
+  "license": "MIT",
+  "minimum-stability": "stable",
+  "authors": [
+    {
+      "name": "ToshY",
+      "homepage": "https://github.com/ToshY"
+    }
+  ],
+  "autoload": {
+    "psr-4": {
+      "ToshY\\BunnyNet\\": "src/"
+    }
+  },
+  "autoload-dev": {
+    "psr-4": {
+      "ToshY\\BunnyNet\\Tests\\": "tests/"
+    }
+  },
+  "require": {
+    "php": "^8.1",
+    "ext-json": "*",
+    "psr/http-client": "^1.0",
+    "nyholm/psr7": "^1.6.1"
+  },
+  "require-dev": {
+    "rector/rector": "^0.15.1 || ^0.16.0 || ^0.17.0",
+    "phpmd/phpmd": "^2.13",
+    "friendsofphp/php-cs-fixer": "^3.13",
+    "phpro/grumphp": "^1.15 || ^2.0",
+    "phpstan/phpstan": "^1.9",
+    "phpunit/phpunit": "^10.0"
+  },
+  "config": {
+    "allow-plugins": {
+      "phpro/grumphp": true
+    }
+  }
+}
