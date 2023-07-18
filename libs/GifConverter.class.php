@@ -58,8 +58,7 @@ class GifConverter
    */
   public function __construct()
   {
-    $this->tempFile = tempnam(sys_get_temp_dir(), 'gifconv_');
-    $this->tempFile = $this->tempFile . '.gif';
+    $this->tempFile = sys_get_temp_dir() . '/gifconv_' . uniqid() . '.gif';
   }
 
   /**
