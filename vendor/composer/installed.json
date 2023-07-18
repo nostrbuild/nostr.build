@@ -59,17 +59,17 @@
         },
         {
             "name": "aws/aws-sdk-php",
-            "version": "3.273.7",
-            "version_normalized": "3.273.7.0",
+            "version": "3.275.9",
+            "version_normalized": "3.275.9.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/aws/aws-sdk-php.git",
-                "reference": "1d3e7ae37f31dfe1d4e9d9e361fd8e6702074fbe"
+                "reference": "1ef08ba5109591751257ad1eaa52c2e2fbd53cf1"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/aws/aws-sdk-php/zipball/1d3e7ae37f31dfe1d4e9d9e361fd8e6702074fbe",
-                "reference": "1d3e7ae37f31dfe1d4e9d9e361fd8e6702074fbe",
+                "url": "https://api.github.com/repos/aws/aws-sdk-php/zipball/1ef08ba5109591751257ad1eaa52c2e2fbd53cf1",
+                "reference": "1ef08ba5109591751257ad1eaa52c2e2fbd53cf1",
                 "shasum": ""
             },
             "require": {
@@ -110,7 +110,7 @@
                 "ext-openssl": "Allows working with CloudFront private distributions and verifying received SNS messages",
                 "ext-sockets": "To use client-side monitoring"
             },
-            "time": "2023-06-23T18:19:24+00:00",
+            "time": "2023-07-18T18:20:13+00:00",
             "type": "library",
             "extra": {
                 "branch-alias": {
@@ -151,7 +151,7 @@
             "support": {
                 "forum": "https://forums.aws.amazon.com/forum.jspa?forumID=80",
                 "issues": "https://github.com/aws/aws-sdk-php/issues",
-                "source": "https://github.com/aws/aws-sdk-php/tree/3.273.7"
+                "source": "https://github.com/aws/aws-sdk-php/tree/3.275.9"
             },
             "install-path": "../aws/aws-sdk-php"
         },
