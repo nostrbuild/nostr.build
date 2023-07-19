@@ -947,15 +947,20 @@ class MultimediaUpload
 
       // check the upload date against the filter
       // to allow old uploads to be re-uploaded and optimized
-      $date = '2023-07-18';
-      if ($date !== null && $data['upload_date'] !== null) {
-        $uploadDate = DateTime::createFromFormat('Y-m-d', $data['upload_date']);
-        $filterDate = DateTime::createFromFormat('Y-m-d', $date);
-        if ($uploadDate < $filterDate) {
-          return false;
-        }
+      /*
+      $date = '2023-07-17';
+      $uploadDate = DateTime::createFromFormat('Y-m-d', $data['upload_date']);
+      $filterDate = DateTime::createFromFormat('Y-m-d', $date);
+      if ($uploadDate === false || $filterDate === false) {
+        error_log("Failed to parse dates: upload_date={$data['upload_date']}, filter_date=$date");
+        return false;
       }
+      if ($uploadDate->getTimestamp() < $filterDate->getTimestamp()) {
+        return false;
+      }
+      */
 
+      error_log("Duplicate profile picture: {$data['filename']}" . PHP_EOL);
       $fileData['url'] = $this->generateMediaURL($data['filename'], 'profile');
     } else {
       // if we have a duplicate in profile uploads, we should not count it as a duplicate
