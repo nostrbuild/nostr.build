@@ -1034,7 +1034,7 @@ class MultimediaUpload
   {
     // Determine if submitted file is animated image or video
     if (
-      ($fileType['type'] === 'image' && in_array($fileType['extension'], ['gif', 'apng', 'webp'])) ||
+      ($fileType['type'] === 'image' && in_array($fileType['extension'], ['gif'])) ||
       $fileType['type'] === 'video'
     ) {
       // Process animated image or video with GifConverter class
