@@ -56,13 +56,37 @@ $imageProcessor->fixImageOrientation()
 $metadata = $imageProcessor->getImageMetadata();
 $imageblurhash = $imageProcessor->calculateBlurhash();
  */
+/**
+ * Summary of ImageProcessor
+ */
 class ImageProcessor
 {
+  /**
+   * Summary of imagick
+   * @var 
+   */
   private $imagick;
+  /**
+   * Summary of isSaved
+   * @var 
+   */
   private $isSaved = false;
+  /**
+   * Summary of imagePath
+   * @var 
+   */
   private $imagePath;
+  /**
+   * Summary of supportedFormats
+   * @var 
+   */
   private static $supportedFormats;
 
+  /**
+   * Summary of __construct
+   * @param mixed $imagePath
+   * @throws \InvalidArgumentException
+   */
   public function __construct($imagePath)
   {
     if (!file_exists($imagePath)) {
@@ -77,6 +101,11 @@ class ImageProcessor
     }
   }
 
+  /**
+   * Summary of isSupported
+   * @param mixed $format
+   * @return bool
+   */
   public static function isSupported($format): bool
   {
     if (self::$supportedFormats === null) {
@@ -85,6 +114,11 @@ class ImageProcessor
     return in_array(strtoupper($format), self::$supportedFormats);
   }
 
+  /**
+   * Summary of reduceQuality
+   * @param mixed $quality
+   * @return ImageProcessor
+   */
   public function reduceQuality($quality): self
   {
     $this->imagick->setImageCompressionQuality($quality);
@@ -94,6 +128,10 @@ class ImageProcessor
     return $this;
   }
 
+  /**
+   * Summary of fixImageOrientation
+   * @return ImageProcessor
+   */
   public function fixImageOrientation()
   {
     $format = strtoupper($this->imagick->getImageFormat());
@@ -145,6 +183,12 @@ class ImageProcessor
     return $this;
   }
 
+  /**
+   * Summary of resizeImage
+   * @param mixed $width
+   * @param mixed $height
+   * @return ImageProcessor
+   */
   public function resizeImage($width, $height): self
   {
     // Fetch dimensions of the first frame
@@ -166,6 +210,10 @@ class ImageProcessor
     return $this;
   }
 
+  /**
+   * Summary of cropSquare
+   * @return ImageProcessor
+   */
   public function cropSquare(): self
   {
     // Fetch dimensions of the first frame
@@ -204,6 +252,10 @@ class ImageProcessor
     return $this;
   }
 
+  /**
+   * Summary of convertToJpeg
+   * @return ImageProcessor
+   */
   public function convertToJpeg(): self
   {
     $imageFormat = strtolower($this->imagick->getImageFormat());
@@ -241,20 +293,64 @@ class ImageProcessor
     return $this;
   }
 
+  /**
+   * Summary of stripImageMetadata
+   * @return ImageProcessor
+   */
   public function stripImageMetadata(): self
   {
+    // Save the ICC profile if one exists
+    $iccProfile = null;
+    try {
+      $iccProfile = $this->imagick->getImageProfile('icc');
+    } catch (Exception $e) {
+      // No ICC profile, do nothing
+      error_log($e->getMessage() . PHP_EOL);
+    }
+
+    // Save the Exif ColorSpace property if one exists
+    $colorSpace = null;
+    try {
+      $exif = $this->imagick->getImageProperties("exif:*");
+      if (isset($exif["exif:ColorSpace"])) {
+        $colorSpace = $exif["exif:ColorSpace"];
+      }
+    } catch (Exception $e) {
+      // No Exif ColorSpace property, do nothing
+      error_log($e->getMessage() . PHP_EOL);
+    }
+
+    // Strip all profiles and comments
     $this->imagick->stripImage();
 
-    // the image metadata is changed, we should unset saved flag
+    // Reassign ICC profile if it existed
+    if ($iccProfile !== null) {
+      $this->imagick->profileImage('icc', $iccProfile);
+    }
+
+    // Reassign Exif ColorSpace property if it existed
+    if ($colorSpace !== null) {
+      $this->imagick->setImageProperty('exif:ColorSpace', $colorSpace);
+    }
+
+    // The image metadata is changed, we should unset saved flag
     $this->isSaved = false;
     return $this;
   }
 
+  /**
+   * Summary of getImageMetadata
+   * @return array
+   */
   public function getImageMetadata(): array
   {
     return $this->imagick->getImageProperties("*", true);
   }
 
+  /**
+   * Summary of getImageDimensions
+   * @return array
+   */
   public function getImageDimensions(): array
   {
     return [
@@ -263,6 +359,11 @@ class ImageProcessor
     ];
   }
 
+  /**
+   * Summary of optimiseImage
+   * @throws \RuntimeException
+   * @return ImageProcessor
+   */
   public function optimiseImage(): self
   {
     if (!$this->isSaved) {
@@ -327,6 +428,11 @@ class ImageProcessor
     return $blurhash;
   }
 
+  /**
+   * Summary of save
+   * @throws \RuntimeException
+   * @return void
+   */
   public function save(): void
   {
     if ($this->imagick->getNumberImages() > 1) {
@@ -343,6 +449,10 @@ class ImageProcessor
     $this->isSaved = true;
   }
 
+  /**
+   * Summary of reinitializeImagick
+   * @return void
+   */
   private function reinitializeImagick(): void
   {
     if ($this->isSaved) {
@@ -352,6 +462,9 @@ class ImageProcessor
     }
   }
 
+  /**
+   * Summary of __destruct
+   */
   public function __destruct()
   {
     $this->imagick->clear();
