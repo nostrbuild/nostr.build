@@ -994,7 +994,7 @@ class MultimediaUpload
     $img->convertToJpeg() // Convert to JPEG for images that are not visually affected by the conversion
       ->fixImageOrientation()
       ->resizeImage(1920, 1920) // Resize to 1920x1920 (HD)
-      ->reduceQuality(60) // 60 should be a good balance between quality and size
+      ->reduceQuality(65) // 65 should be a good balance between quality and size
       ->stripImageMetadata()
       ->save();
     $img->optimiseImage(); // Optimise the image, can take upto 60 seconds
@@ -1034,7 +1034,7 @@ class MultimediaUpload
   {
     // Determine if submitted file is animated image or video
     if (
-      ($fileType['type'] === 'image' && in_array($fileType['extension'], ['gif', 'apng'])) ||
+      ($fileType['type'] === 'image' && in_array($fileType['extension'], ['gif', 'apng', 'webp'])) ||
       $fileType['type'] === 'video'
     ) {
       // Process animated image or video with GifConverter class
