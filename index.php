@@ -168,12 +168,12 @@ SVG;
 	<meta name="description" content="Image, video and media uploader for nostr, damus, astral.ninja, snort.social, and most all nostr clients. Upload any kind of media and get a link to post, or use our iOS app to automatically uppload images straight from your keyboard.">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-	<link rel="stylesheet" href="/styles/index.css" />
+	<link rel="stylesheet" href="/styles/index.css?v=4" />
 	<link rel="stylesheet" href="/styles/header.css" />
 	<link rel="stylesheet" href="/styles/builders.css" />
 	<link rel="icon" href="/assets/01.png">
 
-	<script defer src="/scripts/index.js?v=2"></script>
+	<script defer src="/scripts/index.js?v=7"></script>
 
 	<title>nostr.build media uploader</title>
 
@@ -312,7 +312,7 @@ SVG;
 					<div class="spinner"></div>
 					<div class="spinner-text">Uploading...</div>
 				</div>
-				<form class="form" action="upload.php" method="post" enctype="multipart/form-data" style="text-align: center">
+				<form id="upload-media-form" class="form" action="upload.php" method="post" enctype="multipart/form-data" style="text-align: center">
 					<h2 class="drag-area_title">drag and drop your media here</h2>
 					<p class="drag-area_subtitle">OR</p>
 					<button type="button" class="upload_button">
@@ -321,8 +321,12 @@ SVG;
 					</button>
 					<p class="supported_file">supports: <span>jpg, png, webp, gif, mov, mp4 or mp3</span></p>
 					<input id="input_file" class="hidden_input" hidden type="file" accept=".jpeg, .jpg, .png, .gif, .mov, .mp4, .webp, .mp3" name="fileToUpload" id="fileToUpload" />
-					<input type="submit" value="Upload Media" name="submit" class="import_button" disabled />
-					<input type="submit" value="Upload Profile Pic" name="submit_ppic" class="import_button" disabled />
+					<!-- Submit button -->
+					<div class="upload_btn_group">
+						<input type="submit" value="Upload Media" name="submit" class="import_button media_upload_btn" disabled />
+						<input type="submit" value="Upload Profile Pic" name="submit_ppic" class="import_button pfp_upload_btn" disabled />
+					</div>
+					<!-- /Submit button -->
 					<div class="media_container">
 						<img src="" alt="" class="uploaded_img">
 						<video id="video-player" class="uploaded_video hidden_element" controls=""></video>

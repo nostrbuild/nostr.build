@@ -204,8 +204,19 @@ document.addEventListener('DOMContentLoaded', function () {
 		document.querySelector(".image_svg").style.display = "none";
 	}
 
-	queryAllAndAct(".import_button", button => {
+	queryAllAndAct(".media_upload_btn", button => {
 		button.addEventListener("click", showSpinner);
+	});
+
+	queryAllAndAct(".pfp_upload_btn", (button) => {
+		button.addEventListener("click", (event) => {
+			const confirmUpload = confirm("This will crop and resize media for profile picture use, proceed?");
+			if (!confirmUpload) {
+				event.preventDefault(); // Cancel the default action
+			} else {
+				showSpinner(); // Show the spinner if confirmed
+			}
+		});
 	});
 
 });
