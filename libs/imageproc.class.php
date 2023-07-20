@@ -1,7 +1,13 @@
 <?php
 require $_SERVER['DOCUMENT_ROOT'] . '/vendor/autoload.php';
 
-use Spatie\ImageOptimizer\OptimizerChainFactory;
+use Spatie\ImageOptimizer\OptimizerChain;
+use Spatie\ImageOptimizer\Optimizers\Cwebp;
+use Spatie\ImageOptimizer\Optimizers\Gifsicle;
+use Spatie\ImageOptimizer\Optimizers\Jpegoptim;
+use Spatie\ImageOptimizer\Optimizers\Optipng;
+use Spatie\ImageOptimizer\Optimizers\Pngquant;
+use Spatie\ImageOptimizer\Optimizers\Svgo;
 use kornrunner\Blurhash\Blurhash;
 
 // Define array for image extensions
@@ -369,7 +375,43 @@ class ImageProcessor
     if (!$this->isSaved) {
       throw new RuntimeException("Please call save() method before optimizeImage");
     }
-    $optimizerChain = OptimizerChainFactory::create();
+    $jpegQuality = '--max=85';
+    $pngQuality = '--quality=85';
+    $webpQuality = '-q 80';
+
+    $optimizerChain = (new OptimizerChain())
+      ->addOptimizer(new Jpegoptim([
+        $jpegQuality,
+        '--strip-none', // We strip metadata using ImageMagick, so we can save ICC profile
+        '--all-progressive',
+      ]))
+
+      ->addOptimizer(new Pngquant([
+        $pngQuality,
+        '--force',
+        '--skip-if-larger',
+      ]))
+
+      ->addOptimizer(new Optipng([
+        '-i0',
+        '-o2',
+        '-quiet',
+      ]))
+
+      ->addOptimizer(new Svgo([
+        '--config=svgo.config.js',
+      ]))
+
+      ->addOptimizer(new Gifsicle([
+        '-b',
+        '-O3',
+      ]))
+      ->addOptimizer(new Cwebp([
+        $webpQuality,
+        '-m 6',
+        '-pass 10',
+        '-mt',
+      ]));
     $optimizerChain->setTimeout(60) // Set 60 seconds timeout
       ->optimize($this->imagePath);
 
