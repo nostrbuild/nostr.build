@@ -1055,8 +1055,8 @@ class MultimediaUpload
 
     // Common image processing steps
     $img = $img ?? new ImageProcessor($this->file['tmp_name']);
-      //->stripImageMetadata() // $img->optimiseImage() strips the data already.
-      ->save();
+    //$img->stripImageMetadata() // $img->optimiseImage() strips the data already.
+    $img->save();
     $img->optimiseImage();
 
     return [
