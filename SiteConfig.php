@@ -16,7 +16,7 @@ class SiteConfig
       'path' => 'i/',
       'thumbnail_path' => 'thumbnail/',
       'responsive_path' => 'responsive/',
-      'use_cdn' => false, // You want your NIP-94 to work, you got it!
+      'use_cdn' => true, // CDN Optimizer is off now due to other issues
     ],
     'android_video' => [
       'cdn_host' => 'cdn.nostr.build',
