@@ -994,7 +994,7 @@ class MultimediaUpload
     $img->convertToJpeg() // Convert to JPEG for images that are not visually affected by the conversion
       ->fixImageOrientation()
       ->resizeImage(1920, 1920) // Resize to 1920x1920 (HD)
-      ->reduceQuality(65) // 65 should be a good balance between quality and size
+      ->reduceQuality(75) // 75 should be a good balance between quality and size
       ->stripImageMetadata()
       ->save();
     $img->optimiseImage(); // Optimise the image, can take upto 60 seconds
