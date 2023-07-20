@@ -995,7 +995,7 @@ class MultimediaUpload
       ->fixImageOrientation()
       ->resizeImage(1920, 1920) // Resize to 1920x1920 (HD)
       ->reduceQuality(75) // 75 should be a good balance between quality and size
-      ->stripImageMetadata()
+      //->stripImageMetadata() // $img->optimiseImage() strips the data already.
       ->save();
     $img->optimiseImage(); // Optimise the image, can take upto 60 seconds
     return [
@@ -1014,7 +1014,7 @@ class MultimediaUpload
   {
     $img = new ImageProcessor($this->file['tmp_name']);
     $img->fixImageOrientation()
-      ->stripImageMetadata()
+      //->stripImageMetadata() // $img->optimiseImage() strips the data already.
       ->save();
     $img->optimiseImage(); // Optimise the image, can take upto 60 seconds
     return [
@@ -1050,12 +1050,12 @@ class MultimediaUpload
       $img->fixImageOrientation()
         ->cropSquare()
         ->resizeImage(256, 256) // Resize to 256x256
-        ->reduceQuality(60); // 60 should be a good balance between quality and size
+        ->reduceQuality(75); // 75 should be a good balance between quality and size
     }
 
     // Common image processing steps
     $img = $img ?? new ImageProcessor($this->file['tmp_name']);
-    $img->stripImageMetadata()
+      //->stripImageMetadata() // $img->optimiseImage() strips the data already.
       ->save();
     $img->optimiseImage();
 
