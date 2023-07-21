@@ -32,5 +32,6 @@ return array(
     'Fig\\Http\\Message\\' => array($vendorDir . '/fig/http-message-util/src'),
     'FastRoute\\' => array($vendorDir . '/nikic/fast-route/src'),
     'DI\\' => array($vendorDir . '/php-di/php-di/src'),
+    'BTCPayServer\\' => array($vendorDir . '/btcpayserver/btcpayserver-greenfield-php/src'),
     'Aws\\' => array($vendorDir . '/aws/aws-sdk-php/src'),
 );

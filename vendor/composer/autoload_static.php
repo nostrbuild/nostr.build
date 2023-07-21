@@ -86,6 +86,10 @@ class ComposerStaticInitd84b9ad25db27c0cce0ffcf6c71b28b7
         array (
             'DI\\' => 3,
         ),
+        'B' => 
+        array (
+            'BTCPayServer\\' => 13,
+        ),
         'A' => 
         array (
             'Aws\\' => 4,
@@ -198,6 +202,10 @@ class ComposerStaticInitd84b9ad25db27c0cce0ffcf6c71b28b7
         'DI\\' => 
         array (
             0 => __DIR__ . '/..' . '/php-di/php-di/src',
+        ),
+        'BTCPayServer\\' => 
+        array (
+            0 => __DIR__ . '/..' . '/btcpayserver/btcpayserver-greenfield-php/src',
         ),
         'Aws\\' => 
         array (
