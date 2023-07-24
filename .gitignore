@@ -6,3 +6,4 @@ node_modules/
 # Generated files
 scripts/dist/
 styles/twbuild.css
+.DS_Store
