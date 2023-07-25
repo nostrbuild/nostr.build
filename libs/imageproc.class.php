@@ -197,16 +197,30 @@ class ImageProcessor
    */
   public function resizeImage($width, $height): self
   {
+    // Fetch image format
+    $imageFormat = strtolower($this->imagick->getImageFormat());
     // Fetch dimensions of the first frame
     $currentWidth = $this->imagick->getImageWidth();
     $currentHeight = $this->imagick->getImageHeight();
+
+    error_log("Image format: $imageFormat" . PHP_EOL);
+    error_log("Current width: $currentWidth" . PHP_EOL);
+    error_log("Current height: $currentHeight" . PHP_EOL);
+
+    // Check if the image format is GIF and do nothing
+    if ($imageFormat === 'gif') {
+      return $this;
+    }
 
     // Resize is required
     if ($currentWidth > $width || $currentHeight > $height) {
       $imagick = $this->imagick->coalesceImages();
 
       foreach ($imagick as $frame) {
-        $frame->resizeImage($width, $height, Imagick::FILTER_LANCZOS, 1, true);
+        // Don't resize if the image is smaller than the new dimensions
+        if ($frame->getImageWidth() > $width || $frame->getImageHeight() > $height) {
+          $frame->resizeImage($width, $height, Imagick::FILTER_LANCZOS, 1, true);
+        }
       }
 
       $this->imagick = $imagick->deconstructImages();
@@ -266,8 +280,10 @@ class ImageProcessor
   {
     $imageFormat = strtolower($this->imagick->getImageFormat());
 
+    error_log("Image format: $imageFormat" . PHP_EOL);
     // Check if the image format is already JPEG
     if ($imageFormat === 'jpeg') {
+      error_log("Image is already JPEG, not converting." . PHP_EOL);
       return $this;
     }
 
@@ -327,7 +343,11 @@ class ImageProcessor
     }
 
     // Strip all profiles and comments
-    $this->imagick->stripImage();
+    try {
+      $this->imagick->stripImage();
+    } catch (Exception $e) {
+      error_log($e->getMessage() . PHP_EOL);
+    }
 
     // Reassign ICC profile if it existed
     if ($iccProfile !== null) {
