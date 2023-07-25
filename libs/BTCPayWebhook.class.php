@@ -49,11 +49,14 @@ class BTCPayWebhook
     }
 
     // Check whether your webhook is of the desired type
+    // We want to accept all events and not just InvoiceSettled
+    /*
     if ($payload->type !== "InvoiceSettled") {
       throw new \RuntimeException(
         'Invalid payload message type. Only InvoiceSettled is supported, check the configuration of the webhook.'
       );
     }
+    */
 
     // Get the invoice
     $invoice = null;
@@ -62,6 +65,29 @@ class BTCPayWebhook
     } catch (Exception $e) {
       error_log("Failed to fetch invoice data: " . $e . PHP_EOL);
       return false;
+    }
+
+    /*
+    $invoice->getData()['metadata'] = Array
+    (
+    [orderId] => <order ID>
+    [itemCode] => <itemCode that should map to the account level>
+    [itemDesc] => <Decsription of the item>
+    [orderUrl] => https://<URL of the shop POS>
+    [physical] => <N/A>
+    [userNpub] => <user suppled npub>
+    [receiptData] => Array
+        (
+            [Title] => <Item Title>
+            [Description] => <Item Description>
+        )
+    )
+    */
+
+    // Check if the invoice is paid
+    if ($invoice->getStatus() !== 'complete') {
+      error_log("Invoice is not paid." . PHP_EOL);
+      error_log("Invoice status: " . print_r($invoice, true) . PHP_EOL);
     }
 
     return true;
