@@ -45,13 +45,20 @@ $freeUploadLimit = 25 * 1024 * 1024; // 25MB in bytes
  *  ];
  */
 $awsConfig = [
-    'region' => $_SERVER['AWS_REGION'],
+    'region'  => $_SERVER['AWS_REGION'],
     'version' => $_SERVER['AWS_VERSION'],
     'credentials' => [
-        'key' => $_SERVER['AWS_KEY'],
+        'key'    => $_SERVER['AWS_KEY'],
         'secret' => $_SERVER['AWS_SECRET'],
     ],
     'bucket' => $_SERVER['AWS_BUCKET'],
+];
+
+$btcpayConfig = [
+    'apiKey'  => $_SERVER['BTCPAY_APIKEY'],
+    'host'    => $_SERVER['BTCPAY_HOST'],
+    'storeId' => $_SERVER['BTCPAY_STOREID'],
+    'secret'  => $_SERVER['BTCPAY_SECRET'],
 ];
 
 // Maybe we should move it to a separate place and do not open a link to the database every time?
