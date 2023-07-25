@@ -477,6 +477,10 @@ class MultimediaUpload
       throw new Exception('No files to upload');
     }
 
+    // Keep track of the last errors thrown by the loop
+    $lastError = null;
+    // Keep track of the successful uploads
+    $successfulUploads = 0;
     // Wrap in a try-catch block to catch any exceptions and handle what we can
     // Loop through the files array that was passed in
     foreach ($this->filesArray as $file) {
@@ -497,7 +501,10 @@ class MultimediaUpload
         // If the file already exists, we will skip it
         // Populate the uploadedFiles array with the file data
         if (!$this->pro && $this->checkForDuplicates($fileSha256)) {
-          throw new Exception('Duplicate file');
+          error_log('Duplicate file:' . $fileSha256 . PHP_EOL);
+          // Continue with the loop to process the next file
+          // Duplicate is not an error, so we don't throw an exception
+          continue;
         }
 
         // All initial validations are performed here, e.g., file size, type, etc.
@@ -613,14 +620,21 @@ class MultimediaUpload
           'dimensions' => $fileData['dimensions'] ?? [],
         ]);
         $this->db->commit();
+        // Increment the counter of successful uploads
+        $successfulUploads++;
       } catch (Exception $e) {
-        error_log("File loop exception: " . $e->getMessage());
+        $lastError = $e;
+        error_log("File loop exception: " . $lastError->getMessage());
         $this->db->rollback();
         // Since upload to S3 happenese last, we should be safe to do not delete the file from S3
         // unless something goes wrong with DB commit.
         // We want to loop over all files and not stop on the errors
         continue;
       }
+    }
+    // Check if we had any successful uploads and if not, throw the last error
+    if ($successfulUploads === 0 && $lastError !== null) {
+      throw new Exception($lastError->getMessage());
     }
 
     return true;
