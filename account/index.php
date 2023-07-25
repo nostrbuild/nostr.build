@@ -266,7 +266,7 @@ $userStorageRemaining = $userOverLimit ? 0 : $userStorageLimit - $storageUsed;
 			endif;
 
 			$divCount = 0;
-			$foldercount = $usersFoldersStats['TOTAL']['foldercount'];
+			$foldercount = $usersFoldersStats['TOTAL']['folderCount'];
 			?>
 		</nav>
 
