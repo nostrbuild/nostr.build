@@ -12,13 +12,17 @@ $app->group('/btcpay', function (RouteCollectorProxy $group) {
   // Route to upload file(s) via form
   $group->post('/webhook', function (Request $request, Response $response) {
     // Get Raw Body
-    $body = $request->getBody();
+    $body = $request->getBody()->getContents();
     // Get Signature
     $signature = $request->getHeaderLine('btcpay-sig');
 
     try {
       // Instantiate BTCPayWebhook
       $webhook = $this->get('btcpayWebhook');
+      $check = $webhook->processWebhook($body, $signature);
+      if(!$check) {
+        return btcpayWebhookResponse($response, 'error', 'Webhook processing failed');
+      }
 
       // Handle exceptions thrown by the MultimediaUpload class
       return btcpayWebhookResponse($response, 'success', 'Webhook processed successfully');

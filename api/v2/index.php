@@ -83,6 +83,7 @@ $app->addBodyParsingMiddleware();
 require_once __DIR__ . '/routes_upload.php'; // Include free upload routes
 require_once __DIR__ . '/routes_uppy.php'; // Include uppy upload routes
 require_once __DIR__ . '/routes_account.php'; // Include pro account routes
+require_once __DIR__ . '/routes_btcpay.php'; // Include btcpay routes
 
 $contentLengthMiddleware = new ContentLengthMiddleware();
 $app->add($contentLengthMiddleware);
