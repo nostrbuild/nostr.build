@@ -4,6 +4,7 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/MultimediaUpload.class.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/S3Service.class.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/db/UsersImages.class.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/db/UsersImagesFolders.class.php';
+require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/BTCPayWebhook.class.php';
 
 use DI\Container;
 use Slim\Factory\AppFactory;
@@ -52,6 +53,17 @@ $container->set('userImages', function () {
 $container->set('userImagesFolders', function () {
   global $link;
   return new UsersImagesFolders($link);
+});
+
+//Setup container for webhooks
+$container->set('btcpayWebhook', function () {
+  global $btcpayConfig;
+  return new BTCPayWebhook(
+    $btcpayConfig['apiKey'],
+    $btcpayConfig['host'],
+    $btcpayConfig['storeId'],
+    $btcpayConfig['secret']
+  );
 });
 
 // Create app

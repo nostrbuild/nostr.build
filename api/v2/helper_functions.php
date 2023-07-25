@@ -5,6 +5,23 @@ require $_SERVER['DOCUMENT_ROOT'] . '/vendor/autoload.php';
 use Psr\Http\Message\ResponseInterface as Response;
 
 /**
+ * Summary of btcpayWebhookResponse
+ * @param Psr\Http\Message\ResponseInterface $response
+ * @param string $code
+ * @param string $message
+ * @return Psr\Http\Message\ResponseInterface
+ */
+function btcpayWebhookResponse(Response $response, string $code, string $message): Response
+{
+  $responseBody = [
+    'code' => $code,
+    'message' => $message,
+  ];
+  $response->getBody()->write(json_encode($responseBody));
+  return $response->withHeader('Content-Type', 'application/json');
+}
+
+/**
  * Summary of jsonResponse
  * @param Psr\Http\Message\ResponseInterface $response
  * @param string $status
