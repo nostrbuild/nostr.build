@@ -113,7 +113,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
   <meta charSet="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Nostr.build Signup</title>
-  <link rel="stylesheet" href="/styles/twbuild.css?v=5" />
+  <link rel="stylesheet" href="/styles/twbuild.css?v=7" />
   <script defer src="/scripts/fw/alpinejs.min.js?v=2"></script>
   <script defer src="/scripts/fw/htmx.min.js?v=2"></script>
   <style>
@@ -230,7 +230,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 <?php elseif ($step == $value[1]) : ?>
                   <!-- Current Step -->
                   <span class="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full border-2 border-indigo-600">
-                    <span class="text-indigo-600"><?= $value[1] ?></span>
+                    <span class="text-indigo-300"><?= $value[1] ?></span>
                   </span>
                 <?php else : ?>
                   <!-- Upcoming Step -->
@@ -238,7 +238,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                     <span class="text-gray-500 group-hover:text-gray-900"><?= $value[1] ?></span>
                   </span>
                 <?php endif; ?>
-                <span class="ml-4 text-sm font-medium <?php echo ($step > $value[1]) ? 'text-gray-100' : (($step == $value[1]) ? 'text-indigo-600' : 'text-gray-500 group-hover:text-gray-100') ?>"><?= $value[0] ?></span>
+                <span class="ml-4 text-sm font-medium <?php echo ($step > $value[1]) ? 'text-gray-100' : (($step == $value[1]) ? 'text-indigo-300' : 'text-gray-500 group-hover:text-gray-100') ?>"><?= $value[0] ?></span>
               </span>
             </a>
             <?php if ($index < count($steps) - 1) : ?>
