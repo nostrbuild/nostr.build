@@ -142,6 +142,8 @@ $userStorageRemaining = $userOverLimit ? 0 : $userStorageLimit - $storageUsed;
 	<link href="/styles/twbuild.css?v=12" rel="stylesheet">
 	<link rel="icon" href="/assets/primo_nostr.png" />
 
+	<script defer src="/scripts/dist/index.js?v=23"></script>
+
 	<style>
 		.publicly-shared {
 			border: 0.3125rem solid #00ff00;
@@ -641,7 +643,6 @@ $userStorageRemaining = $userOverLimit ? 0 : $userStorageLimit - $storageUsed;
 
 	</main>
 	<script src="/scripts/account.js"></script>
-	<script src="/scripts/dist/index.js?v=12"></script>
 
 
 	<script>
