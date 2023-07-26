@@ -8,6 +8,9 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/db/UsersImagesFolders.class.php'
 use DI\Container;
 use Slim\Factory\AppFactory;
 use Slim\Middleware\ContentLengthMiddleware;
+use Psr\Http\Message\ResponseInterface as Response;
+use Psr\Http\Message\ServerRequestInterface as Request;
+use Psr\Http\Server\RequestHandlerInterface as RequestHandler;
 
 require $_SERVER['DOCUMENT_ROOT'] . '/vendor/autoload.php';
 
@@ -53,6 +56,14 @@ $container->set('userImagesFolders', function () {
 
 // Create app
 $app = AppFactory::create();
+// Middleware to add CORS headers
+$app->add(function (Request $request, RequestHandler $handler): Response {
+  $response = $handler->handle($request);
+  return $response
+    ->withHeader('Access-Control-Allow-Origin', '*')
+    ->withHeader('Access-Control-Allow-Headers', 'X-Requested-With, Content-Type, Accept, Origin, Authorization')
+    ->withHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
+});
 $app->setBasePath('/api/v2');
 $app->addErrorMiddleware(true, true, true);
 $app->addBodyParsingMiddleware();
