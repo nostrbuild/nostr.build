@@ -657,6 +657,26 @@ class MultimediaUpload
   public function uploadFileFromUrl(string $url, $pfp = false): bool
   {
     global $freeUploadLimit;
+    global $storageLimits;
+
+    $sizeLimit = $freeUploadLimit;
+    // Calculate remaining space and check if file size exceeds the remaining space for pro users
+    // TODO: Make a separate class with all of the checks and calculations
+    if ($this->pro) {
+      // Calculate and log total used space
+      $totalUsed = $this->usersImages->getTotalSize($this->userNpub);
+      error_log('Total used: ' . formatSizeUnits($totalUsed));
+
+      // Determine account limit (handle '-1' as unlimited) and log it
+      $accountLimit = $storageLimits[$_SESSION['acctlevel']]['limit'] ?? 0;
+      $accountLimit = $accountLimit === -1 ? PHP_INT_MAX : $accountLimit;
+      error_log('Account limit: ' . formatSizeUnits($accountLimit));
+
+      // Calculate remaining space and log it
+      $remainingSpace = $accountLimit - $totalUsed;
+      error_log('Remaining space: ' . formatSizeUnits($remainingSpace));
+      $sizeLimit = $remainingSpace;
+    }
 
     // Get the metadata from the URL
     try {
@@ -675,7 +695,7 @@ class MultimediaUpload
     }
 
     // Check the file size against the limit
-    if (intval($metadata['size']) > $freeUploadLimit) {
+    if (intval($metadata['size']) > $sizeLimit) {
       throw new Exception('File size exceeds the limit of ' . formatSizeUnits($freeUploadLimit));
     }
 
@@ -710,11 +730,11 @@ class MultimediaUpload
     // Set option to have a hard limit on how many bytes we will download
     // This should prevent from the potential DOS attack
     curl_setopt($ch, CURLOPT_NOPROGRESS, false);
-    curl_setopt($ch, CURLOPT_PROGRESSFUNCTION, function ($ch, $downloadSize, $downloaded, $uploadSize, $uploaded) use (&$fileSize, $freeUploadLimit) {
+    curl_setopt($ch, CURLOPT_PROGRESSFUNCTION, function ($ch, $downloadSize, $downloaded, $uploadSize, $uploaded) use (&$fileSize, $sizeLimit) {
       // Assign the file size to a variable that is accessible outside of this function
       $fileSize = $downloaded;
       // Check if the file size exceeds the limit
-      if ($fileSize > $freeUploadLimit) {
+      if ($fileSize > $sizeLimit) {
         return 1; // Abort the download by returning a non-zero value
       }
       // Carry on with the download
@@ -776,6 +796,11 @@ class MultimediaUpload
     } catch (Exception $e) {
       error_log($e->getMessage());
       throw new Exception($e->getMessage());
+    }
+
+    // Check if the URL is sain and throw if it is not
+    if (!$sanity) {
+      throw new Exception('URL sanity check failed');
     }
 
     // Create a curl instance
