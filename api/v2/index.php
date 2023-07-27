@@ -57,6 +57,7 @@ $container->set('userImagesFolders', function () {
 // Create app
 $app = AppFactory::create();
 // Middleware to add CORS headers
+/*
 $app->add(function (Request $request, RequestHandler $handler): Response {
   $response = $handler->handle($request);
   return $response
@@ -64,6 +65,7 @@ $app->add(function (Request $request, RequestHandler $handler): Response {
     ->withHeader('Access-Control-Allow-Headers', 'X-Requested-With, Content-Type, Accept, Origin, Authorization')
     ->withHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
 });
+*/
 $app->setBasePath('/api/v2');
 $app->addErrorMiddleware(true, true, true);
 $app->addBodyParsingMiddleware();
