@@ -142,6 +142,30 @@ function checkUrlSanity(string $url): bool
     throw new InvalidArgumentException('Access to the AWS metadata IP is not allowed');
   }
 
+  // Checking for AWS EC2-like hostnames
+  if (preg_match('/^ip-\d{1,3}-\d{1,3}-\d{1,3}-\d{1,3}$/', $hostname)) {
+    throw new InvalidArgumentException('AWS EC2-like hostnames are not allowed');
+  }
+
+  // Perform DNS lookup
+  $ips = gethostbynamel($hostname);
+
+  // If the hostname could not be resolved, skip the check
+  if ($ips !== false) {
+    foreach ($ips as $ip) {
+      if (
+        filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE) === false
+      ) {
+        throw new InvalidArgumentException('DNS rebinding attacks are not allowed');
+      }
+    }
+  }
+
+  // Checking for AWS TLDs
+  if (preg_match("/\.aws$/", $hostname)) {
+    throw new InvalidArgumentException('AWS TLDs are not allowed');
+  }
+
   // Checking for localhost
   if ($hostname === 'localhost') {
     throw new InvalidArgumentException('Access to localhost is not allowed');
