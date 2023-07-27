@@ -124,6 +124,11 @@ function checkUrlSanity(string $url): bool
   // Checking for private IPs and localhost
   $hostname = $parsedUrl['host'] ?? '';
 
+  // Checking for valid scheme
+  if (!in_array($parsedUrl['scheme'] ?? '', ['http', 'https'])) {
+    throw new InvalidArgumentException('Only HTTP and HTTPS schemes are allowed');
+  }
+
   // Checking for private IPs and localhost
   if (
     filter_var($hostname, FILTER_VALIDATE_IP) !== false &&
@@ -132,6 +137,31 @@ function checkUrlSanity(string $url): bool
     throw new InvalidArgumentException('Access to the private IP ranges or localhost is not allowed');
   }
 
+  // Checking for AWS metadata IP
+  if ($hostname === '169.254.169.254') {
+    throw new InvalidArgumentException('Access to the AWS metadata IP is not allowed');
+  }
+
+  // Checking for localhost
+  if ($hostname === 'localhost') {
+    throw new InvalidArgumentException('Access to localhost is not allowed');
+  }
+
+  // Checking for special-use domain names
+  $specialDomains = ['test', 'example', 'invalid', 'localhost', 'local'];
+  foreach ($specialDomains as $domain) {
+    if (strpos($hostname, $domain) !== false) {
+      throw new InvalidArgumentException("Access to the special-use domain '{$domain}' is not allowed");
+    }
+  }
+
+  // Checking for internal TLDs
+  $internalTlds = ['internal', 'corp', 'home', 'lan'];
+  foreach ($internalTlds as $tld) {
+    if (preg_match("/\b{$tld}$/", $hostname)) {
+      throw new InvalidArgumentException("Access to the internal TLD '{$tld}' is not allowed");
+    }
+  }
 
   // Checking for server IP
   if ($hostname === $_SERVER['SERVER_ADDR']) {
@@ -164,8 +194,6 @@ function checkUrlSanity(string $url): bool
   if (isset($parsedUrl['user']) || isset($parsedUrl['pass'])) {
     throw new InvalidArgumentException('URLs with username and password specs are not allowed');
   }
-
-  // Proceed with file upload
 
   return true;
 }
