@@ -110,7 +110,7 @@
 					<div class="card_header">
 						<figcaption class="card_title">green skull</figcaption>
 					</div>
-					<img src="/assets/builders/greenskull.png" alt="green skull image" />
+					<img src="https://cdn.nostr.build/assets/builders/greenskull.png" alt="green skull image" />
 				</figure>
 			</a>
 			<a href="https://fiatjaf.com">
@@ -118,7 +118,7 @@
 					<div class="card_header">
 						<figcaption class="card_title">fiatjaf</figcaption>
 					</div>
-					<img src="/assets/builders/fiatjaf.png" alt="fiatjaf image" />
+					<img src="https://cdn.nostr.build/assets/builders/fiatjaf.png" alt="fiatjaf image" />
 				</figure>
 			</a>
 			<a href="https://coinkite.com">
@@ -126,7 +126,7 @@
 					<div class="card_header">
 						<figcaption class="card_title">NVK</figcaption>
 					</div>
-					<img src="/assets/builders/nvk.png" alt="nvk image" />
+					<img src="https://cdn.nostr.build/assets/builders/nvk.png" alt="nvk image" />
 				</figure>
 			</a>
 			<a href="https://iris.to/sirius">
@@ -134,7 +134,7 @@
 					<div class="card_header">
 						<figcaption class="card_title">Martti Malmi</figcaption>
 					</div>
-					<img src="/assets/builders/martti.png" alt="Martti image" />
+					<img src="https://cdn.nostr.build/assets/builders/martti.png" alt="Martti image" />
 				</figure>
 			</a>
 			<a href="https://snort.social/kieran">
@@ -142,7 +142,7 @@
 					<div class="card_header">
 						<figcaption class="card_title">Kieran</figcaption>
 					</div>
-					<img src="/assets/builders/kieran.png" alt="kieran image" />
+					<img src="https://cdn.nostr.build/assets/builders/kieran.png" alt="kieran image" />
 				</figure>
 			</a>
 			<a href="https://damus.io/">
@@ -150,7 +150,7 @@
 					<div class="card_header">
 						<figcaption class="card_title">Will</figcaption>
 					</div>
-					<img src="/assets/builders/will.png" alt="will image" />
+					<img src="https://cdn.nostr.build/assets/builders/will.png" alt="will image" />
 				</figure>
 			</a>
 			<a href="https://damus.io/">
@@ -158,7 +158,7 @@
 					<div class="card_header">
 						<figcaption class="card_title">elsat</figcaption>
 					</div>
-					<img src="/assets/builders/elsat.png" alt="elsat image" />
+					<img src="https://cdn.nostr.build/assets/builders/elsat.png" alt="elsat image" />
 				</figure>
 			</a>
 			<a href="https://damus.io/">
@@ -166,7 +166,7 @@
 					<div class="card_header">
 						<figcaption class="card_title">Swift</figcaption>
 					</div>
-					<img src="/assets/builders/swift.png" alt="swift image" />
+					<img src="https://cdn.nostr.build/assets/builders/swift.png" alt="swift image" />
 				</figure>
 			</a>
 			<a href="https://vitorpamplona.com">
@@ -174,7 +174,7 @@
 					<div class="card_header">
 						<figcaption class="card_title">Vitor</figcaption>
 					</div>
-					<img src="/assets/builders/vitor.png" alt="vitor image" />
+					<img src="https://cdn.nostr.build/assets/builders/vitor.png" alt="vitor image" />
 				</figure>
 			</a>
 			<a href="https://nostrgram.co/">
@@ -182,7 +182,7 @@
 					<div class="card_header">
 						<figcaption class="card_title">jleger2023</figcaption>
 					</div>
-					<img src="/assets/builders/jleger.gif" alt="jleger2023 image" />
+					<img src="https://cdn.nostr.build/assets/builders/jleger.gif" alt="jleger2023 image" />
 				</figure>
 			</a>
 			<a href="https://orangepill.dev/">
@@ -190,7 +190,7 @@
 					<div class="card_header">
 						<figcaption class="card_title">EzoFox</figcaption>
 					</div>
-					<img src="/assets/builders/ezo.png" alt="ezo image" />
+					<img src="https://cdn.nostr.build/assets/builders/ezo.png" alt="ezo image" />
 				</figure>
 			</a>
 			<a href="https://uselessshit.co/">
@@ -198,7 +198,7 @@
 					<div class="card_header">
 						<figcaption class="card_title">pitiunited</figcaption>
 					</div>
-					<img src="/assets/builders/pit.gif" alt="useless image" />
+					<img src="https://cdn.nostr.build/assets/builders/pit.gif" alt="useless image" />
 				</figure>
 			</a>
 			<a href="https://nostrplebs.com">
@@ -206,7 +206,7 @@
 					<div class="card_header">
 						<figcaption class="card_title">Derek Ross</figcaption>
 					</div>
-					<img src="/assets/builders/derek.png" alt="derek image" />
+					<img src="https://cdn.nostr.build/assets/builders/derek.png" alt="derek image" />
 				</figure>
 			</a>
 			<a href="https://github.com/michaelhall923">
@@ -214,7 +214,7 @@
 					<div class="card_header">
 						<figcaption class="card_title">Henry</figcaption>
 					</div>
-					<img src="/assets/builders/henry.png" alt="henry image" />
+					<img src="https://cdn.nostr.build/assets/builders/henry.png" alt="henry image" />
 				</figure>
 			</a>
 			<a href="https://nostr.build/">
@@ -222,7 +222,7 @@
 					<div class="card_header">
 						<figcaption class="card_title">nostr.build</figcaption>
 					</div>
-					<img src="/assets/builders/nostrbuild.png" alt="nostrbuild image" />
+					<img src="https://cdn.nostr.build/assets/builders/nostrbuild.png" alt="nostrbuild image" />
 				</figure>
 			</a>
 			<a href="https://eden.nostr.land">
@@ -230,7 +230,7 @@
 					<div class="card_header">
 						<figcaption class="card_title">Cameri</figcaption>
 					</div>
-					<img src="/assets/builders/cameri.png" alt="cameri image" />
+					<img src="https://cdn.nostr.build/assets/builders/cameri.png" alt="cameri image" />
 				</figure>
 			</a>
 			<a href="https://primal.net/fishcake">
@@ -238,7 +238,7 @@
 					<div class="card_header">
 						<figcaption class="card_title">Fishcake</figcaption>
 					</div>
-					<img src="/assets/builders/fishcake.png" alt="fishcake image" />
+					<img src="https://cdn.nostr.build/assets/builders/fishcake.png" alt="fishcake image" />
 				</figure>
 			</a>
 			<a href="https://github.com/ng5jr/nostr.build">
@@ -246,7 +246,7 @@
 					<div class="card_header">
 						<figcaption class="card_title">Ro₿erto</figcaption>
 					</div>
-					<img src="/assets/builders/roberto.png" alt="roberto image" />
+					<img src="https://cdn.nostr.build/assets/builders/roberto.png" alt="roberto image" />
 				</figure>
 			</a>
 			<a href="https://github.com/ng5jr/nostr.build">
@@ -254,7 +254,7 @@
 					<div class="card_header">
 						<figcaption class="card_title">nahuelg5</figcaption>
 					</div>
-					<img src="/assets/builders/nahuelg5.png" alt="nahuelg5 image" />
+					<img src="https://cdn.nostr.build/assets/builders/nahuelg5.png" alt="nahuelg5 image" />
 				</figure>
 			</a>
 			<a href="https://github.com/ng5jr/nostr.build">
@@ -262,7 +262,7 @@
 					<div class="card_header">
 						<figcaption class="card_title">Samsamskies</figcaption>
 					</div>
-					<img src="/assets/builders/samsamskies.png" alt="roberto image" />
+					<img src="https://cdn.nostr.build/assets/builders/samsamskies.png" alt="roberto image" />
 				</figure>
 			</a>
 			<a href="https://walletscrutiny.com/">
@@ -270,7 +270,7 @@
 					<div class="card_header">
 						<figcaption class="card_title">WalletScrutiny</figcaption>
 					</div>
-					<img src="/assets/builders/wallet.png" alt="walletscrutiny image" />
+					<img src="https://cdn.nostr.build/assets/builders/wallet.png" alt="walletscrutiny image" />
 				</figure>
 			</a>
 			<a href="https://nostr.info/">
@@ -278,7 +278,7 @@
 					<div class="card_header">
 						<figcaption class="card_title">Giszmo</figcaption>
 					</div>
-					<img src="/assets/builders/giszmo.png" alt="Giszmo image" />
+					<img src="https://cdn.nostr.build/assets/builders/giszmo.png" alt="Giszmo image" />
 				</figure>
 			</a>
 			<a href="https://dergigi.com/">
@@ -286,7 +286,7 @@
 					<div class="card_header">
 						<figcaption class="card_title">Gigi</figcaption>
 					</div>
-					<img src="/assets/builders/gigi.png" alt="gigi image" />
+					<img src="https://cdn.nostr.build/assets/builders/gigi.png" alt="gigi image" />
 				</figure>
 			</a>
 			<a href="https://nostr.report/">
@@ -294,7 +294,7 @@
 					<div class="card_header">
 						<figcaption class="card_title">The Nostr Report</figcaption>
 					</div>
-					<img src="/assets/builders/nostrreport.gif" alt="nostrreport image" />
+					<img src="https://cdn.nostr.build/assets/builders/nostrreport.gif" alt="nostrreport image" />
 				</figure>
 			</a>
 			<a href="https://pablof7z.com/">
@@ -302,7 +302,7 @@
 					<div class="card_header">
 						<figcaption class="card_title">PABLOF7z</figcaption>
 					</div>
-					<img src="/assets/builders/pablo.png" alt="pablof7z image" />
+					<img src="https://cdn.nostr.build/assets/builders/pablo.png" alt="pablof7z image" />
 				</figure>
 			</a>
 			<a href="https://linktr.ee/">
@@ -310,7 +310,7 @@
 					<div class="card_header">
 						<figcaption class="card_title">iefan</figcaption>
 					</div>
-					<img src="/assets/builders/iefan.png" alt="iefan image" />
+					<img src="https://cdn.nostr.build/assets/builders/iefan.png" alt="iefan image" />
 				</figure>
 			</a>
 			<a href="https://habla.news/">
@@ -318,7 +318,7 @@
 					<div class="card_header">
 						<figcaption class="card_title">verbiricha</figcaption>
 					</div>
-					<img src="/assets/builders/verbiricha.png" alt="verbiricha image" />
+					<img src="https://cdn.nostr.build/assets/builders/verbiricha.png" alt="verbiricha image" />
 				</figure>
 			</a>
 			<a href="https://nostrBadges.com/">
@@ -326,7 +326,7 @@
 					<div class="card_header">
 						<figcaption class="card_title">Jason</figcaption>
 					</div>
-					<img src="/assets/builders/jason.png" alt="jason image" />
+					<img src="https://cdn.nostr.build/assets/builders/jason.png" alt="jason image" />
 				</figure>
 			</a>
 			<a href="https://nostrland.com">
@@ -334,7 +334,7 @@
 					<div class="card_header">
 						<figcaption class="card_title">Karnage</figcaption>
 					</div>
-					<img src="/assets/builders/karnage.gif" alt="karnage image" />
+					<img src="https://cdn.nostr.build/assets/builders/karnage.gif" alt="karnage image" />
 				</figure>
 			</a>
 			<a href="https://nodeless.io/">
@@ -342,7 +342,7 @@
 					<div class="card_header">
 						<figcaption class="card_title">utxo</figcaption>
 					</div>
-					<img src="/assets/builders/utxo.gif" alt="utxo image" />
+					<img src="https://cdn.nostr.build/assets/builders/utxo.gif" alt="utxo image" />
 				</figure>
 			</a>
 			<a href="https://iris.to/rabble">
@@ -350,7 +350,7 @@
 					<div class="card_header">
 						<figcaption class="card_title">rabble</figcaption>
 					</div>
-					<img src="/assets/builders/rabble.png" alt="rabble image" />
+					<img src="https://cdn.nostr.build/assets/builders/rabble.png" alt="rabble image" />
 				</figure>
 			</a>
 			<a href="https://getcurrent.io">
@@ -358,7 +358,7 @@
 					<div class="card_header">
 						<figcaption class="card_title">StarBuilder</figcaption>
 					</div>
-					<img src="/assets/builders/starbuilder.png" alt="starbuilder image" />
+					<img src="https://cdn.nostr.build/assets/builders/starbuilder.png" alt="starbuilder image" />
 				</figure>
 			</a>
 			<a href="https://app.getcurrent.io">
@@ -366,7 +366,7 @@
 					<div class="card_header">
 						<figcaption class="card_title">egge</figcaption>
 					</div>
-					<img src="/assets/builders/egge.png" alt="egge image" />
+					<img src="https://cdn.nostr.build/assets/builders/egge.png" alt="egge image" />
 				</figure>
 			</a>
 			<a href="https://btcpayserver.org/">
@@ -374,7 +374,7 @@
 					<div class="card_header">
 						<figcaption class="card_title">Rockstar</figcaption>
 					</div>
-					<img src="/assets/builders/rockstar.png" alt="rockstar image" />
+					<img src="https://cdn.nostr.build/assets/builders/rockstar.png" alt="rockstar image" />
 				</figure>
 			</a>
 			<a href="https://lightning.store">
@@ -382,7 +382,7 @@
 					<div class="card_header">
 						<figcaption class="card_title">Lightning Store</figcaption>
 					</div>
-					<img src="/assets/builders/lnstore.gif" alt="lnstore image" />
+					<img src="https://cdn.nostr.build/assets/builders/lnstore.gif" alt="lnstore image" />
 				</figure>
 			</a>
 
