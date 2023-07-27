@@ -29,92 +29,6 @@ $acctlevel = $_SESSION["acctlevel"];
 // Fetch user's folder statistics and storage statistics
 $usersFoldersTable = new UsersImagesFolders($link);
 $usersFoldersStats = $usersFoldersTable->getFoldersStats($user);
-/**
- * Example output:
- * array(2) {
-  ["FOLDERS"]=>
-  array(7) {
-    ["FC"]=>
-    array(8) {
-      ["id"]=>
-      int(1067)
-      ["folder"]=>
-      string(2) "FC"
-      ["totalSize"]=>
-      string(1) "0"
-      ["fileCount"]=>
-      int(0)
-      ["gifCount"]=>
-      string(1) "0"
-      ["avCount"]=>
-      string(1) "0"
-      ["imageCount"]=>
-      string(1) "0"
-      ["publicCount"]=>
-      string(1) "0"
-    }
-    ["test3"]=>
-    array(8) {
-      ["id"]=>
-      int(1036)
-      ["folder"]=>
-      string(5) "test3"
-      ["totalSize"]=>
-      string(1) "0"
-      ["fileCount"]=>
-      int(0)
-      ["gifCount"]=>
-      string(1) "0"
-      ["avCount"]=>
-      string(1) "0"
-      ["imageCount"]=>
-      string(1) "0"
-      ["publicCount"]=>
-      string(1) "0"
-    }
-    ["/"]=>
-    array(8) {
-      ["id"]=>
-      NULL
-      ["folder"]=>
-      string(1) "/"
-      ["totalSize"]=>
-      string(9) "535503724"
-      ["fileCount"]=>
-      int(6)
-      ["gifCount"]=>
-      string(1) "1"
-      ["avCount"]=>
-      string(1) "4"
-      ["imageCount"]=>
-      string(1) "1"
-      ["publicCount"]=>
-      string(1) "4"
-    }
-  }
-  ["TOTAL"]=>
-  array(9) {
-    ["id"]=>
-    NULL
-    ["folder"]=>
-    string(5) "TOTAL"
-    ["totalSize"]=>
-    string(9) "577710699"
-    ["fileCount"]=>
-    int(40)
-    ["gifCount"]=>
-    string(1) "1"
-    ["avCount"]=>
-    string(1) "4"
-    ["imageCount"]=>
-    string(2) "35"
-    ["publicCount"]=>
-    string(2) "32"
-    ["folderCount"]=>
-    int(6)
-  }
-}
- */
 
 // TODO: This should be moved to a separate file, class, method
 // Validate space usage
@@ -139,23 +53,27 @@ $userStorageRemaining = $userOverLimit ? 0 : $userStorageLimit - $storageUsed;
 
 	<link rel="stylesheet" href="/styles/account.css" />
 	<link href="/scripts/dist/index.css?v=12" rel="stylesheet">
-	<link href="/styles/twbuild.css?v=12" rel="stylesheet">
+	<link href="/styles/twbuild.css?v=23" rel="stylesheet">
 	<link rel="icon" href="/assets/primo_nostr.png" />
 
 	<script defer src="/scripts/dist/index.js?v=23"></script>
-
+	<script defer src="/scripts/fw/alpinejs-intersect.min.js?v=3"></script>
+	<script defer src="/scripts/fw/alpinejs.min.js?v=3"></script>
+	<script defer src="/scripts/fw/htmx.min.js?v=3"></script>
+	<script defer src="/scripts/fw/htmx/loading-states.js?v=3"></script>
 	<style>
+		[x-cloak] {
+			display: none !important;
+		}
+
 		.publicly-shared {
 			border: 0.3125rem solid #00ff00;
 		}
 	</style>
 
 </head>
-<!-- DEBUG
-<?= var_dump($usersFoldersStats) ?>
--->
 
-<body>
+<body x-data="{ url_up_open: false }">
 	<aside class="sidebar">
 		<h1 class="sidebar_title">nostr.build</h1>
 		<div class="account_selector">
@@ -411,9 +329,16 @@ $userStorageRemaining = $userOverLimit ? 0 : $userStorageLimit - $storageUsed;
 			// doesn't print upload button if user is over their limit
 			if (!$userOverLimit) :
 			?>
+				<button id="open-account-url-upload-button" type="button" class="inline-flex items-center gap-x-2 rounded-md bg-indigo-600 px-3.5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600" @click="url_up_open = true">
+					<span class="hidden sm:inline">Import URL</span>
+					<svg class="self-center -mr-0.5 h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
+						<path d="M12.232 4.232a2.5 2.5 0 013.536 3.536l-1.225 1.224a.75.75 0 001.061 1.06l1.224-1.224a4 4 0 00-5.656-5.656l-3 3a4 4 0 00.225 5.865.75.75 0 00.977-1.138 2.5 2.5 0 01-.142-3.667l3-3z" />
+						<path d="M11.603 7.963a.75.75 0 00-.977 1.138 2.5 2.5 0 01.142 3.667l-3 3a2.5 2.5 0 01-3.536-3.536l1.225-1.224a.75.75 0 00-1.061-1.06l-1.224 1.224a4 4 0 105.656 5.656l3-3a4 4 0 00-.225-5.865z" />
+					</svg>
+				</button>
 				<button id="open-account-dropzone-button" type="button" class="inline-flex items-center gap-x-2 rounded-md bg-indigo-600 px-3.5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600">
-					Upload Media
-					<svg class="-mr-0.5 h-5 w-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+					<span class="hidden sm:inline">Upload Media</span>
+					<svg class="self-center -mr-0.5 h-5 w-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
 						<path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
 					</svg>
 				</button>
@@ -575,16 +500,17 @@ $userStorageRemaining = $userOverLimit ? 0 : $userStorageLimit - $storageUsed;
 							<input id="input<?= $divId ?>" value="<?= htmlentities($images_row['folder']) ?>" style="display: none;" />
 							<figure class="image_card">
 								<?php if ($type == 'image') : ?>
-									<img id="<?= $element ?>" src="<?= $image_url ?>" alt="" class="image <?= $images_row['flag'] ? "publicly-shared" : "" ?>" />
+									<img id="<?= $element ?>" x-data="{ src: '<?= $image_url ?>'}" x-intersect.once="$el.src = src" data-src="<?= $image_url ?>" alt="" class="image <?= $images_row['flag'] ? 'publicly-shared' : '' ?>" />
 								<?php elseif ($type == 'video') : ?>
-									<video id="img<?= $element ?>" src="<?= $image_url ?>" alt="" class="image <?= $images_row['flag'] ? "publicly-shared" : "" ?>" controls>
-										<source id="<?= $element ?>" src="<?= $image_url ?>" type="<?= $images_row['mime_type'] ?>">
+									<video id="img<?= $element ?>" x-data="{ src: '<?= $image_url ?>'}" x-intersect.once="$el.src = src, $nextTick(() => $el.load())" alt="" class="image <?= $images_row['flag'] ? 'publicly-shared' : '' ?>" preload="auto" controls>
+										<source id="<?= $element ?>" type="<?= $images_row['mime_type'] ?>" data-src="<?= $image_url ?>">
 									</video>
 								<?php elseif ($type == 'audio') : ?>
-									<audio id="img<?= $element ?>" src="<?= $image_url ?>" alt="" class="image <?= $images_row['flag'] ? "publicly-shared" : "" ?>" controls>
-										<source id="<?= $element ?>" src="<?= $image_url ?>" type="<?= $images_row['mime_type'] ?>">
+									<audio id="img<?= $element ?>" x-data="{ src: '<?= $image_url ?>'}" x-intersect.once="$el.src = src, $nextTick(() => $el.load())" alt="" class="image <?= $images_row['flag'] ? 'publicly-shared' : '' ?>" controls>
+										<source id="<?= $element ?>" type="<?= $images_row['mime_type'] ?>" data-src="<?= $image_url ?>">
 									</audio>
 								<?php endif; ?>
+
 
 								<button class="delete_button">
 									<input type="checkbox" id="cb<?= $images_row['id'] ?>" onclick="checkboxClicked('<?= $images_row['id'] ?>' , 1)" />
@@ -643,7 +569,6 @@ $userStorageRemaining = $userOverLimit ? 0 : $userStorageLimit - $storageUsed;
 
 	</main>
 	<script src="/scripts/account.js"></script>
-
 
 	<script>
 		var previousBtId;
@@ -721,17 +646,22 @@ $userStorageRemaining = $userOverLimit ? 0 : $userStorageLimit - $storageUsed;
 		}
 
 		function copyToClipboard(element) {
-			currentBtId = element;
+			var mediaElement = document.getElementById(element);
 
-			var imageUrl = document.getElementById(currentBtId).src;
+			if (!mediaElement) {
+				console.error('Element not found:', element);
+				return;
+			}
+
+			var imageUrl = mediaElement.dataset.src;
 
 			if (window.isSecureContext && navigator.clipboard) {
 				navigator.clipboard.writeText(imageUrl);
-				document.getElementById('bt' + currentBtId).value = 'Copied';
-				if (document.getElementById('bt' + previousBtId) != null && previousBtId != currentBtId) {
-					document.getElementById('bt' + previousBtId).value = 'Copy';
+				document.getElementById('bt' + element).textContent = 'Copied';
+				if (document.getElementById('bt' + previousBtId) != null && previousBtId != element) {
+					document.getElementById('bt' + previousBtId).textContent = 'Copy';
 				}
-				previousBtId = currentBtId;
+				previousBtId = element;
 			} else {
 				var textArea = document.createElement("textarea");
 				textArea.textContent = imageUrl;
@@ -742,22 +672,23 @@ $userStorageRemaining = $userOverLimit ? 0 : $userStorageLimit - $storageUsed;
 				selection.addRange(range);
 				try {
 					if (document.execCommand('copy')) {
-						document.getElementById('bt' + currentBtId).value = 'Copied';
-						if (document.getElementById('bt' + previousBtId) != null && previousBtId != currentBtId) {
-							document.getElementById('bt' + previousBtId).value = 'Copy';
+						document.getElementById('bt' + element).textContent = 'Copied';
+						if (document.getElementById('bt' + previousBtId) != null && previousBtId != element) {
+							document.getElementById('bt' + previousBtId).textContent = 'Copy';
 						}
-						previousBtId = currentBtId;
+						previousBtId = element;
 						selection.removeAllRanges();
 					} else {
-						alert("Failed!");
+						alert("Failed to copy URL!");
 					}
 				} catch (err) {
 					console.error('Unable to copy to clipboard', err);
-					alert("Something went wrong!");
+					alert("Failed to copy URL!");
 				}
 				document.body.removeChild(textArea);
 			}
 		}
+
 
 		function checkDelete() {
 			var lastIndex = window.location.href.indexOf("/");
@@ -793,6 +724,101 @@ $userStorageRemaining = $userOverLimit ? 0 : $userStorageLimit - $storageUsed;
 			}
 		}
 	</script>
+	<!-- URL Upload Modal -->
+	<div x-show="url_up_open" class="relative z-10" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+		<div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" x-cloak x-show="url_up_open" x-transition:enter="ease-out duration-300" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" x-transition:leave="ease-in duration-200" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0"></div>
+
+		<div class=" fixed inset-0 z-10 overflow-y-auto">
+			<div class="flex min-h-full items-center justify-center p-4 text-center sm:items-center sm:p-0">
+				<div class="relative transform overflow-hidden rounded-lg bg-white px-4 pb-4 pt-5 text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg sm:p-6" x-cloak x-show="url_up_open" x-transition:enter="ease-out duration-300" x-transition:enter-start="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95" x-transition:enter-end="opacity-100 translate-y-0 sm:scale-100" x-transition:leave="ease-in duration-200" x-transition:leave-start="opacity-100 translate-y-0 sm:scale-100" x-transition:leave-end="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95">
+
+					<div class="absolute right-0 top-0 pr-4 pt-4 block">
+						<button type="button" class="rounded-md bg-white text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2" @click="url_up_open = false">
+							<span class="sr-only">Close</span>
+							<svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true">
+								<path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+							</svg>
+						</button>
+					</div>
+
+					<form id="url-import-form" action="/api/v2/account/url" method="POST" hx-ext="loading-states">
+						<label for="url" class="block text-sm font-medium leading-6 text-gray-900">Import media from URL</label>
+						<div class="mt-2 flex rounded-md shadow-sm">
+							<div class="relative flex flex-grow items-stretch focus-within:z-10">
+								<div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+									<svg data-loading-class="hidden" class="h-5 w-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+										<path d="M12.232 4.232a2.5 2.5 0 013.536 3.536l-1.225 1.224a.75.75 0 001.061 1.06l1.224-1.224a4 4 0 00-5.656-5.656l-3 3a4 4 0 00.225 5.865.75.75 0 00.977-1.138 2.5 2.5 0 01-.142-3.667l3-3z" />
+										<path d="M11.603 7.963a.75.75 0 00-.977 1.138 2.5 2.5 0 01.142 3.667l-3 3a2.5 2.5 0 01-3.536-3.536l1.225-1.224a.75.75 0 00-1.061-1.06l-1.224 1.224a4 4 0 105.656 5.656l3-3a4 4 0 00-.225-5.865z" />
+									</svg>
+									<svg data-loading="block" class="hidden animate-spin -ml-1 mr-3 h-5 w-5 text-indigo-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+										<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+										<path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+									</svg>
+								</div>
+								<input type="url" name="url" id="url" data-loading-disable class="disabled:opacity-75 block w-full rounded-none rounded-l-md border-0 py-1.5 pl-10 text-gray-900 ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6" placeholder="https://..." required pattern="https?://.+" title="Enter a valid URL starting with http:// or https://">
+							</div>
+							<button type="submit" hx-post="/api/v2/account/url" hx-trigger="click" hx-swap="none" hx-validate data-loading-disable class="disabled:opacity-75 relative -ml-px inline-flex items-center gap-x-1.5 rounded-r-md px-3 py-2 text-sm font-semibold text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50">
+								<svg class="-ml-0.5 h-5 w-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+									<path fill-rule="evenodd" d="M13.75 7h-3V3.66l1.95 2.1a.75.75 0 101.1-1.02l-3.25-3.5a.75.75 0 00-1.1 0L6.2 4.74a.75.75 0 001.1 1.02l1.95-2.1V7h-3A2.25 2.25 0 004 9.25v7.5A2.25 2.25 0 006.25 19h7.5A2.25 2.25 0 0016 16.75v-7.5A2.25 2.25 0 0013.75 7zm-3 0h-1.5v5.25a.75.75 0 001.5 0V7z" clip-rule="evenodd" />
+								</svg>
+								Import
+							</button>
+						</div>
+						<p class="mt-2 text-sm text-red-600 hidden" id="url-error"></p>
+					</form>
+
+				</div>
+			</div>
+		</div>
+	</div>
+	<script>
+		document.body.addEventListener('htmx:configRequest', (event) => {
+			const form = document.getElementById('url-import-form');
+			if (!form.checkValidity()) {
+				event.preventDefault();
+				const inputs = form.querySelectorAll('input,select,textarea');
+				for (var i = 0; i < inputs.length; i++) {
+					const input = inputs[i];
+					if (!input.checkValidity()) {
+						// Show the error message
+						var errorMessageDiv = document.getElementById(input.id + '-error');
+						errorMessageDiv.textContent = input.validationMessage;
+						errorMessageDiv.classList.remove('hidden');
+
+						// Clear the error on input
+						input.addEventListener('input', () => {
+							errorMessageDiv.textContent = '';
+							errorMessageDiv.classList.add('hidden');
+						});
+					}
+				}
+			}
+		});
+
+		document.body.addEventListener('htmx:afterRequest', function(event) {
+			const xhr = event.detail.xhr;
+			if (xhr.getResponseHeader('Content-Type').includes('application/json')) {
+				const response = JSON.parse(xhr.responseText);
+				if (response.status === "error") {
+					//alert(response.message); // or update some part of your UI to display the error
+					const input = document.getElementById('url');
+					// Show the error message
+					const errorMessageDiv = document.getElementById(input.id + '-error');
+					errorMessageDiv.textContent = response.message;
+					errorMessageDiv.classList.remove('hidden');
+
+					// Clear the error on input
+					input.addEventListener('input', () => {
+						errorMessageDiv.textContent = '';
+						errorMessageDiv.classList.add('hidden');
+					});
+				} else if (response.status === "success") {
+					location.reload();
+				}
+			}
+		});
+	</script>
+
 </body>
 
 </html>
