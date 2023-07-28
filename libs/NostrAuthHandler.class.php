@@ -1,24 +1,44 @@
 <?php
+require_once __DIR__ . '/NostrEvent.class.php';
+require_once __DIR__ . '/Bech32.class.php';
 
 /**
- * NIP-98 Implementation for PHP (untested, don't use yet)
- * Uses: https://github.com/swentel/nostr-php
+ * Summary of NostrAuthHandler
  */
-
-require $_SERVER['DOCUMENT_ROOT'] . '/vendor/autoload.php';
-
 class NostrAuthHandler
 {
+  /**
+   * Summary of event
+   * @var 
+   */
   private $event;
+  /**
+   * Summary of headers
+   * @var 
+   */
   private $headers;
+  /**
+   * Summary of request
+   * @var 
+   */
   private $request;
 
+  /**
+   * Summary of __construct
+   * @param mixed $headers
+   * @param mixed $request
+   */
   public function __construct($headers, $request)
   {
     $this->headers = $headers;
     $this->request = $request;
   }
 
+  /**
+   * Summary of handle
+   * @throws \Exception
+   * @return void
+   */
   public function handle()
   {
     // check if 'Authorization' header exists
@@ -46,13 +66,18 @@ class NostrAuthHandler
       throw new Exception("Invalid nostr event");
     }
 
+    // Initialize Event class
+    $eventHandler = new NostrEvent();
+
     // Perform the checks here
 
     // 0. The signature MUST be valid.
-    // TODO: Must be implemented before use!
+    if (!$eventHandler->verifySignature($this->event)) {
+      throw new Exception("Invalid signature");
+    }
 
     // 1. The kind MUST be 27235.
-    if ($this->event['kind'] != 27235) {
+    if ($this->event['kind'] != NostrEventKind::HttpAuth) {
       throw new Exception("Invalid kind");
     }
 
@@ -74,6 +99,12 @@ class NostrAuthHandler
     }
   }
 
+
+  /**
+   * Summary of findTagValue
+   * @param mixed $tag
+   * @return mixed|null
+   */
   private function findTagValue($tag)
   {
     foreach ($this->event['tags'] as $eventTag) {
@@ -84,8 +115,22 @@ class NostrAuthHandler
     return null;
   }
 
+  /**
+   * Summary of getPubKey
+   * @return mixed|null
+   */
   public function getPubKey()
   {
-    // TODO: Implement this
+    return $this->event['pubkey'] ?? null;
+  }
+
+  /**
+   * Summary of getNpub
+   * @return string
+   */
+  public function getNpub()
+  {
+    $bech32 = new Bech32();
+    return $bech32->convertHexToBech32('npub', $this->getPubKey());
   }
 }
