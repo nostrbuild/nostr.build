@@ -114,8 +114,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Nostr.build Signup</title>
   <link rel="stylesheet" href="/styles/twbuild.css?v=7" />
-  <script defer src="/scripts/fw/alpinejs.min.js?v=2"></script>
-  <script defer src="/scripts/fw/htmx.min.js?v=2"></script>
+  <script defer src="/scripts/fw/alpinejs.min.js?v=3"></script>
+  <script defer src="/scripts/fw/htmx.min.js?v=3"></script>
   <style>
     [x-cloak] {
       display: none !important;
