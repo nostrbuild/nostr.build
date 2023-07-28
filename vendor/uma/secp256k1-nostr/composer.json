@@ -1,0 +1,6 @@
+{
+    "name": "uma/secp256k1-nostr",
+    "description": "secp256k1_nostr extension for PHP",
+    "type": "extension",
+    "license": "MIT"
+}

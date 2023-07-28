@@ -1,0 +1,7 @@
+ARG_ENABLE('secp256k1_nostr', 'secp256k1_nostr support', 'no');
+
+if (PHP_SECP256K1_NOSTR != 'no') {
+	AC_DEFINE('HAVE_SECP256K1_NOSTR', 1, 'secp256k1_nostr support enabled');
+
+	EXTENSION('secp256k1_nostr', 'secp256k1_nostr.c', null, '/DZEND_ENABLE_STATIC_TSRMLS_CACHE=1');
+}

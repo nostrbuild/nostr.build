@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "cc255fe121dcea5546496d6ddd3f9961",
+    "content-hash": "bf176aba958d470d0179e664550a2a7c",
     "packages": [
         {
             "name": "aws/aws-crt-php",
@@ -2176,7 +2176,34 @@
             "time": "2023-07-16T16:32:20+00:00"
         }
     ],
-    "packages-dev": [],
+    "packages-dev": [
+        {
+            "name": "uma/secp256k1-nostr",
+            "version": "v0.1.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/1ma/secp256k1-nostr-php.git",
+                "reference": "45b97ee26ce5b491ddbca05a7684003b6e7b523c"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/1ma/secp256k1-nostr-php/zipball/45b97ee26ce5b491ddbca05a7684003b6e7b523c",
+                "reference": "45b97ee26ce5b491ddbca05a7684003b6e7b523c",
+                "shasum": ""
+            },
+            "type": "extension",
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "description": "secp256k1_nostr extension for PHP",
+            "support": {
+                "issues": "https://github.com/1ma/secp256k1-nostr-php/issues",
+                "source": "https://github.com/1ma/secp256k1-nostr-php/tree/v0.1.0"
+            },
+            "time": "2023-07-11T00:08:37+00:00"
+        }
+    ],
     "aliases": [],
     "minimum-stability": "stable",
     "stability-flags": [],

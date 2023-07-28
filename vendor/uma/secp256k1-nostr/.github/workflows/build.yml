@@ -1,0 +1,18 @@
+name: Continuous Integration
+
+on: push
+
+jobs:
+  run:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          submodules: recursive
+      - name: Build secp256k1 and PHP extension
+        run: |
+          make secp256k1 ext
+      - name: Test PHP extension
+        run: |
+          sudo apt-get install valgrind
+          make check

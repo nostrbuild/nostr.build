@@ -3,7 +3,7 @@
         'name' => '__root__',
         'pretty_version' => 'dev-main',
         'version' => 'dev-main',
-        'reference' => 'eb38cdf8f0d3313fc9a97784cd1f8060d0dbdde9',
+        'reference' => '3f5c79e696604d30ebbfd747945a64d46be01344',
         'type' => 'library',
         'install_path' => __DIR__ . '/../../',
         'aliases' => array(),
@@ -13,7 +13,7 @@
         '__root__' => array(
             'pretty_version' => 'dev-main',
             'version' => 'dev-main',
-            'reference' => 'eb38cdf8f0d3313fc9a97784cd1f8060d0dbdde9',
+            'reference' => '3f5c79e696604d30ebbfd747945a64d46be01344',
             'type' => 'library',
             'install_path' => __DIR__ . '/../../',
             'aliases' => array(),
@@ -336,6 +336,15 @@
             'install_path' => __DIR__ . '/../toshy/bunnynet-php',
             'aliases' => array(),
             'dev_requirement' => false,
+        ),
+        'uma/secp256k1-nostr' => array(
+            'pretty_version' => 'v0.1.0',
+            'version' => '0.1.0.0',
+            'reference' => '45b97ee26ce5b491ddbca05a7684003b6e7b523c',
+            'type' => 'extension',
+            'install_path' => __DIR__ . '/../uma/secp256k1-nostr',
+            'aliases' => array(),
+            'dev_requirement' => true,
         ),
     ),
 );
