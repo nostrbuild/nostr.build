@@ -2,7 +2,8 @@
 // This class requires installation of https://github.com/1ma/secp256k1-nostr-php
 declare(strict_types=1);
 
-enum NostrEventKind: int {
+enum NostrEventKind: int
+{
   case Metadata = 0;
   case Text = 1;
   case RecommendRelay = 2;
