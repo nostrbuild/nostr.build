@@ -2,6 +2,9 @@
 // This class requires installation of https://github.com/1ma/secp256k1-nostr-php
 declare(strict_types=1);
 
+/**
+ * Summary of NostrEventKind
+ */
 enum NostrEventKind: int
 {
   case Metadata = 0;
@@ -30,8 +33,6 @@ enum NostrEventKind: int
   case Article = 30023;
 }
 
-// to call this enum run NostrEventKind::HttpAuth
-
 /**
  * Summary of NostrEvent
  */
@@ -40,29 +41,32 @@ class NostrEvent
   /**
    * Summary of getBlankEvent
    * @param NostrEventKind $kind
-   * @return array
+   * @return SignedNostrEvent
    */
-  public function getBlankEvent(NostrEventKind $kind): array
+  public function getBlankEvent(NostrEventKind $kind): SignedNostrEvent
   {
-    return [
-      "kind" => $kind,
-      "content" => "",
-      "tags" => array(),
-      "created_at" => 0
-    ];
+    return new SignedNostrEvent(
+      '',
+      '',
+      '',
+      $kind,
+      '',
+      [],
+      0
+    );
   }
 
   /**
    * Summary of finishEvent
-   * @param array $event
+   * @param SignedNostrEvent $event
    * @param string $privateKey
-   * @return array
+   * @return SignedNostrEvent
    */
-  public function finishEvent(array $event, string $privateKey): array
+  public function finishEvent(SignedNostrEvent $event, string $privateKey): SignedNostrEvent
   {
-    $event['pubkey'] = $this->getPublicKey($privateKey);
-    $event['id'] = $this->getEventHash($event);
-    $event['sig'] = $this->getSignature($event, $privateKey);
+    $event->pubkey = $this->getPublicKey($privateKey);
+    $event->id = $this->getEventHash($event);
+    $event->sig = $this->getSignature($event, $privateKey);
 
     return $event;
   }
@@ -74,16 +78,15 @@ class NostrEvent
    */
   public function getPublicKey(string $privateKey): string
   {
-    // use library function to derive public key
     return secp256k1_nostr_derive_pubkey($privateKey);
   }
 
   /**
    * Summary of getEventHash
-   * @param array $event
+   * @param SignedNostrEvent $event
    * @return string
    */
-  public function getEventHash(array $event): string
+  public function getEventHash(SignedNostrEvent $event): string
   {
     $serializedEvent = $this->serializeEvent($event);
     $eventHash = hash("sha256", $serializedEvent);
@@ -93,25 +96,23 @@ class NostrEvent
 
   /**
    * Summary of serializeEvent
-   * @param array $event
+   * @param SignedNostrEvent $event
    * @throws \Exception
-   * @return bool|string
+   * @return string
    */
-  public function serializeEvent(array $event): bool|string
+  public function serializeEvent(SignedNostrEvent $event): string
   {
     if (!$this->validateEvent($event)) {
-      throw new Exception("Can't serialize event with wrong or missing properties");
+      throw new \Exception("Can't serialize event with wrong or missing properties");
     }
 
-    // We create an indexed array instead of an associative array 
-    // to preserve the order of the properties
     $eventData = [
       0,
-      $event['pubkey'],
-      $event['created_at'],
-      $event['kind'],
-      $event['tags'],
-      $event['content']
+      $event->pubkey,
+      $event->created_at,
+      $event->kind,
+      $event->tags,
+      $event->content
     ];
 
     return json_encode($eventData);
@@ -119,44 +120,18 @@ class NostrEvent
 
   /**
    * Summary of validateEvent
-   * @param array $event
+   * @param SignedNostrEvent $event
    * @return bool
    */
-  public function validateEvent(array $event): bool
+  public function validateEvent(SignedNostrEvent $event): bool
   {
-    // Checking if all properties exist
-    if (
-      !isset($event['kind']) ||
-      !isset($event['content']) ||
-      !isset($event['created_at']) ||
-      !isset($event['pubkey']) ||
-      !isset($event['tags']) ||
-      !isset($event['id'])
-    ) {
-      return false;
-    }
-
-    // Checking types of properties
-    if (
-      !is_int($event['kind']) ||
-      !is_string($event['content']) ||
-      !is_int($event['created_at']) ||
-      !is_string($event['pubkey'])
-    ) {
-      return false;
-    }
-
     // Check if pubkey is hex and 64 characters
-    if (!ctype_xdigit($event['pubkey']) || strlen($event['pubkey']) != 64) {
+    if (!ctype_xdigit($event->pubkey) || strlen($event->pubkey) != 64) {
       return false;
     }
 
     // Check if tags is an array and all its items are arrays of strings
-    if (!is_array($event['tags'])) {
-      return false;
-    }
-
-    foreach ($event['tags'] as $tag) {
+    foreach ($event->tags as $tag) {
       if (!is_array($tag)) {
         return false;
       }
@@ -171,28 +146,50 @@ class NostrEvent
     return true;
   }
 
+
   /**
    * Summary of verifySignature
-   * @param array $event
+   * @param SignedNostrEvent $event
    * @return bool
    */
-  public function verifySignature(array $event): bool
+  public function verifySignature(SignedNostrEvent $event): bool
   {
-    // Use library function to verify the signature
-    return secp256k1_nostr_verify($event['pubkey'], $event['id'], $event['sig']);
+    return secp256k1_nostr_verify($event->pubkey, $event->id, $event->sig);
   }
 
   /**
    * Summary of getSignature
-   * @param array $event
+   * @param SignedNostrEvent $event
    * @param string $privateKey
    * @return string
    */
-  public function getSignature(array $event, string $privateKey): string
+  public function getSignature(SignedNostrEvent $event, string $privateKey): string
   {
-    // We will assume that getEventHash is unchanged and returns a hex-encoded hash string
     $hash = $this->getEventHash($event);
-    // Use library function to sign the hash
     return secp256k1_nostr_sign($privateKey, $hash);
+  }
+}
+
+class SignedNostrEvent
+{
+  /**
+   * Summary of __construct
+   * @param string $pubkey
+   * @param string $id
+   * @param string $sig
+   * @param NostrEventKind $kind
+   * @param string $content
+   * @param array $tags
+   * @param int $created_at
+   */
+  public function __construct(
+    public string $pubkey,
+    public string $id,
+    public string $sig,
+    public NostrEventKind $kind,
+    public string $content,
+    public array $tags,
+    public int $created_at
+  ) {
   }
 }
