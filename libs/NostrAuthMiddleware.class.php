@@ -1,6 +1,6 @@
 <?php
 
-require_once __DIR__ . '/config.php';
+require_once __DIR__ . '/../config.php';
 require_once __DIR__ . '/NostrAuthHandler.class.php';
 require_once __DIR__ . '/Account.class.php';
 
