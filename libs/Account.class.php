@@ -411,4 +411,62 @@ class Account
     // If there's enough space for the file, including unlimited space for Admin
     return $fileSize <= $remainingSpace;
   }
+
+  public function setPlan(int $planLevel, bool $new = true): void
+  {
+    $sql = "UPDATE users SET acctlevel = ?, plan_start_date = ? WHERE usernpub = ?";
+    $stmt = $this->db->prepare($sql);
+
+    if (!$stmt) {
+      throw new Exception("Error preparing statement: " . $this->db->error);
+    }
+
+    try {
+      $planStartDate = $new ? date('Y-m-d') : $this->account['plan_start_date'] ?? date('Y-m-d');
+      if (!$stmt->bind_param('iss', $planLevel, $planStartDate, $this->npub)) {
+        throw new Exception("Error binding parameters: " . $stmt->error);
+      }
+
+      if (!$stmt->execute()) {
+        throw new Exception("Error executing statement: " . $stmt->error);
+      }
+    } finally {
+      $stmt->close();
+    }
+  }
+
+  public function upgradePlan(int $newPlanLevel, bool $resetDate = false): void
+  {
+    // Fetch existing account data to get the current plan level
+    $currentPlanLevel = AccountLevel::from($this->account['acctlevel']);
+    $targetPlanLevel = AccountLevel::from($newPlanLevel);
+
+    // Perform checks to ensure the upgrade is valid (e.g., new plan is higher than current plan)
+    if ($this->isValidUpgrade($currentPlanLevel, $targetPlanLevel) === false) {
+      throw new Exception("New plan level must be greater than the current plan level");
+    }
+
+    // Set the new plan and specify whether to reset the plan start date
+    $this->setPlan($newPlanLevel, $resetDate);
+  }
+
+  public function isValidUpgrade(AccountLevel $currentLevel, AccountLevel $newLevel): bool
+  {
+    // Array that specifies the upgrade path for each account level
+    $upgradePath = [
+      AccountLevel::Unverified, // 0
+      AccountLevel::Moderator, // 89
+      AccountLevel::Viewer, // 4
+      AccountLevel::Starter, // 5
+      AccountLevel::Professional, // 2
+      AccountLevel::Creator, // 1
+      AccountLevel::Admin, // 99
+    ];
+
+    $currentLevelIndex = array_search($currentLevel, $upgradePath);
+    $newLevelIndex = array_search($newLevel, $upgradePath);
+
+    // If both levels are found and the new level is higher in the sequence
+    return $currentLevelIndex !== false && $newLevelIndex !== false && $newLevelIndex > $currentLevelIndex;
+  }
 }
