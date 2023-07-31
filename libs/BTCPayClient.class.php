@@ -47,11 +47,12 @@ class BTCPayClient
       ->setRedirectAutomatically(empty($redirectUrl) ? false : true)
       ->setRedirectURL($redirectUrl);
     try {
+      $order_id = uniqid('nb_signup_order-', true);
       $invoice = $this->invoice->createInvoice(
         $this->storeId,
         $this->currency,
         $invoiceAmount,
-        null,
+        $order_id,
         null,
         $metadata,
         $checkoutOptions
