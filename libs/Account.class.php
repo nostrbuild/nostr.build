@@ -111,10 +111,11 @@ class Account
         throw new Exception("Error getting result: " . $stmt->error);
       }
 
-      $this->account = $result->fetch_assoc();
+      $this->account = $result->fetch_assoc() ?? [];
       if (!$this->account) {
         // Handle no matching record found
-        throw new Exception("No matching record found for npub: " . $this->npub);
+        //throw new Exception("No matching record found for npub: " . $this->npub);
+        error_log("No matching record found for npub: " . $this->npub);
       }
     } finally {
       $stmt->close();
@@ -177,7 +178,7 @@ class Account
       $db = new mysqli("localhost", "username", "password", "database");
       $npub = "exampleUser";
       $password = "examplePassword";
-      $level = AccountLevel::Creator; // or some valid account level
+      $level = 0; // or some valid account level
       $account = new Account($npub, $db);
       $account->createAccount($password, $level);
       echo "Account created successfully!";
@@ -227,7 +228,7 @@ class Account
     $this->fetchAccountData();
   }
 
-  private function accountExists(): bool
+  public function accountExists(): bool
   {
     return !empty($this->account);
   }
