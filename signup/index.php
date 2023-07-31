@@ -5,6 +5,8 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/functions/session.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/permissions.class.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/BTCPayClient.class.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/Plans.class.php';
+require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/Account.class.php';
+require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/Bech32.class.php';
 
 global $link;
 // Create new Permission object
@@ -27,83 +29,104 @@ $btcpayClient = new BTCPayClient(
   exit;
 }*/
 
-// Define variables and initialize with empty values
-$usernpub = $password = $confirm_password = "";
-$usernpub_err = $password_err = $confirm_password_err = "";
+// Define steps of the sign-up process
+$steps = [
+  ["Choose a Plan", "1"],
+  ["Create Your Account", "2"],
+  ["Pay the Fee", "3"],
+  ["Done", "4"]
+];
+
+// Figureout where we are in the sign-up process
+
+// Check if step is set in GET parameter or in SESSION
+if (isset($_GET['step']) && is_numeric($_GET['step'])) {
+  $step = $_GET['step'];
+  // Store the step progression in a session
+  $_SESSION['signup_step'] = $step;
+} elseif (isset($_SESSION['signup_step'])) {
+  $step = $_SESSION['signup_step'];
+} else {
+  // Default value if no step is set yet
+  $step = 1;
+}
+
+// Check if plan is set in GET parameter or in SESSION
+if (isset($_GET['plan']) && is_numeric($_GET['plan'])) {
+  $selectedPlan = $_GET['plan'];
+  // Store the step progression in a session
+  $_SESSION['signup_plan'] = $selectedPlan;
+} elseif (isset($_SESSION['signup_plan'])) {
+  $selectedPlan = $_SESSION['signup_plan'];
+} else {
+  // Default value if no step is set yet
+  $selectedPlan = 2;
+}
 
 // Processing form data when form is submitted
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
+  // Define variables and initialize with empty values
+  $usernpub = $password = $confirm_password = "";
+  $account_create_error = "";
+  $bech32 = new Bech32();
 
   // Validate usernpub
   $usernpub = trim($_POST["usernpub"]);
   if (empty($usernpub)) {
-    $usernpub_err = "Please enter a usernpub.";
-  } elseif (!preg_match('/^[a-zA-Z0-9_]+$/', $usernpub)) {
-    $usernpub_err = "Your public key can only contain letters, numbers, and underscores.";
-  } elseif (substr($usernpub, 0, 5) != 'npub1') {
-    $usernpub_err = 'Your public key always begins with "npub1".<BR> Do NOT enter your private key!';
-  } else {
-    // Prepare a select statement
-    $stmt = $link->prepare("SELECT id FROM users WHERE usernpub = ?");
+    $account_create_error = "Please enter a usernpub.";
+  } elseif (!$bech32->isValidNpub1Address($usernpub)) {
+    $account_create_error = 'Invalid npub1 public key. Please enter a valid public key that begins with "npub1". Do NOT enter your private key!';
+  }
 
-    // Bind variables to the prepared statement as parameters
-    $stmt->bind_param("s", $usernpub);
-
-    // Attempt to execute the prepared statement
-    if ($stmt->execute()) {
-      // Bind result variables
-      $stmt->bind_result($id);
-
-      // Check if usernpub exists
-      if ($stmt->fetch()) {
-        $usernpub_err = "This usernpub is already taken.";
-      }
-
-      $stmt->close();
-    } else {
-      throw new Exception("Error: " . $stmt->error);
+  if (empty($account_create_error)) {
+    // Validate password
+    $password = trim($_POST["password"]);
+    if (empty($password)) {
+      $account_create_error = "Please enter a password.";
+    } elseif (strlen($password) < 6) {
+      $account_create_error = "Password must have at least 6 characters.";
     }
   }
 
-  // Validate password
-  $password = trim($_POST["password"]);
-  if (empty($password)) {
-    $password_err = "Please enter a password.";
-  } elseif (strlen($password) < 6) {
-    $password_err = "Password must have at least 6 characters.";
-  }
-
-  // Validate confirm password
-  $confirm_password = trim($_POST["confirm_password"]);
-  if (empty($confirm_password)) {
-    $confirm_password_err = "Please confirm password.";
-  } elseif ($password != $confirm_password) {
-    $confirm_password_err = "Password did not match.";
+  if (empty($account_create_error)) {
+    // Validate confirm password
+    $confirm_password = trim($_POST["confirm_password"]);
+    if (empty($confirm_password)) {
+      $account_create_error = "Please confirm password.";
+    } elseif ($password != $confirm_password) {
+      $account_create_error = "Password did not match.";
+    }
   }
 
   // Check input errors before inserting in database
-  if (empty($usernpub_err) && empty($password_err) && empty($confirm_password_err)) {
-
-    // Prepare an insert statement
-    $stmt = $link->prepare("INSERT INTO users (usernpub, password) VALUES (?, ?)");
-
-    // Bind variables to the prepared statement as parameters
-    $hashed_password = password_hash($password, PASSWORD_DEFAULT); // Creates a password hash
-    $stmt->bind_param("ss", $usernpub, $hashed_password);
-
-    // Attempt to execute the prepared statement
-    if ($stmt->execute()) {
-      // Redirect to login page
-      header("location: /login");
-    } else {
-      throw new Exception("Error: " . $stmt->error);
+  if (empty($account_create_error)) {
+    try {
+      $account = new Account($usernpub, $link);
+      if ($account->accountExists()) {
+        $account_create_error = 'This npub1 public key is already in use. Please enter a different public key.';
+      }
+      $level = 0;
+      $account->createAccount($password, $level);
+    } catch (DuplicateUserException $e) {
+      $account_create_error = 'This npub1 public key is already in use. Please enter a different public key.';
+    } catch (InvalidAccountLevelException $e) {
+      $account_create_error = "The specified account level is invalid.";
+    } catch (Exception $e) {
+      $account_create_error = "An error occurred: " . $e->getMessage();
     }
-
-    $stmt->close();
   }
 
-  // Close connection
-  $link->close();
+  // Validate if we accumulated any errors
+  if (empty($account_create_error)) {
+    // Unverified account created, proceed to the payment step
+    $step = 3;
+    $_SESSION['signup_step'] = $step;
+    $_SESSION['signup_npub'] = $usernpub;
+  } else {
+    // Encountered an error, display it in the form and stay on the same step
+    $step = 2;
+    $_SESSION['signup_step'] = $step;
+  }
 }
 ?>
 
@@ -185,36 +208,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
   </header>
   <!-- /Navbar -->
   <main>
-    <?php
-    // Check if plan is set in GET parameter or in SESSION
-    if (isset($_GET['plan']) && is_numeric($_GET['plan'])) {
-      $selectedPlan = $_GET['plan'];
-      // Store the step progression in a session
-      $_SESSION['plan'] = $selectedPlan;
-    } elseif (isset($_SESSION['plan'])) {
-      $selectedPlan = $_SESSION['plan'];
-    } else {
-      // Default value if no step is set yet
-      $selectedPlan = 2;
-    }
-    // Check if step is set in GET parameter or in SESSION
-    if (isset($_GET['step']) && is_numeric($_GET['step'])) {
-      $step = $_GET['step'];
-      // Store the step progression in a session
-      $_SESSION['step'] = $step;
-    } elseif (isset($_SESSION['step'])) {
-      $step = $_SESSION['step'];
-    } else {
-      // Default value if no step is set yet
-      $step = 1;
-    }
-    $steps = [
-      ["Choose a Plan", "1"],
-      ["Create Your Account", "2"],
-      ["Pay the Fee", "3"],
-      ["Done", "4"]
-    ];
-    ?>
     <nav aria-label="Progress" class="p-5 m-3">
       <ol hx-boost="true" role="list" class="divide-y divide-gray-300 rounded-md border border-gray-300 md:flex md:divide-y-0">
         <?php foreach ($steps as $index => $value) : ?>
@@ -259,7 +252,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         <!-- Plans section -->
         <?php
         // Initialize Plans class based on user login status and current plan
-
+        // TODO
         Plans::init();
         ?>
         <div class="py-10 sm:py-15">
@@ -335,7 +328,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
               <div>
                 <label for="usernpub" class="block text-sm font-medium leading-6 text-gray-100">Your npub</label>
                 <div class="mt-2">
-                  <input id="usernpub" name="usernpub" type="text" autocomplete="off" required class="block w-full rounded-md border-0 py-1.5 text-gray-100 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6" placeholder="npub1...">
+                  <input id="usernpub" name="usernpub" type="text" autocomplete="off" required class="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6" placeholder="npub1...">
                 </div>
               </div>
 
@@ -343,14 +336,16 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 <div class="pointer-events-none absolute inset-0 z-10 rounded-md ring-1 ring-inset ring-gray-300"></div>
                 <div>
                   <label for="password" class="sr-only">Password</label>
-                  <input id="password" name="password" type="password" autocomplete="off" required class="relative block w-full rounded-t-md border-0 py-1.5 text-gray-100 ring-1 ring-inset ring-gray-100 placeholder:text-gray-400 focus:z-10 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6" placeholder="Password">
+                  <input id="password" name="password" type="password" autocomplete="off" required class="relative block w-full rounded-t-md border-0 py-1.5 text-gray-900 ring-1 ring-inset ring-gray-100 placeholder:text-gray-400 focus:z-10 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6" placeholder="Password">
                 </div>
                 <div>
                   <label for="password" class="sr-only">Confirm Password</label>
-                  <input id="confirm_password" name="confirm_password" type="password" autocomplete="off" required class="relative block w-full rounded-b-md border-0 py-1.5 text-gray-900 ring-1 ring-inset ring-gray-100 placeholder:text-gray-400 focus:z-10 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6" placeholder="Confirm password">
+                  <input id="confirm_password" name="confirm_password" type="password" autocomplete="off" required class="relative block w-full rounded-b-md border-0 py-1.5 text-gray-900 ring-1 ring-inset ring-gray-900 placeholder:text-gray-400 focus:z-10 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6" placeholder="Confirm password">
                 </div>
               </div>
-
+              <?php if (!empty($account_create_error)) : ?>
+                <p class="mt-2 text-sm text-red-600" id="email-error"><?= htmlentities($account_create_error) ?></p>
+              <?php endif; ?>
               <div>
                 <button type="submit" class="flex w-full justify-center rounded-md bg-indigo-600 px-3 py-1.5 text-sm font-semibold leading-6 text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600">Create Account</button>
               </div>
@@ -358,11 +353,24 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
           </div>
         <?php endif; ?>
       <?php break;
-      case 3: ?>
+      case 3:
+        global $btcpayConfig;
+        Plans::init();
+        $btcpayClient = new BTCPayClient(
+          $btcpayConfig['apiKey'],
+          $btcpayConfig['host'],
+          $btcpayConfig['storeId'],
+          $btcpayConfig['secret']
+        );
+        $redirectUrl = 'https://' . $_SERVER['HTTP_HOST'] . '/signup/?step=4';
+        $invoiceId = $btcpayClient->createInvoice(Plans::$PLANS[$selectedPlan]->priceInt, $redirectUrl, ['plan' => $selectedPlan, 'userNpub' => $_SESSION['signup_npub']]);
+        $_SESSION['signup_invoiceId'] = $invoiceId;
+      ?>
         <!-- Pay the Fee -->
       <?php break;
       case 4: ?>
         <!-- Done -->
+        <h1>You are all set, proceed to the <a href="/login">login page</a> to get started.</h1>
     <?php break;
     endswitch; ?>
   </main>
@@ -390,8 +398,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
   <script src="https://btcpay.nostr.build/modal/btcpay.js"></script>
   <script>
-    //const invoiceId = 'UT7hwtGMCiM8NhUq5GNKxZ';
-    //window.btcpay.showInvoice(invoiceId);
+    <?php if ($step == 3 && isset($invoiceId)) : ?>
+      window.btcpay.showInvoice('<?= $invoiceId ?>');
+    <?php endif; ?>
   </script>
 </body>
 
