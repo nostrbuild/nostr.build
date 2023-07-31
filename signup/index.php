@@ -373,13 +373,13 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             // Need to compare BTCPay Precise Number objects, so convert to string first
             //$priceDiff = Plans::$PLANS[$selectedPlan]->priceInt - $invoice->getAmount();
 
-            error_log('Invoice status: ' . $invoiceStatus . PHP_EOL);
+            error_log(PHP_EOL . 'Invoice status: ' . $invoiceStatus . PHP_EOL);
             error_log('Invoice npub: ' . $invoiceNpub . PHP_EOL);
             error_log('Invoice plan: ' . $invoicePlan . PHP_EOL);
             error_log('Invoice price diff: ' . $priceDiff . PHP_EOL);
 
 
-            if ($invoiceStatus == 'expired') {
+            if ($invoiceStatus == 'Expired' || $invoiceNpub != $_SESSION['signup_npub'] || $invoicePlan != $selectedPlan) {
               $invoiceId = $btcpayClient->createInvoice(Plans::$PLANS[$selectedPlan]->priceInt, $redirectUrl, ['plan' => $selectedPlan, 'userNpub' => $_SESSION['signup_npub']]);
               $_SESSION['signup_invoiceId'] = $invoiceId;
             } else {
