@@ -18,7 +18,7 @@ class BTCPayClient
   private $invoice;
   private $currency;
 
-  public function __construct(string $apiKey, string $host, string $storeId, string $currency = null)
+  public function __construct(string $apiKey, string $host, string $storeId, string $currency = 'SATS')
   {
     $this->apiKey = $apiKey;
     $this->host = $host;
@@ -39,11 +39,11 @@ class BTCPayClient
     $invoiceAmount = PreciseNumber::parseString($amount);
     $checkoutOptions = new InvoiceCheckoutOptions();
     $checkoutOptions
-      //->setSpeedPolicy($checkoutOptions::SPEED_HIGH)
-      //->setExpirationMinutes(45)
-      //->setMonitoringMinutes(120)
-      ->setPaymentMethods([$this->currency, 'BTC'])
-      //->setPaymentTolerance(0)
+      ->setSpeedPolicy($checkoutOptions::SPEED_HIGH)
+      ->setExpirationMinutes(45)
+      ->setMonitoringMinutes(120)
+      ->setPaymentMethods(['BTC-LNURLPay', 'BTC-LightningNetwork', 'BTC'])
+      ->setPaymentTolerance(0)
       ->setRedirectAutomatically(empty($redirectUrl) ? false : true)
       ->setRedirectURL($redirectUrl);
     try {
