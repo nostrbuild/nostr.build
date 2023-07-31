@@ -361,9 +361,40 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
           $btcpayConfig['host'],
           $btcpayConfig['storeId'],
         );
+        // Check if invoiceId is already set in session, and if invoice is not yet expired.
+        // If expired, create a new invoice, otherwise use the existing one.
         $redirectUrl = 'https://' . $_SERVER['HTTP_HOST'] . '/signup/?step=4';
-        $invoiceId = $btcpayClient->createInvoice(Plans::$PLANS[$selectedPlan]->priceInt, $redirectUrl, ['plan' => $selectedPlan, 'userNpub' => $_SESSION['signup_npub']]);
-        $_SESSION['signup_invoiceId'] = $invoiceId;
+        if (isset($_SESSION['signup_invoiceId'])) {
+          try {
+            $invoice = $btcpayClient->getInvoice($_SESSION['signup_invoiceId']);
+            $invoiceStatus = $invoice->getStatus();
+            $invoiceNpub = $invoice->getData()['metadata']['userNpub'];
+            $invoicePlan = $invoice->getData()['metadata']['plan'];
+            // Need to compare BTCPay Precise Number objects, so convert to string first
+            //$priceDiff = Plans::$PLANS[$selectedPlan]->priceInt - $invoice->getAmount();
+
+            error_log('Invoice status: ' . $invoiceStatus . PHP_EOL);
+            error_log('Invoice npub: ' . $invoiceNpub . PHP_EOL);
+            error_log('Invoice plan: ' . $invoicePlan . PHP_EOL);
+            error_log('Invoice price diff: ' . $priceDiff . PHP_EOL);
+
+
+            if ($invoiceStatus == 'expired') {
+              $invoiceId = $btcpayClient->createInvoice(Plans::$PLANS[$selectedPlan]->priceInt, $redirectUrl, ['plan' => $selectedPlan, 'userNpub' => $_SESSION['signup_npub']]);
+              $_SESSION['signup_invoiceId'] = $invoiceId;
+            } else {
+              $invoiceId = $_SESSION['signup_invoiceId'];
+            }
+          } catch (Exception $e) {
+            // Invoice not found, create a new one
+            $invoiceId = $btcpayClient->createInvoice(Plans::$PLANS[$selectedPlan]->priceInt, $redirectUrl, ['plan' => $selectedPlan, 'userNpub' => $_SESSION['signup_npub']]);
+            $_SESSION['signup_invoiceId'] = $invoiceId;
+          }
+        } else {
+          // Create a new invoice
+          $invoiceId = $btcpayClient->createInvoice(Plans::$PLANS[$selectedPlan]->priceInt, $redirectUrl, ['plan' => $selectedPlan, 'userNpub' => $_SESSION['signup_npub']]);
+          $_SESSION['signup_invoiceId'] = $invoiceId;
+        }
       ?>
         <!-- Pay the Fee -->
       <?php break;
