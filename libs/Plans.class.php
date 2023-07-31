@@ -29,7 +29,13 @@ class Plan
     $this->description = $description;
     $this->features = $features;
     $this->currency = $currency;
-    $proratedPrice = ($price - $fromPlanPrice) / 365 * $remainingDays;
+
+    if ($remainingDays === 0) {
+      $proratedPrice = $price - $fromPlanPrice;
+    } else {
+      $proratedPrice = ($price - $fromPlanPrice) / 365 * $remainingDays;
+    }
+
     // Ensure the prorated price is not negative
     $this->priceInt = $remainingDays === null ? $price : max(0, round($proratedPrice));
     $this->price = number_format($this->priceInt, 0, '.', ',');
