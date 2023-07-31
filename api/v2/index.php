@@ -66,6 +66,33 @@ $container->set('btcpayWebhook', function () {
   );
 });
 
+// TODO: Move the following into its own file and clean-up here
+class MultimediaUploadFactory
+{
+  private $awsConfig;
+  private $link;
+
+  public function __construct($awsConfig, $link)
+  {
+    $this->awsConfig = $awsConfig;
+    $this->link = $link;
+  }
+
+  public function create($isPro = false, $npub = null)
+  {
+    $s3 = new S3Service($this->awsConfig);
+    $npubValue = $npub ?? $_SESSION['usernpub'] ?? '';
+    return new MultimediaUpload($this->link, $s3, $isPro, $npubValue);
+  }
+}
+
+// TODO: We should migrate other routes to use this factory
+$container->set('multimediaUploadFactory', function () {
+  global $awsConfig;
+  global $link;
+  return new MultimediaUploadFactory($awsConfig, $link);
+});
+
 // Create app
 $app = AppFactory::create();
 // Middleware to add CORS headers
