@@ -360,7 +360,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
           $btcpayConfig['apiKey'],
           $btcpayConfig['host'],
           $btcpayConfig['storeId'],
-          $btcpayConfig['secret']
         );
         $redirectUrl = 'https://' . $_SERVER['HTTP_HOST'] . '/signup/?step=4';
         $invoiceId = $btcpayClient->createInvoice(Plans::$PLANS[$selectedPlan]->priceInt, $redirectUrl, ['plan' => $selectedPlan, 'userNpub' => $_SESSION['signup_npub']]);
