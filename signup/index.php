@@ -4,6 +4,7 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/config.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/functions/session.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/permissions.class.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/BTCPayClient.class.php';
+require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/Plans.class.php';
 
 global $link;
 // Create new Permission object
@@ -257,41 +258,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
       case 1: ?>
         <!-- Plans section -->
         <?php
-        $plans = [
-          [
-            'id' => 1,
-            'name' => 'Creator',
-            'description' => 'Create, view all and share with 20GiB storage.',
-            'price' => '100,000',
-            'features' => ['<b>Creators page hosting on nostr.build</b>', '<b>20 GiB of private media storage</b>', '<b>Early access to new features and improvements</b>', '<b>(comming soon) Fastest CDN with 114+ global locations</b>', 'Unlimited free public uploads', 'Add and delete videos, images, gifs, and audio', 'Global CDN delivery for all media', 'BTCPay Server Account', 'View all free uploads, over 450,000 free images, gifs and videos'],
-            'currency' => 'sats',
-          ],
-          [
-            'id' => 2,
-            'name' => 'Professional',
-            'description' => 'Create, view all and share with 10GiB storage.',
-            'price' => '50,000',
-            'features' => ['<b>10 GiB of private media storage</b>', '<b>BTCPay Server Account</b>', '<b>View all free uploads, over 450,000 free images, gifs and videos</b>', 'Unlimited free public uploads', 'Add and delete videos, images, gifs, and audio', 'Global CDN delivery for all media'],
-            'currency' => 'sats',
-          ],
-          [
-            'id' => 5,
-            'name' => 'Starter',
-            'description' => 'Create and share with 5GiB storage.',
-            'price' => '21,000',
-            'features' => ['<b>5GiB of private media storage</b>', '<b>Add and delete videos, images, gifs, and audio</b>', '<b>Global CDN delivery for all media</b>', 'Unlimited free public uploads'],
-            'currency' => 'sats',
-          ],
-          [
-            'id' => 4,
-            'name' => 'Viewer',
-            'description' => 'View only plan. No private storage space.',
-            'price' => '21,000',
-            'features' => ['Unlimited free public uploads', 'View all free uploads, over 450,000 free images, gifs and videos'],
-            'currency' => 'sats',
-          ],
-        ];
+        // Initialize Plans class based on user login status and current plan
 
+        Plans::init();
         ?>
         <div class="py-10 sm:py-15">
           <div class="mx-auto max-w-7xl px-6 lg:px-8">
@@ -319,17 +288,17 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             </div>
             <div class="isolate mx-auto mt-10 grid max-w-md grid-cols-1 gap-8 md:max-w-2xl md:grid-cols-2 lg:max-w-4xl xl:mx-0 xl:max-w-none xl:grid-cols-4">
               <!-- Plans -->
-              <?php foreach ($plans as $plan) : ?>
-                <div hx-boost="true" class="rounded-3xl p-8 ring-1 ring-gray-200 <?= $plan['id'] == $selectedPlan ? 'ring-2 ring-indigo-600' : '' ?>">
-                  <h3 id="tier-<?= $plan['id'] ?>" class="text-lg font-semibold leading-8 <?= $plan['id'] == $selectedPlan ? 'text-indigo-300' : 'text-gray-100' ?>"><?= $plan['name'] ?></h3>
-                  <p class="mt-4 text-sm leading-6 text-gray-300"><?= $plan['description'] ?></p>
+              <?php foreach (Plans::$PLANS as $plan) : ?>
+                <div hx-boost="true" class="rounded-3xl p-8 ring-1 ring-gray-200 <?= $plan->id == $selectedPlan ? 'ring-2 ring-indigo-600' : '' ?>">
+                  <h3 id="tier-<?= $plan->id ?>" class="text-lg font-semibold leading-8 <?= $plan->id == $selectedPlan ? 'text-indigo-300' : 'text-gray-100' ?>"><?= $plan->name ?></h3>
+                  <p class="mt-4 text-sm leading-6 text-gray-300"><?= $plan->description ?></p>
                   <p class="mt-6 flex items-baseline gap-x-1">
-                    <span class="text-4xl font-bold tracking-tight text-gray-100"><?= $plan['price'] ?></span>
-                    <span class="text-sm font-semibold leading-6 text-gray-300"><?= $plan['currency'] ?></span>
+                    <span class="text-4xl font-bold tracking-tight text-gray-100"><?= $plan->price ?></span>
+                    <span class="text-sm font-semibold leading-6 text-gray-300"><?= $plan->currency ?></span>
                   </p>
-                  <a href="?step=2&plan=<?= $plan['id'] ?>" aria-describedby="tier-<?= $plan['id'] ?>" class="mt-6 block rounded-md py-2 px-3 text-center text-sm font-semibold leading-6 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 <?= $plan['id'] == $selectedPlan ? 'bg-indigo-600 text-white shadow-sm hover:bg-indigo-500' : 'text-indigo-300 ring-1 ring-inset ring-indigo-200 hover:ring-indigo-300' ?>">Buy plan</a>
+                  <a href="?step=2&plan=<?= $plan->id ?>" aria-describedby="tier-<?= $plan->id ?>" class="mt-6 block rounded-md py-2 px-3 text-center text-sm font-semibold leading-6 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 <?= $plan->id == $selectedPlan ? 'bg-indigo-600 text-white shadow-sm hover:bg-indigo-500' : 'text-indigo-300 ring-1 ring-inset ring-indigo-200 hover:ring-indigo-300' ?>">Buy plan</a>
                   <ul role="list" class="mt-8 space-y-3 text-sm leading-6 text-gray-300">
-                    <?php foreach ($plan['features'] as $feature) : ?>
+                    <?php foreach ($plan->features as $feature) : ?>
                       <li class="flex gap-x-3">
                         <svg class="h-6 w-5 flex-none text-indigo-300" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
                           <path fill-rule="evenodd" d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.05-.143z" clip-rule="evenodd" />
