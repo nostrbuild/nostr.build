@@ -36,11 +36,11 @@ class NostrAuthMiddleware implements MiddlewareInterface
     global $link;
     $headers = $request->getHeaders();
 
-    // Initialize NostrAuthHandler
-    $authHandler = new NostrAuthHandler($headers, $request);
     $npub = null; // Initialize as null
-
     try {
+      // Initialize NostrAuthHandler
+      $authHandler = new NostrAuthHandler($headers, $request);
+
       $authHandler->handle();
       $npub = $authHandler->getNpub();
 
