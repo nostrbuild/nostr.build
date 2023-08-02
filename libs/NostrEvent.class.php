@@ -157,9 +157,6 @@ class NostrEvent
   {
     // Hash event independently to verify signature
     $eventHash = $this->getEventHash($event);
-    error_log("eventHash: $eventHash");
-    error_log("event->sig: $event->sig");
-    error_log("event->id: $event->id");
     return secp256k1_nostr_verify($event->pubkey, $eventHash, $event->sig);
   }
 
