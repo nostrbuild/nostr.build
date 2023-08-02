@@ -215,12 +215,12 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
           <li>
             <?php if ($step - 1 > $index) : ?>
               <!-- Completed Step -->
-              <a href="?step=<?= $value[1] ?>" class="block h-2.5 w-2.5 rounded-full bg-indigo-600 hover:bg-indigo-900">
+              <a href="?step=<?= $value[1] ?>" title="<?= $value[0] ?>" class="block h-2.5 w-2.5 rounded-full bg-indigo-600 hover:bg-indigo-900">
                 <span class="sr-only"><?= $value[0] ?></span>
               </a>
             <?php elseif ($step - 1 == $index) : ?>
               <!-- Current Step -->
-              <a href="?step=<?= $value[1] ?>" class="relative flex items-center justify-center" aria-current="step">
+              <a href="?step=<?= $value[1] ?>" title="<?= $value[0] ?>" class="relative flex items-center justify-center" aria-current="step">
                 <span class="absolute flex h-5 w-5 p-px" aria-hidden="true">
                   <span class="h-full w-full rounded-full bg-indigo-200"></span>
                 </span>
@@ -229,7 +229,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
               </a>
             <?php else : ?>
               <!-- Upcoming Step -->
-              <a href="?step=<?= $value[1] ?>" class="block h-2.5 w-2.5 rounded-full bg-gray-200 hover:bg-gray-400">
+              <a href="?step=<?= $value[1] ?>" title="<?= $value[0] ?>" class="block h-2.5 w-2.5 rounded-full bg-gray-200 hover:bg-gray-400">
                 <span class="sr-only"><?= $value[0] ?></span>
               </a>
             <?php endif; ?>
