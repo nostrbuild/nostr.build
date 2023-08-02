@@ -137,7 +137,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
   <meta charSet="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Nostr.build Signup</title>
-  <link rel="stylesheet" href="/styles/twbuild.css?v=7" />
+  <link rel="stylesheet" href="/styles/twbuild.css?v=9" />
   <script defer src="/scripts/fw/alpinejs.min.js?v=3"></script>
   <script defer src="/scripts/fw/htmx.min.js?v=3"></script>
   <style>
@@ -208,39 +208,30 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
   </header>
   <!-- /Navbar -->
   <main>
-    <nav aria-label="Progress" class="p-5 m-3">
-      <ol hx-boost="true" role="list" class="divide-y divide-gray-300 rounded-md border border-gray-300 md:flex md:divide-y-0">
+    <nav class="flex items-center justify-center" aria-label="Progress">
+      <p class="text-sm font-medium text-gray-300">Step <?= $step ?> of <?= count($steps) ?></p>
+      <ol role="list" class="ml-8 flex items-center space-x-5">
         <?php foreach ($steps as $index => $value) : ?>
-          <li class="relative md:flex md:flex-1">
-            <a href="?step=<?= $value[1] ?>" class="group flex w-full items-center">
-              <span class="flex items-center px-6 py-4 text-sm font-medium">
-                <?php if ($step > $value[1] || ($step == $value[1] && $value[1] == end($steps)[1])) : ?>
-                  <!-- Completed Step -->
-                  <span class="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-indigo-600 group-hover:bg-indigo-800">
-                    <svg class="h-6 w-6 text-white" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-                      <path fill-rule="evenodd" d="M19.916 4.626a.75.75 0 01.208 1.04l-9 13.5a.75.75 0 01-1.154.114l-6-6a.75.75 0 011.06-1.06l5.353 5.353 8.493-12.739a.75.75 0 011.04-.208z" clip-rule="evenodd" />
-                    </svg>
-                  </span>
-                <?php elseif ($step == $value[1]) : ?>
-                  <!-- Current Step -->
-                  <span class="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full border-2 border-indigo-600">
-                    <span class="text-indigo-300"><?= $value[1] ?></span>
-                  </span>
-                <?php else : ?>
-                  <!-- Upcoming Step -->
-                  <span class="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full border-2 border-gray-300 group-hover:border-gray-400">
-                    <span class="text-gray-500 group-hover:text-gray-900"><?= $value[1] ?></span>
-                  </span>
-                <?php endif; ?>
-                <span class="ml-4 text-sm font-medium <?php echo ($step > $value[1]) ? 'text-gray-100' : (($step == $value[1]) ? 'text-indigo-300' : 'text-gray-500 group-hover:text-gray-100') ?>"><?= $value[0] ?></span>
-              </span>
-            </a>
-            <?php if ($index < count($steps) - 1) : ?>
-              <div class="absolute right-0 top-0 hidden h-full w-5 md:block" aria-hidden="true">
-                <svg class="h-full w-full text-gray-300" viewBox="0 0 22 80" fill="none" preserveAspectRatio="none">
-                  <path d="M0 -2L20 40L0 82" vector-effect="non-scaling-stroke" stroke="currentcolor" stroke-linejoin="round" />
-                </svg>
-              </div>
+          <li>
+            <?php if ($step - 1 > $index) : ?>
+              <!-- Completed Step -->
+              <a href="?step=<?= $value[1] ?>" class="block h-2.5 w-2.5 rounded-full bg-indigo-600 hover:bg-indigo-900">
+                <span class="sr-only"><?= $value[0] ?></span>
+              </a>
+            <?php elseif ($step - 1 == $index) : ?>
+              <!-- Current Step -->
+              <a href="?step=<?= $value[1] ?>" class="relative flex items-center justify-center" aria-current="step">
+                <span class="absolute flex h-5 w-5 p-px" aria-hidden="true">
+                  <span class="h-full w-full rounded-full bg-indigo-200"></span>
+                </span>
+                <span class="relative block h-2.5 w-2.5 rounded-full bg-indigo-600" aria-hidden="true"></span>
+                <span class="sr-only"><?= $value[0] ?></span>
+              </a>
+            <?php else : ?>
+              <!-- Upcoming Step -->
+              <a href="?step=<?= $value[1] ?>" class="block h-2.5 w-2.5 rounded-full bg-gray-200 hover:bg-gray-400">
+                <span class="sr-only"><?= $value[0] ?></span>
+              </a>
             <?php endif; ?>
           </li>
         <?php endforeach; ?>
@@ -401,7 +392,26 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
       <?php break;
       case 4: ?>
         <!-- Done -->
-        <h1>You are all set, proceed to the <a href="/login">login page</a> to get started.</h1>
+        <div class="bg-inherit">
+          <div class="mx-auto max-w-7xl py-24 sm:px-6 sm:py-32 lg:px-8">
+            <div class="relative isolate overflow-hidden bg-inherit px-6 py-24 text-center shadow-2xl sm:rounded-3xl sm:px-16">
+              <h2 class="mx-auto max-w-2xl text-3xl font-bold tracking-tight text-white sm:text-4xl">Thank you!</h2>
+              <p class="mx-auto mt-6 max-w-xl text-lg leading-8 text-gray-300">You are all set, click the Login button below to get started!</p>
+              <div class="mt-10 flex items-center justify-center gap-x-6">
+                <a href="/login" class="rounded-md bg-white px-3.5 py-2.5 text-sm font-semibold text-gray-900 shadow-sm hover:bg-gray-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white">Login</a>
+              </div>
+              <svg viewBox="0 0 1024 1024" class="absolute left-1/2 top-1/2 -z-10 h-[64rem] w-[64rem] -translate-x-1/2 [mask-image:radial-gradient(closest-side,white,transparent)]" aria-hidden="true">
+                <circle cx="512" cy="512" r="512" fill="url(#827591b1-ce8c-4110-b064-7cb85a0b1217)" fill-opacity="0.7" />
+                <defs>
+                  <radialGradient id="827591b1-ce8c-4110-b064-7cb85a0b1217">
+                    <stop stop-color="#7775D6" />
+                    <stop offset="1" stop-color="#E935C1" />
+                  </radialGradient>
+                </defs>
+              </svg>
+            </div>
+          </div>
+        </div>
     <?php break;
     endswitch; ?>
   </main>
