@@ -63,4 +63,11 @@ class BTCPayClient
     }
     return $invoice->getId();
   }
+
+  static public function amountEqual(int $intAmount, PreciseNumber $pnAmount): bool
+  {
+    // Parse integer to PreciseNumber
+    $preciseFirstNumber = PreciseNumber::parseInt($intAmount);
+    return $preciseFirstNumber === $pnAmount;
+  }
 }
