@@ -68,6 +68,7 @@ class BTCPayClient
   {
     // Parse integer to PreciseNumber
     $preciseFirstNumber = PreciseNumber::parseInt($intAmount);
-    return $preciseFirstNumber === $pnAmount;
+    // Conver both to string and compare
+    return (string)$preciseFirstNumber === (string)$pnAmount;
   }
 }
