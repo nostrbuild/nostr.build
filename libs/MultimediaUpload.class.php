@@ -3,6 +3,7 @@ require_once $_SERVER['DOCUMENT_ROOT'] . "/libs/imageproc.class.php";
 require_once $_SERVER['DOCUMENT_ROOT'] . "/libs/utils.funcs.php";
 require_once $_SERVER['DOCUMENT_ROOT'] . "/libs/S3Service.class.php";
 require_once $_SERVER['DOCUMENT_ROOT'] . "/libs/GifConverter.class.php";
+require_once $_SERVER['DOCUMENT_ROOT'] . "/libs/Account.class.php";
 require_once $_SERVER['DOCUMENT_ROOT'] . "/libs/db/UploadsData.class.php";
 require_once $_SERVER['DOCUMENT_ROOT'] . "/libs/db/UsersImages.class.php";
 require_once $_SERVER['DOCUMENT_ROOT'] . "/libs/db/UsersImagesFolders.class.php";
@@ -138,6 +139,11 @@ class MultimediaUpload
    * @var 
    */
   protected $gifConverter;
+  /**
+   * Summary of userAccount
+   * @var 
+   */
+  protected $userAccount;
 
   /**
    * Summary of __construct
@@ -157,6 +163,7 @@ class MultimediaUpload
     if ($this->pro) {
       $this->usersImages = new UsersImages($db);
       $this->usersImagesFolders = new UsersImagesFolders($db);
+      $this->userAccount = new Account($userNpub, $db);
     }
     // Check if the upload is pro and userNpub is not set or empty
     if ($this->pro && empty($this->userNpub)) {
@@ -657,26 +664,8 @@ class MultimediaUpload
   public function uploadFileFromUrl(string $url, $pfp = false): bool
   {
     global $freeUploadLimit;
-    global $storageLimits;
 
-    $sizeLimit = $freeUploadLimit;
-    // Calculate remaining space and check if file size exceeds the remaining space for pro users
-    // TODO: Make a separate class with all of the checks and calculations
-    if ($this->pro) {
-      // Calculate and log total used space
-      $totalUsed = $this->usersImages->getTotalSize($this->userNpub);
-      error_log('Total used: ' . formatSizeUnits($totalUsed));
-
-      // Determine account limit (handle '-1' as unlimited) and log it
-      $accountLimit = $storageLimits[$_SESSION['acctlevel']]['limit'] ?? 0;
-      $accountLimit = $accountLimit === -1 ? PHP_INT_MAX : $accountLimit;
-      error_log('Account limit: ' . formatSizeUnits($accountLimit));
-
-      // Calculate remaining space and log it
-      $remainingSpace = $accountLimit - $totalUsed;
-      error_log('Remaining space: ' . formatSizeUnits($remainingSpace));
-      $sizeLimit = $remainingSpace;
-    }
+    $sizeLimit = $this->pro ? $this->userAccount->getRemainingStorageSpace() : $freeUploadLimit;
 
     // Get the metadata from the URL
     try {
@@ -696,7 +685,7 @@ class MultimediaUpload
 
     // Check the file size against the limit
     if (intval($metadata['size']) > $sizeLimit) {
-      throw new Exception('File size exceeds the limit of ' . formatSizeUnits($freeUploadLimit));
+      throw new Exception('File size exceeds the limit of ' . formatSizeUnits($sizeLimit));
     }
 
     // Create a curl instance for the actual download
@@ -754,8 +743,8 @@ class MultimediaUpload
       // Log the error
       error_log(curl_error($ch));
       // Check if the error was caused by the file size limit
-      if ($fileSize > $freeUploadLimit) {
-        throw new Exception('File size exceeds the limit of ' . formatSizeUnits($freeUploadLimit));
+      if ($fileSize > $sizeLimit) {
+        throw new Exception('File size exceeds the limit of ' . formatSizeUnits($sizeLimit));
       }
       // Throw the error
       throw new Exception('cURL error: ' . curl_error($ch));
@@ -889,24 +878,8 @@ class MultimediaUpload
 
     // Calculate remaining space and check if file size exceeds the remaining space for pro users
     if ($this->pro) {
-      // Calculate and log total used space
-      $totalUsed = $this->usersImages->getTotalSize($this->userNpub);
-      error_log('Total used: ' . formatSizeUnits($totalUsed));
-
-      // Determine account limit (handle '-1' as unlimited) and log it
-      $accountLimit = $storageLimits[$_SESSION['acctlevel']]['limit'] ?? 0;
-      $accountLimit = $accountLimit === -1 ? PHP_INT_MAX : $accountLimit;
-      error_log('Account limit: ' . formatSizeUnits($accountLimit));
-
-      // Calculate remaining space and log it
-      $remainingSpace = $accountLimit - $totalUsed;
-      error_log('Remaining space: ' . formatSizeUnits($remainingSpace));
-
-      // Check if the file size exceeds the remaining space and log if it does
-      if ($this->file['size'] > $remainingSpace) {
-        error_log('File size exceeds the remaining space of ' . formatSizeUnits($remainingSpace));
-        return false;
-      }
+      // TODO: Need to validate array of files, so we do not allow to go over the limit with batch
+      return $this->userAccount->hasSufficientStorageSpace($this->file['size']);
     }
 
     return true;
