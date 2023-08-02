@@ -89,8 +89,9 @@ class NostrEvent
   public function getEventHash(SignedNostrEvent $event): string
   {
     $serializedEvent = $this->serializeEvent($event);
-    $eventHash = hash("sha256", $serializedEvent);
-
+    // Explicitly convert the serialized event to UTF-8
+    $utf8SerializedEvent = mb_convert_encoding($serializedEvent, 'UTF-8');
+    $eventHash = hash('sha256', $utf8SerializedEvent);
     return $eventHash;
   }
 
@@ -110,12 +111,12 @@ class NostrEvent
       0,
       $event->pubkey,
       $event->created_at,
-      $event->kind,
+      $event->kind->value,
       $event->tags,
       $event->content
     ];
 
-    return json_encode($eventData);
+    return json_encode($eventData, JSON_UNESCAPED_SLASHES);
   }
 
   /**
@@ -156,11 +157,10 @@ class NostrEvent
   {
     // Hash event independently to verify signature
     $eventHash = $this->getEventHash($event);
-    if ($eventHash === $event->id) {
-      return secp256k1_nostr_verify($event->pubkey, $event->id, $event->sig);
-    } else {
-      return false;
-    }
+    error_log("eventHash: $eventHash");
+    error_log("event->sig: $event->sig");
+    error_log("event->id: $event->id");
+    return secp256k1_nostr_verify($event->pubkey, $eventHash, $event->sig);
   }
 
   /**
