@@ -109,6 +109,7 @@ class BTCPayWebhook
         $account = new Account($userNpub, $link);
         // Create a new account
         $account->setPlan($accountPlan);
+        error_log("[INFO] Account " . $account->getNpub() . ' updated to a new plan: ' . $accountPlan . PHP_EOL);
       } catch (Exception $e) {
         error_log("Failed to update account: " . $e . PHP_EOL);
         return false;
