@@ -56,6 +56,12 @@ class Plans
   const ADMIN = 99;
 
   public static array $PLANS = [];
+  private static $instance = null;
+
+  private function __construct()
+  {
+    // private constructor to prevent creating a new instance
+  }
 
   public static function init(?int $remainingDays = null, ?int $currentPlanLevel = null): void
   {
@@ -184,6 +190,20 @@ class Plans
       $fromPlanPrice,
       $currentPlanLevel
     );
+  }
+
+  public static function isValidPlan(int $plan): bool
+  {
+    return array_key_exists($plan, self::$PLANS);
+  }
+
+  public static function getInstance(?int $remainingDays = null, ?int $currentPlanLevel = null): Plans
+  {
+    if (self::$instance === null) {
+      self::$instance = new Plans();
+      self::$instance::init($remainingDays, $currentPlanLevel);
+    }
+    return self::$instance;
   }
 }
 
