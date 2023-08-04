@@ -89,8 +89,9 @@ class NostrEvent
   public function getEventHash(SignedNostrEvent $event): string
   {
     $serializedEvent = $this->serializeEvent($event);
-    $eventHash = hash("sha256", $serializedEvent);
-
+    // Explicitly convert the serialized event to UTF-8
+    $utf8SerializedEvent = mb_convert_encoding($serializedEvent, 'UTF-8');
+    $eventHash = hash('sha256', $utf8SerializedEvent);
     return $eventHash;
   }
 
@@ -110,12 +111,12 @@ class NostrEvent
       0,
       $event->pubkey,
       $event->created_at,
-      $event->kind,
+      $event->kind->value,
       $event->tags,
       $event->content
     ];
 
-    return json_encode($eventData);
+    return json_encode($eventData, JSON_UNESCAPED_SLASHES);
   }
 
   /**
@@ -154,7 +155,9 @@ class NostrEvent
    */
   public function verifySignature(SignedNostrEvent $event): bool
   {
-    return secp256k1_nostr_verify($event->pubkey, $event->id, $event->sig);
+    // Hash event independently to verify signature
+    $eventHash = $this->getEventHash($event);
+    return secp256k1_nostr_verify($event->pubkey, $eventHash, $event->sig);
   }
 
   /**
@@ -191,5 +194,44 @@ class SignedNostrEvent
     public array $tags,
     public int $created_at
   ) {
+  }
+
+  /**
+   * Create a new SignedNostrEvent from an array.
+   * @param array $data The array to convert.
+   * @return SignedNostrEvent The new SignedNostrEvent object.
+   * @throws Exception If a required key is missing from the array.
+   */
+  /*
+  try {
+    $signedNostrEvent = SignedNostrEvent::fromArray($array);
+  } catch (Exception $e) {
+      // Handle the exception...
+  }
+  */
+  public static function fromArray(array $data): self
+  {
+    // Ensure all required keys are present in the array.
+    $requiredKeys = ['pubkey', 'id', 'sig', 'kind', 'content', 'tags', 'created_at'];
+    foreach ($requiredKeys as $key) {
+      if (!array_key_exists($key, $data)) {
+        throw new Exception("Key '$key' is required.");
+      }
+    }
+
+    // Create the NostrEventKind object.
+    // Modify this line as necessary based on the definition of NostrEventKind.
+    $kind = NostrEventKind::from($data['kind']);
+
+    // Create the SignedNostrEvent object.
+    return new self(
+      $data['pubkey'],
+      $data['id'],
+      $data['sig'],
+      $kind,
+      $data['content'],
+      $data['tags'],
+      $data['created_at']
+    );
   }
 }

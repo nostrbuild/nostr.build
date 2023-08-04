@@ -27,7 +27,7 @@ class Bech32
    * @param mixed $pre
    * @return int
    */
-  private function polymodStep($pre)
+  private function polymodStep($pre): int
   {
     $b = $pre >> 25;
     return (
@@ -46,7 +46,7 @@ class Bech32
    * @throws \Exception
    * @return int
    */
-  private function prefixChk($prefix)
+  private function prefixChk($prefix): int
   {
     $chk = 1;
     for ($i = 0; $i < strlen($prefix); $i++) {
@@ -72,7 +72,7 @@ class Bech32
    * @throws \Exception
    * @return array
    */
-  private function convertbits($data, $inBits, $outBits, $pad = true)
+  private function convertbits($data, $inBits, $outBits, $pad = true): array
   {
     $value = 0;
     $bits = 0;
@@ -104,7 +104,7 @@ class Bech32
    * @param mixed $bytes
    * @return array
    */
-  private function toWords($bytes)
+  private function toWords($bytes): array
   {
     return $this->convertbits($bytes, 8, 5, true);
   }
@@ -114,7 +114,7 @@ class Bech32
    * @param mixed $words
    * @return array
    */
-  private function fromWords($words)
+  private function fromWords($words): array
   {
     return $this->convertbits($words, 5, 8, false);
   }
@@ -127,7 +127,7 @@ class Bech32
    * @throws \Exception
    * @return string
    */
-  public function encode($prefix, $words, $encoding = 'bech32')
+  public function encode($prefix, $words, $encoding = 'bech32'): string
   {
     $chk = $this->prefixChk($prefix);
     $result = strtolower($prefix) . '1';
@@ -157,7 +157,7 @@ class Bech32
    * @throws \Exception
    * @return array
    */
-  public function decode($str, $encoding = 'bech32')
+  public function decode($str, $encoding = 'bech32'): array
   {
     if (strlen($str) < 8)
       throw new Exception('Too short to be a valid bech32 string');
@@ -192,7 +192,7 @@ class Bech32
    * @param mixed $hex
    * @return string
    */
-  public function convertHexToBech32($prefix, $hex)
+  public function convertHexToBech32($prefix, $hex): string
   {
     // Split the hex string into an array of integers
     $data = array_map('hexdec', str_split($hex, 2));
@@ -205,7 +205,7 @@ class Bech32
    * @param mixed $bech32Str
    * @return string
    */
-  public function convertBech32ToHex($bech32Str)
+  public function convertBech32ToHex($bech32Str): string
   {
     // Extract data part
     $data = $this->decode($bech32Str)['words'];
@@ -217,5 +217,19 @@ class Bech32
     }, $bytes);
 
     return implode('', $hex);
+  }
+
+  public function isValidNpub1Address($address): bool
+  {
+    try {
+      $decoded = $this->decode($address);
+      if ($decoded['prefix'] !== 'npub') {
+        return false;
+      }
+      return true;
+    } catch (Exception $e) {
+      // Decoding failed, so the address is not valid
+      return false;
+    }
   }
 }

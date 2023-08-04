@@ -1,5 +1,6 @@
 <?php
 require_once $_SERVER['DOCUMENT_ROOT'] . '/config.php';
+require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/NostrAuthMiddleware.class.php';
 require_once __DIR__ . '/helper_functions.php';
 
 require $_SERVER['DOCUMENT_ROOT'] . '/vendor/autoload.php';
@@ -164,34 +165,7 @@ Actual full output of the upload API with multiple files:
   ]
 }
 
-*/
-
-$app->group('/upload', function (RouteCollectorProxy $group) {
-  // Route to upload file(s) via form
-  $group->post('/files', function (Request $request, Response $response) {
-    $files = $request->getUploadedFiles();
-
-    // Log request route
-    error_log('Route: /upload/files');
-
-    // If no files are provided, return a 400 response
-    if (empty($files)) {
-      return jsonResponse($response, 'error', 'No files provided', new stdClass(), 400);
-    }
-    $upload = $this->get('freeUpload');
-
-    try {
-      // Handle exceptions thrown by the MultimediaUpload class
-      $upload->setPsrFiles($files);
-      $data = ($upload->uploadFiles()) ? $upload->getUploadedFiles() : new stdClass();
-      return jsonResponse($response, 'success', 'Files uploaded successfully', $data);
-    } catch (\Exception $e) {
-      return jsonResponse($response, 'error', 'Upload failed: ' . $e->getMessage(), new stdClass(), 500);
-    }
-  });
-
-  // Route to upload a profile picture
-  /*
+PFP Upload Returned value:
   Example returned value in JSON format:
   {
     "status": "success",
@@ -209,7 +183,42 @@ $app->group('/upload', function (RouteCollectorProxy $group) {
     ]
   }
 
-  */
+*/
+
+$app->group('/upload', function (RouteCollectorProxy $group) {
+  // Route to upload file(s) via form
+  $group->post('/files', function (Request $request, Response $response) {
+    $files = $request->getUploadedFiles();
+
+    // Log request route
+    error_log('Route: /upload/files');
+
+    // If no files are provided, return a 400 response
+    if (empty($files)) {
+      return jsonResponse($response, 'error', 'No files provided', new stdClass(), 400);
+    }
+    // NIP-98 handling
+    $npub = $request->getAttribute('npub');
+    $factory = $this->get('multimediaUploadFactory');
+
+    if (null !== $npub) {
+      $upload = $factory->create(true, $npub);
+    } else {
+      $upload = $factory->create();
+    }
+
+    try {
+      // Handle exceptions thrown by the MultimediaUpload class
+      $upload->setPsrFiles($files);
+      $data = ($upload->uploadFiles()) ? $upload->getUploadedFiles() : new stdClass();
+      return jsonResponse($response, 'success', 'Files uploaded successfully', $data);
+    } catch (\Exception $e) {
+      return jsonResponse($response, 'error', 'Upload failed: ' . $e->getMessage(), new stdClass(), 500);
+    }
+  })->add(new NostrAuthMiddleware());
+
+  // Route to upload a profile picture
+
   $group->post('/profile', function (Request $request, Response $response) {
     $files = $request->getUploadedFiles();
 
@@ -237,7 +246,15 @@ $app->group('/upload', function (RouteCollectorProxy $group) {
     if (empty($data['url'])) {
       return jsonResponse($response, 'error', 'No URL provided', new stdClass(), 400);
     }
-    $upload = $this->get('freeUpload');
+    // NIP-98 handling
+    $npub = $request->getAttribute('npub');
+    $factory = $this->get('multimediaUploadFactory');
+
+    if (null !== $npub) {
+      $upload = $factory->create(true, $npub);
+    } else {
+      $upload = $factory->create();
+    }
 
     try {
       // Handle exceptions thrown by the MultimediaUpload class
@@ -246,7 +263,7 @@ $app->group('/upload', function (RouteCollectorProxy $group) {
     } catch (\Exception $e) {
       return jsonResponse($response, 'error', 'URL processing failed: ' . $e->getMessage(), new stdClass(), 500);
     }
-  });
+  })->add(new NostrAuthMiddleware());
 
   $group->get('/ping', function (Request $request, Response $response) {
     $response->getBody()->write('pong');

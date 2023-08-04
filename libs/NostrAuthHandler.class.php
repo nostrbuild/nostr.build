@@ -42,11 +42,11 @@ class NostrAuthHandler
   public function handle()
   {
     // check if 'Authorization' header exists
-    if (!isset($this->headers['Authorization'])) {
+    if (!isset($this->headers['Authorization'][0])) {
       throw new Exception("Missing Authorization header");
     }
 
-    $auth = trim($this->headers['Authorization']);
+    $auth = trim($this->headers['Authorization'][0]);
 
     // check if auth scheme is Nostr
     if (strpos($auth, "Nostr") !== 0) {
@@ -57,12 +57,14 @@ class NostrAuthHandler
     $bToken = base64_decode($token);
 
     if (empty($token) || empty($bToken) || $bToken[0] != '{') {
+      error_log("Invalid token: " . $token);
       throw new Exception("Invalid token");
     }
 
-    $this->event = json_decode($bToken, true);
-
-    if (empty($this->event)) {
+    try {
+      $this->event = SignedNostrEvent::fromArray(json_decode($bToken, true));
+    } catch (Exception $e) {
+      error_log("Invalid event: " . $e);
       throw new Exception("Invalid nostr event");
     }
 
@@ -77,12 +79,12 @@ class NostrAuthHandler
     }
 
     // 1. The kind MUST be 27235.
-    if ($this->event['kind'] != NostrEventKind::HttpAuth) {
+    if ($this->event->kind != NostrEventKind::HttpAuth) {
       throw new Exception("Invalid kind");
     }
 
     // 2. The created_at MUST be within a reasonable time window (suggestion 60 seconds).
-    if (abs(time() - $this->event['created_at']) > 60) {
+    if (abs(time() - $this->event->created_at) > 60) {
       throw new Exception("Timestamp out of range");
     }
 
@@ -107,7 +109,7 @@ class NostrAuthHandler
    */
   private function findTagValue($tag)
   {
-    foreach ($this->event['tags'] as $eventTag) {
+    foreach ($this->event->tags as $eventTag) {
       if ($eventTag[0] == $tag) {
         return $eventTag[1];
       }
@@ -121,7 +123,7 @@ class NostrAuthHandler
    */
   public function getPubKey()
   {
-    return $this->event['pubkey'] ?? null;
+    return $this->event->pubkey ?? null;
   }
 
   /**

@@ -1,0 +1,53 @@
+name: PHP Unit Tests
+env:
+  BTCPAY_HOST: ${{ secrets.BTCPAY_HOST }}
+  BTCPAY_API_KEY: ${{ secrets.BTCPAY_API_KEY }}
+  BTCPAY_STORE_ID: ${{ secrets.BTCPAY_STORE_ID }}
+  BTCPAY_NODE_URI: ${{ secrets.BTCPAY_NODE_URI }}
+on: [ push, pull_request ]
+
+jobs:
+  phpunit:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        php-versions: ['8.0', '8.1']
+        phpunit-versions: ['latest']
+
+        
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: '0'
+
+      - name: Setup PHP, with composer and extensions
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php-versions }}
+          tools: composer:v2, phpunit:${{ matrix.phpunit-versions }}
+          extensions: curl, json, mbstring, bcmath
+          coverage: xdebug #optional
+
+      - name: Get composer cache directory
+        id: composer-cache
+        run: echo "::set-output name=dir::$(composer config cache-files-dir)"
+
+      - name: Cache composer dependencies
+        uses: actions/cache@v2
+        with:
+          path: ${{ steps.composer-cache.outputs.dir }}
+          key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}
+          restore-keys: ${{ runner.os }}-composer-
+
+      - name: Install Composer dependencies
+        run: composer install --no-progress --optimize-autoloader
+
+      - name: Test with phpunit
+        run: vendor/bin/phpunit --coverage-text
+
+      - name: Setup problem matchers for PHP
+        run: echo "::add-matcher::${{ runner.tool_cache }}/php.json"
+
+      - name: Setup problem matchers for PHPUnit
+        run: echo "::add-matcher::${{ runner.tool_cache }}/phpunit.json"

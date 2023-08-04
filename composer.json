@@ -8,7 +8,8 @@
         "respect/validation": "^2.2",
         "hashids/hashids": "^5.0",
         "php-di/php-di": "^7.0",
-        "toshy/bunnynet-php": "^3.0"
+        "toshy/bunnynet-php": "^3.0",
+        "btcpayserver/btcpayserver-greenfield-php": "^2.3"
     },
     "require-dev": {
         "uma/secp256k1-nostr": "^0.1.0"

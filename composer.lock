@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "bf176aba958d470d0179e664550a2a7c",
+    "content-hash": "a2b56efecb3c043cda04accbf8b38e6a",
     "packages": [
         {
             "name": "aws/aws-crt-php",
@@ -154,6 +154,60 @@
                 "source": "https://github.com/aws/aws-sdk-php/tree/3.275.9"
             },
             "time": "2023-07-18T18:20:13+00:00"
+        },
+        {
+            "name": "btcpayserver/btcpayserver-greenfield-php",
+            "version": "v2.3.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/btcpayserver/btcpayserver-greenfield-php.git",
+                "reference": "9a01503ce9f395bdbb9326fd380650c8faf449f6"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/btcpayserver/btcpayserver-greenfield-php/zipball/9a01503ce9f395bdbb9326fd380650c8faf449f6",
+                "reference": "9a01503ce9f395bdbb9326fd380650c8faf449f6",
+                "shasum": ""
+            },
+            "require": {
+                "ext-bcmath": "*",
+                "ext-curl": "*",
+                "ext-json": "*",
+                "ext-mbstring": "*",
+                "php": ">=8.0"
+            },
+            "require-dev": {
+                "friendsofphp/php-cs-fixer": "^3.0",
+                "phpunit/phpunit": "^9.5",
+                "vimeo/psalm": "^4.8",
+                "vlucas/phpdotenv": "^5.5"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "BTCPayServer\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Wouter Samaey",
+                    "email": "wouter.samaey@storefront.be"
+                },
+                {
+                    "name": "Andreas Tasch",
+                    "email": "andy.tasch@gmail.com"
+                }
+            ],
+            "description": "BTCPay Server Greenfield API PHP client library.",
+            "support": {
+                "issues": "https://github.com/btcpayserver/btcpayserver-greenfield-php/issues",
+                "source": "https://github.com/btcpayserver/btcpayserver-greenfield-php/tree/v2.3.0"
+            },
+            "time": "2023-03-28T10:08:01+00:00"
         },
         {
             "name": "fig/http-message-util",

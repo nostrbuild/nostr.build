@@ -20,6 +20,13 @@ if (!$perm->validateLoggedin()  || !isset($_SESSION["usernpub"])) {
 	exit;
 }
 
+// If account is not verified, redirect to signup page
+if ($perm->validatePermissionsLevelEqual(0)) {
+	header("Location: /signup");
+	$link->close();
+	exit;
+}
+
 $npub = $_SESSION["usernpub"];
 $nym = $_SESSION["nym"];
 $ppic = $_SESSION["ppic"];

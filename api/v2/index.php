@@ -4,6 +4,7 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/MultimediaUpload.class.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/S3Service.class.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/db/UsersImages.class.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/db/UsersImagesFolders.class.php';
+require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/BTCPayWebhook.class.php';
 
 use DI\Container;
 use Slim\Factory\AppFactory;
@@ -54,6 +55,44 @@ $container->set('userImagesFolders', function () {
   return new UsersImagesFolders($link);
 });
 
+//Setup container for webhooks
+$container->set('btcpayWebhook', function () {
+  global $btcpayConfig;
+  return new BTCPayWebhook(
+    $btcpayConfig['apiKey'],
+    $btcpayConfig['host'],
+    $btcpayConfig['storeId'],
+    $btcpayConfig['secret']
+  );
+});
+
+// TODO: Move the following into its own file and clean-up here
+class MultimediaUploadFactory
+{
+  private $awsConfig;
+  private $link;
+
+  public function __construct($awsConfig, $link)
+  {
+    $this->awsConfig = $awsConfig;
+    $this->link = $link;
+  }
+
+  public function create($isPro = false, $npub = null)
+  {
+    $s3 = new S3Service($this->awsConfig);
+    $npubValue = $npub ?? $_SESSION['usernpub'] ?? '';
+    return new MultimediaUpload($this->link, $s3, $isPro, $npubValue);
+  }
+}
+
+// TODO: We should migrate other routes to use this factory
+$container->set('multimediaUploadFactory', function () {
+  global $awsConfig;
+  global $link;
+  return new MultimediaUploadFactory($awsConfig, $link);
+});
+
 // Create app
 $app = AppFactory::create();
 // Middleware to add CORS headers
@@ -71,6 +110,7 @@ $app->addBodyParsingMiddleware();
 require_once __DIR__ . '/routes_upload.php'; // Include free upload routes
 require_once __DIR__ . '/routes_uppy.php'; // Include uppy upload routes
 require_once __DIR__ . '/routes_account.php'; // Include pro account routes
+require_once __DIR__ . '/routes_btcpay.php'; // Include btcpay routes
 
 $contentLengthMiddleware = new ContentLengthMiddleware();
 $app->add($contentLengthMiddleware);
