@@ -451,7 +451,13 @@ class Account
     $this->setPlan($newPlanLevel, $resetDate);
   }
 
-  public function isValidUpgrade(AccountLevel $currentLevel, AccountLevel $newLevel): bool
+  /**
+   * Summary of isValidUpgrade
+   * @param AccountLevel $currentLevel
+   * @param AccountLevel $newLevel
+   * @return bool
+   */
+  static public function isValidUpgrade(AccountLevel $currentLevel, AccountLevel $newLevel): bool
   {
     // Array that specifies the upgrade path for each account level
     $upgradePath = [
