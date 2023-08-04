@@ -40,8 +40,8 @@ class BTCPayClient
     $checkoutOptions = new InvoiceCheckoutOptions();
     $checkoutOptions
       ->setSpeedPolicy($checkoutOptions::SPEED_HIGH)
-      ->setExpirationMinutes(45)
-      ->setMonitoringMinutes(120)
+      ->setExpirationMinutes(240)
+      ->setMonitoringMinutes(480)
       ->setPaymentMethods(['BTC-LNURLPay', 'BTC-LightningNetwork', 'BTC'])
       ->setPaymentTolerance(0)
       ->setRedirectAutomatically(empty($redirectUrl) ? false : true)
