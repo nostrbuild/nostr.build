@@ -75,28 +75,33 @@ class NostrAuthHandler
 
     // 0. The signature MUST be valid.
     if (!$eventHandler->verifySignature($this->event)) {
+      error_log("Invalid signature: " . $this->event->sig . "\n" . print_r($this->event, true) . "\n");
       throw new Exception("Invalid signature");
     }
 
     // 1. The kind MUST be 27235.
     if ($this->event->kind != NostrEventKind::HttpAuth) {
+      error_log("Invalid kind: " . $this->event->kind . "\n" . print_r($this->event, true) . "\n");
       throw new Exception("Invalid kind");
     }
 
     // 2. The created_at MUST be within a reasonable time window (suggestion 60 seconds).
     if (abs(time() - $this->event->created_at) > 60) {
+      error_log("Timestamp out of range: " . $this->event->created_at . " != " . time() . "\n");
       throw new Exception("Timestamp out of range");
     }
 
     // 3. The u tag MUST be exactly the same as the absolute request URL (including query parameters).
     $url = $this->findTagValue('u');
     if ($url != $this->request->getUri()) {
+      error_log("Invalid url tag: " . $url . " != " . $this->request->getUri() . "\n" . print_r($this->event, true) . "\n");
       throw new Exception("Invalid url tag");
     }
 
     // 4. The method tag MUST be the same HTTP method used for the requested resource.
     $method = $this->findTagValue('method');
     if ($method != $this->request->getMethod()) {
+      error_log("Invalid method tag: " . $method . " != " . $this->request->getMethod() . "\n" . print_r($this->event, true) . "\n");
       throw new Exception("Invalid method tag");
     }
   }
