@@ -1,4 +1,6 @@
 <?php
+require_once $_SERVER['DOCUMENT_ROOT'] . '/config.php';
+require_once __DIR__ . '/Account.class.php';
 
 declare(strict_types=1);
 
@@ -83,11 +85,35 @@ class BTCPayWebhook
         )
     )
     */
+    error_log("Invoice metadata: " . print_r($invoice->getData()['metadata'], true) . PHP_EOL);
+    error_log("Invoice data: " . print_r($invoice->getData(), true) . PHP_EOL);
 
     // Check if the invoice is paid
-    if ($invoice->getStatus() !== 'complete') {
+    if ($invoice->getStatus() !== 'Settled') {
       error_log("Invoice is not paid." . PHP_EOL);
       error_log("Invoice status: " . print_r($invoice, true) . PHP_EOL);
+    } else {
+      try {
+        global $link;
+        // Get the user npub from the invoice metadata
+        $userNpub = $invoice->getData()['metadata']['userNpub'];
+        // Get the item code from the invoice metadata
+        $accountPlan = $invoice->getData()['metadata']['plan'];
+        // Get the order ID from the invoice metadata
+        $orderId = $invoice->getData()['metadata']['orderId'];
+
+        error_log(PHP_EOL . "Order ID: " . $orderId . PHP_EOL);
+        error_log("User npub: " . $userNpub . PHP_EOL);
+        error_log("Account plan: " . $accountPlan . PHP_EOL);
+
+        // Create a new account instance
+        $account = new Account($userNpub, $link);
+        // Create a new account
+        $account->setPlan($accountPlan);
+      } catch (Exception $e) {
+        error_log("Failed to update account: " . $e . PHP_EOL);
+        return false;
+      }
     }
 
     return true;
