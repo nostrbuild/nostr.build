@@ -206,6 +206,7 @@ $app->group('/upload', function (RouteCollectorProxy $group) {
     } else {
       $upload = $factory->create();
     }
+    error_log(PHP_EOL . "Request URL:" . $request->getUri() . PHP_EOL);
 
     try {
       // Handle exceptions thrown by the MultimediaUpload class
