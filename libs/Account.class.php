@@ -169,7 +169,8 @@ class Account
 
   public function getAccountLevel(): AccountLevel
   {
-    return AccountLevel::from($this->account['acctlevel'] ?? AccountLevel::Invalid);
+    $accountLevel = isset($this->account['acctlevel']) ? $this->account['acctlevel'] : -1;
+    return AccountLevel::from($accountLevel);
   }
 
   /*
