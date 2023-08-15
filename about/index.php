@@ -397,7 +397,7 @@ $perm = new Permission();
       <h3>Contacts</h3>
       <figure class="img_container double_img">
         <a href="https://snort.social/p/npub1nxy4qpqnld6kmpphjykvx2lqwvxmuxluddwjamm4nc29ds3elyzsm5avr7"><img src="/assets/about/nostrbuild.png" alt="nostr.build" class="about_img img_square"/></a>
-        <img src="community.png" alt="community" class="about_img img_square" />
+        <img src="/assets/about/community.png" alt="community" class="about_img img_square" />
         <a href="https://snort.social/p/npub137c5pd8gmhhe0njtsgwjgunc5xjr2vmzvglkgqs5sjeh972gqqxqjak37w"><img src="/assets/about/fishcake.png" alt="fishcake" class="about_img img_square" /></a>
       </figure>
     </main>
