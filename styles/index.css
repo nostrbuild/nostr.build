@@ -502,15 +502,8 @@ form {
   border: 1px solid #a58ead;
 }
 
-Copy code
-.upload_btn_group {
-  text-align: center; /* Optional: Center the buttons horizontally */
-}
-
 .import_button {
-  display: inline-block;
   margin-top: 10px;
-  margin-right: 10px;
   padding: 11px 16px;
   cursor: pointer;
   height: 40px;
@@ -521,7 +514,12 @@ Copy code
   font-weight: 500;
   font-size: 14px;
   line-height: 18px;
+  /* identical to box height */
+
   text-align: center;
+
+  /* Solid/Text Primary */
+
   color: #d0bed8;
   transition: all 0.3s;
 }
@@ -531,7 +529,6 @@ Copy code
 }
 
 .import_button:disabled {
-  display: none;
   opacity: 0.3;
   cursor: unset;
   box-shadow: none;
@@ -597,11 +594,13 @@ Copy code
   margin: 10px auto;
 }
 
-.terms a {
+.terms a,
+.ref_link {
   text-decoration: none;
 }
 
-.terms span {
+.terms span,
+.ref_link {
   background: linear-gradient(184.15deg, #ffffff 30.23%, #884ea4 96.61%),
     linear-gradient(0deg, #a58ead, #a58ead);
   -webkit-background-clip: text;
@@ -979,4 +978,85 @@ footer nav {
 
 .active {
   border: 2px solid #3e3187;
+}
+
+.about_page {
+  display: flex;
+  justify-content: flex-start;
+  align-items: flex-start;
+}
+
+.about_page h1,
+.about_page h2 {
+  width: 100%;
+}
+
+.img_container {
+  width: 100%;
+  display: grid;
+  place-items: center;
+  margin: 20px 0;
+}
+
+.about_img {
+  width: 350px;
+  display: block;
+  justify-self: center;
+  align-self: center;
+  border-radius: 8px;
+  box-shadow: 0px 4px 24px rgba(57, 47, 113, 0.5);
+  max-width: 100%;
+}
+
+.img_horizontal {
+  width: 200px;
+}
+
+.double_img {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.img_square {
+  width: 100px;
+  height: 100px;
+}
+
+.about_page h3 {
+  margin: 20px 0;
+}
+
+@media (min-width: 0px) {
+  .paragraph {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .paragraph img {
+    margin: 20px 0;
+  }
+}
+@media (min-width: 768px) {
+  .paragraph {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-gap: 20px;
+  }
+
+  .paragraph img {
+    width: 300px;
+    margin: unset;
+  }
+  .paragraph .img_square {
+    width: 60px;
+    aspect-ratio: 1/1;
+    height: unset;
+  }
+  .para_square {
+    grid-template-columns: 100px 1fr;
+  }
 }
