@@ -133,8 +133,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 <head>
   <meta charSet="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Nostr.build Signup</title>
+  <title>Nostr.build account signup</title>
   <link rel="stylesheet" href="/styles/twbuild.css?v=9" />
+	<link rel="icon" href="/assets/primo_nostr.png" />
   <script defer src="/scripts/fw/alpinejs.min.js?v=3"></script>
   <script defer src="/scripts/fw/htmx.min.js?v=3"></script>
   <style>
