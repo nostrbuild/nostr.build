@@ -291,12 +291,7 @@ $perm = new Permission();
           >.
         </p>
 
-        <img
-          class="about_img"
-          src="nostrbuild_v1.png"
-          alt="nostr.build v1"
-          height="300"
-        />
+        <img class="about_img" src="/assets/about/nostrbuild_v1.png" alt="nostr.build v1" height="300"/>
       </section>
 
       <p>Some of nostr.build’s key principles include:</p>
@@ -334,27 +329,12 @@ $perm = new Permission();
         services? Paid Accounts.<br /><br />
       </p>
       <figure class="img_container double_img">
-        <img
-          class="about_img img_horizontal"
-          src="opensats.png"
-          alt="opensats grant"
-          height="80"
-        />
-        <img
-          class="about_img img_horizontal"
-          src="githublogo.png"
-          alt="opensats grant"
-          height="80"
-        />
+        <img class="about_img img_horizontal" src="/assets/about/opensats.png" alt="opensats grant" height="80"/>
+        <img class="about_img img_horizontal" src="/assets/about/githublogo.png" alt="opensats grant" height="80"/>
       </figure>
       <h3>Paid accounts</h3>
       <section class="paragraph para_square">
-        <img
-          class="about_img img_square"
-          src="primo_nostr.png"
-          alt="nostr.build account logo"
-          width="80"
-        />
+        <img class="about_img img_square" src="/assets/primo_nostr.png" alt="nostr.build account logo" width="80"/>
         <p>
           nostr.build offers accounts with premium features, charged annually.
           Accounts can be purchased with a lighting wallet or Bitcoin. Proceeds
@@ -382,20 +362,10 @@ $perm = new Permission();
         ** See all nostr.build Accounts and features, HERE!
       </p>
       <figure class="img_container double_img">
-        <img
-          class="about_img img_horizontal"
-          src="awss3.png"
-          alt="nostr.build account logo"
-          width="180"
-        />
-
-        <img
-          class="about_img img_horizontal"
-          src="bunnynet.png"
-          alt="nostr.build account logo"
-          width="180"
-        />
+        <img class="about_img img_horizontal" src="/assets/about/awss3.png" alt="nostr.build account logo" width="180"/>
+        <img class="about_img img_horizontal" src="/assets/about/bunnynet.png" alt="nostr.build account logo" width="180"/>
       </figure>
+
       <h4>How to use Account related features:</h4>
       <section class="paragraph">
         <p>
@@ -419,16 +389,16 @@ $perm = new Permission();
         </p>
 
         <figure class="img_container double_img">
-          <img src="createfolder.png" alt="create a folder" class="about_img" />
-          <img src="movedelete.png" alt="move and delete" class="about_img" />
+          <img src="/assets/about/createfolder.png" alt="create a folder" class="about_img" />
+          <img src="/assets/about/movedelete.png" alt="move and delete" class="about_img" />
         </figure>
       </section>
 
       <h3>Contacts</h3>
       <figure class="img_container double_img">
-        <a href="https://snort.social/p/npub1nxy4qpqnld6kmpphjykvx2lqwvxmuxluddwjamm4nc29ds3elyzsm5avr7"><img src="nostrbuild.png" alt="nostr.build" class="about_img img_square"/></a>
+        <a href="https://snort.social/p/npub1nxy4qpqnld6kmpphjykvx2lqwvxmuxluddwjamm4nc29ds3elyzsm5avr7"><img src="/assets/about/nostrbuild.png" alt="nostr.build" class="about_img img_square"/></a>
         <img src="community.png" alt="community" class="about_img img_square" />
-        <a href="https://snort.social/p/npub137c5pd8gmhhe0njtsgwjgunc5xjr2vmzvglkgqs5sjeh972gqqxqjak37w"><img src="fishcake.png" alt="fishcake" class="about_img img_square" /></a>
+        <a href="https://snort.social/p/npub137c5pd8gmhhe0njtsgwjgunc5xjr2vmzvglkgqs5sjeh972gqqxqjak37w"><img src="/assets/about/fishcake.png" alt="fishcake" class="about_img img_square" /></a>
       </figure>
     </main>
 
