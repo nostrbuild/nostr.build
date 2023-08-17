@@ -103,6 +103,9 @@ $app->add(function (Request $request, RequestHandler $handler): Response {
     ->withHeader('Access-Control-Allow-Headers', 'X-Requested-With, Content-Type, Accept, Origin, Authorization')
     ->withHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
 });
+$app->options('/{routes:.+}', function ($request, $response, $args) {
+  return $response;
+});
 $app->setBasePath('/api/v2');
 $app->addErrorMiddleware(true, true, true);
 $app->addBodyParsingMiddleware();
