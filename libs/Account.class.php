@@ -1,4 +1,6 @@
 <?php
+// Use centralized config
+require_once $_SERVER['DOCUMENT_ROOT'] . '/SiteConfig.php';
 
 /*
 Main class to work with accounts
@@ -64,17 +66,6 @@ class Account
   private string $npub;
   private array $account;
   private mysqli $db;
-  private const STORAGE_LIMITS = [
-    99 => PHP_INT_MAX, // Unlimited
-    89 => 100 * 1024, // 100MiB
-    5 => 5 * 1024 * 1024 * 1024, // 5GiB
-    4 => 0, // No Storage, consider upgrading
-    3 => 5 * 1024 * 1024 * 1024, // 5GiB
-    2 => 10 * 1024 * 1024 * 1024, // 10GiB
-    1 => 20 * 1024 * 1024 * 1024, // 20GiB
-    0 => 0 // No Storage, consider upgrading
-  ];
-
 
   public function __construct(string $npub, mysqli $db)
   {
@@ -399,7 +390,7 @@ class Account
   public function getRemainingStorageSpace(): int
   {
     $accountLevel = $this->account['acctlevel'];
-    $limit = self::STORAGE_LIMITS[$accountLevel] ?? 0; // Default to 0 if level not found
+    $limit = SiteConfig::getStorageLimit($accountLevel) ?? 0; // Default to 0 if level not found
 
     $usedSpace = $this->fetchAccountSpaceConsumption();
 
