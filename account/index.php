@@ -8,7 +8,6 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/db/UsersImagesFolders.class.php'
 require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/utils.funcs.php';
 
 global $link;
-global $storageLimit;
 
 $perm = new Permission();
 // Initialize the session
@@ -378,7 +377,7 @@ $userStorageRemaining = $userOverLimit ? 0 : $userStorageLimit - $storageUsed;
 					<div class="plan_data_info">
 						<h4>Plan data</h4>
 						<p><b><?= formatSizeUnits($usersFoldersStats['TOTAL']['totalSize']) ?></b> /
-							<?= htmlentities($storageLimits[$acctlevel]['message']) ?>
+							<?= htmlentities(SiteConfig::getStorageLimitMessage($acctlevel)) ?>
 							<?= $userOverLimit ? '<br><span style="color: red;">Max storage reached! Delete images or upgrade plan for more space.</span><br>' : '' ?>
 						</p>
 					</div>

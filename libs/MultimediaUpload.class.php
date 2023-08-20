@@ -7,17 +7,12 @@ require_once $_SERVER['DOCUMENT_ROOT'] . "/libs/Account.class.php";
 require_once $_SERVER['DOCUMENT_ROOT'] . "/libs/db/UploadsData.class.php";
 require_once $_SERVER['DOCUMENT_ROOT'] . "/libs/db/UsersImages.class.php";
 require_once $_SERVER['DOCUMENT_ROOT'] . "/libs/db/UsersImagesFolders.class.php";
-require_once $_SERVER['DOCUMENT_ROOT'] . "/config.php"; // Size limits
-require_once $_SERVER['DOCUMENT_ROOT'] . "/SiteConfig.php";
+require_once $_SERVER['DOCUMENT_ROOT'] . "/SiteConfig.php"; // File size limits, etc.
 
 // Vendor autoload
 require_once $_SERVER['DOCUMENT_ROOT'] . "/vendor/autoload.php";
 
 use Hashids\Hashids;
-
-// Globals
-global $link;
-global $storageLimits;
 
 /**
  * Summary of MultimediaUpload
@@ -663,9 +658,7 @@ class MultimediaUpload
    */
   public function uploadFileFromUrl(string $url, $pfp = false): bool
   {
-    global $freeUploadLimit;
-
-    $sizeLimit = $this->pro ? $this->userAccount->getRemainingStorageSpace() : $freeUploadLimit;
+    $sizeLimit = $this->pro ? $this->userAccount->getRemainingStorageSpace() : SiteConfig::FREE_UPLOAD_LIMIT;
 
     // Get the metadata from the URL
     try {
@@ -855,9 +848,6 @@ class MultimediaUpload
    */
   protected function validateFile(): bool
   {
-    global $freeUploadLimit;
-    global $storageLimits;
-
     // Validate if file upload is OK
     if ($this->file['error'] !== UPLOAD_ERR_OK) {
       error_log('File upload error: ' . $this->file['error']);
@@ -865,8 +855,8 @@ class MultimediaUpload
     }
 
     // Check if the file size exceeds the upload limit for free users
-    if (!$this->pro && $this->file['size'] > $freeUploadLimit) {
-      error_log('File size exceeds the limit of ' . formatSizeUnits($freeUploadLimit));
+    if (!$this->pro && $this->file['size'] > SiteConfig::FREE_UPLOAD_LIMIT) {
+      error_log('File size exceeds the limit of ' . formatSizeUnits(SiteConfig::FREE_UPLOAD_LIMIT));
       return false;
     }
 

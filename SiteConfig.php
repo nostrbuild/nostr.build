@@ -212,4 +212,13 @@ class SiteConfig
     // Handle unlimited storage
     return $limit === -1 ? PHP_INT_MAX : $limit;
   }
+
+  public static function getStorageLimitMessage($acctLevel)
+  {
+    if (!array_key_exists($acctLevel, self::STORAGE_LIMITS)) {
+      return 'Unknown storage limit'; // default message
+    }
+
+    return self::STORAGE_LIMITS[$acctLevel]['message'];
+  }
 }
