@@ -1,14 +1,11 @@
 <?php
 // Include config, session, and Permission class files
 require_once $_SERVER['DOCUMENT_ROOT'] . '/config.php';
-require_once $_SERVER['DOCUMENT_ROOT'] . '/functions/session.php';
-//require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/permissions.class.php';
 
 // Filter based on what we allow in views, potentially extending to allow adult content in the future
 $allowed_views = array('img', 'gif', 'vid');
 
 // Validate all user input and leave no room for interpretation or misinput
-$page = isset($_GET['p']) && $_GET['p'] !== "" && is_numeric($_GET['p']) ? (int)$_GET['p'] : 0;
 $view_type = isset($_GET['k']) && in_array($_GET['k'], $allowed_views) ? $_GET['k'] : 'img';
 
 ?>
@@ -27,6 +24,7 @@ $view_type = isset($_GET['k']) && in_array($_GET['k'], $allowed_views) ? $_GET['
 	<link rel="stylesheet" href="/styles/header.css" />
 	<link rel="icon" href="https://cdn.nostr.build/assets/01.png" />
 
+	<script defer src="/scripts/images.js"></script>
 	<title>nostr.build - Free View</title>
 	<style>
 		.image-container {
@@ -157,31 +155,20 @@ $view_type = isset($_GET['k']) && in_array($_GET['k'], $allowed_views) ? $_GET['
 			switch ($view_type) {
 				case 'gif':
 					// GIFs
-					$perpage = 50;
-					$sql = "SELECT * FROM uploads_data WHERE approval_status = 'approved' AND filename LIKE '%.gif' AND type = 'picture' ORDER BY upload_date DESC LIMIT ?, ?";
-					$sql_count = "SELECT COUNT(*) as total FROM uploads_data WHERE approval_status = 'approved' AND filename LIKE '%.gif' AND type = 'picture'";
+					$sql = "SELECT * FROM uploads_data WHERE approval_status = 'approved' AND filename LIKE '%.gif' AND type = 'picture' ORDER BY upload_date DESC LIMIT 50";
 					break;
 				case 'vid':
 					// Videos
-					$perpage = 12;
-					$sql = "SELECT * FROM uploads_data WHERE approval_status='approved' AND type='video' ORDER BY upload_date DESC LIMIT ?, ?";
-					$sql_count = "SELECT COUNT(*) as total FROM uploads_data WHERE approval_status='approved' AND type='video'";
+					$sql = "SELECT * FROM uploads_data WHERE approval_status='approved' AND type='video' ORDER BY upload_date DESC LIMIT 12";
 					break;
 				default:
 					// Images
-					$perpage = 200;
-					$sql = "SELECT * FROM uploads_data WHERE approval_status = 'approved' AND (filename LIKE '%.jpg' OR filename LIKE '%.jpeg' OR filename LIKE '%.png' OR filename LIKE '%.webp') AND type = 'picture' ORDER BY upload_date DESC LIMIT ?, ?";
-					$sql_count = "SELECT COUNT(*) as total FROM uploads_data WHERE approval_status = 'approved' AND (filename LIKE '%.jpg' OR filename LIKE '%.jpeg' OR filename LIKE '%.png' OR filename LIKE '%.webp') AND type = 'picture' ";
+					$sql = "SELECT * FROM uploads_data WHERE approval_status = 'approved' AND (filename LIKE '%.jpg' OR filename LIKE '%.jpeg' OR filename LIKE '%.png' OR filename LIKE '%.webp') AND type = 'picture' ORDER BY upload_date DESC LIMIT 50";
 					break;
 			}
 
-			$start = $page * $perpage;
-			$end = $perpage;
-
-
 			// selects images to display, confirms they are 'approved' before diplaying
 			$stmt = $link->prepare($sql);
-			$stmt->bind_param('ii', $start, $end);
 			$stmt->execute();
 
 			$result = $stmt->get_result();
@@ -212,55 +199,19 @@ $view_type = isset($_GET['k']) && in_array($_GET['k'], $allowed_views) ? $_GET['
 			}
 
 			echo "</div>";
-			$stmt = $link->prepare($sql_count);
-			$stmt->execute();
-			$total = $stmt->get_result()->fetch_assoc()['total'];
-			//echo '<p style="text-align:center;" color=#C58FF7><big>' . handle_pagination($total, (int)$page, $perpage, '?k=' . $view_type . '&p=') . "</p></big>";
-
 			$link->close();
-
-			function handle_pagination($total, $page, $shown, $url)
-			{
-				$pages = ceil($total / $shown);
-				$range_start = (($page >= 5) ? ($page - 3) : 1);
-				$range_end = ((($page + 5) > $pages) ? $pages : ($page + 5));
-
-				if ($page >= 1) {
-					$r[] = '<span><a href="' . $url . '">&laquo; first</a></span>';
-					$r[] = '<span><a href="' . $url . ($page - 1) . '">&lsaquo; previous</a></span>';
-					$r[] = (($range_start > 1) ? ' ... ' : '');
-				}
-
-				if ($range_end > 1) {
-					foreach (range($range_start, $range_end) as $key => $value) {
-						if ($value == ($page + 1)) $r[] = '<span>' . $value . '</span>';
-						else $r[] = '<span><a href="' . $url . ($value - 1) . '">' . $value . '</a></span>';
-					}
-				}
-
-				if (($page + 1) < $pages) {
-					$r[] = (($range_end < $pages) ? ' ... ' : '');
-					$r[] = '<span><a href="' . $url . ($page + 1) . '">next &rsaquo;</a></span>';
-					$r[] = '<span><a href="' . $url . ($pages - 1) . '">last &raquo;</a></span>';
-				}
-
-				return ((isset($r)) ? '<div>' . implode("\r\n", $r) . '</div>' : '');
-			}
 
 			?>
 
 	</main>
-    <?= include $_SERVER['DOCUMENT_ROOT']?>
-	<script src="/scripts/images.js"></script>
-
 	<footer>
-	Get access to all 500k+ Videos, Gifs and images <a class="ref_link" style="font-size: x-large" href="https://nostr.build/signup">HERE!</a><br /><br />
-			<nav>
-				<div class="footer_made_by">
+		Get access to all 500k+ Videos, Gifs and images <a class="ref_link" style="font-size: x-large" href="https://nostr.build/signup">HERE!</a><br /><br />
+		<nav>
+			<div class="footer_made_by">
 				nostr.build 2023
-				</div>
-			</nav>
-		</footer>
+			</div>
+		</nav>
+	</footer>
 </body>
 
 </html>
