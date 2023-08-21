@@ -16,6 +16,7 @@
     <meta property="og:title" content="nostr.build media uploader">
     <meta property="og:type" content="website">
     <link rel="canonical" href="/">
+    <link rel="icon" href="/assets/01.png">
 
 <style>
 .flash {
