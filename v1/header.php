@@ -39,8 +39,8 @@
         <div class="u-list u-list-1">
           <div class="u-repeater u-repeater-1">
             <div class="u-align-center u-container-style u-custom-color-3 u-list-item u-radius-22 u-repeater-item u-shape-round u-list-item-1" data-animation-name="customAnimationIn" data-animation-duration="1500" data-animation-delay="250">
-              <div class="u-container-layout u-valign-bottom-sm u-valign-bottom-xs u-container-layout-1"><span class="u-file-icon u-icon u-icon-1" data-href="/greenskull"><a href="/greenskull"><img src="https://cdn.nostr.build/assets/v1/gskull.png" alt=""></a></span>
-                <h4 class="u-custom-font u-font-roboto-condensed u-text u-text-1">green skull</h4>
+              <div class="u-container-layout u-valign-bottom-sm u-valign-bottom-xs u-container-layout-1"><span class="u-file-icon u-icon u-icon-1" data-href="/builders"><a href="/builders"><img src="https://cdn.nostr.build/assets/v1/gskull.png" alt=""></a></span>
+                <h4 class="u-custom-font u-font-roboto-condensed u-text u-text-1">Builders</h4>
               </div>
             </div>
             <div class="u-align-center u-container-style u-custom-color-3 u-list-item u-radius-22 u-repeater-item u-shape-round u-video-cover u-list-item-2" data-animation-name="customAnimationIn" data-animation-duration="1500" data-animation-delay="250">
@@ -65,7 +65,7 @@
               </div>
             </div>
             <div class="u-align-center u-container-style u-custom-color-3 u-list-item u-radius-22 u-repeater-item u-shape-round u-video-cover u-list-item-6" data-animation-name="customAnimationIn" data-animation-duration="1500" data-animation-delay="250">
-              <div class="u-container-layout u-valign-bottom-sm u-valign-bottom-xs u-container-layout-6"><span class="u-file-icon u-icon u-icon-6" data-animation-out="0" data-href="/creators.php"><a href="/creators.php"><img src="https://cdn.nostr.build/assets/v1/nb2503.png" alt=""></a></span>
+              <div class="u-container-layout u-valign-bottom-sm u-valign-bottom-xs u-container-layout-6"><span class="u-file-icon u-icon u-icon-6" data-animation-out="0" data-href="/creators.php"><a href="/creators"><img src="https://cdn.nostr.build/assets/v1/nb2503.png" alt=""></a></span>
                 <h4 class="u-custom-font u-font-roboto-condensed u-text u-text-6">Creators</h4>
               </div>
             </div>
