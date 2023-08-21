@@ -181,8 +181,8 @@ $view_type = isset($_GET['k']) && in_array($_GET['k'], $allowed_views) ? $_GET['
 				case 'gif':
 					// GIFs
 					$perpage = 50;
-					$sql = "SELECT * FROM uploads_data WHERE approval_status = 'approved' AND filename LIKE '%.gif' AND type = 'picture' ORDER BY upload_date DESC LIMIT ?, ?";
-					$sql_count = "SELECT COUNT(*) as total FROM uploads_data WHERE approval_status = 'approved' AND filename LIKE '%.gif' AND type = 'picture'";
+					$sql = "SELECT * FROM uploads_data WHERE approval_status = 'approved' AND file_extension = 'gif' AND type = 'picture' ORDER BY upload_date DESC LIMIT ?, ?";
+					$sql_count = "SELECT COUNT(*) as total FROM uploads_data WHERE approval_status = 'approved' AND file_extension = 'gif' AND type = 'picture'";
 					break;
 				case 'vid':
 					// Videos
@@ -193,8 +193,8 @@ $view_type = isset($_GET['k']) && in_array($_GET['k'], $allowed_views) ? $_GET['
 				default:
 					// Images
 					$perpage = 200;
-					$sql = "SELECT * FROM uploads_data WHERE approval_status = 'approved' AND (filename LIKE '%.jpg' OR filename LIKE '%.jpeg' OR filename LIKE '%.png' OR filename LIKE '%.webp') AND type = 'picture' ORDER BY upload_date DESC LIMIT ?, ?";
-					$sql_count = "SELECT COUNT(*) as total FROM uploads_data WHERE approval_status = 'approved' AND (filename LIKE '%.jpg' OR filename LIKE '%.jpeg' OR filename LIKE '%.png' OR filename LIKE '%.webp') AND type = 'picture' ";
+					$sql = "SELECT * FROM uploads_data WHERE approval_status = 'approved' AND file_extension IN ('jpg', 'jpeg', 'png', 'webp') AND type = 'picture' ORDER BY upload_date DESC LIMIT ?, ?";
+					$sql_count = "SELECT COUNT(*) as total FROM uploads_data WHERE approval_status = 'approved' AND file_extension IN ('jpg', 'jpeg', 'png', 'webp') AND type = 'picture'";
 					break;
 			}
 
