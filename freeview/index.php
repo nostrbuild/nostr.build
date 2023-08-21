@@ -1,8 +1,6 @@
 <?php
 // Include config, session, and Permission class files
 require_once $_SERVER['DOCUMENT_ROOT'] . '/config.php';
-require_once $_SERVER['DOCUMENT_ROOT'] . '/functions/session.php';
-//require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/permissions.class.php';
 
 // Filter based on what we allow in views, potentially extending to allow adult content in the future
 $allowed_views = array('img', 'gif', 'vid');
@@ -26,6 +24,7 @@ $view_type = isset($_GET['k']) && in_array($_GET['k'], $allowed_views) ? $_GET['
 	<link rel="stylesheet" href="/styles/header.css" />
 	<link rel="icon" href="https://cdn.nostr.build/assets/01.png" />
 
+	<script defer src="/scripts/images.js"></script>
 	<title>nostr.build - Free View</title>
 	<style>
 		.image-container {
@@ -134,7 +133,7 @@ $view_type = isset($_GET['k']) && in_array($_GET['k'], $allowed_views) ? $_GET['
 			</a>
 
 			<a href="/login/" class="nav_button active_button">
-				<span><img src="https://cdn.nostr.build/assets/nav/login.png" alt="login image" /> </span>
+				<span><img src="/assets/nav/login.png" alt="login image" /> </span>
 				Login
 			</a>
 		</nav>
@@ -153,24 +152,11 @@ $view_type = isset($_GET['k']) && in_array($_GET['k'], $allowed_views) ? $_GET['
 		<div style="display: flex; flex-flow: wrap;">
 			<?php
 
-			switch ($view_type) {
-				case 'gif':
-					// GIFs
-					$sql = "SELECT * FROM uploads_data WHERE approval_status = 'approved' AND filename LIKE '%.gif' AND type = 'picture' ORDER BY upload_date DESC LIMIT 50";
-					$sql_count = "SELECT COUNT(*) as total FROM uploads_data WHERE approval_status = 'approved' AND filename LIKE '%.gif' AND type = 'picture'";
-					break;
-				case 'vid':
-					// Videos
-					$sql = "SELECT * FROM uploads_data WHERE approval_status='approved' AND type='video' ORDER BY upload_date DESC LIMIT 12";
-					$sql_count = "SELECT COUNT(*) as total FROM uploads_data WHERE approval_status='approved' AND type='video'";
-					break;
-				default:
-					// Images
-					$sql = "SELECT * FROM uploads_data WHERE approval_status = 'approved' AND (filename LIKE '%.jpg' OR filename LIKE '%.jpeg' OR filename LIKE '%.png' OR filename LIKE '%.webp') AND type = 'picture' ORDER BY upload_date DESC LIMIT 200";
-					$sql_count = "SELECT COUNT(*) as total FROM uploads_data WHERE approval_status = 'approved' AND (filename LIKE '%.jpg' OR filename LIKE '%.jpeg' OR filename LIKE '%.png' OR filename LIKE '%.webp') AND type = 'picture' ";
-					break;
-			}
-
+			$sql = match ($view_type) {
+			  'gif' => "SELECT * FROM uploads_data WHERE approval_status = 'approved' AND file_extension = 'gif' AND type = 'picture' ORDER BY upload_date DESC LIMIT 50",
+			  'vid' => "SELECT * FROM uploads_data WHERE approval_status='approved' AND type='video' ORDER BY upload_date DESC LIMIT 12",
+			  default => "SELECT * FROM uploads_data WHERE approval_status = 'approved' AND file_extension IN ('jpg', 'jpeg', 'png', 'webp') AND type = 'picture' ORDER BY upload_date DESC LIMIT 200",
+			};
 
 			// selects images to display, confirms they are 'approved' before diplaying
 			$stmt = $link->prepare($sql);
@@ -204,26 +190,19 @@ $view_type = isset($_GET['k']) && in_array($_GET['k'], $allowed_views) ? $_GET['
 			}
 
 			echo "</div>";
-			$stmt = $link->prepare($sql_count);
-			$stmt->execute();
-			$total = $stmt->get_result()->fetch_assoc()['total'];
-
 			$link->close();
 
 			?>
 
 	</main>
-    <?= include $_SERVER['DOCUMENT_ROOT']?>
-	<script src="/scripts/images.js"></script>
-
 	<footer>
-			Get access to all 500k+ Videos, Gifs and images <a class="ref_link" style="font-size: x-large" href="https://nostr.build/signup">HERE!</a><br /><br />
-			<nav>
-				<div class="footer_made_by">
+		Get access to all 500k+ Videos, Gifs and images <a class="ref_link" style="font-size: x-large" href="https://nostr.build/signup">HERE!</a><br /><br />
+		<nav>
+			<div class="footer_made_by">
 				nostr.build 2023
-				</div>
-			</nav>
-		</footer>
+			</div>
+		</nav>
+	</footer>
 </body>
 
 </html>
