@@ -273,7 +273,7 @@ $view_type = isset($_GET['k']) && in_array($_GET['k'], $allowed_views) ? $_GET['
 			?>
 
 	</main>
-	<?= include $_SERVER['DOCUMENT_ROOT'] . '/components/footer.php'; ?>
+	<?php include $_SERVER['DOCUMENT_ROOT'] . '/components/footer.php'; ?>
 	<script src="/scripts/images.js"></script>
 </body>
 

@@ -195,14 +195,10 @@ $view_type = isset($_GET['k']) && in_array($_GET['k'], $allowed_views) ? $_GET['
 			?>
 
 	</main>
-	<footer>
-		Get access to all 500k+ Videos, Gifs and images <a class="ref_link" style="font-size: x-large" href="https://nostr.build/signup">HERE!</a><br /><br />
-		<nav>
-			<div class="footer_made_by">
-				nostr.build 2023
-			</div>
-		</nav>
-	</footer>
+		<a class="ref_link" style="font-size: x-large" href="https://nostr.build/signup"> Get access to all 500k+ Videos, Gifs and images HERE!</a><br /><br />
+		
+		<?php include $_SERVER['DOCUMENT_ROOT'] . '/components/footer.php'; ?>
+
 </body>
 
 </html>
