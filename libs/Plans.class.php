@@ -167,7 +167,7 @@ class Plans
       [
         '<b>5GiB of private storage</b>',
         '<b>Add/Delete your media</b>',
-        '<b>Storage only, No View All!</b>'
+        '<b>No View All!</b>'
       ],
       'sats',
       $remainingDays,
@@ -183,7 +183,7 @@ class Plans
       $originalPrices[self::VIEWER],
       [
         '<b>View All : 500k+ pics, GIFs & videos</b>',
-        '<b>View only, No private storage!</b>'
+        '<b>No private storage!</b>'
       ],
       'sats',
       $remainingDays,
