@@ -6,7 +6,8 @@ class Plan
 {
   public int $id;
   public string $name;
-  public string $description;
+  public string $image;
+  public string $imageAlt;
   public string $price;
   public int $priceInt;
   public array $features;
@@ -16,7 +17,8 @@ class Plan
   public function __construct(
     int $id,
     string $name,
-    string $description,
+    string $image,
+    string $imageAlt,
     int $price,
     array $features,
     string $currency,
@@ -26,7 +28,8 @@ class Plan
   ) {
     $this->id = $id;
     $this->name = $name;
-    $this->description = $description;
+    $this->image = $image;
+    $this->imageAlt = $imageAlt;
     $this->features = $features;
     $this->currency = $currency;
 
@@ -121,18 +124,15 @@ class Plans
     self::$PLANS[self::CREATOR] = new Plan(
       self::CREATOR,
       'Creator',
-      'Create, view all and share with 20GiB storage.',
+      'https://cdn.nostr.build/assets/signup/creator.png',
+      'creator plan image',
       $originalPrices[self::CREATOR],
       [
-        '<b>Creators page hosting on nostr.build</b>',
-        '<b>20 GiB of private media storage</b>',
-        '<b>Early access to new features and improvements</b>',
-        '<b>(coming soon) Fastest CDN with 114+ global locations</b>',
-        'Unlimited free public uploads',
-        'Add and delete videos, images, gifs, and audio',
-        'Global CDN delivery for all media',
+        '<b><a class="ref_link" target="_blank" href="https://nostr.build/creators/">Host on nostr.build Creators page</a></b>',
+        '<b>20GiB of private storage</b>',
         'BTCPay Server Account',
-        'View all free uploads, over 500,000+ free images, gifs and videos'
+        'View All : 500k+ pics, GIFs & videos',
+        'Add/Delete your media'
       ],
       'sats',
       $remainingDays,
@@ -143,15 +143,14 @@ class Plans
     self::$PLANS[self::PROFESSIONAL] = new Plan(
       self::PROFESSIONAL,
       'Professional',
-      'Create, view all and share with 10GiB storage.',
+      'https://cdn.nostr.build/assets/signup/pro.png',
+      'pro plan image',
       $originalPrices[self::PROFESSIONAL],
       [
-        '<b>10 GiB of private media storage</b>',
+        '<b>10GiB of private storage</b>',
         '<b>BTCPay Server Account</b>',
-        '<b>View all free uploads, over 500,000+ free images, gifs and videos</b>',
-        'Unlimited free public uploads',
-        'Add and delete videos, images, gifs, and audio',
-        'Global CDN delivery for all media'
+        '<b>View All : 500k+ pics, GIFs & videos</b>',
+        'Add/Delete your media'
       ],
       'sats',
       $remainingDays,
@@ -161,14 +160,14 @@ class Plans
 
     self::$PLANS[self::STARTER] = new Plan(
       self::STARTER,
-      'Starter',
-      'Create and share with 5GiB storage.',
+      '5GiB - Only',
+      'https://cdn.nostr.build/assets/signup/5bg.png',
+      '5gb plan image',
       $originalPrices[self::STARTER],
       [
-        '<b>5GiB of private media storage</b>',
-        '<b>Add and delete videos, images, gifs, and audio</b>',
-        '<b>Global CDN delivery for all media</b>',
-        'Unlimited free public uploads'
+        '<b>5GiB of private storage</b>',
+        '<b>Add/Delete your media</b>',
+        '<b>Storage only, No View All!</b>'
       ],
       'sats',
       $remainingDays,
@@ -178,12 +177,13 @@ class Plans
 
     self::$PLANS[self::VIEWER] = new Plan(
       self::VIEWER,
-      'Viewer',
-      'View only plan. No private storage space.',
+      'View All - Only',
+      'https://cdn.nostr.build/assets/signup/viewall.gif',
+      'viewall plan image',
       $originalPrices[self::VIEWER],
       [
-        'Unlimited free public uploads',
-        'View all free uploads, over 500,000+ free images, gifs and videos'
+        '<b>View All : 500k+ pics, GIFs & videos</b>',
+        '<b>View only, No private storage!</b>'
       ],
       'sats',
       $remainingDays,
