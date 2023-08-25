@@ -134,8 +134,10 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
   <meta charSet="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Nostr.build account signup</title>
-  <link rel="stylesheet" href="/styles/twbuild.css?v=9" />
-	<link rel="icon" href="/assets/primo_nostr.png" />
+  <link rel="stylesheet" href="/styles/twbuild.css?v=10" />
+  <link rel="stylesheet" href="/styles/index.css" />
+  <link rel="stylesheet" href="/styles/signup.css" />
+  <link rel="icon" href="/assets/primo_nostr.png" />
   <script defer src="/scripts/fw/alpinejs.min.js?v=3"></script>
   <script defer src="/scripts/fw/htmx.min.js?v=3"></script>
   <style>
@@ -144,76 +146,23 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     }
   </style>
 </head>
-<!--
-  <?php
-  var_dump($_SESSION);
-  var_dump($selectedPlan);
-
-  var_dump($step);
-  var_dump($steps);
-  ?>
-  -->
 
 <body class="min-h-screen">
-  <!-- Navbar -->
-  <header x-data="{ open: false }" class="bg-inherit">
-    <nav class="mx-auto flex max-w-7xl items-center justify-between p-6 lg:px-8" aria-label="Global">
-      <div class="flex lg:flex-1">
-        <a href="/" class="-m-1.5 p-1.5">
-          <span class="sr-only">nostr.build</span>
-          <img class="h-8 w-auto" src="/signup/logo/nblogo@0.1x.png" alt="nostr.build logo">
-        </a>
-      </div>
-      <div class="flex lg:hidden">
-        <button x-on:click="open = ! open" type="button" class="-m-2.5 inline-flex items-center justify-center rounded-md p-2.5 text-gray-300">
-          <span class="sr-only">Open main menu</span>
-          <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
-          </svg>
-        </button>
-      </div>
-      <div class="hidden lg:flex lg:gap-x-12">
-        <a href="/" class="text-sm font-semibold leading-6 text-gray-100">Home</a>
-        <a href="/builders" class="text-sm font-semibold leading-6 text-gray-100">Builders</a>
-        <a href="/creators" class="text-sm font-semibold leading-6 text-gray-100">Creators</a>
-      </div>
-      <div class="hidden lg:flex lg:flex-1 lg:justify-end">
-        <a href="/login" class="text-sm font-semibold leading-6 text-gray-100">Log in <span aria-hidden="true">&rarr;</span></a>
-      </div>
-    </nav>
-    <!-- Mobile menu, show/hide based on menu open state. -->
-    <div x-cloak x-show.important="open" class="lg:hidden" role="dialog" aria-modal="true">
-      <!-- Background backdrop, show/hide based on slide-over state. -->
-      <div x-show.important="open" class="fixed inset-0 z-10"></div>
-      <div class="fixed inset-y-0 right-0 z-20 w-full overflow-y-auto bg-gradient-to-b from-[#292556] to-[#120a24] px-6 py-6 sm:max-w-sm sm:ring-1 sm:ring-gray-100/10">
-        <div class="flex items-center justify-between">
-          <a href="/" class="-m-1.5 p-1.5">
-            <span class="sr-only">nostr.build</span>
-            <img class="h-8 w-auto" src="/signup/logo/nblogo@0.1x.png" alt="nostr.build logo">
-          </a>
-          <button x-on:click="open = ! open" type="button" class="-m-2.5 rounded-md p-2.5 text-gray-300">
-            <span class="sr-only">Close menu</span>
-            <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
-        </div>
-        <div class="mt-6 flow-root">
-          <div class="-my-6 divide-y divide-gray-500/10">
-            <div class="space-y-2 py-6">
-              <a href="/" class="-mx-3 block rounded-lg px-3 py-2 text-base font-semibold leading-7 text-gray-100 hover:bg-gray-950">Home</a>
-              <a href="/builders" class="-mx-3 block rounded-lg px-3 py-2 text-base font-semibold leading-7 text-gray-100 hover:bg-gray-950">Builders</a>
-              <a href="/creators" class="-mx-3 block rounded-lg px-3 py-2 text-base font-semibold leading-7 text-gray-100 hover:bg-gray-950">Creators</a>
-            </div>
-            <div class="py-6">
-              <a href="/login" class="-mx-3 block rounded-lg px-3 py-2.5 text-base font-semibold leading-7 text-gray-100 hover:bg-gray-950">Log in</a>
-            </div>
-          </div>
-        </div>
-      </div>
+  <header>
+    <img class="top_img block mx-auto" src="https://cdn.nostr.build/assets/signup.png" alt="nostr.build image" />
+    <h1 class="text-2xl">nostr.build account options</h1>
+    <div class="information pb-5">
+      <ul>
+        <li>
+          <span class="whitespace-pre-line">Storage on AWS S3 with Bunny.net global CDN
+            Damus & Amethyst Account integration (nip98)
+            Add/Delete media from your private folders
+            Bitcoin Only | Never Ads | Billed Annually
+          </span>
+        </li>
+      </ul>
     </div>
   </header>
-  <!-- /Navbar -->
   <main>
     <nav hx-boost="true" class="flex items-center justify-center" aria-label="Progress">
       <p class="text-sm font-medium text-gray-300">Step <?= $step ?> of <?= count($steps) ?></p>
@@ -247,33 +196,19 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     <?php switch ($step):
       default:
       case 1: ?>
+
         <!-- Plans section -->
+
         <div class="py-10 sm:py-15">
           <div class="mx-auto max-w-7xl px-6 lg:px-8">
-            <div class="mx-auto max-w-4xl text-center">
-              <h2 class="text-base font-semibold leading-7 text-indigo-600">Paid Plans</h2>
-              <p class="mt-2 text-4xl font-bold tracking-tight text-gray-100 sm:text-5xl">Plans for your creative needs</p>
-            </div>
-            <p class="mx-auto mt-6 max-w-2xl text-center text-lg leading-8 text-gray-300">All new plans are priced annually, upgradable (comming soon) at any time.</p>
-            <div class="mt-16 flex justify-center">
-              <fieldset class="grid grid-cols-2 gap-x-1 rounded-full p-1 text-center text-xs font-semibold leading-5 ring-1 ring-inset ring-gray-200">
-                <legend class="sr-only">New / Upgrade</legend>
-                <label class="cursor-pointer rounded-full px-2.5 py-1 <?= $perm->validatePermissionsLevelMoreThanOrEqual(1) ? 'text-gray-500' : 'bg-indigo-600 text-white' ?>">
-                  <input type="radio" name="purchase_type" value="new" class="sr-only">
-                  <span>New</span>
-                </label>
-                <label class="cursor-pointer rounded-full px-2.5 py-1 <?= $perm->validatePermissionsLevelMoreThanOrEqual(1) ? 'bg-indigo-600 text-white' : 'text-gray-500' ?>">
-                  <input type="radio" name="purchase_type" value="upgrade" class="sr-only">
-                  <span>Upgrade</span>
-                </label>
-              </fieldset>
-            </div>
+
             <div class="isolate mx-auto mt-10 grid max-w-md grid-cols-1 gap-8 md:max-w-2xl md:grid-cols-2 lg:max-w-4xl xl:mx-0 xl:max-w-none xl:grid-cols-4">
               <!-- Plans -->
               <?php foreach (Plans::$PLANS as $plan) : ?>
+
                 <div hx-boost="true" class="rounded-3xl p-8 ring-1 ring-gray-200 <?= $plan->id == $selectedPlan ? 'ring-2 ring-indigo-600' : '' ?>">
-                  <h3 id="tier-<?= $plan->id ?>" class="text-lg font-semibold leading-8 <?= $plan->id == $selectedPlan ? 'text-indigo-300' : 'text-gray-100' ?>"><?= $plan->name ?></h3>
-                  <p class="mt-4 text-sm leading-6 text-gray-300"><?= $plan->description ?></p>
+                  <img class="mx-auto h-auto w-auto pb-3" src="<?= $plan->image ?>" alt="<?= $plan->imageAlt ?>">
+                  <h3 id="tier-<?= $plan->id ?>" class="text-center text-lg font-semibold leading-8 <?= $plan->id == $selectedPlan ? 'text-indigo-300' : 'text-gray-100' ?>"><?= $plan->name ?></h3>
                   <p class="mt-6 flex items-baseline gap-x-1">
                     <span class="text-4xl font-bold tracking-tight text-gray-100"><?= $plan->price ?></span>
                     <span class="text-sm font-semibold leading-6 text-gray-300"><?= $plan->currency ?></span>
@@ -295,6 +230,27 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             </div>
           </div>
         </div>
+
+        </div>
+        <div class="powered">
+          Powered by
+          <svg width="42" height="19" viewBox="0 0 42 19" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <g clip-path="url(#clip0_161_700)">
+              <path d="M1.13919 18.2509C0.999576 18.2509 0.861337 18.2234 0.732364 18.1699C0.603391 18.1165 0.486209 18.0381 0.387509 17.9394C0.288809 17.8407 0.210524 17.7234 0.157123 17.5944C0.103723 17.4654 0.0762525 17.3272 0.0762813 17.1876V1.18799C0.0742603 1.04711 0.100263 0.907236 0.152777 0.776494C0.205292 0.645752 0.283271 0.526752 0.382182 0.426412C0.481092 0.326073 0.598961 0.246395 0.728937 0.19201C0.858913 0.137625 0.998402 0.109619 1.1393 0.109619C1.28019 0.109619 1.41968 0.137625 1.54966 0.19201C1.67963 0.246395 1.7975 0.326073 1.89641 0.426412C1.99532 0.526752 2.0733 0.645752 2.12582 0.776494C2.17833 0.907236 2.20433 1.04711 2.20231 1.18799V17.1876C2.20231 17.4696 2.09031 17.74 1.89094 17.9394C1.69158 18.1388 1.42117 18.2509 1.13919 18.2509Z" fill="#D0BED8" />
+              <path d="M1.13938 18.2509C0.898013 18.2508 0.663852 18.1687 0.475369 18.0179C0.286886 17.8671 0.155293 17.6567 0.102211 17.4213C0.0491297 17.1858 0.0777162 16.9393 0.183274 16.7222C0.288832 16.5052 0.465083 16.3305 0.683068 16.2268L7.09397 13.1849L0.508068 8.3328C0.286078 8.16369 0.139464 7.91409 0.0998577 7.63785C0.0602513 7.36161 0.130827 7.08087 0.296359 6.85619C0.461891 6.63152 0.70911 6.48093 0.984682 6.4369C1.26025 6.39288 1.54209 6.45895 1.76938 6.62086L9.78591 12.5269C9.93382 12.6361 10.0509 12.7817 10.1258 12.9496C10.2007 13.1175 10.2308 13.3019 10.2132 13.4849C10.1956 13.6679 10.1309 13.8432 10.0254 13.9937C9.91986 14.1442 9.77714 14.2649 9.61113 14.3438L1.59438 18.1483C1.45216 18.2157 1.29677 18.2508 1.13938 18.2509Z" fill="#D0BED8" />
+              <path d="M1.13963 11.962C0.915574 11.9623 0.697157 11.8917 0.515565 11.7605C0.333972 11.6292 0.198489 11.444 0.128458 11.2311C0.0584278 11.0183 0.0574306 10.7888 0.125609 10.5754C0.193788 10.3619 0.327656 10.1755 0.508101 10.0427L7.09379 5.1908L0.682882 2.14821C0.429711 2.02636 0.235053 1.80927 0.141435 1.54436C0.0478176 1.27945 0.0628508 0.988251 0.18325 0.734389C0.30365 0.480527 0.519629 0.284635 0.784001 0.189509C1.04837 0.0943823 1.33965 0.107755 1.59419 0.226705L9.61094 4.03164C9.7771 4.11044 9.91998 4.23098 10.0256 4.3815C10.1313 4.53203 10.1961 4.70738 10.2137 4.89042C10.2313 5.07347 10.2011 5.25796 10.1261 5.42586C10.0511 5.59376 9.93381 5.73934 9.78573 5.84836L1.76919 11.7546C1.58692 11.8893 1.36626 11.962 1.13963 11.962Z" fill="#D0BED8" />
+              <path d="M2.20166 6.9397V11.4357L5.25191 9.18867L2.20166 6.9397Z" fill="#D0BED8" />
+              <path d="M2.2022 1.1881C2.2022 0.906121 2.0902 0.635689 1.89083 0.436279C1.69147 0.23687 1.42106 0.124814 1.13908 0.124756C0.999466 0.124785 0.861228 0.152312 0.732254 0.205765C0.603281 0.259219 0.486099 0.337552 0.387399 0.436293C0.288699 0.535033 0.210414 0.652247 0.157014 0.781243C0.103613 0.910238 0.0761432 1.04849 0.0761719 1.1881V14.5679H2.20242V1.1881H2.2022Z" fill="#D0BED8" />
+              <path d="M16.2652 9.05873C16.9464 9.2521 17.3239 9.86898 17.3239 10.642C17.3239 11.848 16.5872 12.41 15.5838 12.41H13.2915V5.96538H15.3169C16.3022 5.96538 17.0663 6.43482 17.0663 7.65917C17.0663 8.27626 16.8083 8.84698 16.2652 9.05873ZM15.3261 8.9021C16.0532 8.9021 16.6425 8.6442 16.6425 7.64998C16.6425 6.64679 16.0353 6.37948 15.2983 6.37948H13.724V8.90188L15.3261 8.9021ZM15.5562 11.9863C16.2925 11.9863 16.8818 11.5995 16.8818 10.642C16.8818 9.61107 16.2098 9.29804 15.3723 9.29804H13.7242V11.986L15.5562 11.9863ZM21.6329 5.96538V6.36132H19.8562V12.41H19.4233V6.36132H17.6464V5.96538H21.6329ZM24.6615 5.87329C25.7574 5.87329 26.7514 6.42542 27.0649 7.74207H26.6503C26.3555 6.66517 25.4903 6.26945 24.6523 6.26945C23.1333 6.26945 22.3324 7.51217 22.3324 9.18779C22.3324 10.9553 23.1333 12.0875 24.6613 12.0875C25.5636 12.0875 26.3736 11.6829 26.6869 10.4953H27.1014C26.8249 11.867 25.7388 12.5021 24.6615 12.5021C22.9399 12.5021 21.9089 11.2316 21.9089 9.18801C21.9089 7.2267 22.9959 5.87329 24.6615 5.87329ZM30.3426 5.96538C31.4563 5.96538 32.2665 6.69295 32.2665 8.10126C32.2665 9.42688 31.4563 10.2279 30.3426 10.2279H28.6482V12.4102H28.2249V5.96538H30.3426ZM30.3426 9.80423C31.1618 9.80423 31.8336 9.27988 31.8336 8.09207C31.8336 6.90448 31.189 6.37073 30.3426 6.37073H28.6482V9.80423H30.3426ZM32.3403 12.41V12.3542L34.9086 5.94701H35.1022L37.643 12.3542V12.41H37.1919L36.4652 10.5504H33.5278L32.8007 12.41H32.3403ZM35.0011 6.7111L33.6757 10.1448H36.3178L35.0011 6.7111ZM41.4643 5.96538H41.9246V6.02948L39.9173 9.73073V12.41H39.4754V9.73073L37.4594 6.02051V5.96538H37.9291L38.8034 7.60426L39.6878 9.30745H39.6966L40.5893 7.60426L41.4643 5.96538Z" fill="#D0BED8" />
+            </g>
+            <defs>
+              <clipPath id="clip0_161_700">
+                <rect width="42" height="18.375" fill="white" />
+              </clipPath>
+            </defs>
+          </svg>
+        </div>
+
       <?php break;
       case 2: ?>
         <!-- Create Account -->
@@ -338,7 +294,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             <div>
               <button type="submit" class="flex w-full justify-center rounded-md bg-indigo-600 px-3 py-1.5 text-sm font-semibold leading-6 text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600">Create Account</button>
               <h4 class="mt-2 text-sm font-medium leading-6 text-gray-300 text-center">Already have an account? <a href="/login" class="text-indigo-300 hover:text-indigo-200">Log in</a></h4>
-              <h4 class="mt-2 text-sm font-medium leading-6 text-gray-300 text-center">By creating an account, you agree to our <a href="/tos" class="text-indigo-300 hover:text-indigo-200">Terms of Service</a>.</h4>
+              <h4 class="mt-2 text-sm font-medium leading-6 text-gray-300 text-center">Creating an account agrees to our<br><a href="/tos" class="text-indigo-300 hover:text-indigo-200" target="_blank">Terms of Service</a>.</h4>
             </div>
           </form>
         </div>
@@ -457,23 +413,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
   <!-- Footer -->
   <footer class="bg-inherit">
-    <div class="mx-auto max-w-7xl overflow-hidden px-6 py-20 sm:py-24 lg:px-8">
-      <nav class="-mb-6 columns-2 sm:flex sm:justify-center sm:space-x-12" aria-label="Footer">
-        <div class="pb-6">
-          <a href="/" class="text-sm leading-6 text-gray-300 hover:text-gray-100">Home</a>
-        </div>
-        <div class="pb-6">
-          <a href="/builders" class="text-sm leading-6 text-gray-300 hover:text-gray-100">Builders</a>
-        </div>
-        <div class="pb-6">
-          <a href="/creators" class="text-sm leading-6 text-gray-300 hover:text-gray-100">Creators</a>
-        </div>
-        <div class="pb-6">
-          <a href="/login" class="text-sm leading-6 text-gray-300 hover:text-gray-100">Login</a>
-        </div>
-      </nav>
-      <p class="mt-10 text-center text-xs leading-5 text-gray-500">&copy; 2023 nostr.build. All rights reserved.</p>
-    </div>
+    <p class="mt-10 text-center text-xs leading-5 text-gray-500">&copy; 2023 nostr.build</p>
   </footer>
 
   <script src="https://btcpay.nostr.build/modal/btcpay.js"></script>
