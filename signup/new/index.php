@@ -294,7 +294,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             <div>
               <button type="submit" class="flex w-full justify-center rounded-md bg-indigo-600 px-3 py-1.5 text-sm font-semibold leading-6 text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600">Create Account</button>
               <h4 class="mt-2 text-sm font-medium leading-6 text-gray-300 text-center">Already have an account? <a href="/login" class="text-indigo-300 hover:text-indigo-200">Log in</a></h4>
-              <h4 class="mt-2 text-sm font-medium leading-6 text-gray-300 text-center">Creating an account agrees to our<br><a href="/tos" class="text-indigo-300 hover:text-indigo-200" target="_blank">Terms of Service</a>.</h4>
+              <h4 class="mt-2 text-sm font-medium leading-6 text-gray-300 text-center">Creating an account agrees to our <a href="/tos" class="text-indigo-300 hover:text-indigo-200" target="_blank">Terms of Service</a>.</h4>
             </div>
           </form>
         </div>
@@ -412,9 +412,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
   </main>
 
   <!-- Footer -->
-  <footer class="bg-inherit">
-    <p class="mt-10 text-center text-xs leading-5 text-gray-500">&copy; 2023 nostr.build</p>
-  </footer>
+	<?php include $_SERVER['DOCUMENT_ROOT'] . '/components/footer.php'; ?>
 
   <script src="https://btcpay.nostr.build/modal/btcpay.js"></script>
   <script>
