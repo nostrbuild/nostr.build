@@ -220,7 +220,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             </button>
         </div>
     </main>
-    <?= include $_SERVER['DOCUMENT_ROOT'] . '/components/footer.php'; ?>
+    <?php include $_SERVER['DOCUMENT_ROOT'] . '/components/footer.php'; ?>
     <script src="/scripts/index.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', (event) => {
