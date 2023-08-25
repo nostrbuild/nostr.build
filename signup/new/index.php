@@ -412,7 +412,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
   </main>
 
   <!-- Footer -->
-	<?= include $_SERVER['DOCUMENT_ROOT'] . '/components/footer.php'; ?>
+	<?php include $_SERVER['DOCUMENT_ROOT'] . '/components/footer.php'; ?>
 
   <script src="https://btcpay.nostr.build/modal/btcpay.js"></script>
   <script>
