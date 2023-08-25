@@ -154,15 +154,15 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     <div class="information pb-5">
       <ul>
         <li>
-          <span class="whitespace-pre-line">Storage on AWS S3 with Bunny.net global CDN
-            Damus & Amethyst Account integration (nip98)
-            Add/Delete media from your private folders
+          <span class="whitespace-pre-line">Storage on AWS S3 with Bunny.net global CDN<br>
+            Damus & Amethyst Account integration (nip98)<br>
+            Add/Delete media from your private folders<br>
             Bitcoin Only | Never Ads | Billed Annually
           </span>
         </li>
       </ul>
     </div>
-  </header>
+  </header><br>
   <main>
     <nav hx-boost="true" class="flex items-center justify-center" aria-label="Progress">
       <p class="text-sm font-medium text-gray-300">Step <?= $step ?> of <?= count($steps) ?></p>
@@ -412,9 +412,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
   </main>
 
   <!-- Footer -->
-  <footer class="bg-inherit">
-    <p class="mt-10 text-center text-xs leading-5 text-gray-500">&copy; 2023 nostr.build</p>
-  </footer>
+	<?= include $_SERVER['DOCUMENT_ROOT'] . '/components/footer.php'; ?>
 
   <script src="https://btcpay.nostr.build/modal/btcpay.js"></script>
   <script>
