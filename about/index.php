@@ -14,7 +14,6 @@ $perm = new Permission();
 <!DOCTYPE html>
 <html lang="en">
   <head>
-    <!-- Google tag (gtag.js) -->
     <meta charset="UTF-8" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <meta name="robots" content="noindex" />
@@ -308,9 +307,8 @@ $perm = new Permission();
         We will also continue to add additional features to our free service,
         including:<br />
 
-        - Image, gif, audio and video uploads up to 25MB+ hosted on the AWS S3<br />
-        - Global, lightning fast CDN network for all images and GIFs using
-        <a class="ref_link" href="https://bunny.net" target="_blank">Bunny.net</a><br />
+        - Media uploads up to (25MB) hosted on AWS S3<br />
+        - <a class="ref_link" href="https://bunny.net" target="_blank">Bunny.net</a> global CDN network for images and GIFs<br />
         - No ads! Only community projects, nostr builders, creators, devs,
         artists and memes<br />
         - Profile picture uploader that properly shrinks, crops and puts your PP
@@ -322,9 +320,9 @@ $perm = new Permission();
         Bitcoin and Nostr projects. Although this will help greatly with
         R&D, new projects, growth and overages, the goal is to keep nostr.build
         ‘self-sustainable’ through account earnings.<br /><br />
-        ** People often ask, “how do you cover the charges for your free
-        services?" Paid Accounts.<br /><br />
+        ** People often ask, “how do you cover costs for free services?"<br>
       </p>
+
       <figure class="img_container double_img">
       <a href="https://opensats.org/blog/nostr-grants-july-2023" target="_blank"><img class="about_img img_horizontal" src="https://cdn.nostr.build/assets/about/opensats.png" alt="opensats grant" height="80"/></a>
       <a href="https://github.com/nostrbuild/nostr.build" target="_blank"><img class="about_img img_horizontal" src="https://cdn.nostr.build/assets/about/githublogo.png" alt="GitHub" height="80"/></a>
@@ -333,25 +331,24 @@ $perm = new Permission();
       <section class="paragraph para_square">
       <a href="https://nostr.build/signup"><img class="about_img img_square" src="https://cdn.nostr.build/assets/primo_nostr.png" alt="nostr.build account logo" width="80"/></a>
         <p>
-          nostr.build offers accounts with premium features, charged annually.
+          nostr.build offers accounts with premium features charged annually.
           Accounts can be purchased with a lighting wallet or Bitcoin. Proceeds
-          are kept on the <a class="ref_link" href="https://amboss.space/node/02e869c409bd62ca84e9306ad96d9daef3b2b31a1c777b501fc55f2c09969ce1a3">pay.nostr.build lighting node</a> and used to pay
-          for all nostr.build expenses: AWS, CDN, storage, development, domains, and other related expenses.
+          are kept on <a class="ref_link" href="https://amboss.space/node/02e869c409bd62ca84e9306ad96d9daef3b2b31a1c777b501fc55f2c09969ce1a3">pay.nostr.build lighting node</a> and used for 
+          all nostr.build expenses: AWS, CDN, storage, development, domains, etc.
         </p>
       </section>
 
       <p>
         ** Purchasing an account not only gives you premium features, you are
-        also supporting a free, no ads, open source, service for all of nostr
-        and decentralized social media!<br />
+        also supporting a free, no ads, open source service for all of nostr!<br />
 
         Account features include:<br />
-        - Blazing fast global CDN (Bunny.net) on the AWS S3 for all images and videos<br />
-        - Unlimited file-size for media uploads (up to your account size 5/10/20GB)<br />
+        - Bunny.net CDN network for all media including videos<br />
+        - No max on file size upload - account sizes 5/10/20GiB<br />
         - Post you media to the Creators page on nostr.build<br />
         - Ability to easily ‘Delete’ media after posted<br />
         - Private folders not seen in the View All gallery<br />
-        - Access to View All free media ever uploaded to nostr.build, over 500k images, gifs and videos!<br />
+        - Access to View All free media ever uploaded to nostr.build, over 500k images, GIFs and videos!<br />
         - BTCPay Server account<br />
         ** See all <a class="ref_link" href="https://nostr.build/signup">nostr.build Accounts</a> and features<br />
       </p>
@@ -365,17 +362,17 @@ $perm = new Permission();
         <p>
           - First, purchase an account <a class="ref_link" href="https://nostr.build/signup">HERE!</a><br />
           - Folders: Click on ‘New Folder’ in the left menu bar, name your folder and click Create.<br />
-          - Move a file to a folder: ‘checkbox’ the media you want to move, and
-          ‘Double Click’ on the folder you want to move it to.<br />
-          - Delete a file or folder: ‘checkbox’ the what you want to
-          delete, click on the red Delete button on the bottom left menu bar.<br />
+          - Move media to a folder: ‘checkbox’ the media you want to move, and
+          ‘Double Click’ the folder to move it there.<br />
+          - Delete a file or folder: ‘checkbox’ what you want to
+          delete, click the red Delete button in the bottom left menu bar.<br />
           - ** If you delete a folder with files in it, those files just move to
           the ‘no folder’ section, they are NOT deleted.<br />
-          - ‘View All’ allows you to see all free uploads ever made to
-          nostr.build, excluding paid accounts and profile pictures. All images
-          must be legal and align to nostr.build <a class="ref_link" href="https://nostr.build/tos/" target="_blank">Terms of Service.</a> <br />
-          - If you purchased a Creator account, you can toggle your media to be
-          publically available on the <a class="ref_link" href="https://nostr.build/creators/" target="_blank">nostr.build Creators page.</a><br />
+          - ‘View All’ allows you to see all free uploads ever on
+          nostr.build, excluding paid accounts and profile pictures. All media
+          must align to nostr.build's <a class="ref_link" href="https://nostr.build/tos/" target="_blank">Terms of Service</a> <br />
+          - If you purchased a Creators account, you can make your media
+          publically available on the <a class="ref_link" href="https://nostr.build/creators/" target="_blank">nostr.build Creators page</a><br />
         </p>
 
         <figure class="img_container double_img">

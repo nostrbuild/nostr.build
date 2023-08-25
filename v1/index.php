@@ -88,7 +88,7 @@
   </section>
 
   <h1 class="u-align-left u-text u-text-1" style="color:#F0F0F0">&nbsp;<a href="https://nostr.build"><img src="https://cdn.nostr.build/assets/v1/walker1.png" width="27"> nostr media uploader</a> </h1>
-  &ensp;<a style="color:#F0F0F0"> 186.34 GB used - 236,469 total uploads
+  &ensp;<a style="color:#F0F0F0"> 69.69 GB used - 42,069 total uploads
     <p style="color:#F0F0F0">
       &emsp; - Uploading agrees to our <a href="/tos" target="_blank">Terms of Service</a><BR>
       &emsp; - Supports: jpg, png, gif, mov, or mp4 <BR>
