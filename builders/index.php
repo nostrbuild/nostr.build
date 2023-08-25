@@ -389,7 +389,7 @@
 		</div>
 	</main>
 
-	<?= include $_SERVER['DOCUMENT_ROOT'] . '/components/footer.php'; ?>
+	<?php include $_SERVER['DOCUMENT_ROOT'] . '/components/footer.php'; ?>
 	<script src="/scripts/index.js"></script>
 </body>
 
