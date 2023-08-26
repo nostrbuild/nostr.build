@@ -1,20 +1,6 @@
-<?php
-require_once $_SERVER['DOCUMENT_ROOT'] . '/config.php';
-require_once $_SERVER['DOCUMENT_ROOT'] . '/functions/session.php';
-require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/permissions.class.php';
-require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/db/UploadsData.class.php';
-
-// Globals
-global $link;
-
-// Instantiate permissions class
-$perm = new Permission();
-?>
-
 <!DOCTYPE html>
 <html lang="en">
   <head>
-    <!-- Google tag (gtag.js) -->
     <meta charset="UTF-8" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <meta name="robots" content="noindex" />
@@ -259,8 +245,7 @@ $perm = new Permission();
         </a>
 
         <a href="/register" class="nav_button">
-          <span><img src="/assets/nav/login.png" alt="login image" /> </span>
-          <?= $perm->isGuest() ? 'Login' : 'Account' ?>
+          <span><img src="/assets/nav/login.png" alt="login image" /></span>Login
         </a>
       </nav>
     </header>
@@ -291,15 +276,9 @@ $perm = new Permission();
     
     </main>
 
-    <?= include $_SERVER['DOCUMENT_ROOT']?>
+    <?php include $_SERVER['DOCUMENT_ROOT'] . '/components/footer.php'; ?>
+
     <script src="/scripts/index.js"></script>
 
-    <footer>
-			<nav>
-				<div class="footer_made_by">
-					nostr.build 2023
-				</div>
-			</nav>
-		</footer>
   </body>
 </html>
