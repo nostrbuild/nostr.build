@@ -127,6 +127,7 @@ global $link;
 			$stmt->execute();
 			$result = $stmt->get_result();
 
+
 			while ($row = $result->fetch_assoc()) :
 				// Parse URL and get only the filename
 				$parsed_url = parse_url($row['image']);
@@ -142,11 +143,15 @@ global $link;
 				$userId = htmlspecialchars($row['id']);
 				$usernpub = htmlspecialchars($row['usernpub']);
 				$title = htmlspecialchars($row['nym']);
+
+				$total_images = htmlspecialchars(mysqli_query($link, "SELECT u.*, i.image, i.mime_type, i.total_images FROM users AS u INNER JOIN (SELECT users_images.*, ROW_NUMBER() OVER(PARTITION BY usernpub ORDER BY RAND()) as rn, COUNT(*) OVER(PARTITION BY usernpub) as total_images FROM users_images WHERE flag=1) AS i ON u.usernpub = i.usernpub WHERE i.rn = 1 ORDER BY RAND()"));
+
 			?>
+
 				<figure class="builder_card">
 					<div class="card_header">
 						<figcaption class="card_title"><?= $title ?></figcaption>
-						<div class="info"><?= $row['countImage'] ?> images</div>
+						<div class="info"><?= $total_images ?> images</div>
 					</div>
 
 					<a href="/creators/creator/?user=<?= $userId ?>">
