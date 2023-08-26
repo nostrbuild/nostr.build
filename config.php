@@ -28,7 +28,7 @@ define('DB_NAME', $_SERVER['DB_NAME']);
  *      'retries' => 3, // (optional) The number of times to retry failed requests. Set to 0 to disable retries. Set to -1 to retry indefinitely (the default behavior).
  *  ];
  */
-$awsConfig = [
+$s3Config = [
     'region'  => $_SERVER['AWS_REGION'],
     'version' => $_SERVER['AWS_VERSION'],
     'credentials' => [
@@ -36,6 +36,22 @@ $awsConfig = [
         'secret' => $_SERVER['AWS_SECRET'],
     ],
     'bucket' => $_SERVER['AWS_BUCKET'],
+];
+
+$r2Config = [
+    'region'  => $_SERVER['R2_REGION'],
+    'version' => $_SERVER['R2_VERSION'],
+    'endpoint' => $_SERVER['R2_ENDPOINT'],
+    'credentials' => [
+        'key'    => $_SERVER['R2_ACCESS_KEY'],
+        'secret' => $_SERVER['R2_SECRET_KEY'],
+    ],
+    'bucket' => $_SERVER['R2_BUCKET'],
+];
+
+$awsConfig = [
+    'aws' => $s3Config,
+    'r2' => $r2Config,
 ];
 
 $btcpayConfig = [
