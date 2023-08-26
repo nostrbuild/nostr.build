@@ -347,7 +347,7 @@ SVG;
 		</div>
 
 		<div class="terms">
-			By uploading to this service, you agree to our <a href="/tos/"><span>Terms of Service</span></a>
+			By using nostr.build you agree to our <a href="/tos/"><span>Terms of Service</span></a>
 		</div>
 	</main>
 
