@@ -1,4 +1,7 @@
 <footer>
+	<div style="padding-bottom: 1rem;">
+		<a href="https://nostr.build/about" class="ref_link" target="_blank">About</a> | <a href="https://nostr.build/freeview" class="ref_link" target="_blank">Free View</a> | <a href="https://nostr.build/edu" class="ref_link" target="_blank">Edu</a>
+	</div>
 		<nav>
 			<div class="footer_contributors">
 				Contact us
