@@ -115,17 +115,18 @@ global $link;
 		<div class="builders_container">
 			<?php
 			$stmt = $link->prepare("
-							SELECT u.*, i.image, i.mime_type FROM users AS u
-				INNER JOIN (
-						SELECT *, ROW_NUMBER() OVER(PARTITION BY usernpub ORDER BY RAND()) as rn 
-						FROM users_images 
-						WHERE flag=1
-				) AS i ON u.usernpub = i.usernpub
-				WHERE i.rn = 1
-				ORDER BY RAND()
+			SELECT u.*, i.image, i.mime_type, i.total_images
+			FROM users AS u INNER JOIN
+			(
+				SELECT users_images.*, ROW_NUMBER()
+				OVER(PARTITION BY usernpub ORDER BY RAND()) as rn,
+				COUNT(*) OVER(PARTITION BY usernpub) as total_images
+				FROM users_images WHERE flag=1
+				) AS i ON u.usernpub = i.usernpub WHERE i.rn = 1 ORDER BY RAND()
 			");
 			$stmt->execute();
 			$result = $stmt->get_result();
+
 
 			while ($row = $result->fetch_assoc()) :
 				// Parse URL and get only the filename
@@ -143,28 +144,29 @@ global $link;
 				$usernpub = htmlspecialchars($row['usernpub']);
 				$title = htmlspecialchars($row['nym']);
 			?>
-				<figure class="builder_card">
-					<div class="card_header">
-						<figcaption class="card_title"><?= $title ?></figcaption>
-						<div class="info"><?= $row['countImage'] ?> images</div>
-					</div>
 
-					<a href="/creators/creator/?user=<?= $userId ?>">
+				<a href="/creators/creator/?user=<?= $userId ?>">
+					<figure class="builder_card">
+						<div class="card_header">
+							<figcaption class="card_title"><?= $title ?></figcaption>
+							<div class="info"><?= htmlspecialchars($row['total_images']) ?> images</div>
+						</div>
+
 						<?php if ($mime_main_type === 'video') : ?>
-							<video style="max-height: 325px; max-width: 350px; align: center" controls preload="metadata">
+							<video style="max-height: 325px; max-width: 350px; vertical-align: middle" controls preload="metadata">
 								<!-- Fake mime type to force the browser to use the video player -->
 								<source id="<?= $usernpub ?>" src="<?= $src ?>" type="video/mp4">
 							</video>
 						<?php elseif ($mime_main_type === 'audio') : ?>
-							<audio style="max-height: 325px; max-width: 350px; align: center" controls>
+							<audio style="max-height: 325px; max-width: 350px; vertical-align: middle" controls>
 								<source id="<?= $usernpub ?>" src="<?= $src ?>" type="<?= $row['mime_type'] ?>">
 							</audio>
 						<?php else : ?>
 							<!-- default to image if the type is not recognized -->
 							<img loading="lazy" style="max-height: 325px; max-width: 414px; align: middle" id="<?= $usernpub ?>" src="<?= $src ?>">
 						<?php endif; ?>
-					</a>
-				</figure>
+					</figure>
+				</a>
 			<?php
 			endwhile;
 			$stmt->close();

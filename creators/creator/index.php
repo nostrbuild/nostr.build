@@ -59,6 +59,9 @@ if (!empty($rows)) {
 			height: 11.875rem;
 			width: auto;
 			margin: auto;
+			min-height: 8rem;
+			min-width: 8rem;
+			vertical-align: middle
 		}
 	</style>
 </head>
