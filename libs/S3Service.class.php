@@ -82,9 +82,10 @@ class S3Service
     ];
 
     // Define the options for R2 upload
+    $r2BucketAndObjectNames = $this->getR2BucketAndObjectNames($destinationPath);
     $r2Options = [
-      'Bucket' => $this->r2bucket,
-      'Key'    => $destinationPath,
+      'Bucket' => $r2BucketAndObjectNames['bucket'],
+      'Key'    => $r2BucketAndObjectNames['objectName'],
       'SourceFile' => $sourcePath,
       'ACL'    => 'private',
       'StorageClass' => 'STANDARD',
@@ -123,9 +124,10 @@ class S3Service
       'Key'    => $objectKey,
     ];
 
+    $r2BucketAndObjectNames = $this->getR2BucketAndObjectNames($objectKey);
     $r2DeleteOptions = [
-      'Bucket' => $this->r2bucket,
-      'Key'    => $objectKey,
+      'Bucket' => $r2BucketAndObjectNames['bucket'],
+      'Key'    => $r2BucketAndObjectNames['objectName'],
     ];
 
     $s3DeletePromise = $this->s3->deleteObjectAsync($s3DeleteOptions);
@@ -282,5 +284,42 @@ class S3Service
       error_log("s3 Get Object URL Error: " . $e->getMessage());
       return false;
     }
+  }
+
+  /**
+   * Get the R2 bucket name based on the given object key.
+   *
+   * @param string $objectKey The object key.
+   *
+   * @return array The bucket and object name as an associative array.
+   */
+  private function getR2BucketAndObjectNames(string $objectKey): array
+  {
+    // Validate the objectKey to ensure it contains a '/'
+    if (strpos($objectKey, '/') === false) {
+      return [
+        'bucket' => $this->r2bucket,
+        'objectName' => $objectKey
+      ];
+    }
+
+    // Extract prefix and object name from object key
+    $parts = explode('/', $objectKey);
+    $objectName = array_pop($parts);
+    $prefix = implode('/', $parts);
+
+    // Determine bucket suffix based on prefix
+    $bucketSuffix = match ($prefix) {
+      'i' => '-img',
+      'av' => '-av',
+      'i/p' => '-pfp',
+      'p' => '-pro',
+      default => ''
+    };
+
+    return [
+      'bucket' => $this->r2bucket . $bucketSuffix,
+      'objectName' => $objectName
+    ];
   }
 }
