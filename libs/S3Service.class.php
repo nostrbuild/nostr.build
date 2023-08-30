@@ -82,7 +82,7 @@ class S3Service
     ];
 
     // Define the options for R2 upload
-    $r2BucketAndObjectNames = $this->getR2BucketAndObjectNames($destinationPath);
+    $r2BucketAndObjectNames = $this->getR2BucketAndObjectNames($destinationPath, $mimeType);
     $r2Options = [
       'Bucket' => $r2BucketAndObjectNames['bucket'],
       'Key'    => $r2BucketAndObjectNames['objectName'],
@@ -130,22 +130,45 @@ class S3Service
       'Key'    => $r2BucketAndObjectNames['objectName'],
     ];
 
-    $s3DeletePromise = $this->s3->deleteObjectAsync($s3DeleteOptions);
-    $r2DeletePromise = $this->r2->deleteObjectAsync($r2DeleteOptions);
+    $promises = [
+      's3DeletePromise' => $this->s3->deleteObjectAsync($s3DeleteOptions),
+      'r2DeletePromise' => $this->r2->deleteObjectAsync($r2DeleteOptions)
+    ];
+
+    // Since we cannot reliably predict which R2 bucket the object will be in for paid accounts,
+    // we must delete from all of them.
+    if (substr($r2BucketAndObjectNames['bucket'], -4) === '-pro') {
+      $additionalR2Bucket = $r2BucketAndObjectNames['bucket'] . '-av';
+      $promises['r2ProAvDeletePromise'] = $this->r2->deleteObjectAsync([
+        'Bucket' => $additionalR2Bucket,
+        'Key'    => $r2BucketAndObjectNames['objectName']
+      ]);
+    }
 
     try {
-      $results = Promise\Utils::unwrap([$s3DeletePromise, $r2DeletePromise]);
+      $results = Promise\Utils::unwrap($promises);
 
       foreach ($results as $result) {
         if ($result['@metadata']['statusCode'] != 204) {
-          error_log("The object was not deleted.\n");
+          error_log("The object was not deleted. Status Code: " . $result['@metadata']['statusCode'] . "\n");
           return false;
         }
       }
 
       return true;
+    } catch (AwsException $e) {
+      // Handle AWS-specific exceptions
+      if ($e->getAwsErrorCode() === 'NoSuchKey') {
+        // There was nothing to delete, so consider it a success
+        return true;
+      } else {
+        // Log other AWS-specific exceptions and return false
+        error_log("An AWS-specific error occurred during parallel delete: " . $e->getMessage());
+        return false;
+      }
     } catch (Exception $e) {
-      error_log("An error occurred during parallel delete: " . $e->getMessage());
+      // Log general exceptions and return false
+      error_log("A general error occurred during parallel delete: " . $e->getMessage());
       return false;
     }
   }
@@ -293,7 +316,7 @@ class S3Service
    *
    * @return array The bucket and object name as an associative array.
    */
-  private function getR2BucketAndObjectNames(string $objectKey): array
+  private function getR2BucketAndObjectNames(string $objectKey, string $mimeType = 'application/octet-stream'): array
   {
     // Validate the objectKey to ensure it contains a '/'
     if (strpos($objectKey, '/') === false) {
@@ -316,6 +339,12 @@ class S3Service
       'p' => '-pro',
       default => ''
     };
+
+    // Further augment bucket suffix for paid accounts to split img and av
+    $mimePrefix = explode('/', $mimeType)[0];
+    if ($bucketSuffix === '-pro' && in_array($mimePrefix, ['video', 'audio'])) {
+      $bucketSuffix .= '-av';
+    }
 
     return [
       'bucket' => $this->r2bucket . $bucketSuffix,
