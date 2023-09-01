@@ -39,21 +39,29 @@ input.addEventListener("change", function () {
   //getting user select file and [0] this means if user select multiple files then we'll select only the first one
   file = this.files[0];
   fileType = file.type;
+
   if (validExtensions.includes(fileType)) {
-    document.querySelector(".import_button").disabled = false;
-    document
-      .querySelector(".import_button")
-      .classList.add("upload_button_active");
-    document
-      .querySelector(".upload_button")
-      .classList.add("upload_button_disabled");
+    let importButtons = document.querySelectorAll(".import_button");
+    let uploadButtons = document.querySelectorAll(".upload_button");
+
+    importButtons.forEach((button) => {
+      button.disabled = false;
+      button.classList.add("upload_button_active");
+    });
+
+    uploadButtons.forEach((button) => {
+      button.classList.add("upload_button_disabled");
+    });
+
     document.querySelector(".supported_file").classList.add("hidden_element");
     document.querySelector(".import").classList.add("hidden_element");
+
     showFile(); //calling function
   } else {
     alert("This is not an Image, Audio or Video File!");
   }
 });
+
 // If user Drag File Over DropArea
 dropArea.addEventListener("dragover", (event) => {
   event.preventDefault(); //preventing from default behaviour
@@ -75,15 +83,20 @@ dropArea.addEventListener("drop", (e) => {
   } else if (e.dataTransfer.files.length > 1) {
     alert("Please select only one file");
   } else {
-    document.querySelector(".import_button").disabled = false;
+    let importButtons = document.querySelectorAll(".import_button");
+    let uploadButtons = document.querySelectorAll(".upload_button");
+
+    importButtons.forEach((button) => {
+      button.disabled = false;
+      button.classList.add("upload_button_active");
+    });
+
+    uploadButtons.forEach((button) => {
+      button.classList.add("upload_button_disabled");
+    });
+
     document.querySelector(".supported_file").classList.add("hidden_element");
     document.querySelector(".import").classList.add("hidden_element");
-    document
-      .querySelector(".import_button")
-      .classList.add("upload_button_active");
-    document
-      .querySelector(".upload_button")
-      .classList.add("upload_button_disabled");
 
     const fileInputs = document.getElementById("input_file");
     fileInputs.files = e.dataTransfer.files;
@@ -105,24 +118,29 @@ function loadVideo(file) {
 }
 
 document.querySelector(".input_url").addEventListener("input", (e) => {
+  let importButtons = document.querySelectorAll(".import_button");
+  let uploadButtons = document.querySelectorAll(".upload_button");
+
   if (e.target.value !== "") {
-    document.querySelector(".import_button").disabled = false;
-    document
-      .querySelector(".import_button")
-      .classList.add("upload_button_active");
-    document
-      .querySelector(".upload_button")
-      .classList.add("upload_button_disabled");
-    document.querySelector(".upload_button").disabled = true;
+    importButtons.forEach((button) => {
+      button.disabled = false;
+      button.classList.add("upload_button_active");
+    });
+
+    uploadButtons.forEach((button) => {
+      button.classList.add("upload_button_disabled");
+      button.disabled = true;
+    });
   } else {
-    document.querySelector(".import_button").disabled = true;
-    document
-      .querySelector(".import_button")
-      .classList.remove("upload_button_active");
-    document
-      .querySelector(".upload_button")
-      .classList.remove("upload_button_disabled");
-    document.querySelector(".upload_button").disabled = false;
+    importButtons.forEach((button) => {
+      button.disabled = true;
+      button.classList.remove("upload_button_active");
+    });
+
+    uploadButtons.forEach((button) => {
+      button.classList.remove("upload_button_disabled");
+      button.disabled = false;
+    });
   }
 });
 
