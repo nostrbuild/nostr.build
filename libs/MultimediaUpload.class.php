@@ -693,6 +693,7 @@ class MultimediaUpload
     curl_setopt($ch, CURLOPT_NOBODY, false);
     curl_setopt($ch, CURLOPT_HEADER, false);
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, false);
+    curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
 
     // Create a new file in the system's temp directory
     $tempFile = tempnam(sys_get_temp_dir(), 'url_download');
