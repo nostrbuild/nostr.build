@@ -19,12 +19,12 @@ $view_type = isset($_GET['k']) && in_array($_GET['k'], $allowed_views) ? $_GET['
 	<meta name="description" content="nostr.build" />
 	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-	<link rel="stylesheet" href="/styles/index.css?v=1" />
-	<link rel="stylesheet" href="/styles/profile.css?v=1" />
-	<link rel="stylesheet" href="/styles/header.css?v=2" />
+	<link rel="stylesheet" href="/styles/index.css?v=2" />
+	<link rel="stylesheet" href="/styles/profile.css?v=2" />
+	<link rel="stylesheet" href="/styles/header.css?v=3" />
 	<link rel="icon" href="https://cdn.nostr.build/assets/01.png" />
 
-	<script defer src="/scripts/images.js"></script>
+	<script defer src="/scripts/images.js?v=1"></script>
 	<title>nostr.build - Free View</title>
 	<style>
 		.image-container {

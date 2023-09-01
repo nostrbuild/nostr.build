@@ -40,9 +40,9 @@ if (!empty($rows)) {
 	<meta name="description" content="nostr.build" />
 	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-	<link rel="stylesheet" href="/styles/index.css?v=1" />
-	<link rel="stylesheet" href="/styles/profile.css?v=1" />
-	<link rel="stylesheet" href="/styles/header.css?v=2" />
+	<link rel="stylesheet" href="/styles/index.css?v=2" />
+	<link rel="stylesheet" href="/styles/profile.css?v=2" />
+	<link rel="stylesheet" href="/styles/header.css?v=3" />
 	<link rel="icon" href="/assets/01.png">
 
 	<title>nostr.build - <?= htmlentities($nym) ?></title>
@@ -134,7 +134,7 @@ if (!empty($rows)) {
 		</div>
 	</main>
 	<?= include $_SERVER['DOCUMENT_ROOT'] . '/components/footer.php'; ?>
-	<script src="/scripts/images.js"></script>
+	<script src="/scripts/images.js?v=1"></script>
 </body>
 
 </html>

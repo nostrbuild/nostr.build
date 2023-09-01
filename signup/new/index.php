@@ -134,12 +134,12 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
   <meta charSet="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Nostr.build account signup</title>
-  <link rel="stylesheet" href="/styles/twbuild.css?v=10" />
-  <link rel="stylesheet" href="/styles/index.css" />
-  <link rel="stylesheet" href="/styles/signup.css" />
+  <link rel="stylesheet" href="/styles/twbuild.css?v=11" />
+  <link rel="stylesheet" href="/styles/index.css?v=1" />
+  <link rel="stylesheet" href="/styles/signup.css?v=1" />
   <link rel="icon" href="/assets/primo_nostr.png" />
-  <script defer src="/scripts/fw/alpinejs.min.js?v=3"></script>
-  <script defer src="/scripts/fw/htmx.min.js?v=3"></script>
+  <script defer src="/scripts/fw/alpinejs.min.js?v=4"></script>
+  <script defer src="/scripts/fw/htmx.min.js?v=4"></script>
   <style>
     [x-cloak] {
       display: none !important;
