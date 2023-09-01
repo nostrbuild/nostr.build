@@ -241,4 +241,8 @@ function showSpinner() {
   document.querySelector(".image_svg").style.display = "none";
 }
 
-document.querySelector(".import_button").addEventListener("click", showSpinner);
+let importButtons = document.querySelectorAll(".import_button");
+
+importButtons.forEach((button) => {
+  button.addEventListener("click", showSpinner);
+});
