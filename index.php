@@ -170,6 +170,8 @@ SVG;
 	<link rel="stylesheet" href="/styles/header.css?v=2" />
 	<link rel="icon" href="/assets/01.png">
 
+	<script defer src="/scripts/index.js"></script>
+
 	<title>nostr.build media uploader</title>
 </head>
 
