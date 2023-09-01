@@ -14,9 +14,9 @@ global $link;
 	<meta name="description" content="nostr.build" />
 	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-	<link rel="stylesheet" href="/styles/index.css" />
-	<link rel="stylesheet" href="/styles/builders.css" />
-	<link rel="stylesheet" href="/styles/header.css" />
+	<link rel="stylesheet" href="/styles/index.css?v=1" />
+	<link rel="stylesheet" href="/styles/builders.css?v=1" />
+	<link rel="stylesheet" href="/styles/header.css?v=1" />
 	<link rel="icon" href="/assets/0.png">
 
 	<title>nostr.build - creators and artists</title>

@@ -9,9 +9,9 @@
 	<meta name="description" content="Image, video and media uploader for nostr, damus, astral.ninja, snort.social, and most all nostr clients. Upload any kind of media and get a link to post, or use our iOS app to automatically uppload images straight from your keyboard.">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-	<link rel="stylesheet" href="/styles/index.css" />
-	<link rel="stylesheet" href="/styles/header.css" />
-	<link rel="stylesheet" href="/styles/builders.css" />
+	<link rel="stylesheet" href="/styles/index.css?v=1" />
+	<link rel="stylesheet" href="/styles/header.css?v=1" />
+	<link rel="stylesheet" href="/styles/builders.css?v=1" />
 	<link rel="icon" href="/assets/01.png">
 
 	<title>nostr.build - builders and devs</title>
