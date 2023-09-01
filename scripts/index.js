@@ -1,248 +1,222 @@
-//selecting all required elements
-const dropArea = document.querySelector(".drag-area"),
-  dragText = dropArea.querySelector(".drag-area_title"),
-  dragHeader = dropArea.querySelector(".drag-area_header"),
-  dragSharing = dropArea.querySelector(".drag-area_sharing"),
-  dragImport = dropArea.querySelector(".import"),
-  metadata = document.querySelector(".metadata_container"),
-  loadingBar = document.querySelector(".loading_state"),
-  loadingInfo = document.querySelector(".loading_info span"),
-  loadingArea = document.querySelector(".drag-area_loading"),
-  toast = document.querySelector(".toast"),
-  button = dropArea.querySelector(".upload_button"),
-  terms = document.querySelector(".terms"),
-  input = dropArea.querySelector(".hidden_input");
-let file; //this is a global variable and we'll use it inside multiple functions
-let validExtensions = [
-  "image/jpeg",
-  "image/jpg",
-  "image/png",
-  "video/mkv",
-  "video/x-m4v",
-  "video/mp4",
-  "image/gif",
-  "video/quicktime",
-  "video/x-msvideo",
-  "video/x-ms-wmv",
-  "image/webp",
-  "audio/mp3",
-  "audio/*",
-  "audio/wav",
-  "audio/mpeg",
-]; //adding some valid image extensions in array
-let fileType; //getting selected file type
-button.onclick = () => {
-  input.click(); //if user click on the button then the input also clicked
-};
+document.addEventListener('DOMContentLoaded', function () {
+	// Defining a helper function for repeated tasks
+	function queryAllAndAct(query, action) {
+		const elements = document.querySelectorAll(query);
+		elements.forEach(action);
+	}
 
-input.addEventListener("change", function () {
-  //getting user select file and [0] this means if user select multiple files then we'll select only the first one
-  file = this.files[0];
-  fileType = file.type;
+	// Defining another helper function to simplify the code
+	function addClass(element, className) {
+		if (!element.classList.contains(className)) {
+			element.classList.add(className);
+		}
+	}
 
-  if (validExtensions.includes(fileType)) {
-    let importButtons = document.querySelectorAll(".import_button");
-    let uploadButtons = document.querySelectorAll(".upload_button");
+	function removeClass(element, className) {
+		if (element.classList.contains(className)) {
+			element.classList.remove(className);
+		}
+	}
 
-    importButtons.forEach((button) => {
-      button.disabled = false;
-      button.classList.add("upload_button_active");
-    });
+	function hideElement(element) {
+		element.classList.add("hidden_element");
+	}
 
-    uploadButtons.forEach((button) => {
-      button.classList.add("upload_button_disabled");
-    });
+	function showElement(element) {
+		element.classList.remove("hidden_element");
+	}
 
-    document.querySelector(".supported_file").classList.add("hidden_element");
-    document.querySelector(".import").classList.add("hidden_element");
+	// Initial setup
+	const dropArea = document.querySelector(".drag-area"),
+		dragText = dropArea.querySelector(".drag-area_title"),
+		dragHeader = dropArea.querySelector(".drag-area_header"),
+		dragSharing = dropArea.querySelector(".drag-area_sharing"),
+		dragImport = dropArea.querySelector(".import"),
+		metadata = document.querySelector(".metadata_container"),
+		loadingBar = document.querySelector(".loading_state"),
+		loadingInfo = document.querySelector(".loading_info span"),
+		loadingArea = document.querySelector(".drag-area_loading"),
+		toast = document.querySelector(".toast"),
+		button = dropArea.querySelector(".upload_button"),
+		terms = document.querySelector(".terms"),
+		input = dropArea.querySelector(".hidden_input");
 
-    showFile(); //calling function
-  } else {
-    alert("This is not an Image, Audio or Video File!");
-  }
-});
+	let file; // Global variable for file
+	let validExtensions = ["image/jpeg", "image/jpg", "image/png", "video/mkv", "video/x-m4v", "video/mp4", "image/gif", "video/quicktime", "video/x-msvideo", "video/x-ms-wmv", "image/webp", "audio/mp3", "audio/*", "audio/wav", "audio/mpeg"];
+	let fileType;
 
-// If user Drag File Over DropArea
-dropArea.addEventListener("dragover", (event) => {
-  event.preventDefault(); //preventing from default behaviour
-  dropArea.classList.add("active");
-});
+	button.onclick = () => {
+		input.click();
+	};
 
-// If user leave dragged File from DropArea
-dropArea.addEventListener("dragleave", () => {
-  dropArea.classList.remove("active");
-});
+	input.addEventListener("change", function () {
+		file = this.files[0];
+		fileType = file.type;
+		if (validExtensions.includes(fileType)) {
+			queryAllAndAct(".import_button", button => {
+				button.disabled = false;
+				addClass(button, "upload_button_active");
+			});
+			addClass(document.querySelector(".upload_button"), "upload_button_disabled");
+			addClass(document.querySelector(".supported_file"), "hidden_element");
+			addClass(document.querySelector(".import"), "hidden_element");
+			showFile();
+		} else {
+			alert("This is not an Image, Audio or Video File!");
+		}
+	});
 
-dropArea.addEventListener("drop", (e) => {
-  e.preventDefault();
-  file = e.dataTransfer.files[0];
-  fileType = file.type;
+	dropArea.addEventListener("dragover", (event) => {
+		event.preventDefault();
+		dropArea.classList.add("active");
+	});
 
-  if (!validExtensions.includes(fileType)) {
-    alert("This is not an Image, Audio or Video File!");
-  } else if (e.dataTransfer.files.length > 1) {
-    alert("Please select only one file");
-  } else {
-    let importButtons = document.querySelectorAll(".import_button");
-    let uploadButtons = document.querySelectorAll(".upload_button");
+	dropArea.addEventListener("dragleave", () => {
+		removeClass(dropArea, "active");
+	});
 
-    importButtons.forEach((button) => {
-      button.disabled = false;
-      button.classList.add("upload_button_active");
-    });
+	dropArea.addEventListener("drop", (e) => {
+		e.preventDefault();
+		file = e.dataTransfer.files[0];
+		fileType = file.type;
+		if (!validExtensions.includes(fileType)) {
+			alert("This is not an Image, Audio or Video File!");
+		} else if (e.dataTransfer.files.length > 1) {
+			alert("Please select only one file");
+		} else {
+			queryAllAndAct(".import_button", button => {
+				button.disabled = false;
+				addClass(button, "upload_button_active");
+			});
+			addClass(document.querySelector(".supported_file"), "hidden_element");
+			addClass(document.querySelector(".import"), "hidden_element");
+			addClass(document.querySelector(".upload_button"), "upload_button_disabled");
 
-    uploadButtons.forEach((button) => {
-      button.classList.add("upload_button_disabled");
-    });
+			const fileInputs = document.getElementById("input_file");
+			fileInputs.files = e.dataTransfer.files;
 
-    document.querySelector(".supported_file").classList.add("hidden_element");
-    document.querySelector(".import").classList.add("hidden_element");
+			showFile();
+		}
+	});
 
-    const fileInputs = document.getElementById("input_file");
-    fileInputs.files = e.dataTransfer.files;
+	document.querySelector(".input_url").addEventListener("input", (e) => {
+		if (e.target.value !== "") {
+			queryAllAndAct(".import_button", button => {
+				button.disabled = false;
+				addClass(button, "upload_button_active");
+			});
+			addClass(document.querySelector(".upload_button"), "upload_button_disabled");
+			document.querySelector(".upload_button").disabled = true;
+		} else {
+			queryAllAndAct(".import_button", button => {
+				button.disabled = true;
+				removeClass(button, "upload_button_active");
+			});
+			removeClass(document.querySelector(".upload_button"), "upload_button_disabled");
+			document.querySelector(".upload_button").disabled = false;
+		}
+	});
 
-    showFile(); //calling function
-  }
-});
+	function showFile() {
+		const videoPlayer = document.getElementById("video-player");
 
-function loadVideo(file) {
-  const reader = new FileReader();
+		// Create new FileReader object
+		let fileReader = new FileReader();
 
-  reader.onload = () => {
-    const videoPlayer = document.getElementById("video-player");
-    videoPlayer.src = reader.result;
-    videoPlayer.play();
-  };
+		// Remove hidden element from preview
+		dropArea.querySelector(".preview").classList.remove("hidden_element");
 
-  reader.readAsDataURL(file);
-}
+		// Based on the file type, handle the loading
+		if (fileType.includes("image")) {
+			fileReader.onload = () => {
+				let fileURL = fileReader.result;
+				dropArea.querySelector(".uploaded_img").src = fileURL;
+				videoPlayer.src = "";
+				dropArea.querySelector(".uploaded_audio").src = "";
+				dropArea.querySelector(".uploaded_video").classList.add("hidden_element");
+				dropArea.querySelector(".uploaded_audio").classList.add("hidden_element");
+			};
+		} else if (fileType.includes("video")) {
+			fileReader.onload = () => {
+				videoPlayer.src = fileReader.result;
+				dropArea.querySelector(".uploaded_img").src = "";
+				dropArea.querySelector(".uploaded_audio").src = "";
+				dropArea.querySelector(".uploaded_audio").classList.add("hidden_element");
+				dropArea.querySelector(".uploaded_img").classList.add("hidden_element");
+				videoPlayer.play();
+			};
+		} else if (fileType.includes("audio")) {
+			fileReader.onload = () => {
+				let fileURL = fileReader.result;
+				dropArea.querySelector(".uploaded_audio").src = fileURL;
+				videoPlayer.src = "";
+				dropArea.querySelector(".uploaded_img").src = "";
+				dropArea.querySelector(".uploaded_video").classList.add("hidden_element");
+				dropArea.querySelector(".uploaded_img").classList.add("hidden_element");
+			};
+		}
 
-document.querySelector(".input_url").addEventListener("input", (e) => {
-  let importButtons = document.querySelectorAll(".import_button");
-  let uploadButtons = document.querySelectorAll(".upload_button");
+		// Add event listeners for the FileReader
+		fileReader.addEventListener("loadstart", function () {
+			loadingBar.style.width = "0%";
+			loadingInfo.innerHTML = "0";
+			loadingArea.classList.remove("hidden_element");
+		});
 
-  if (e.target.value !== "") {
-    importButtons.forEach((button) => {
-      button.disabled = false;
-      button.classList.add("upload_button_active");
-    });
+		fileReader.addEventListener("progress", function (e) {
+			if (e.lengthComputable) {
+				const percentLoaded = Math.round((e.loaded / e.total) * 100);
+				loadingBar.style.width = `${percentLoaded}%`;
+				loadingInfo.innerHTML = percentLoaded;
+			}
+		});
 
-    uploadButtons.forEach((button) => {
-      button.classList.add("upload_button_disabled");
-      button.disabled = true;
-    });
-  } else {
-    importButtons.forEach((button) => {
-      button.disabled = true;
-      button.classList.remove("upload_button_active");
-    });
+		fileReader.addEventListener("loadend", function () {
+			loadingArea.classList.add("hidden_element");
+			dragHeader.classList.remove("hidden_element");
 
-    uploadButtons.forEach((button) => {
-      button.classList.remove("upload_button_disabled");
-      button.disabled = false;
-    });
-  }
-});
+			if (fileType.includes("video")) {
+				dropArea.querySelector(".uploaded_video").classList.remove("hidden_element");
+			}
+			if (fileType.includes("audio")) {
+				dropArea.querySelector(".uploaded_audio").classList.remove("hidden_element");
+			}
+		});
 
-function showFile() {
-  const videoPlayer = document.getElementById("video-player");
+		// Read the file as Data URL
+		fileReader.readAsDataURL(file);
+		dragHeader.classList.add("hidden_element");
+		terms.classList.add("hidden_element");
+	}
 
-  //if user selected file is an image file
-  let fileReader = new FileReader(); //creating new FileReader object
-  dropArea.querySelector(".preview").classList.remove("hidden_element");
-  if (fileType.includes("image")) {
-    fileReader.onload = () => {
-      let fileURL = fileReader.result; //passing user file source in fileURL variable
-      dropArea.querySelector(".uploaded_img").src = fileURL;
-      videoPlayer.src = "";
-      dropArea.querySelector(".uploaded_audio").src = "";
-      dropArea.querySelector(".uploaded_video").classList.add("hidden_element");
-      dropArea.querySelector(".uploaded_audio").classList.add("hidden_element");
-    };
-  } else if (fileType.includes("video")) {
-    fileReader.onload = () => {
-      videoPlayer.src = fileReader.result;
-      dropArea.querySelector(".uploaded_img").src = "";
-      dropArea.querySelector(".uploaded_audio").src = "";
-      dropArea.querySelector(".uploaded_audio").classList.add("hidden_element");
-      dropArea.querySelector(".uploaded_img").classList.add("hidden_element");
-      videoPlayer.play();
-    };
-  } else if (fileType.includes("audio")) {
-    fileReader.onload = () => {
-      let fileURL = fileReader.result; //passing user file source in fileURL variable
-      dropArea.querySelector(".uploaded_audio").src = fileURL;
-      videoPlayer.src = "";
-      dropArea.querySelector(".uploaded_img").src = "";
-      dropArea.querySelector(".uploaded_video").classList.add("hidden_element");
-      dropArea.querySelector(".uploaded_img").classList.add("hidden_element");
-    };
-  }
+	function showToast() {
+		showElement(toast);
+		setTimeout(() => {
+			hideElement(toast);
+		}, 1500);
+	}
 
-  fileReader.addEventListener("loadstart", function () {
-    loadingBar.style.width = "0%";
-    loadingInfo.innerHTML = "0";
-    loadingArea.classList.remove("hidden_element");
-  });
-  fileReader.addEventListener("progress", function (e) {
-    if (e.lengthComputable) {
-      const percentLoaded = (e.loaded / e.total) * 100;
-      loadingBar.style.width = `${percentLoaded}%`;
-      loadingInfo.innerHTML = Math.floor(percentLoaded);
-    }
-  });
+	function showSpinner() {
+		var spinnerContainer = document.getElementById("spinner-container");
+		spinnerContainer.style.display = "flex";
+		// You can add code here to handle the file upload
+		document.querySelector(".form").style.display = "none";
+		document.querySelector(".image_svg").style.display = "none";
+	}
 
-  fileReader.addEventListener("loadend", function () {
-    loadingArea.classList.add("hidden_element");
-    dragHeader.classList.remove("hidden_element");
+	queryAllAndAct(".media_upload_btn", button => {
+		button.addEventListener("click", showSpinner);
+	});
 
-    if (fileType.includes("video")) {
-      dropArea
-        .querySelector(".uploaded_video")
-        .classList.remove("hidden_element");
-      // document.querySelector(".sharing_info span").textContent = "video";
-      // document.querySelector(".image_address").textContent = "Copy Video Address";
-      // document.querySelector(".toast_info span").textContent = "video";
-    }
-    if (fileType.includes("audio")) {
-      dropArea
-        .querySelector(".uploaded_audio")
-        .classList.remove("hidden_element");
-    }
-  });
+	queryAllAndAct(".pfp_upload_btn", (button) => {
+		button.addEventListener("click", (event) => {
+			const confirmUpload = confirm("This will crop and resize media for profile picture use, proceed?");
+			if (!confirmUpload) {
+				event.preventDefault(); // Cancel the default action
+			} else {
+				showSpinner(); // Show the spinner if confirmed
+			}
+		});
+	});
 
-  fileReader.readAsDataURL(file);
-  dragHeader.classList.add("hidden_element");
-  terms.classList.add("hidden_element");
-  // dragImport.classList.add("hidden_element");
-  // metadata.classList.remove("hidden_element");
-}
-
-function showToast() {
-  toast.classList.remove("hidden_element");
-  setTimeout(() => {
-    toast.classList.add("hidden_element");
-  }, 1500);
-}
-
-// let copyAddress = document.querySelector(".image_address");
-
-// copyAddress.addEventListener("click", () => {
-// 	showToast();
-// });
-
-const inputVideo = document.getElementById("video-input");
-
-function showSpinner() {
-  var spinnerContainer = document.getElementById("spinner-container");
-  spinnerContainer.style.display = "flex";
-  // You can add code here to handle the file upload
-  document.querySelector(".form").style.display = "none";
-  document.querySelector(".image_svg").style.display = "none";
-}
-
-let importButtons = document.querySelectorAll(".import_button");
-
-importButtons.forEach((button) => {
-  button.addEventListener("click", showSpinner);
 });
