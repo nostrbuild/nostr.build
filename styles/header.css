@@ -1,118 +1,124 @@
 /* HEADER */
 
-header {
-	display: flex;
-	flex-direction: row;
-	padding-top: 48px;
-}
-
 li {
-	list-style: none;
+  list-style: none;
 }
 
-.navigation_header {
-	display: flex;
-	flex-direction: row;
-	gap: 16px;
-}
-
-.navigation_header a {
-	text-decoration: none;
-	display: flex;
-	flex-direction: row;
-	justify-content: center;
-	align-items: center;
-	gap: 8px;
-	cursor: pointer;
-	width: fit-content;
-	height: 40px;
-
-	text-align: center;
-	border-radius: 8px;
-}
-
-.navigation_header a span {
-	display: grid;
-	place-items: center;
-	width: 40px;
-	height: 100%;
-	border-radius: 8px;
-	background: linear-gradient(180deg, #292556 0%, #120a24 100%);
-}
-
-.navigation_header a span img {
-	width: 20px;
-	height: 20px;
-}
-
-.login_button {
-	background: linear-gradient(95.49deg, #ffffff 0%, #b098bb 100%);
-	box-shadow: 0px 4px 24px rgba(183, 161, 194, 0.3);
-
-	border: none;
-	font-weight: 500;
-	font-size: 14px;
-	line-height: 18px;
-}
-
-.home_button span {
-	border: 1px solid #362d69;
-	box-sizing: content-box;
+.navigation_header a,
+.menu a {
+  text-decoration: none;
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  width: fit-content;
+  height: 40px;
+  text-align: center;
+  border-radius: 8px;
 }
 
 .nav_button {
-	background: rgba(34, 28, 69, 0.84);
-	border: 1px solid #362d69;
-	backdrop-filter: blur(8px);
-	border: 1px solid #362d69;
-	font-weight: 400;
-	color: #a58ead;
+  font-weight: 400;
+  color: #a58ead;
+  padding: 8px 12px;
 }
 
-.nav_button span {
-	border: 1px solid #362d69;
-	box-sizing: content-box;
+.nav_button:hover {
+  border-radius: 8px;
+  background: var(--solid-borders, #362d69);
 }
 
-.active_button {
-	background: linear-gradient(99.91deg, rgba(90, 78, 139, 0.84) -0.53%, rgba(37, 28, 74, 0.84) 100%);
-	/* Solid/Text Secondary */
-
-	border: 1px solid #a58ead;
-	backdrop-filter: blur(8px);
-	font-weight: 400;
-	font-size: 14px;
-	line-height: 18px;
-	/* identical to box height */
-
-	text-align: center;
-
-	/* Solid/Text Primary */
-
-	color: #d0bed8;
+.login_button {
+  display: flex;
+  padding: 8px 12px !important;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  border-radius: 8px;
+  background: var(--solid-borders, #362d69);
 }
 
-.active_button span {
-	border: 1px solid #a58ead;
+.login_button:hover {
+  background: #362d70;
 }
 
 @media (min-width: 0) {
-	.navigation_header a {
-		padding: 0;
-		font-size: 0;
-		gap: 0;
-	}
-	.nav_button:last-child {
-		padding: 0 16px 0 0;
-		gap: 8px;
-		font-size: 14px;
-	}
+  header {
+    display: flex;
+    flex-direction: row;
+    padding-top: 12px;
+    width: 100vw;
+  }
+  .login_button {
+    display: none !important;
+  }
+  .menu_button {
+    all: unset;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+  .navigation_header {
+    display: flex;
+    flex-direction: row;
+    gap: 16px;
+    justify-content: space-between;
+    width: 100%;
+  }
+
+  .menu {
+    gap: 16px;
+    display: none;
+    width: 212px;
+    padding: 24px 16px;
+    flex-direction: column;
+    align-items: flex-start;
+    border-radius: 12px;
+    border: 1px solid #3d3783;
+    background: #292454;
+    box-shadow: 0px 0px 32px 0px rgba(0, 0, 0, 0.32);
+    position: absolute;
+    top: 48px;
+    right: 16px;
+  }
+  .menu a {
+    width: 100%;
+    justify-content: left;
+  }
+  .login_desktop {
+    display: flex !important;
+    width: 100% !important;
+    justify-content: center !important;
+  }
+  .center_buttons {
+    margin-top: -500px;
+  }
 }
 
-@media (min-width: 550px) {
-	.navigation_header a {
-		padding: 0 16px 0 0;
-		gap: 8px;
-		font-size: 14px;
-	}
+@media (min-width: 965px) {
+  header {
+    padding-top: 48px;
+  }
+  .center_buttons {
+    display: flex;
+    flex-direction: row;
+    margin-top: unset;
+  }
+  .login_button {
+    display: flex !important;
+  }
+  .menu_button {
+    display: none;
+  }
+  .navigation_header {
+    justify-content: space-around;
+  }
+  .menu {
+    display: none;
+  }
+  .login_desktop {
+    display: none !important;
+  }
 }
