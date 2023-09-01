@@ -61,6 +61,8 @@ class S3Service
   // Upload a file to S3
   public function uploadToS3($sourcePath, $destinationPath)
   {
+    // Number of retries for the upload
+    $maxRetries = 3;
     // Get the mime type of the file
     $mimeType = mime_content_type($sourcePath);
 
@@ -95,27 +97,37 @@ class S3Service
       'ContentType' => $mimeType,
     ];
 
-    // Create promises for the S3 and R2 uploads
-    $s3Promise = $this->s3->putObjectAsync($s3Options);
-    $r2Promise = $this->r2->putObjectAsync($r2Options);
+    $attemptUpload = function ($client, $options, $retriesLeft) use (&$attemptUpload, $maxRetries) {
+      return $client->putObjectAsync($options)
+        ->then(
+          function ($result) {
+            if (isset($result['ObjectURL'])) {
+              return $result;
+            }
+            throw new Exception("Upload failed, no ObjectURL");
+          },
+          function ($reason) use ($client, $options, &$attemptUpload, $retriesLeft, $maxRetries) {
+            if ($retriesLeft > 0) {
+              sleep(pow(2, $maxRetries - $retriesLeft));  // Exponential backoff
+              return $attemptUpload($client, $options, $retriesLeft - 1);
+            }
+            throw $reason;
+          }
+        );
+    };
+
+    // Initialize retriesLeft to maxRetries
+    $s3Promise = $attemptUpload($this->s3, $s3Options, $maxRetries);
+    $r2Promise = $attemptUpload($this->r2, $r2Options, $maxRetries);
 
     try {
-      // Wait for all promises to complete, with a concurrency of 2
       $results = Promise\Utils::unwrap([$s3Promise, $r2Promise]);
-
-      foreach ($results as $result) {
-        if (!isset($result['ObjectURL'])) {
-          error_log("The file was not uploaded.\n");
-          return false;
-        }
-      }
-    } catch (AwsException $e) {
-      // Output error message if fails
-      error_log("s3 Upload Error: " . $e->getMessage());
+      // If you get here, both uploads were successful
+      return true;
+    } catch (\Throwable $e) {
+      error_log("Upload Error: " . $e->getMessage());
       return false;
     }
-
-    return true;
   }
 
   // Delete an object from S3
