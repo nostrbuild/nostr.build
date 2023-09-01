@@ -35,7 +35,7 @@ $view_type = isset($_GET['k']) && in_array($_GET['k'], $allowed_views) ? $_GET['
 
 	<link rel="stylesheet" href="/styles/index.css?v=1" />
 	<link rel="stylesheet" href="/styles/profile.css?v=1" />
-	<link rel="stylesheet" href="/styles/header.css?v=1" />
+	<link rel="stylesheet" href="/styles/header.css?v=2" />
 	<link rel="icon" href="/assets/0.png">
 
 	<title>nostr.build - View All</title>

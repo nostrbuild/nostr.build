@@ -23,7 +23,7 @@ $perm = new Permission();
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
   <link rel="stylesheet" href="/styles/index.css?v=1" />
-  <link rel="stylesheet" href="/styles/header.css?v=1" />
+  <link rel="stylesheet" href="/styles/header.css?v=2" />
   <link rel="stylesheet" href="/styles/tos.css?v=1" />
   <link rel="icon" href="https://cdn.nostr.build/assets/01.png" />
 

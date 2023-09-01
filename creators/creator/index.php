@@ -42,7 +42,7 @@ if (!empty($rows)) {
 
 	<link rel="stylesheet" href="/styles/index.css?v=1" />
 	<link rel="stylesheet" href="/styles/profile.css?v=1" />
-	<link rel="stylesheet" href="/styles/header.css?v=1" />
+	<link rel="stylesheet" href="/styles/header.css?v=2" />
 	<link rel="icon" href="/assets/01.png">
 
 	<title>nostr.build - <?= htmlentities($nym) ?></title>

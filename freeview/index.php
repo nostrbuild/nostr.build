@@ -21,7 +21,7 @@ $view_type = isset($_GET['k']) && in_array($_GET['k'], $allowed_views) ? $_GET['
 
 	<link rel="stylesheet" href="/styles/index.css?v=1" />
 	<link rel="stylesheet" href="/styles/profile.css?v=1" />
-	<link rel="stylesheet" href="/styles/header.css?v=1" />
+	<link rel="stylesheet" href="/styles/header.css?v=2" />
 	<link rel="icon" href="https://cdn.nostr.build/assets/01.png" />
 
 	<script defer src="/scripts/images.js"></script>

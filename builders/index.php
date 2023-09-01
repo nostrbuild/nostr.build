@@ -10,7 +10,7 @@
 	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
 	<link rel="stylesheet" href="/styles/index.css?v=1" />
-	<link rel="stylesheet" href="/styles/header.css?v=1" />
+	<link rel="stylesheet" href="/styles/header.css?v=2" />
 	<link rel="stylesheet" href="/styles/builders.css?v=1" />
 	<link rel="icon" href="/assets/01.png">
 
