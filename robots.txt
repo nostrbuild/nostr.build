@@ -1,2 +1,11 @@
 User-agent: *
-Disallow: /
+Disallow: /p/
+Disallow: /i/
+Disallow: /av/
+Disallow: /account/
+Disallow: /thumbnail/
+Disallow: /responsive/
+Disallow: /viewall/
+Disallow: /freeview/
+Disallow: /login/
+Disallow: /api/
