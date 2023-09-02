@@ -3,6 +3,7 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/permissions.class.php';
 // Instantiate the permissions class
 $perm = new Permission();
 
+$nym = $_SESSION["nym"];
 $ppic = $_SESSION["ppic"];
 
 $svg_logo = <<<SVG
@@ -68,7 +69,7 @@ SVG;
   <?php else : ?>
     <a href="/account" class="nav_button login_button">
       Account
-      <img src="<?= $ppic ?>" alt="user image" style="width:29px;height:29px;border-radius:50%;">
+      <img src="<?= $ppic ?>" alt="user image" style="width:33px;height:33px;border-radius:50%;">
     </a>
   <?php endif; ?>
   <button class="menu_button">
@@ -122,8 +123,13 @@ SVG;
       </a>
     <?php else : ?>
       <a href="/account" class="nav_button login_button login_desktop">
-        <span>
-          Account
+        <span">
+        <table>
+            <tr>
+              <td>Account &nbsp;</td>
+              <td><img src="<?= $ppic ?>" alt="user image" style="width:33px;height:33px;border-radius:50%;"></td>
+            </tr>
+          </table>
         </span>
       </a>
     <?php endif; ?>
