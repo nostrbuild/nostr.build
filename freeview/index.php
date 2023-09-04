@@ -1,6 +1,7 @@
 <?php
 // Include config, session, and Permission class files
 require_once $_SERVER['DOCUMENT_ROOT'] . '/config.php';
+require_once $_SERVER['DOCUMENT_ROOT'] . '/SiteConfig.php';
 
 // Filter based on what we allow in views, potentially extending to allow adult content in the future
 $allowed_views = array('img', 'gif', 'vid');
@@ -88,21 +89,24 @@ $view_type = isset($_GET['k']) && in_array($_GET['k'], $allowed_views) ? $_GET['
 
 				switch ($view_type) {
 					case 'gif':
-						$thumbnail_path = '/thumbnail/i/' . $filename;
+						$thumbnail_path = htmlspecialchars(SiteConfig::getThumbnailUrl('image') . $filename);
+						$full_path = htmlspecialchars(SiteConfig::getFullyQualifiedUrl('image') . $filename);
 						echo '<div class="image-container">';
-						echo '<a href="/i/' . $filename . '" target="_blank" rel="noopener noreferrer"><img loading="lazy" class="media" src="' . $thumbnail_path . '" alt="image" /></a>';
+						echo '<a href="' . $full_path . '" target="_blank" rel="noopener noreferrer"><img loading="lazy" class="media" src="' . $thumbnail_path . '" alt="image" /></a>';
 						echo '</div>';
 						break;
 					case 'vid':
-						$thumbnail_path = '/av/' . $filename;
+						$thumbnail_path = htmlspecialchars(SiteConfig::getThumbnailUrl('video') . $filename);
+						$full_path = htmlspecialchars(SiteConfig::getFullyQualifiedUrl('video') . $filename);
 						echo '<div class="video-container">';
-						echo '<a href="/av/' . $filename . '" target="_blank" rel="noopener noreferrer"><video class="media" controls><source src="' . $thumbnail_path . '" type="video/mp4"></video></a>';
+						echo '<a href="/av/' . $full_path . '" target="_blank" rel="noopener noreferrer"><video class="media" controls><source src="' . $thumbnail_path . '" type="video/mp4"></video></a>';
 						echo '</div>';
 						break;
 					default:
-						$thumbnail_path = '/thumbnail/i/' . $filename;
+						$thumbnail_path = htmlspecialchars(SiteConfig::getThumbnailUrl('image') . $filename);
+						$full_path = htmlspecialchars(SiteConfig::getFullyQualifiedUrl('image') . $filename);
 						echo '<div class="image-container">';
-						echo '<a href="/i/' . $filename . '" target="_blank" rel="noopener noreferrer"><img loading="lazy" class="media" src="' . $thumbnail_path . '" alt="image" /></a>';
+						echo '<a href="/i/' . $full_path . '" target="_blank" rel="noopener noreferrer"><img loading="lazy" class="media" src="' . $thumbnail_path . '" alt="image" /></a>';
 						echo '</div>';
 						break;
 				}
