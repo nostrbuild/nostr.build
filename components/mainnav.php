@@ -124,11 +124,11 @@ SVG;
       </a>
     <?php else : ?>
       <a href="/account" class="nav_button login_button login_desktop">
-        <span">
+        <span>
         <table>
             <tr>
-              <td>Account &nbsp;</td>
-              <td><img src="<?= $ppic ?>" alt="user image" style="width:33px;height:33px;border-radius:50%;"></td>
+              <td>Account</td>
+              <td style="padding-left:10px;"><img src="<?= $ppic ?>" alt="user image" style="width:33px;height:33px;border-radius:50%"></td>
             </tr>
           </table>
         </span>
