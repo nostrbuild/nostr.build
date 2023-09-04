@@ -921,6 +921,7 @@ class MultimediaUpload
 
     try {
       $key = $this->determinePrefix($data['type']) . $data['filename'];
+      // TODO: Needs update to handle non-prefixed paths based on media type
       $fileS3Metadata = $this->s3Service->getObjectMetadataFromS3($key);
 
       if ($fileS3Metadata === false) {
@@ -1094,10 +1095,10 @@ class MultimediaUpload
     $mappedType = $this->typeMap[$type] ?? $type;
     $mappedType = $this->apiClient ? $this->apiClient . '_' . $mappedType : $mappedType;
     try {
-      return SiteConfig::getPath(($this->pro ? 'professional_account_' : '') . $mappedType);
+      return SiteConfig::getS3Path(($this->pro ? 'professional_account_' : '') . $mappedType);
     } catch (Exception $e) {
       error_log($e->getMessage() . PHP_EOL . $e->getTraceAsString());
-      return SiteConfig::getPath('unknown');
+      return SiteConfig::getS3Path('unknown');
     }
   }
 

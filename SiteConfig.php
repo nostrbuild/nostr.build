@@ -14,6 +14,7 @@ class SiteConfig
     'android_image' => [
       'cdn_host' => 'image.nostr.build',
       'path' => '',
+      's3_path' => 'i/',
       'thumbnail_path' => 'thumb/',
       'responsive_path' => 'resp/',
       'use_cdn' => true, // CDN Optimizer is off now due to other issues
@@ -21,6 +22,7 @@ class SiteConfig
     'android_video' => [
       'cdn_host' => 'video.nostr.build',
       'path' => '',
+      's3_path' => 'av/',
       'thumbnail_path' => '',
       'responsive_path' => '',
       'use_cdn' => true,
@@ -28,6 +30,7 @@ class SiteConfig
     'android_audio' => [
       'cdn_host' => 'media.nostr.build',
       'path' => 'av/',
+      's3_path' => 'av/',
       'thumbnail_path' => '', // not possible or needed
       'responsive_path' => '', // not possible or needed
       'use_cdn' => true,
@@ -35,6 +38,7 @@ class SiteConfig
     'image' => [
       'cdn_host' => 'image.nostr.build',
       'path' => '',
+      's3_path' => 'i/',
       'thumbnail_path' => 'thumb/',
       'responsive_path' => 'resp/',
       'use_cdn' => true,
@@ -42,6 +46,7 @@ class SiteConfig
     'video' => [
       'cdn_host' => 'video.nostr.build',
       'path' => '',
+      's3_path' => 'av/',
       'thumbnail_path' => '', // for later usage, maybe
       'responsive_path' => '', // for later usage, maybe
       'use_cdn' => true,
@@ -49,6 +54,7 @@ class SiteConfig
     'audio' => [
       'cdn_host' => 'media.nostr.build',
       'path' => 'av/',
+      's3_path' => 'av/',
       'thumbnail_path' => '', // not possible or needed
       'responsive_path' => '', // not possible or needed
       'use_cdn' => true,
@@ -56,6 +62,7 @@ class SiteConfig
     'profile_picture' => [
       'cdn_host' => 'pfp.nostr.build',
       'path' => '',
+      's3_path' => 'i/p/',
       'thumbnail_path' => '', // not needed
       'responsive_path' => '', // not needed
       'use_cdn' => true,
@@ -63,6 +70,7 @@ class SiteConfig
     'professional_account_image' => [
       'cdn_host' => 'i.nostr.build',
       'path' => '',
+      's3_path' => 'p/',
       'thumbnail_path' => 'thumb/',
       'responsive_path' => 'resp/',
       'use_cdn' => true,
@@ -70,6 +78,7 @@ class SiteConfig
     'professional_account_video' => [
       'cdn_host' => 'v.nostr.build',
       'path' => '',
+      's3_path' => 'p/',
       'thumbnail_path' => '', // for later usage, maybe
       'responsive_path' => '', // for later usage, maybe
       'use_cdn' => true,
@@ -77,6 +86,7 @@ class SiteConfig
     'professional_account_audio' => [
       'cdn_host' => 'media.nostr.build',
       'path' => 'p/',
+      's3_path' => 'p/',
       'thumbnail_path' => '', // not possible or needed
       'responsive_path' => '', // not possible or needed
       'use_cdn' => true,
@@ -85,6 +95,7 @@ class SiteConfig
     'unknown' => [
       'cdn_host' => 'image.nostr.build',
       'path' => '',
+      's3_path' => 'i/',
       'thumbnail_path' => '', // not possible or needed
       'responsive_path' => '', // not possible or needed
       'use_cdn' => false,
@@ -133,6 +144,15 @@ class SiteConfig
     }
 
     return self::CDN_CONFIGS[$mediaType]['path'];
+  }
+
+  public static function getS3Path($mediaType)
+  {
+    if (!array_key_exists($mediaType, self::CDN_CONFIGS)) {
+      throw new Exception("Invalid media type: {$mediaType}");
+    }
+
+    return self::CDN_CONFIGS[$mediaType]['s3_path'];
   }
 
   public static function getBaseUrl($mediaType)
