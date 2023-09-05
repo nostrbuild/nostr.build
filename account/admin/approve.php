@@ -5,6 +5,7 @@ use Respect\Validation\Rules\Url;
 require_once($_SERVER['DOCUMENT_ROOT'] . '/config.php');
 require_once($_SERVER['DOCUMENT_ROOT'] . '/functions/session.php');
 require_once($_SERVER['DOCUMENT_ROOT'] . '/libs/permissions.class.php');
+require_once($_SERVER['DOCUMENT_ROOT'] . '/SiteConfig.php');
 
 // Create new Permission object
 $perm = new Permission();
@@ -219,17 +220,20 @@ if (isset($_POST['searchFile'])) {
       $file_type = $row['type'];
 
       if ($file_type === 'picture') {
-        $link_to_image = '/i/' . $filename;
-        $display_element = '<img  height ="150" class="card-img-top" src="/thumbnail/i/' . $filename . '" alt="' . $filename . '">';
+        $link_to_image = htmlentities(SiteConfig::getFullyQualifiedUrl('image') . $filename);
+        $thumb = htmlentities(SiteConfig::getThumbnailUrl('image') . $filename);
+        $display_element = '<img  height ="150" class="card-img-top" src="' . $thumb . '" alt="' . $filename . '">';
       } elseif ($file_type === 'profile') {
-        $link_to_image = '/i/p/' . $filename;
-        $display_element = '<img  height ="150" class="card-img-top" src="/thumbnail/i/p/' . $filename . '" alt="' . $filename . '">';
+        $link_to_image = htmlentities(SiteConfig::getFullyQualifiedUrl('profile_picture') . $filename);
+        $thumb = htmlentities(SiteConfig::getThumbnailUrl('profile_picture') . $filename);
+        $display_element = '<img  height ="150" class="card-img-top" src="' . $thumb . '" alt="' . $filename . '">';
       } elseif ($file_type = 'video') {
-        $link_to_image = '/av/' . $filename;
-        $video_extensions = ['mp4', 'mov', 'avi', 'wmv'];
+        $link_to_image = htmlentities(SiteConfig::getFullyQualifiedUrl('video') . $filename);
+        $video_extensions = ['mp4', 'mov', 'avi', 'wmv', 'flv', 'webm', 'mkv', 'm4v', 'mpg', 'mpeg', '3gp', '3g2', 'm2v', 'm4v', 'svi', 'mxf', 'roq', 'nsv', 'f4v', 'f4p', 'f4a', 'f4b', 'ogv', 'gifv'];
         $file_extension = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
         $mime_type = 'video/mp4';
-        $display_element = '<video controls height ="150" width ="150"><source src="/av/' . $filename . '" type="' . $mime_type . '"></video>';
+        $thumb = htmlentities(SiteConfig::getThumbnailUrl('video') . $filename);
+        $display_element = '<video controls height ="150" width ="150"><source src="' . $thumb . '" type="' . $mime_type . '"></video>';
       } else {
         $link_to_image = '';
         $display = "UNKNOWN TYPE!!!";
