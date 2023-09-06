@@ -3,6 +3,7 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/config.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/functions/session.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/permissions.class.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/S3Service.class.php';
+require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/CloudflarePurge.class.php';
 
 global $link;
 global $awsConfig;
@@ -56,6 +57,15 @@ foreach ($idList as $index => $id) {
                     mysqli_stmt_bind_param($del_stmt, "is", $id, $_SESSION['usernpub']);
                     mysqli_stmt_execute($del_stmt);
                     mysqli_stmt_close($del_stmt);
+                    try {
+                        $purger = new CloudflarePurger($_SERVER['NB_API_SECRET'], $_SERVER['NB_API_PURGE_URL']);
+                        $result = $purger->purgeFiles([$row['image']]);
+                        if ($result !== false) {
+                            error_log(json_encode($result));
+                        }
+                    } catch (Exception $e) {
+                        error_log("PURGE error occurred: " . $e->getMessage() . "\n");
+                    }
                 }
             }
         } elseif ($prefix == 'idr_') { // if it's a folder
