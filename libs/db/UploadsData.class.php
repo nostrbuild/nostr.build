@@ -56,11 +56,20 @@ class UploadsData extends DatabaseTable
 
   public function getStats(): array
   {
+    $cacheKey = 'uploads_data_stats';
+    $cacheTTL = 60; // Time-to-live in seconds
+
+    // Try to get data from APCu cache first
+    if (apcu_exists($cacheKey)) {
+      return apcu_fetch($cacheKey);
+    }
+
     $result = [
       'total_files' => 0,
       'total_size' => 0,
     ];
-    // Fetch statistics
+
+    // Fetch statistics from the database
     $sql = "SELECT COUNT(*) as total_files, SUM(file_size) as total_size FROM {$this->tableName}";
     try {
       $stmt = $this->db->prepare($sql);
@@ -68,9 +77,13 @@ class UploadsData extends DatabaseTable
       $stmt->bind_result($result['total_files'], $result['total_size']);
       $stmt->fetch();
       $stmt->close();
+
+      // Save the database result to APCu cache
+      apcu_store($cacheKey, $result, $cacheTTL);
     } catch (Exception $e) {
       error_log("Exception: " . $e->getMessage());
     }
+
     return $result;
   }
 
