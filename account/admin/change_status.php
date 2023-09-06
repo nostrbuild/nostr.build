@@ -4,6 +4,7 @@ require_once($_SERVER['DOCUMENT_ROOT'] . '/config.php');
 require_once($_SERVER['DOCUMENT_ROOT'] . '/functions/session.php');
 require_once($_SERVER['DOCUMENT_ROOT'] . '/libs/permissions.class.php');
 require_once($_SERVER['DOCUMENT_ROOT'] . '/libs/S3Service.class.php');
+require_once($_SERVER['DOCUMENT_ROOT'] . '/libs/CloudflarePurge.class.php');
 
 global $link;
 global $awsConfig;
@@ -36,11 +37,20 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $stmt->close();
 
         // Delete the file if it is rejected
-        if ($status === 'rejected') {
+        if ($status === 'rejected' && $filename !== null) {
             $objectName = ($type === 'picture') ? 'i/' . $filename : 'av/' . $filename;
 
             // Delete requests are free, so we don't bother checking if the object exists
-            $s3->deleteFromS3($objectName);
+            try {
+                $s3->deleteFromS3($objectName);
+                $purger = new CloudflarePurger($_SERVER['NB_API_SECRET'], $_SERVER['NB_API_PURGE_URL']);
+                $result = $purger->purgeFiles([$filename]);
+                if ($result !== false) {
+                    error_log(json_encode($result));
+                }
+            } catch (Exception $e) {
+                error_log("PURGE error occurred: " . $e->getMessage() . "\n");
+            }
 
             // Insert the rejected file into the 'rejected_files' table
             $stmt = $link->prepare("INSERT INTO rejected_files (filename, type) VALUES (?, ?)");
