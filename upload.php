@@ -80,7 +80,7 @@ $total_size_gb = round($stats['total_size'] / (1024 * 1024 * 1024), 2); // Conve
 				<p>Removes metadata, free, nostr focused</p>
 				<div class="info_cards">
 					<div class="info"><span><?= $total_size_gb ?></span>GB used</div>
-					<div class="info"><span><?= $total_files ?></span> total uploads</div>
+					<div class="info"><span><?= number_format($total_files) ?></span> total uploads</div>
 				</div>
 			</div>
 			<div class="drag-area">
