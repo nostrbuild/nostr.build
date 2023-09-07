@@ -28,6 +28,11 @@ class GifConverter
    */
   private $ffmpegPath = "/usr/local/bin/ffmpeg";
   /**
+   * Summary of ffprobePath
+   * @var string
+   */
+  private $ffprobePath = "/usr/local/bin/ffprobe";
+  /**
    * Summary of cropWidth
    * @var int
    */
@@ -54,6 +59,14 @@ class GifConverter
   private $tempFile;
 
   /**
+   * Summary of maxGifWidth
+   * @var int
+   */
+  private $maxGifWidth = 500;
+  private $maxGifHeight = 500;
+
+
+  /**
    * Summary of __construct
    */
   public function __construct()
@@ -66,9 +79,20 @@ class GifConverter
    * @param mixed $path
    * @return GifConverter
    */
-  public function setFfmpegPath($path)
+  public function setFfmpegPath($path): self
   {
     $this->ffmpegPath = $path;
+    return $this;
+  }
+
+  /**
+   * Summary of ffprobePath
+   * @param string $ffprobePath Summary of ffprobePath
+   * @return self
+   */
+  public function setFfprobePath($ffprobePath): self
+  {
+    $this->ffprobePath = $ffprobePath;
     return $this;
   }
 
@@ -80,7 +104,7 @@ class GifConverter
    * @param mixed $gifFPS
    * @return GifConverter
    */
-  public function setCropParameters($width = null, $height = null, $gifDuration = null, $gifFPS = null)
+  public function setCropParameters($width = null, $height = null, $gifDuration = null, $gifFPS = null): self
   {
     $this->cropWidth = $width ?? $this->cropWidth;
     $this->cropHeight = $height ?? $this->cropHeight;
@@ -95,7 +119,7 @@ class GifConverter
    * @throws \Exception
    * @return string
    */
-  public function convertToGif($inputFile)
+  public function convertToGif($inputFile): string
   {
     if (!$inputFile) {
       throw new Exception('No input file specified. Please provide a file path.');
@@ -111,6 +135,52 @@ class GifConverter
     }
 
     return $this->tempFile;
+  }
+
+  /**
+   * Summary of downsizeGif
+   * @param mixed $inputFile
+   * @throws \Exception
+   * @return string
+   */
+  public function downsizeGif($inputFile): string
+  {
+    if (!$inputFile) {
+      throw new Exception('No input file specified. Please provide a file path.');
+    }
+
+    // All the magic happens in the following line
+    $gifCommand = "{$this->ffmpegPath} -y -hide_banner -i {$inputFile} -vf \"scale=w='if(gt(iw,ih),-4,{$this->maxGifWidth})':h='if(gt(iw,ih),{$this->maxGifHeight},-4)'\" {$this->tempFile} 2>&1";
+
+    exec($gifCommand, $output, $returnVar);
+
+    if ($returnVar !== 0) {
+      throw new Exception("Error running FFmpeg command to generate gif: " . implode("\n", $output));
+    }
+
+    return $this->tempFile;
+  }
+
+  /**
+   * Summary of maxGifWidth
+   * @param int $maxGifWidth Summary of maxGifWidth
+   * @return self
+   */
+  public function setMaxGifWidth($maxGifWidth): self
+  {
+    $this->maxGifWidth = $maxGifWidth;
+    return $this;
+  }
+
+  /**
+   * Summary of maxGifHeight
+   * @param int $maxGifHeight Summary of maxGifHeight
+   * @return self
+   */
+  public function setMaxGifHeight($maxGifHeight): self
+  {
+    $this->maxGifHeight = $maxGifHeight;
+    return $this;
   }
 
   /**
