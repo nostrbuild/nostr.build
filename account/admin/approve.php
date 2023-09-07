@@ -111,48 +111,52 @@ if (isset($_POST['searchFile'])) {
             });
         });
       });
-      // Handle click on "Approve All" button
-      document.getElementById('approveAllButton').addEventListener('click', function(e) {
-        e.preventDefault();
+      // Get all buttons with the class name 'approve-page-button'
+      const buttons = document.querySelectorAll('.approve-page-button');
 
-        // Collect all image IDs from data-id attribute but exclude 'adult' or 'rejected'
-        const imageIds = Array.from(document.querySelectorAll('[data-id]'))
-          .filter(el => el.getAttribute('data-status') !== 'adult' && el.getAttribute('data-status') !== 'rejected')
-          .map(el => el.getAttribute('data-id'));
+      // Attach event listener to each button
+      buttons.forEach(button => {
+        button.addEventListener('click', function(e) {
+          e.preventDefault();
 
-        // If no valid IDs left after filtering, show an alert and return
-        if (imageIds.length === 0) {
-          alert('No images to approve.');
-          return;
-        }
+          // Collect all image IDs from data-id attribute but exclude 'adult' or 'rejected'
+          const imageIds = Array.from(document.querySelectorAll('[data-id]'))
+            .filter(el => el.getAttribute('data-status') !== 'adult' && el.getAttribute('data-status') !== 'rejected')
+            .map(el => el.getAttribute('data-id'));
 
-        // Make AJAX request to server to approve all
-        fetch('approve_all.php', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              ids: imageIds
-            }),
-          })
-          .then(response => response.json())
-          .then(data => {
-            if (data.success) {
-              alert('All images approved successfully.');
+          // If no valid IDs left after filtering, show an alert and return
+          if (imageIds.length === 0) {
+            alert('No images to approve.');
+            return;
+          }
 
-              // Remove ?page=<page number> from URL
-              const urlWithoutPageParam = window.location.href.split('?')[0];
-              window.history.replaceState({}, document.title, urlWithoutPageParam);
+          // Make AJAX request to server to approve all
+          fetch('approve_all.php', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                ids: imageIds
+              }),
+            })
+            .then(response => response.json())
+            .then(data => {
+              if (data.success) {
+                alert('All images on this page are approved successfully.');
 
-              // Refresh the page
-              window.location.reload();
-            } else {
-              alert('Error: ' + data.error);
-            }
-          });
+                // Remove ?page=<page number> from URL
+                const urlWithoutPageParam = window.location.href.split('?')[0];
+                window.history.replaceState({}, document.title, urlWithoutPageParam);
+
+                // Refresh the page
+                window.location.reload();
+              } else {
+                alert('Error: ' + data.error);
+              }
+            });
+        });
       });
-
     });
   </script>
 </head>
@@ -226,9 +230,11 @@ if (isset($_POST['searchFile'])) {
     echo '</tbody></table>';
 
     ?>
-    <form method="post">
+    <form method="post" class="text-center">
+      <!--
       <button type="submit" name="button1" class="btn btn-primary mb-2" onclick="return confirm('Are you sure?')">Approve All</button>
-      <button type="submit" id="approveAllButton" class="btn btn-primary mb-2">Approve Current Page</button>
+      -->
+      <button type="submit" id="approveAllButtonTop" class="approve-page-button btn btn-primary mb-2">Approve Current Page</button>
     </form>
     <?php
 
@@ -331,6 +337,12 @@ if (isset($_POST['searchFile'])) {
 
     $link->close();
     ?>
+    <form method="post" class="text-center">
+      <!--
+      <button type="submit" name="button1" class="btn btn-primary mb-2" onclick="return confirm('Are you sure?')">Approve All</button>
+      -->
+      <button type="submit" id="approveAllButtonBottom" class="approve-page-button btn btn-primary mb-2">Approve Current Page</button>
+    </form>
   </main>
 </body>
 
