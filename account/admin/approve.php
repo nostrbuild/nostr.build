@@ -99,9 +99,11 @@ if (isset($_POST['searchFile'])) {
                 if (status === 'adult') {
                   badge.textContent = 'Adult';
                   badge.className = 'badge bg-warning position-absolute top-0 end-0 p-1 fs-6 status-badge';
+                  badge.closest('.image-div').setAttribute('data-status', 'adult');
                 } else if (status === 'rejected') {
                   badge.textContent = 'Rejected';
                   badge.className = 'badge bg-danger position-absolute top-0 end-0 p-1 fs-6 status-badge';
+                  badge.closest('.image-div').setAttribute('data-status', 'rejected');
                 }
               } else {
                 alert('Error: ' + data.error);
@@ -109,6 +111,48 @@ if (isset($_POST['searchFile'])) {
             });
         });
       });
+      // Handle click on "Approve All" button
+      document.getElementById('approveAllButton').addEventListener('click', function(e) {
+        e.preventDefault();
+
+        // Collect all image IDs from data-id attribute but exclude 'adult' or 'rejected'
+        const imageIds = Array.from(document.querySelectorAll('[data-id]'))
+          .filter(el => el.getAttribute('data-status') !== 'adult' && el.getAttribute('data-status') !== 'rejected')
+          .map(el => el.getAttribute('data-id'));
+
+        // If no valid IDs left after filtering, show an alert and return
+        if (imageIds.length === 0) {
+          alert('No images to approve.');
+          return;
+        }
+
+        // Make AJAX request to server to approve all
+        fetch('approve_all.php', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              ids: imageIds
+            }),
+          })
+          .then(response => response.json())
+          .then(data => {
+            if (data.success) {
+              alert('All images approved successfully.');
+
+              // Remove ?page=<page number> from URL
+              const urlWithoutPageParam = window.location.href.split('?')[0];
+              window.history.replaceState({}, document.title, urlWithoutPageParam);
+
+              // Refresh the page
+              window.location.reload();
+            } else {
+              alert('Error: ' + data.error);
+            }
+          });
+      });
+
     });
   </script>
 </head>
@@ -184,6 +228,7 @@ if (isset($_POST['searchFile'])) {
     ?>
     <form method="post">
       <button type="submit" name="button1" class="btn btn-primary mb-2" onclick="return confirm('Are you sure?')">Approve All</button>
+      <button type="submit" id="approveAllButton" class="btn btn-primary mb-2">Approve Current Page</button>
     </form>
     <?php
 
@@ -240,7 +285,7 @@ if (isset($_POST['searchFile'])) {
       }
 
       // Open the individual image container
-      echo '<div class="col-lg-2 col-md-4 col-sm-6 mb-2">';
+      echo '<div class="image-div col-lg-2 col-md-4 col-sm-6 mb-2" data-id="' . $row['id'] . '">';
       echo '  <div class="card h-100">';
       echo '    <div class="position-relative">';
       echo '      <a href="' . $link_to_image . '" target="_blank">';
@@ -261,8 +306,6 @@ if (isset($_POST['searchFile'])) {
       echo '    </div>';
       echo '  </div>'; // Close card
       echo '</div>'; // Close col
-
-
     }
 
 
