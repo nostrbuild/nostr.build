@@ -52,7 +52,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $ids_str = implode(',', array_fill(0, count($data['ids']), '?'));
 
     // SQL query to update records
-    $sql = "UPDATE uploads_data SET approval_status='approved' WHERE id IN ($ids_str)";
+    $sql = "UPDATE uploads_data SET approval_status='approved' WHERE id IN ($ids_str) AND approval_status='pending'";
 
     // Prepare and execute the SQL statement
     $stmt = $link->prepare($sql);
