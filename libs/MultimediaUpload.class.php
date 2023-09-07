@@ -527,9 +527,9 @@ class MultimediaUpload
         $fileType = detectFileExt($this->file['tmp_name']);
         if ($fileType['type'] === 'image') {
           if ($this->pro) {
-            $fileData = $this->processProUploadImage();
+            $fileData = $this->processProUploadImage($fileType);
           } else {
-            $fileData = $this->processFreeUploadImage();
+            $fileData = $this->processFreeUploadImage($fileType);
             // We need to detect the file type again, because it may have changed du to conversion
             $fileType = detectFileExt($this->file['tmp_name']);
           }
@@ -992,8 +992,21 @@ class MultimediaUpload
    * @return array
    * We resize and compress free account images, strip metadata, and optimize
    */
-  protected function processFreeUploadImage(): array
+  protected function processFreeUploadImage($fileType): array
   {
+    // Downsize GIFs to 500x500 to avoid memory issues
+    // Anything bigger than that should be using MP4 video
+    if (
+      $fileType['type'] === 'image' && in_array($fileType['extension'], ['gif'])
+    ) {
+      // Process animated image or video with GifConverter class
+      $tmp_gif = $this->gifConverter->downsizeGif($this->file['tmp_name']);
+      // Unlink old file.
+      if (file_exists($this->file['tmp_name'])) {
+        unlink($this->file['tmp_name']);
+      }
+      $this->file['tmp_name'] = $tmp_gif;
+    }
     $img = new ImageProcessor($this->file['tmp_name']);
     $img->convertToJpeg() // Convert to JPEG for images that are not visually affected by the conversion
       ->fixImageOrientation()
@@ -1014,8 +1027,21 @@ class MultimediaUpload
    * @return array
    * We do not alter Pro account images in any way, except for stripping metadata and optimizing
    */
-  protected function processProUploadImage(): array
+  protected function processProUploadImage($fileType): array
   {
+    // Downsize GIFs to 500x500 to avoid memory issues
+    // Anything bigger than that should be using MP4 video
+    if (
+      $fileType['type'] === 'image' && in_array($fileType['extension'], ['gif'])
+    ) {
+      // Process animated image or video with GifConverter class
+      $tmp_gif = $this->gifConverter->downsizeGif($this->file['tmp_name']);
+      // Unlink old file.
+      if (file_exists($this->file['tmp_name'])) {
+        unlink($this->file['tmp_name']);
+      }
+      $this->file['tmp_name'] = $tmp_gif;
+    }
     $img = new ImageProcessor($this->file['tmp_name']);
     $img->fixImageOrientation()
       ->stripImageMetadata()
