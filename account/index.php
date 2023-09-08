@@ -181,11 +181,12 @@ $userStorageRemaining = $userOverLimit ? 0 : $userStorageLimit - $storageUsed;
 					<div class="modal-content" style="color: #fff;">
 						&ensp;<a href="admin/newacct.php" target="_blank">New Accounts</a><BR>
 						&ensp;<a href="admin/profilepics.php" target="_blank">Profile Pics</a><BR>
-						&ensp;<a href="https://analytics.google.com/analytics/web/#/p351124733/reports/intelligenthome?params=_u..nav%3Dmaui" target="_blank">Site Alanytics</a><BR>
 						&ensp;<a href="admin/list_db.php" target="_blank">Database Tables</a><BR>
 						&ensp;<a href="admin/update_db.php" target="_blank">Update Database Tables</a><BR>
 						&ensp;<a href="admin/allmediauploads.php" target="_blank">All Media uploaded</a><BR>
 						&ensp;<a href="admin/approve.php" target="_blank">Approve Content</a><BR>
+						&ensp;<a href="admin/stats.php" target="_blank">Free uploads stats</a><BR>
+						&ensp;<a href="admin/account_stats.php" target="_blank">Account stats</a><BR>
 					</div>
 				</div>
 			<?php
