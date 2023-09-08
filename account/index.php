@@ -6,6 +6,7 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/permissions.class.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/db/UsersImages.class.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/db/UsersImagesFolders.class.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/utils.funcs.php';
+require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/Account.class.php';
 
 global $link;
 
@@ -31,6 +32,10 @@ $nym = $_SESSION["nym"];
 $ppic = $_SESSION["ppic"];
 $wallet = $_SESSION["wallet"];
 $acctlevel = $_SESSION["acctlevel"];
+
+// Instanciate account class
+$account = new Account($npub, $link);
+$daysRemaining = $account->getRemainingSubscriptionDays();
 
 // Fetch user's folder statistics and storage statistics
 $usersFoldersTable = new UsersImagesFolders($link);
@@ -376,6 +381,9 @@ $userStorageRemaining = $userOverLimit ? 0 : $userStorageLimit - $storageUsed;
 				<div class="plan_data">
 					<div class="plan_data_info">
 						<h4>Plan data</h4>
+						<p>
+							<b>Remaining Days:</b> <?= $daysRemaining ?>
+						</p>
 						<p><b><?= formatSizeUnits($usersFoldersStats['TOTAL']['totalSize']) ?></b> /
 							<?= htmlentities(SiteConfig::getStorageLimitMessage($acctlevel)) ?>
 							<?= $userOverLimit ? '<br><span style="color: red;">Max storage reached! Delete images or upgrade plan for more space.</span><br>' : '' ?>
