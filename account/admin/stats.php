@@ -10,25 +10,18 @@ require_once($_SERVER['DOCUMENT_ROOT'] . '/libs/permissions.class.php');
 $perm = new Permission();
 global $link;
 
-if (!$perm->isAdmin() && !$perm->hasPrivilege('canModerate')) {
+if (!$perm->isAdmin()) {
   header("location: /login");
   $link->close();
   exit;
 }
 
-// For file search
-$searchFile = '';
-if (isset($_POST['searchFile'])) {
-  $path = parse_url($_POST['searchFile'], PHP_URL_PATH);
-  // Get the filename
-  $searchFile = basename($path);
-}
 ?>
 <!DOCTYPE html>
 <html lang="en">
 
 <head>
-  <title>nostr.build - Admin approve</title>
+  <title>nostr.build - Free uploads stats</title>
   <!-- Bootstrap CSS -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet">
   <style>
@@ -76,55 +69,14 @@ if (isset($_POST['searchFile'])) {
     if (window.history.replaceState) {
       window.history.replaceState(null, null, window.location.href);
     }
-
-    document.addEventListener('DOMContentLoaded', function() {
-      document.querySelectorAll('.status-btn').forEach(function(button) {
-        button.addEventListener('click', function(e) {
-          e.preventDefault();
-          var card = button.closest('.card');
-          var id = card.querySelector('input[name="id"]').value;
-          var status = button.value;
-          var badge = card.querySelector('.status-badge');
-          fetch('change_status.php', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/x-www-form-urlencoded',
-              },
-              body: 'id=' + encodeURIComponent(id) + '&status=' + encodeURIComponent(status),
-            })
-            .then(response => response.json())
-            .then(data => {
-              if (data.success) {
-                // Change the label and its color based on the status
-                if (status === 'adult') {
-                  badge.textContent = 'Adult';
-                  badge.className = 'badge bg-warning position-absolute top-0 end-0 p-1 fs-6 status-badge';
-                } else if (status === 'rejected') {
-                  badge.textContent = 'Rejected';
-                  badge.className = 'badge bg-danger position-absolute top-0 end-0 p-1 fs-6 status-badge';
-                }
-              } else {
-                alert('Error: ' + data.error);
-              }
-            });
-        });
-      });
-    });
   </script>
 </head>
 
 <body>
   <main class="container main-content">
     <section class="title_section">
-      <h1>Admin Image Approve</h1>
+      <h1>Free Uploads Stats</h1>
     </section>
-    <!-- Add Search Box -->
-    <form method="post" class="mb-3">
-      <div class="input-group">
-        <input type="text" class="form-control" name="searchFile" placeholder="Enter filename or URL to search" value="<?= $searchFile ?? '' ?>">
-        <button class="btn btn-primary" type="submit">Search</button>
-      </div>
-    </form>
     <?php
 
     // Query to get the total size of all uploads
