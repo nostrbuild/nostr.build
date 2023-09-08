@@ -44,10 +44,17 @@ SVG;
       <?= $svg_creator_icon ?>
       Creators
     </a>
-    <a href="/freeview" class="nav_button">
-      <?= $svg_freeview_icon ?>
-      Free View
-    </a>
+    <?php if ($perm->isGuest()) : ?>
+      <a href="/freeview" class="nav_button">
+        <?= $svg_freeview_icon ?>
+        Free View
+      </a>
+    <?php else : ?>
+      <a href="/viewall" class="nav_button">
+        <?= $svg_freeview_icon ?>
+        View All
+      </a>
+    <?php endif; ?>
     <a href="/memestr" class="nav_button">
       <?= $svg_memestr_icon ?>
       Memestr
@@ -90,12 +97,21 @@ SVG;
       </span>
       Creators
     </a>
-    <a href="/freeview" class="nav_button">
-      <span>
-        <?= $svg_freeview_icon ?>
-      </span>
-      Free View
-    </a>
+    <?php if ($perm->isGuest()) : ?>
+      <a href="/freeview" class="nav_button">
+        <span>
+          <?= $svg_freeview_icon ?>
+        </span>
+        Free View
+      </a>
+    <?php else : ?>
+      <a href="/viewall" class="nav_button">
+        <span>
+          <?= $svg_freeview_icon ?>
+        </span>
+        View All
+      </a>
+    <?php endif; ?>
     <a href="/memestr" class="nav_button">
       <span>
         <?= $svg_memestr_icon ?>
@@ -124,7 +140,7 @@ SVG;
       <a href="/account" class="nav_button login_button login_desktop">
         <span style="display: flex; align-items: center;">
           <span style="margin-right: 10px;">Account</span>
-           <img src="<?= $ppic ?>" alt="user image" style="width:33px;height:33px;border-radius:50%">
+          <img src="<?= $ppic ?>" alt="user image" style="width:33px;height:33px;border-radius:50%">
         </span>
       </a>
     <?php endif; ?>
