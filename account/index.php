@@ -382,7 +382,7 @@ $userStorageRemaining = $userOverLimit ? 0 : $userStorageLimit - $storageUsed;
 				<div class="plan_data">
 					<div class="plan_data_info">
 						<h4>Plan data</h4>
-						<p>
+						<p style="text-align: left;">
 							<b>Remaining Days:</b> <?= $daysRemaining ?>
 						</p>
 						<p><b><?= formatSizeUnits($usersFoldersStats['TOTAL']['totalSize']) ?></b> /
