@@ -128,7 +128,6 @@ if (!empty($rows)) {
 				</div>
 			<?php
 			endforeach;
-			$stmt->close();
 			?>
 
 		</div>
