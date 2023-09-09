@@ -154,7 +154,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     <div class="information pb-5">
       <ul>
         <li>
-          <span class="whitespace-pre-line">Storage on AWS S3 with Bunny.net global CDN
+          <span class="whitespace-pre-line">Storage on AWS S3 with Cloudflare global CDN
             Damus & Amethyst Account integration (nip98)
             Add/Delete media from your private folders
             Bitcoin Only | Never Ads | Billed Annually
