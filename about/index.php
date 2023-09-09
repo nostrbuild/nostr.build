@@ -125,7 +125,7 @@ $perm = new Permission();
     </p>
     <figure class="img_container double_img">
       <img class="about_img img_horizontal" src="https://cdn.nostr.build/assets/about/awss3.png" alt="aws logo" width="180" />
-      <img class="about_img img_horizontal" src="https://nostr.build/assets/about/cf.png" alt="cloudflare logo" width="180" />
+      <img class="about_img img_horizontal" src="https://cdn.nostr.build/assets/about/cf.png" alt="cloudflare logo" width="180" />
     </figure>
 
     <h4>How to use Account related features:</h4>
