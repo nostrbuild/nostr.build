@@ -9,3 +9,4 @@ Disallow: /viewall/
 Disallow: /freeview/
 Disallow: /login/
 Disallow: /api/
+Disallow: /v1/
