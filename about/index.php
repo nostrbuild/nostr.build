@@ -79,7 +79,7 @@ $perm = new Permission();
       including:<br />
 
       - Media uploads up to (25MB) hosted on AWS S3<br />
-      - <a class="ref_link" href="https://bunny.net" target="_blank">Bunny.net</a> global CDN network for images and GIFs<br />
+      - <a class="ref_link" href="https://www.cloudflare.com/" target="_blank">Cloudflare</a> global CDN network for images and GIFs<br />
       - No ads! Only community projects, nostr builders, creators, devs,
       artists and memes<br />
       - Profile picture uploader that properly shrinks, crops and puts your PP
@@ -114,8 +114,8 @@ $perm = new Permission();
       also supporting a free, no ads, open source service for all of nostr!<br />
 
       Account features include:<br />
-      - Bunny.net CDN network for all media including videos<br />
-      - No max on file size upload - account sizes 5/10/20GiB<br />
+      - Cloudflare CDN network for all media including videos<br />
+      - No max on file size upload - account sizes 5/10/20GB<br />
       - Post you media to the Creators page on nostr.build<br />
       - Ability to easily ‘Delete’ media after posted<br />
       - Private folders not seen in the View All gallery<br />
@@ -124,8 +124,8 @@ $perm = new Permission();
       ** See all <a class="ref_link" href="https://nostr.build/signup">nostr.build Accounts</a> and features<br />
     </p>
     <figure class="img_container double_img">
-      <img class="about_img img_horizontal" src="https://cdn.nostr.build/assets/about/awss3.png" alt="nostr.build account logo" width="180" />
-      <img class="about_img img_horizontal" src="https://cdn.nostr.build/assets/about/bunnynet.png" alt="nostr.build account logo" width="180" />
+      <img class="about_img img_horizontal" src="https://cdn.nostr.build/assets/about/awss3.png" alt="aws logo" width="180" />
+      <img class="about_img img_horizontal" src="https://cdn.nostr.build/assets/about/cf.png" alt="cloudflare logo" width="180" />
     </figure>
 
     <h4>How to use Account related features:</h4>

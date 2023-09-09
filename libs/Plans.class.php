@@ -129,7 +129,7 @@ class Plans
       $originalPrices[self::CREATOR],
       [
         '<b><a class="ref_link" target="_blank" href="https://nostr.build/creators/">Host on nostr.build Creators page</a></b>',
-        '<b>20GiB of private storage</b>',
+        '<b>20GB of private storage</b>',
         'BTCPay Server Account',
         'View All : 500k+ pics, GIFs & videos',
         'Add/Delete your media'
@@ -147,7 +147,7 @@ class Plans
       'pro plan image',
       $originalPrices[self::PROFESSIONAL],
       [
-        '<b>10GiB of private storage</b>',
+        '<b>10GB of private storage</b>',
         '<b>BTCPay Server Account</b>',
         '<b>View All : 500k+ pics, GIFs & videos</b>',
         'Add/Delete your media'
@@ -160,12 +160,12 @@ class Plans
 
     self::$PLANS[self::STARTER] = new Plan(
       self::STARTER,
-      '5GiB - Only',
+      '5GB - Only',
       'https://cdn.nostr.build/assets/signup/5bg.png',
       '5gb plan image',
       $originalPrices[self::STARTER],
       [
-        '<b>5GiB of private storage</b>',
+        '<b>5GB of private storage</b>',
         '<b>Add/Delete your media</b>',
         '<b>No View All!</b>'
       ],
