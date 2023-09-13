@@ -3,18 +3,19 @@
 require_once $_SERVER['DOCUMENT_ROOT'] . '/config.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/functions/session.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/permissions.class.php';
+require_once $_SERVER['DOCUMENT_ROOT'] . '/components/pagination.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/SiteConfig.php';
 
+global $link;
 // Create new Permission object
 $perm = new Permission();
 
 // Check if the user is not logged in, if not then redirect him to login page
-if (!$perm->validatePermissionsLevelAny(1) && !$perm->hasPrivilege('canModerate') && !$perm->isAdmin()) {
+if (!$perm->validatePermissionsLevelAny(1, 2, 3, 4) && !$perm->hasPrivilege('canModerate') && !$perm->isAdmin()) {
 	header("location: /login");
 	$link->close();
 	exit;
 }
-
 
 // Filter based on what we allow in views, potentially extending to allow adult content in the future
 $allowed_views = array('img', 'gif', 'vid');
@@ -23,6 +24,30 @@ $allowed_views = array('img', 'gif', 'vid');
 $page = isset($_GET['p']) && $_GET['p'] !== "" && is_numeric($_GET['p']) ? (int)$_GET['p'] : 0;
 $view_type = isset($_GET['k']) && in_array($_GET['k'], $allowed_views) ? $_GET['k'] : 'img';
 
+switch ($view_type) {
+	case 'gif':
+		$perpage = 50;
+		$sql = "SELECT * FROM uploads_data WHERE approval_status = 'adult' AND file_extension = 'gif' AND type = 'picture' ORDER BY upload_date DESC LIMIT ?, ?";
+		$sql_count = "SELECT COUNT(*) as total FROM uploads_data WHERE approval_status = 'adult' AND file_extension = 'gif' AND type = 'picture'";
+		break;
+	case 'vid':
+		$perpage = 12;
+		$sql = "SELECT * FROM uploads_data WHERE approval_status='adult' AND type='video' ORDER BY upload_date DESC LIMIT ?, ?";
+		$sql_count = "SELECT COUNT(*) as total FROM uploads_data WHERE approval_status='adult' AND type='video'";
+		break;
+	default:
+		$perpage = 200;
+		$sql = "SELECT * FROM uploads_data WHERE approval_status = 'adult' AND file_extension IN ('jpg', 'jpeg', 'png', 'webp') AND type = 'picture' ORDER BY upload_date DESC LIMIT ?, ?";
+		$sql_count = "SELECT COUNT(*) as total FROM uploads_data WHERE approval_status = 'adult' AND file_extension IN ('jpg', 'jpeg', 'png', 'webp') AND type = 'picture'";
+		break;
+}
+$start = $page * $perpage;
+$end = $perpage;
+
+$count_stmt = $link->prepare($sql_count);
+$count_stmt->execute();
+$total = $count_stmt->get_result()->fetch_assoc()['total'];
+$count_stmt->close();
 ?>
 
 <!DOCTYPE html>
@@ -37,30 +62,90 @@ $view_type = isset($_GET['k']) && in_array($_GET['k'], $allowed_views) ? $_GET['
 	<link rel="stylesheet" href="/styles/index.css?v=2" />
 	<link rel="stylesheet" href="/styles/profile.css?v=2" />
 	<link rel="stylesheet" href="/styles/header.css?v=3" />
+	<link rel="stylesheet" href="/styles/twbuild.css?v=45" />
 	<link rel="icon" href="/assets/0.png">
+
+	<script defer type="module" src="/scripts/fw/blurhash-img.js?v=0.2.1"></script>
+	<script>
+		document.addEventListener("DOMContentLoaded", function() {
+			function observeImages() {
+				const imageContainers = document.querySelectorAll(".image-container:not(.observed)");
+
+				const observer = new IntersectionObserver((entries, observer) => {
+					entries.forEach(entry => {
+						if (entry.isIntersecting) {
+							const imgContainer = entry.target;
+							const img = imgContainer.querySelector("img.lazy-loaded");
+							const loader = imgContainer.querySelector('[role="status"]'); // Assuming role="status" is unique within the container
+
+							// Show the loader
+							loader.style.opacity = "1";
+							loader.style.zIndex = "2";
+
+							const handleLoad = function() {
+								const blurhashSibling = img.nextElementSibling;
+
+								if (blurhashSibling && blurhashSibling.tagName.toLowerCase() === "blurhash-img") {
+									//blurhashSibling.remove();
+									blurhashSibling.style.height = "0";
+									blurhashSibling.style.visibility = "hidden";
+									blurhashSibling.style.opacity = "0";
+									blurhashSibling.style.zIndex = "-1";
+
+									img.style.height = "auto";
+									img.style.visibility = "visible";
+									img.style.opacity = "1";
+									img.style.zIndex = "1"; // add this line to bring the image forward
+
+									// Hide the loader
+									loader.style.opacity = "0";
+									loader.style.zIndex = "-1";
+								}
+
+								img.removeEventListener("load", handleLoad);
+							};
+
+							img.addEventListener("load", handleLoad);
+
+							if (img.complete) {
+								img.dispatchEvent(new Event("load"));
+							}
+
+							observer.unobserve(imgContainer);
+							imgContainer.classList.add("observed"); // Mark this image as observed
+						}
+					});
+				});
+
+				imageContainers.forEach(img => {
+					observer.observe(img);
+				});
+			}
+
+			observeImages(); // Initial run
+			// If you're dynamically loading new content, you can run `observeImages()` again
+		});
+	</script>
 
 	<title>nostr.build - Adult Content</title>
 	<style>
-		.image-container {
-			margin: auto;
-			margin-bottom: 1.5rem;
-			min-height: 8rem;
-			min-width: 8rem;
-			align-content: center;
+		[role="status"] {
+			opacity: 0;
+			transition: opacity 0.3s ease;
+			z-index: -1;
 		}
 
-		.video-container {
-			margin: auto;
-			margin-bottom: 1.5rem;
-			min-height: 8rem;
-			min-width: 8rem;
-			align-content: center;
+		.lazy-loaded {
+			height: 0;
+			visibility: hidden;
+			opacity: 0;
+			transition: opacity 0.6s ease-in-out;
+			z-index: -1;
 		}
 
-		.media {
-			height: 11.875rem;
-			width: auto;
-			margin: auto;
+		blurhash-img {
+			--aspect-ratio: 4/6;
+			/* This is just a default, your PHP will override this */
 		}
 	</style>
 </head>
@@ -92,110 +177,78 @@ $view_type = isset($_GET['k']) && in_array($_GET['k'], $allowed_views) ? $_GET['
 			<a href='?k=vid'><button class="donate_button">Videos</button></a><BR>
 		</section>
 
-		<div style="display: flex; flex-flow: wrap;">
-			<?php
-
-			switch ($view_type) {
-				case 'gif':
-					// GIFs
-					$perpage = 50;
-					$sql = "SELECT * FROM uploads_data WHERE approval_status = 'adult' AND file_extension = 'gif' AND type = 'picture' ORDER BY upload_date DESC LIMIT ?, ?";
-					$sql_count = "SELECT COUNT(*) as total FROM uploads_data WHERE approval_status = 'adult' AND file_extension = 'gif' AND type = 'picture'";
-					break;
-				case 'vid':
-					// Videos
-					$perpage = 12;
-					$sql = "SELECT * FROM uploads_data WHERE approval_status='adult' AND type='video' ORDER BY upload_date DESC LIMIT ?, ?";
-					$sql_count = "SELECT COUNT(*) as total FROM uploads_data WHERE approval_status='adult' AND type='video'";
-					break;
-				default:
-					// Images
-					$perpage = 200;
-					$sql = "SELECT * FROM uploads_data WHERE approval_status = 'adult' AND file_extension IN ('jpg', 'jpeg', 'png', 'webp') AND type = 'picture' ORDER BY upload_date DESC LIMIT ?, ?";
-					$sql_count = "SELECT COUNT(*) as total FROM uploads_data WHERE approval_status = 'adult' AND file_extension IN ('jpg', 'jpeg', 'png', 'webp') AND type = 'picture'";
-					break;
-			}
-
-			$start = $page * $perpage;
-			$end = $perpage;
+		<?= handle_pagination($total, (int)$page, $perpage, '?k=' . $view_type . '&p=', false) ?>
+		<?php
 
 
-			// selects images to display, confirms they are 'approved' before diplaying
-			$stmt = $link->prepare($sql);
-			$stmt->bind_param('ii', $start, $end);
-			$stmt->execute();
+		$stmt = $link->prepare($sql);
+		$stmt->bind_param('ii', $start, $end);
+		$stmt->execute();
 
-			$result = $stmt->get_result();
-			while ($row = $result->fetch_assoc()) {
+		$result = $stmt->get_result();
+		?>
+		<div class="columns-2 md:columns-3 lg:columns-4 xl:columns-6 w-screen px-2 md:px-4">
+			<?php while ($row = $result->fetch_assoc()) : ?>
+				<?php
 				$filename = $row['filename'];
 				$ext = pathinfo($filename, PATHINFO_EXTENSION);
+				$thumbnail_path = htmlspecialchars(SiteConfig::getThumbnailUrl($view_type === 'vid' ? 'video' : 'image') . $filename);
+				$full_path = htmlspecialchars(SiteConfig::getFullyQualifiedUrl($view_type === 'vid' ? 'video' : 'image') . $filename);
+				$blurhash = htmlspecialchars($row['blurhash']);
 
-				switch ($view_type) {
-					case 'gif':
-						$thumbnail_path = htmlspecialchars(SiteConfig::getThumbnailUrl('image') . $filename);
-						$full_path = htmlspecialchars(SiteConfig::getFullyQualifiedUrl('image') . $filename);
-						echo '<div class="image-container">';
-						echo '<a href="' . $full_path . '" target="_blank" rel="noopener noreferrer"><img loading="lazy" class="media" src="' . $thumbnail_path . '" alt="image" /></a>';
-						echo '</div>';
-						break;
-					case 'vid':
-						$thumbnail_path = htmlspecialchars(SiteConfig::getThumbnailUrl('video') . $filename);
-						$full_path = htmlspecialchars(SiteConfig::getFullyQualifiedUrl('video') . $filename);
-						echo '<div class="video-container">';
-						echo '<a href="' . $full_path . '" target="_blank" rel="noopener noreferrer"><video class="media" controls><source src="' . $thumbnail_path . '" type="video/mp4"></video></a>';
-						echo '</div>';
-						break;
-					default:
-						$thumbnail_path = htmlspecialchars(SiteConfig::getThumbnailUrl('image') . $filename);
-						$full_path = htmlspecialchars(SiteConfig::getFullyQualifiedUrl('image') . $filename);
-						echo '<div class="image-container">';
-						echo '<a href="' . $full_path . '" target="_blank" rel="noopener noreferrer"><img loading="lazy" class="media" src="' . $thumbnail_path . '" alt="image" /></a>';
-						echo '</div>';
-						break;
+				$media_width = empty($row['media_width']) || $row['media_width'] == 0 ? 4 : $row['media_width'];
+				$media_height = empty($row['media_height']) || $row['media_height'] == 0 ? 6 : $row['media_height'];
+				$aspect_ratio = "{$media_height}/{$media_width}";
+
+				// Responsive image sizes
+				$resolutionToWidth = [
+					"240p"  => "426",
+					"360p"  => "640",
+					"480p"  => "854",
+					"720p"  => "1280",
+					"1080p" => "1920",
+				];
+				$srcset = [];
+				foreach ($resolutionToWidth as $resolution => $width) {
+					$srcset[] = htmlspecialchars(SiteConfig::getResponsiveUrl($view_type === 'vid' ? 'video' : 'image', $resolution) . $filename . " {$width}w");
 				}
-			}
-
-			echo "</div>";
-			$stmt = $link->prepare($sql_count);
-			$stmt->execute();
-			$total = $stmt->get_result()->fetch_assoc()['total'];
-			echo '<p style="text-align:center;" color=#C58FF7><big>' . handle_pagination($total, (int)$page, $perpage, '?k=' . $view_type . '&p=') . "</p></big>";
-
-			$link->close();
-
-			function handle_pagination($total, $page, $shown, $url)
-			{
-				$pages = ceil($total / $shown);
-				$range_start = (($page >= 5) ? ($page - 3) : 1);
-				$range_end = ((($page + 5) > $pages) ? $pages : ($page + 5));
-
-				if ($page >= 1) {
-					$r[] = '<span><a href="' . $url . '">&laquo; first</a></span>';
-					$r[] = '<span><a href="' . $url . ($page - 1) . '">&lsaquo; previous</a></span>';
-					$r[] = (($range_start > 1) ? ' ... ' : '');
-				}
-
-				if ($range_end > 1) {
-					foreach (range($range_start, $range_end) as $key => $value) {
-						if ($value == ($page + 1)) $r[] = '<span>' . $value . '</span>';
-						else $r[] = '<span><a href="' . $url . ($value - 1) . '">' . $value . '</a></span>';
-					}
-				}
-
-				if (($page + 1) < $pages) {
-					$r[] = (($range_end < $pages) ? ' ... ' : '');
-					$r[] = '<span><a href="' . $url . ($page + 1) . '">next &rsaquo;</a></span>';
-					$r[] = '<span><a href="' . $url . ($pages - 1) . '">last &raquo;</a></span>';
-				}
-
-				return ((isset($r)) ? '<div>' . implode("\r\n", $r) . '</div>' : '');
-			}
-
-			?>
-
+				$srcset = implode(", ", $srcset);
+				$sizes = '(max-width: 426px) 100vw, (max-width: 640px) 100vw, (max-width: 854px) 100vw, (max-width: 1280px) 50vw, 33vw';
+				?>
+				<div class="relative group break-inside-avoid">
+					<a href="<?= $full_path ?>" target="_blank" rel="noopener noreferrer">
+						<?php if ($view_type === 'vid') : ?>
+							<video class="mb-2" controls preload="auto">
+								<source src="<?= $thumbnail_path ?>" type="video/mp4">
+							</video>
+						<?php else : ?>
+							<div class="image-container mb-2">
+								<?php if ($view_type === 'gif') : ?>
+									<img loading="lazy" class="w-full lazy-loaded" src="<?= $thumbnail_path ?>" alt="image" />
+								<?php else : ?>
+									<img loading="lazy" class="w-full lazy-loaded" src="<?= $thumbnail_path ?>" srcset="<?= $srcset ?>" sizes="<?= $sizes ?>" alt="image" />
+								<?php endif; ?>
+								<blurhash-img class="w-full" hash="<?= $blurhash ?>" style="--aspect-ratio: <?= $aspect_ratio ?>">
+								</blurhash-img>
+								<div role="status" class="absolute inset-0 grid place-items-center">
+									<svg aria-hidden="true" class="w-8 h-8 mr-2 text-gray-200 animate-spin dark:text-gray-600 fill-blue-600" viewBox="0 0 100 101" fill="none" xmlns="http://www.w3.org/2000/svg">
+										<path d="M100 50.5908C100 78.2051 77.6142 100.591 50 100.591C22.3858 100.591 0 78.2051 0 50.5908C0 22.9766 22.3858 0.59082 50 0.59082C77.6142 0.59082 100 22.9766 100 50.5908ZM9.08144 50.5908C9.08144 73.1895 27.4013 91.5094 50 91.5094C72.5987 91.5094 90.9186 73.1895 90.9186 50.5908C90.9186 27.9921 72.5987 9.67226 50 9.67226C27.4013 9.67226 9.08144 27.9921 9.08144 50.5908Z" fill="currentColor" />
+										<path d="M93.9676 39.0409C96.393 38.4038 97.8624 35.9116 97.0079 33.5539C95.2932 28.8227 92.871 24.3692 89.8167 20.348C85.8452 15.1192 80.8826 10.7238 75.2124 7.41289C69.5422 4.10194 63.2754 1.94025 56.7698 1.05124C51.7666 0.367541 46.6976 0.446843 41.7345 1.27873C39.2613 1.69328 37.813 4.19778 38.4501 6.62326C39.0873 9.04874 41.5694 10.4717 44.0505 10.1071C47.8511 9.54855 51.7191 9.52689 55.5402 10.0491C60.8642 10.7766 65.9928 12.5457 70.6331 15.2552C75.2735 17.9648 79.3347 21.5619 82.5849 25.841C84.9175 28.9121 86.7997 32.2913 88.1811 35.8758C89.083 38.2158 91.5421 39.6781 93.9676 39.0409Z" fill="currentFill" />
+									</svg>
+									<span class="sr-only">Loading...</span>
+								</div>
+							</div>
+						<?php endif; ?>
+					</a>
+				</div>
+			<?php endwhile; ?>
+		</div>
+		<?php
+		$link->close();
+		?>
 	</main>
+	<?= handle_pagination($total, (int)$page, $perpage, '?k=' . $view_type . '&p=') ?>
 	<?php include $_SERVER['DOCUMENT_ROOT'] . '/components/footer.php'; ?>
-	<script src="/scripts/images.js?v=1"></script>
 </body>
 
 </html>
