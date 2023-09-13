@@ -21,33 +21,30 @@ if (!$perm->validatePermissionsLevelAny(1, 2, 3, 4) && !$perm->hasPrivilege('can
 $allowed_views = array('img', 'gif', 'vid');
 
 // Validate all user input and leave no room for interpretation or misinput
-$page = isset($_GET['p']) && $_GET['p'] !== "" && is_numeric($_GET['p']) ? (int)$_GET['p'] : 0;
+$page = isset($_GET['p']) && $_GET['p'] !== "" && is_numeric($_GET['p']) && $_GET['p'] >= 0 ? (int)$_GET['p'] : 0;
 $view_type = isset($_GET['k']) && in_array($_GET['k'], $allowed_views) ? $_GET['k'] : 'img';
 
 switch ($view_type) {
 	case 'gif':
 		$perpage = 50;
 		$sql = "SELECT * FROM uploads_data WHERE approval_status = 'approved' AND file_extension = 'gif' AND type = 'picture' ORDER BY upload_date DESC LIMIT ?, ?";
-		$sql_count = "SELECT COUNT(*) as total FROM uploads_data WHERE approval_status = 'approved' AND file_extension = 'gif' AND type = 'picture'";
 		break;
 	case 'vid':
 		$perpage = 12;
 		$sql = "SELECT * FROM uploads_data WHERE approval_status='approved' AND type='video' ORDER BY upload_date DESC LIMIT ?, ?";
-		$sql_count = "SELECT COUNT(*) as total FROM uploads_data WHERE approval_status='approved' AND type='video'";
 		break;
 	default:
 		$perpage = 200;
 		$sql = "SELECT * FROM uploads_data WHERE approval_status = 'approved' AND file_extension IN ('jpg', 'jpeg', 'png', 'webp') AND type = 'picture' ORDER BY upload_date DESC LIMIT ?, ?";
-		$sql_count = "SELECT COUNT(*) as total FROM uploads_data WHERE approval_status = 'approved' AND file_extension IN ('jpg', 'jpeg', 'png', 'webp') AND type = 'picture'";
 		break;
 }
 $start = $page * $perpage;
-$end = $perpage;
-
-$count_stmt = $link->prepare($sql_count);
-$count_stmt->execute();
-$total = $count_stmt->get_result()->fetch_assoc()['total'];
-$count_stmt->close();
+$end = $perpage + 1; // Add one to see if there are more pages
+$stmt = $link->prepare($sql);
+$stmt->bind_param('ii', $start, $end);
+$stmt->execute();
+$result = $stmt->get_result();
+$morePages = $result->num_rows > $perpage ? true : false;
 ?>
 
 <!DOCTYPE html>
@@ -193,15 +190,8 @@ $count_stmt->close();
 			<a href='?k=vid'><button class="donate_button">Videos</button></a><BR>
 		</section>
 
-		<?= handle_pagination($total, (int)$page, $perpage, '?k=' . $view_type . '&p=', false) ?>
+		<?= handle_pagination($morePages, (int)$page, $perpage, '?k=' . $view_type . '&p=', false) ?>
 		<?php
-
-
-		$stmt = $link->prepare($sql);
-		$stmt->bind_param('ii', $start, $end);
-		$stmt->execute();
-
-		$result = $stmt->get_result();
 		?>
 		<div class="columns-2 md:columns-3 lg:columns-4 xl:columns-6 w-screen px-2 md:px-4">
 			<?php while ($row = $result->fetch_assoc()) : ?>
@@ -266,7 +256,7 @@ $count_stmt->close();
 		$link->close();
 		?>
 	</main>
-	<?= handle_pagination($total, (int)$page, $perpage, '?k=' . $view_type . '&p=') ?>
+	<?= handle_pagination($morePages, (int)$page, $perpage, '?k=' . $view_type . '&p=') ?>
 	<?php include $_SERVER['DOCUMENT_ROOT'] . '/components/footer.php'; ?>
 </body>
 
