@@ -1,4 +1,5 @@
 <?php
+require_once $_SERVER['DOCUMENT_ROOT'] . "/libs/utils.funcs.php";
 
 /**
  * Summary of GifConverter
@@ -71,7 +72,7 @@ class GifConverter
    */
   public function __construct()
   {
-    $this->tempFile = sys_get_temp_dir() . '/gifconv_' . uniqid() . '.gif';
+    $this->tempFile = generateUniqueFilename('gifconv_', sys_get_temp_dir()) . '.gif';
   }
 
   /**
