@@ -221,3 +221,17 @@ function checkUrlSanity(string $url): bool
 
   return true;
 }
+
+// Replacement for uniqid which is prone to collisions
+function generateUniqueFilename($prefix, $tempDirectory = null)
+{
+  do {
+    $crypto_str = bin2hex(random_bytes(32)); // Generates a 64-character long hex string.
+    $filename = $prefix . $crypto_str;
+
+    // Check if tempDirectory is provided and if the file already exists.
+    $tempFilePath = $tempDirectory ? $tempDirectory . '/' . $filename : $filename;
+  } while ($tempDirectory && file_exists($tempFilePath));
+
+  return $tempFilePath;
+}
