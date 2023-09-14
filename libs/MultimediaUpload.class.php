@@ -275,7 +275,7 @@ class MultimediaUpload
       if (is_array($fileArray['name'])) {
         $fileCount = count($fileArray['name']);
         for ($i = 0; $i < $fileCount; $i++) {
-          $tempFilePath = $tempDirectory . '/' . uniqid('file_upload_');
+          $tempFilePath = generateUniqueFilename('file_upload_', $tempDirectory);
           if (move_uploaded_file($fileArray['tmp_name'][$i], $tempFilePath)) {
             $restructured[] = [
               'input_name' => $fileInputName,
@@ -288,7 +288,7 @@ class MultimediaUpload
           }
         }
       } else {
-        $tempFilePath = $tempDirectory . '/' . uniqid('file_upload_');
+        $tempFilePath = generateUniqueFilename('file_upload_', $tempDirectory);
         if (move_uploaded_file($fileArray['tmp_name'], $tempFilePath)) {
           $restructured[] = [
             'input_name' => $fileInputName,
@@ -345,7 +345,7 @@ class MultimediaUpload
    */
   private function handlePsrUploadedFile(string $fileInputName, mixed $file, string $tempDirectory, mixed $metadata): array
   {
-    $tempFilePath = $tempDirectory . '/' . uniqid('file_upload_');
+    $tempFilePath = generateUniqueFilename('file_upload_', $tempDirectory);
 
     // Move the file to the temporary directory
     $file->moveTo($tempFilePath);
@@ -1198,9 +1198,10 @@ class MultimediaUpload
   {
     // Insert the file data into the database but don't commit yet
     try {
+      $tempFile = generateUniqueFilename('file_upload_');
       $insert_id = $this->usersImages->insert([
         'usernpub' => $this->userNpub,
-        'image' => uniqid('tmp_'), // Temporary name, will be updated later
+        'image' => $tempFile, // Temporary name, will be updated later
         // Private by default
         'flag' => 0, // 0 - private, 1 - public
         'folder_id' => null, // null - root folder
