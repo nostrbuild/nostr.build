@@ -60,9 +60,9 @@ class UploadsData extends DatabaseTable
     $cacheTTL = 60; // Time-to-live in seconds
 
     // Try to get data from APCu cache first
-    if (apcu_exists($cacheKey)) {
-      return apcu_fetch($cacheKey);
-    }
+    // if (apcu_exists($cacheKey)) {
+    //   return apcu_fetch($cacheKey);
+    // }
 
     $result = [
       'total_files' => 0,
@@ -70,7 +70,9 @@ class UploadsData extends DatabaseTable
     ];
 
     // Fetch statistics from the database
-    $sql = "SELECT COUNT(*) as total_files, SUM(file_size) as total_size FROM {$this->tableName}";
+    //$sql = "SELECT COUNT(*) as total_files, SUM(file_size) as total_size FROM {$this->tableName}";
+    // Move toward summary table instead, to avoid undue load on the database
+    $sql = "SELECT total_files, total_size FROM uploads_summary WHERE id = 1;";
     try {
       $stmt = $this->db->prepare($sql);
       $stmt->execute();
@@ -79,7 +81,7 @@ class UploadsData extends DatabaseTable
       $stmt->close();
 
       // Save the database result to APCu cache
-      apcu_store($cacheKey, $result, $cacheTTL);
+      // apcu_store($cacheKey, $result, $cacheTTL);
     } catch (Exception $e) {
       error_log("Exception: " . $e->getMessage());
     }
