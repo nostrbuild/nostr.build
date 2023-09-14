@@ -184,10 +184,14 @@ if (isset($_POST['searchFile'])) {
     }
 
     // Query to get the total size of all uploads
-    $sql = "SELECT SUM(file_size) AS total_size, COUNT(*) AS total_count, type FROM uploads_data GROUP BY type";
+    //$sql = "SELECT SUM(file_size) AS total_size, COUNT(*) AS total_count, type FROM uploads_data GROUP BY type";
+    $sql = "SELECT total_files, total_size FROM uploads_summary WHERE id = 1";
     $result = $link->query($sql);
-    $totalSize = 0;
-    $totalCount = 0;
+    $row = $result->fetch_assoc();
+    $totalSize = $row['total_size'];
+    $totalCount = $row['total_files'];
+    $result->close();
+    /*
     echo '<p class="fw-bold">Breakdown by type: </p>';
     while ($row = $result->fetch_assoc()) {
       $type = $row['type'];
@@ -199,6 +203,7 @@ if (isset($_POST['searchFile'])) {
       $totalSize += $row['total_size'];
       $totalCount += $count;
     }
+    */
 
     $totalSizeGB = number_format($totalSize / (1024 * 1024 * 1024), 2);
     echo '<p class="fw-bold">Total Count: <span class="text-primary">' . $totalCount . '</span></p>';
