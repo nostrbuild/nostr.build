@@ -81,34 +81,49 @@ if (isset($_POST['searchFile'])) {
       document.querySelectorAll('.status-btn').forEach(function(button) {
         button.addEventListener('click', function(e) {
           e.preventDefault();
-          var card = button.closest('.card');
-          var id = card.querySelector('input[name="id"]').value;
-          var status = button.value;
-          var badge = card.querySelector('.status-badge');
-          fetch('change_status.php', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/x-www-form-urlencoded',
-              },
-              body: 'id=' + encodeURIComponent(id) + '&status=' + encodeURIComponent(status),
-            })
-            .then(response => response.json())
-            .then(data => {
-              if (data.success) {
-                // Change the label and its color based on the status
-                if (status === 'adult') {
-                  badge.textContent = 'Adult';
-                  badge.className = 'badge bg-warning position-absolute top-0 end-0 p-1 fs-6 status-badge';
-                  badge.closest('.image-div').setAttribute('data-status', 'adult');
-                } else if (status === 'rejected') {
-                  badge.textContent = 'Rejected';
-                  badge.className = 'badge bg-danger position-absolute top-0 end-0 p-1 fs-6 status-badge';
-                  badge.closest('.image-div').setAttribute('data-status', 'rejected');
+          const card = button.closest('.card');
+          const imgDiv = button.closest('.image-div');
+          const id = card.querySelector('input[name="id"]').value;
+          const status = button.value;
+
+          // Customize confirmation text based on the button value
+          var confirmText = (status === 'adult') ?
+            'Are you sure you want to set this media as Adult?' :
+            'Are you sure you want to set this media as Rejected and premanently delete it with no ability to re-upload?';
+
+          // Show the confirmation dialog
+          var userConfirmed = window.confirm(confirmText);
+
+          // If the user clicks "OK", proceed with the fetch request
+          if (userConfirmed) {
+            var badge = card.querySelector('.status-badge');
+            fetch('change_status.php', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: 'id=' + encodeURIComponent(id) + '&status=' + encodeURIComponent(status),
+              })
+              .then(response => response.json())
+              .then(data => {
+                if (data.success) {
+                  // Change the label and its color based on the status
+                  if (status === 'adult') {
+                    badge.textContent = 'Adult';
+                    badge.className = 'badge bg-warning position-absolute top-0 end-0 p-1 fs-6 status-badge';
+                    badge.closest('.image-div').setAttribute('data-status', 'adult');
+                  } else if (status === 'rejected') {
+                    badge.textContent = 'Rejected';
+                    badge.className = 'badge bg-danger position-absolute top-0 end-0 p-1 fs-6 status-badge';
+                    badge.closest('.image-div').setAttribute('data-status', 'rejected');
+                    imgDiv.remove(); // remove the card since it's irreversibly deleted 
+                  }
+                } else {
+                  alert('Error: ' + data.error);
                 }
-              } else {
-                alert('Error: ' + data.error);
-              }
-            });
+              });
+          }
+          // If the user clicks "Cancel", nothing happens (action is cancelled)
         });
       });
       // Get all buttons with the class name 'approve-page-button'
