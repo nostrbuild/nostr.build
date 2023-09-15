@@ -62,9 +62,15 @@ $morePages = $result->num_rows > $perpage ? true : false;
 	<link rel="stylesheet" href="/styles/twbuild.css?v=45" />
 	<link rel="icon" href="/assets/0.png">
 
+	<script defer src="https://cdn.jsdelivr.net/npm/@fancyapps/ui@5.0/dist/fancybox/fancybox.umd.js"></script>
+	<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/ui@5.0/dist/fancybox/fancybox.css" />
 	<script defer type="module" src="/scripts/fw/blurhash-img.js?v=0.2.1"></script>
 	<script>
 		document.addEventListener("DOMContentLoaded", function() {
+			Fancybox.bind('[data-fancybox="gallery"]', {
+				// Custom options if needed
+			});
+
 			function observeImages() {
 				const imageContainers = document.querySelectorAll(".image-container:not(.observed)");
 
@@ -222,7 +228,7 @@ $morePages = $result->num_rows > $perpage ? true : false;
 				$sizes = '(max-width: 426px) 100vw, (max-width: 640px) 100vw, (max-width: 854px) 100vw, (max-width: 1280px) 50vw, 33vw';
 				?>
 				<div class="relative group break-inside-avoid">
-					<a href="<?= $full_path ?>" target="_blank" rel="noopener noreferrer">
+					<a href="<?= $full_path ?>" <?= $view_type === 'img' || $view_type === 'vid' ? 'data-fancybox="gallery"' : '' ?> target="_blank" rel="noopener noreferrer">
 						<?php if ($view_type === 'vid') : ?>
 							<video class="mb-2" controls preload="auto">
 								<source src="<?= $thumbnail_path ?>" type="video/mp4">

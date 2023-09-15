@@ -45,6 +45,16 @@ if (!empty($rows)) {
 	<link rel="stylesheet" href="/styles/header.css?v=3" />
 	<link rel="icon" href="/assets/01.png">
 
+	<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/ui@5.0/dist/fancybox/fancybox.css" />
+	<script defer src="https://cdn.jsdelivr.net/npm/@fancyapps/ui@5.0/dist/fancybox/fancybox.umd.js"></script>
+	<script>
+		document.addEventListener("DOMContentLoaded", function() {
+			Fancybox.bind('[data-fancybox="gallery"]', {
+				// Custom options if needed
+			});
+		});
+	</script>
+
 	<title>nostr.build - <?= htmlentities($nym) ?></title>
 	<style>
 		.image-container {
@@ -110,7 +120,7 @@ if (!empty($rows)) {
 				$media_link = htmlspecialchars($media_link);
 			?>
 				<div class="image-container">
-					<a href="<?= $media_link ?>" target="_blank">
+					<a href="<?= $media_link ?>" data-fancybox="gallery" target="_blank">
 						<?php if ($mime_main_type === 'video') : ?>
 							<video class="media" controls preload="metadata">
 								<!-- Fake mime type to force the browser to use the video player -->
