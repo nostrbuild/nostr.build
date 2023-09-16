@@ -43,11 +43,13 @@ if (!empty($rows)) {
 	<link rel="stylesheet" href="/styles/index.css?v=2" />
 	<link rel="stylesheet" href="/styles/profile.css?v=2" />
 	<link rel="stylesheet" href="/styles/header.css?v=3" />
+	<link rel="stylesheet" href="/styles/twbuild.css?v=51" />
 	<link rel="icon" href="/assets/01.png">
 
 	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/lightgallery/2.7.1/css/lightgallery-bundle.min.css" integrity="sha512-nUqPe0+ak577sKSMThGcKJauRI7ENhKC2FQAOOmdyCYSrUh0GnwLsZNYqwilpMmplN+3nO3zso8CWUgu33BDag==" crossorigin="anonymous" referrerpolicy="no-referrer" />
 
 	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/video.js/8.5.3/alt/video-js-cdn.min.css" integrity="sha512-OxFNWAvUrErw1lQmH+xnjFJZePnr6zA0/H/ldxoXaYUn3yHcII7RpB6cfysY0rhxRZeCIUzQIECLOCXIYrfOIw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/videojs-wavesurfer/3.9.0/css/videojs.wavesurfer.min.css" integrity="sha512-WCio9HZd88PhJtqypgwWmifUSmovl4l1PDVaDe02W2bdozoRqro3YLGLKgjRdqT6osVD4NcxDAAkm+Go5E7vAA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
 
 	<script defer src="https://cdnjs.cloudflare.com/ajax/libs/lightgallery/2.7.1/lightgallery.umd.min.js" integrity="sha512-6vFONv+JJD01XArGGqxABRY3Vsm8tKuemThmZYfha9inGIuqPU5OgZP1QizBf0Y3JGPnrofy3jokdebgYNNhEQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 	<!--
@@ -63,6 +65,9 @@ if (!empty($rows)) {
 	<script defer src="https://cdnjs.cloudflare.com/ajax/libs/lightgallery/2.7.1/plugins/zoom/lg-zoom.umd.min.js" integrity="sha512-XXCpe8fRNmJzU9JVpJbjXIg4SpUeWcsLjeIFEnjQeD+2Y4Einh1spMPeN/1XcnfjYE+ebBY1f/U/Up7vx8+PEA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 
 	<script defer src="https://cdnjs.cloudflare.com/ajax/libs/video.js/8.5.3/video.min.js" integrity="sha512-wUWE15BM3aEd9D+01qFw8QdCoeB/wDYmOOqkgeeKiYXE+kiPOboLcOES+1lJMa5NiPBPBQenZYoOWRhf5jv4sw==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+	<!-- https://collab-project.github.io/videojs-wavesurfer/#/ -->
+	<script defer src="https://cdnjs.cloudflare.com/ajax/libs/videojs-wavesurfer/3.9.0/videojs.wavesurfer.min.js" integrity="sha512-8F8bLC4szXA48I+IKayjgCKpGF91j8NlzlySgcWwVkBAMTD4nBRpYzvNEccV4UG87u5EqVK5+4p3ak8e/fUihw==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+
 	<script>
 		document.addEventListener("DOMContentLoaded", function() {
 			lightGallery(document.getElementById('lightgallery'), {
@@ -80,24 +85,6 @@ if (!empty($rows)) {
 	</script>
 
 	<title>nostr.build - <?= htmlentities($nym) ?></title>
-	<style>
-		.image-container {
-			margin: auto;
-			margin-bottom: 1.5rem;
-			min-height: 8rem;
-			min-width: 8rem;
-			align-content: center;
-		}
-
-		.media {
-			height: 11.875rem;
-			width: auto;
-			margin: auto;
-			min-height: 8rem;
-			min-width: 8rem;
-			vertical-align: middle
-		}
-	</style>
 </head>
 
 <body>
@@ -105,7 +92,7 @@ if (!empty($rows)) {
 		<?php include $_SERVER['DOCUMENT_ROOT'] . '/components/mainnav.php'; ?>
 	</header>
 	<main>
-		<section class="title_section">
+		<section class="title_section text-3xl">
 			<h1>
 				<a href="/creators">Creators</a>
 				<svg width="24" height="25" viewBox="0 0 24 25" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -121,10 +108,10 @@ if (!empty($rows)) {
 				</svg>
 				<span><?= htmlentities($nym) ?></span>
 			</h1>
-			<a class="donate_button" href="lightning:<?= htmlentities($wallet) ?>">Donate ⚡</a>
+			<a class="donate_button text-lg" href="lightning:<?= htmlentities($wallet) ?>">Donate ⚡</a>
 		</section>
 
-		<div id="lightgallery" style="display: flex; flex-flow: wrap;">
+		<div id="lightgallery" class="gap-2 columns-1 md:columns-3 lg:columns-4 w-screen px-1 md:px-2 content-center">
 			<?php
 			foreach ($rows as $row) :
 				// Parse URL and get only the filename
@@ -162,18 +149,18 @@ if (!empty($rows)) {
 					'image' => 'data-responsive="' . $srcset . '" data-src="' . $full_path . '"',
 				};
 			?>
-				<div class="image-container" <?= $lgSrc ?>>
+				<div class="relative group break-inside-avoid image-container mb-2" <?= $lgSrc ?>>
 					<a href="<?= $media_link ?>" target="_blank">
 						<?php if ($mime_main_type === 'video') : ?>
 							<!-- A video poster is required for lightgallery to work -->
 							<img src="https://cdn.nostr.build/assets/video/jpg/video-poster@0.5x.jpg" alt="video poster" style="display: none;" />
-							<video class="media" controls preload="metadata">
+							<video class="w-full" controls preload="auto">
 								<!-- Fake mime type to force the browser to use the video player -->
 								<source src="<?= $src ?>" type="video/mp4">
 							</video>
 						<?php elseif ($mime_main_type === 'audio') : ?>
 							<img src="https://cdn.nostr.build/assets/audio/jpg/audio-wave@0.5x.jpg" alt="audio poster" style="display: none;" />
-							<video class="media" controls preload="metadata">
+							<video class="w-full" controls preload="metadata" poster="https://cdn.nostr.build/assets/audio/jpg/audio-wave@0.5x.jpg">
 								<!-- Fake mime type to force the browser to use the video player -->
 								<source src="<?= $src ?>" type="<?= $mime_type ?>">
 							</video>
@@ -184,7 +171,7 @@ if (!empty($rows)) {
 						-->
 						<?php else : ?>
 							<!-- default to image if the type is not recognized -->
-							<img loading="lazy" class="media" src="<?= $src ?>">
+							<img loading="lazy" class="w-full" src="<?= $src ?>" srcset="<?= $srcset ?>" sizes="<?= $sizes ?>">
 						<?php endif; ?>
 					</a>
 				</div>
