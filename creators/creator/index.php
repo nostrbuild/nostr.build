@@ -49,7 +49,6 @@ if (!empty($rows)) {
 	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/lightgallery/2.7.1/css/lightgallery-bundle.min.css" integrity="sha512-nUqPe0+ak577sKSMThGcKJauRI7ENhKC2FQAOOmdyCYSrUh0GnwLsZNYqwilpMmplN+3nO3zso8CWUgu33BDag==" crossorigin="anonymous" referrerpolicy="no-referrer" />
 
 	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/video.js/8.5.3/alt/video-js-cdn.min.css" integrity="sha512-OxFNWAvUrErw1lQmH+xnjFJZePnr6zA0/H/ldxoXaYUn3yHcII7RpB6cfysY0rhxRZeCIUzQIECLOCXIYrfOIw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
-	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/videojs-wavesurfer/3.9.0/css/videojs.wavesurfer.min.css" integrity="sha512-WCio9HZd88PhJtqypgwWmifUSmovl4l1PDVaDe02W2bdozoRqro3YLGLKgjRdqT6osVD4NcxDAAkm+Go5E7vAA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
 
 	<script defer src="https://cdnjs.cloudflare.com/ajax/libs/lightgallery/2.7.1/lightgallery.umd.min.js" integrity="sha512-6vFONv+JJD01XArGGqxABRY3Vsm8tKuemThmZYfha9inGIuqPU5OgZP1QizBf0Y3JGPnrofy3jokdebgYNNhEQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 	<!--
@@ -65,8 +64,6 @@ if (!empty($rows)) {
 	<script defer src="https://cdnjs.cloudflare.com/ajax/libs/lightgallery/2.7.1/plugins/zoom/lg-zoom.umd.min.js" integrity="sha512-XXCpe8fRNmJzU9JVpJbjXIg4SpUeWcsLjeIFEnjQeD+2Y4Einh1spMPeN/1XcnfjYE+ebBY1f/U/Up7vx8+PEA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 
 	<script defer src="https://cdnjs.cloudflare.com/ajax/libs/video.js/8.5.3/video.min.js" integrity="sha512-wUWE15BM3aEd9D+01qFw8QdCoeB/wDYmOOqkgeeKiYXE+kiPOboLcOES+1lJMa5NiPBPBQenZYoOWRhf5jv4sw==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-	<!-- https://collab-project.github.io/videojs-wavesurfer/#/ -->
-	<script defer src="https://cdnjs.cloudflare.com/ajax/libs/videojs-wavesurfer/3.9.0/videojs.wavesurfer.min.js" integrity="sha512-8F8bLC4szXA48I+IKayjgCKpGF91j8NlzlySgcWwVkBAMTD4nBRpYzvNEccV4UG87u5EqVK5+4p3ak8e/fUihw==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 
 	<script>
 		document.addEventListener("DOMContentLoaded", function() {
@@ -77,6 +74,9 @@ if (!empty($rows)) {
 				videojs: true,
 				videojsOptions: {
 					muted: false,
+					fluid: false,
+					responsive: true,
+					audioPosterMode: false,
 				},
 				autoplayVideoOnSlide: true,
 				gotoNextSlideOnVideoEnd: true,
@@ -146,7 +146,7 @@ if (!empty($rows)) {
 				$lgSrc = match ($mime_main_type) {
 					'video' => 'data-video=\'{"source": [{"src":"' . $media_link . '", "type": "video/mp4"}], "attributes": {"preload": "auto", "playsinline": true, "controls": true}}\' data-poster="https://cdn.nostr.build/assets/video/jpg/video-poster@0.75x.jpg"',
 					'audio' => 'data-video=\'{"source": [{"src":"' . $media_link . '", "type": "' . $mime_type . '"}], "attributes": {"preload": "auto", "playsinline": true, "controls": true}}\' data-poster="https://cdn.nostr.build/assets/audio/jpg/audio-wave@0.75x.jpg"',
-					'image' => 'data-responsive="' . $srcset . '" data-src="' . $full_path . '"',
+					'image' => 'data-responsive="' . $srcset . '" data-src="' . $src . '"',
 				};
 			?>
 				<div class="relative group break-inside-avoid image-container mb-2" <?= $lgSrc ?>>
@@ -182,7 +182,6 @@ if (!empty($rows)) {
 		</div>
 	</main>
 	<?= include $_SERVER['DOCUMENT_ROOT'] . '/components/footer.php'; ?>
-	<script src="/scripts/images.js?v=1"></script>
 </body>
 
 </html>
