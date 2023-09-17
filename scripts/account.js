@@ -187,6 +187,7 @@ document.addEventListener("click", (event) => {
 	}
 });
 
+/*
 const checkboxes = document.querySelectorAll('.toggle-switch input[type="checkbox"]');
 
 checkboxes.forEach((checkbox) => {
@@ -199,6 +200,7 @@ checkboxes.forEach((checkbox) => {
 		}
 	});
 });
+*/
 const copyButtons = document.querySelectorAll(".copy_link");
 
 let toast = document.querySelector(".toast");
