@@ -30,7 +30,7 @@ $sql = match ($view_type) {
 	<link rel="stylesheet" href="/styles/index.css?v=2" />
 	<link rel="stylesheet" href="/styles/profile.css?v=2" />
 	<link rel="stylesheet" href="/styles/header.css?v=3" />
-	<link rel="stylesheet" href="/styles/twbuild.css?v=46" />
+	<link rel="stylesheet" href="/styles/twbuild.css?v=47" />
 	<link rel="icon" href="/assets/0.png">
 
 	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/lightgallery/2.7.1/css/lightgallery-bundle.min.css" integrity="sha512-nUqPe0+ak577sKSMThGcKJauRI7ENhKC2FQAOOmdyCYSrUh0GnwLsZNYqwilpMmplN+3nO3zso8CWUgu33BDag==" crossorigin="anonymous" referrerpolicy="no-referrer" />
@@ -170,7 +170,7 @@ $sql = match ($view_type) {
 
 		$result = $stmt->get_result();
 		?>
-		<div id="lightgallery" class="columns-2 md:columns-3 lg:columns-4 xl:columns-6 w-screen px-2 md:px-4">
+		<div id="lightgallery" class="gap-2 columns-2 md:columns-3 lg:columns-4 xl:columns-6 w-screen px-2 md:px-4">
 			<?php while ($row = $result->fetch_assoc()) : ?>
 				<?php
 				$filename = $row['filename'];
