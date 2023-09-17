@@ -32,6 +32,7 @@ $nym = $_SESSION["nym"];
 $ppic = $_SESSION["ppic"];
 $wallet = $_SESSION["wallet"];
 $acctlevel = $_SESSION["acctlevel"];
+$userId = $_SESSION["id"];
 
 // Instanciate account class
 $account = new Account($npub, $link);
@@ -64,7 +65,7 @@ $userStorageRemaining = $userOverLimit ? 0 : $userStorageLimit - $storageUsed;
 
 	<link rel="stylesheet" href="/styles/account.css?v=1" />
 	<link href="/scripts/dist/index.css?v=13" rel="stylesheet">
-	<link href="/styles/twbuild.css?v=24" rel="stylesheet">
+	<link href="/styles/twbuild.css?v=36" rel="stylesheet">
 	<link rel="icon" href="/assets/primo_nostr.png" />
 
 	<script defer src="/scripts/dist/index.js?v=24"></script>
@@ -376,9 +377,32 @@ $userStorageRemaining = $userOverLimit ? 0 : $userStorageLimit - $storageUsed;
 		<?php
 		if ($perm->validatePermissionsLevelAny(1, 99) && $usersFoldersStats['TOTAL']['publicCount'] > 0) :
 		?>
-			<section class="subheader">
-				<p class="header_subtitle">You have <?= $usersFoldersStats['TOTAL']['publicCount'] ?> media files marked as public showing on the <span><a href="/creators" target="_blank"> Creators Page</a></span></p>
+			<section class="subheader p-2 text-center">
+				<!--
+				<p class="header_subtitle inline">You have <?= $usersFoldersStats['TOTAL']['publicCount'] ?> media files marked as public showing your Creator Page.</p>
+		-->
+
+				<!-- Copy link to clipboard button -->
+				<div class="inline-flex rounded-md shadow-sm ml-0 bg-transparent" x-data="{ open: false }">
+					<button @click="window.location.href = '/creators/creator/?user=<?= $userId ?>'" type="button" class="relative inline-flex items-center rounded-l-md bg-gradient-to-br from-[#399dfa] to-white px-3 py-2 text-sm font-semibold text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-[#399dfaec] focus:z-10">Visit Your Creator Page with <?= $usersFoldersStats['TOTAL']['publicCount'] ?> shared files</button>
+					<div class="relative -ml-px block">
+						<button @click="open = !open" type="button" class="relative inline-flex items-center rounded-r-md bg-[#399dfa] px-2 py-2 text-gray-800 ring-1 ring-inset ring-gray-300 hover:bg-[#399dfaec] focus:z-10" id="option-menu-button" :aria-expanded="open.toString()" aria-haspopup="true">
+							<span class="sr-only">Open options</span>
+							<svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+								<path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clip-rule="evenodd" />
+							</svg>
+						</button>
+
+						<div x-show="open" x-transition:enter="transition ease-out duration-100" x-transition:enter-start="transform opacity-0 scale-95" x-transition:enter-end="transform opacity-100 scale-100" x-transition:leave="transition ease-in duration-75" x-transition:leave-start="transform opacity-100 scale-100" x-transition:leave-end="transform opacity-0 scale-95" @click.away="open = false" class="absolute right-0 z-10 -mr-1 mt-2 w-56 origin-top-right rounded-md bg-gradient-to-br from-[#399dfa] to-white hover:bg-[#399dfaec] shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none" role="menu" aria-orientation="vertical" aria-labelledby="option-menu-button" tabindex="-1">
+							<div class="py-1" role="none">
+								<!-- Menu item to copy the link -->
+								<button @click="buttonText = 'Link Copied'; setTimeout(() => { buttonText = 'Copy Link' }, 2000); navigator.clipboard.writeText('https://<?= $_SERVER['HTTP_HOST'] ?>/creators/creator/?user=<?= $userId ?>')" x-text="buttonText" class="text-gray-700 block px-4 py-2 text-sm" role="menuitem" tabindex="-1" id="option-menu-item-0" x-data="{ buttonText: 'Copy Link' }">Copy Link</button>
+							</div>
+						</div>
+					</div>
+				</div>
 			</section>
+
 		<?php
 		endif;
 		?>
