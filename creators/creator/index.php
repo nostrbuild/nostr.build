@@ -1,6 +1,7 @@
 <?php
 // TODO: Migrate to use Table class
 require_once $_SERVER['DOCUMENT_ROOT'] . '/config.php';
+require_once $_SERVER['DOCUMENT_ROOT'] . '/functions/session.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/SiteConfig.php';
 
 $userId = $_GET['user'];
