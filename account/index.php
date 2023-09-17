@@ -65,7 +65,7 @@ $userStorageRemaining = $userOverLimit ? 0 : $userStorageLimit - $storageUsed;
 
 	<link rel="stylesheet" href="/styles/account.css?v=1" />
 	<link href="/scripts/dist/index.css?v=13" rel="stylesheet">
-	<link href="/styles/twbuild.css?v=36" rel="stylesheet">
+	<link href="/styles/twbuild.css?v=40" rel="stylesheet">
 	<link rel="icon" href="/assets/primo_nostr.png" />
 
 	<script defer src="/scripts/dist/index.js?v=24"></script>
@@ -341,9 +341,11 @@ $userStorageRemaining = $userOverLimit ? 0 : $userStorageLimit - $storageUsed;
 				endforeach; // Flder list loop end
 				?>
 			</ul>
-			<BR><BR><a onclick="if (confirm('Are you sure?')) checkDelete()" style="height: 2.4rem; width: 5.2rem; margin-right: 1rem;">
-				<button class="folder" style="background-color: red;">Delete</button>
-			</a>
+			<div class="mt-2 mb-10 pb-6">
+				<a onclick="if (confirm('Are you sure?')) checkDelete()" style="height: 2.4rem; width: 5.2rem; margin-right: 1rem;">
+					<button class="folder" style="background-color: red;">Delete</button>
+				</a>
+			</div>
 		</section>
 	</aside>
 	<main>
@@ -623,7 +625,7 @@ $userStorageRemaining = $userOverLimit ? 0 : $userStorageLimit - $storageUsed;
 			</div>
 
 	</main>
-	<script src="/scripts/account.js?v=1"></script>
+	<script src="/scripts/account.js?v=2"></script>
 
 	<script>
 		var previousBtId;
@@ -668,18 +670,53 @@ $userStorageRemaining = $userOverLimit ? 0 : $userStorageLimit - $storageUsed;
 			}
 		}
 
-		function checksliderClicked(id, element) {
-			var lastIndex = window.location.href.indexOf("/");
-			var ipAddress = window.location.href.substring(0, lastIndex) + '/functions/toggle.php?id=' + id;
-			if (document.getElementById("cs" + id).checked) {
-				document.getElementById("" + element).style.border = "0.3125rem solid #09bc60";
-				ipAddress += '&flag=1';
+		async function checksliderClicked(id, element) {
+			const checkbox = document.getElementById("cs" + id);
+			const targetElement = checkbox.closest('figure').querySelector('img, audio, video');
+
+			const flag = checkbox.checked ? '1' : '0';
+			const originalState = !checkbox.checked; // Store the original state
+			const originalClassState = targetElement.classList.contains('publicly-shared'); // Store the original class state
+
+			// Update UI first (optimistic UI update)
+			if (checkbox.checked) {
+				targetElement.classList.add('publicly-shared');
 			} else {
-				document.getElementById("" + element).style.border = "none";
-				ipAddress += '&flag=0';
+				targetElement.classList.remove('publicly-shared');
 			}
-			window.location.replace(ipAddress);
+
+			// Assuming your project is in a subfolder and the toggle.php is in /functions/
+			const url = new URL(`/functions/toggle.php`, window.location.origin);
+			url.searchParams.append('id', id);
+			url.searchParams.append('flag', flag);
+
+			try {
+				const response = await fetch(url, {
+					method: 'GET',
+					redirect: 'manual'
+				});
+
+				if (response.type === 'opaqueredirect') {
+					// Operation successful, do nothing
+				} else {
+					// Revert UI state if response type is not 'opaqueredirect'
+					revertUIState(checkbox, targetElement, originalState, originalClassState);
+				}
+			} catch (error) {
+				revertUIState(checkbox, targetElement, originalState, originalClassState);
+			}
 		}
+
+		function revertUIState(checkbox, targetElement, originalState, originalClassState) {
+			checkbox.checked = originalState;
+			if (originalClassState) {
+				targetElement.classList.add('publicly-shared');
+			} else {
+				targetElement.classList.remove('publicly-shared');
+			}
+		}
+
+
 
 		function checkboxClicked(element, type) {
 			if (type == 0) {
