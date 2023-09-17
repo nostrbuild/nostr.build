@@ -54,8 +54,8 @@ class DbSessionHandler implements SessionHandlerInterface
 $handler = new DbSessionHandler();
 session_set_save_handler($handler, true);
 
-// Start the session, but check if its not started yet befroe that.
+// Start the session, but check if it's not started yet befroe that.
 // This should be the only place session_start() is called, no need to do it anywhere else.
 // For session to work, this file must be included in every file that needs session.
-if (session_status() == PHP_SESSION_NONE)
+if (!isset($_SESSION) || session_status() === PHP_SESSION_NONE)
     session_start();
