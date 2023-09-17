@@ -1,7 +1,3 @@
-<?php
-require_once $_SERVER['DOCUMENT_ROOT'] . '/config.php';
-require_once $_SERVER['DOCUMENT_ROOT'] . '/functions/session.php';
-?>
 <!DOCTYPE html>
 <html lang="en">
 
@@ -40,7 +36,7 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/functions/session.php';
       <img class="about_img img_horizontal" src="https://cdn.nostr.build/assets/edu/btc_edu01.png" alt="BTC Education" width="180" />
     </figure>
     <h3>Bitcoin's Sound Money Properties Series</h3>
-    <p> With <a class="ref_link" href="https://thesimplestbitcoinbook.net" target="_blank">@SimplestBTCBook</a> and @DJSATOSHI18<br /><br /></p>
+    <p> Slide decks by <a class="ref_link" href="https://thesimplestbitcoinbook.net" target="_blank">Keysa @SimplestBTCBook</a></p><br />
     <p>
       <a class="ref_link" href="https://cdn.nostr.build/assets/edu/1_PORTABLE_DURABLE_DIVISIBLE_FUNGIBLE.pdf" target="_blank">#1: Portable, Durable, Divisible, Fungible</a><br />
       <a class="ref_link" href="https://cdn.nostr.build/assets/edu/2_SCARCITY_PROPERTIES.pdf" target="_blank">#2: Scarcity & Hard Cap Supply</a><br />
@@ -56,7 +52,10 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/functions/session.php';
       <a class="ref_link" href="https://cdn.nostr.build/assets/edu/12_PSUEDONYM_US_AND_TRUSTLESS.pdf" target="_blank">#12: Pseudonymous & Trustless</a><br />
       <a class="ref_link" href="https://cdn.nostr.build/assets/edu/13_SECURE_AND_SCALABLE.pdf" target="_blank">#13: Secure & Scalable</a><br />
       <a class="ref_link" href="https://cdn.nostr.build/assets/edu/14_DISINFLATIONARY_DEFLATIONARY.pdf" target="_blank">#14: Disinflationary/Deflationary</a><br /><br />
-      <a class="ref_link" href="https://cdn.nostr.build/assets/edu/ROLL_YOUR_OWN_SEED_WORKSHOP.pdf" target="_blank">Roll Your Own Seed Workshop</a><br />
+    </p>
+
+    <p> Roll Your Own Seed Worksop with <a class="ref_link" href="https://dplusplus.me" target="_blank">@D++</a></p><br />
+    <p><a class="ref_link" href="https://cdn.nostr.build/assets/edu/ROLL_YOUR_OWN_SEED_WORKSHOP.pdf" target="_blank">Roll Your Own Seed Workshop</a><br />
     </p>
 
   </main>
