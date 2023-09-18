@@ -346,6 +346,7 @@ $userStorageRemaining = $userOverLimit ? 0 : $userStorageLimit - $storageUsed;
 					<button class="folder" style="background-color: red;">Delete</button>
 				</a>
 			</div>
+			<span class="text-base text-red-600"><b>Note:</b> Deleting media won't immediately remove it from browser/client caches, other proxies, especially if it has been already publicly shared.</span>
 		</section>
 	</aside>
 	<main>
