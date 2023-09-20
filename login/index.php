@@ -190,8 +190,12 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             <input placeholder="Password" type="password" name="password" class="login_password <?= (!empty($password_err)) ? 'is-invalid' : ''; ?>">
             <input class="login_button" type="submit" value="Login">
             <p class="sign_up_link">Don’t have an account? <a href="/signup"> Sign up now </a></p>
-            <?php if(!empty($login_err)): ?>
-              <div class="warning"><div class="warning_text"><h2><?= htmlspecialchars($login_err) ?></h2></div></div>
+            <?php if (!empty($login_err)) : ?>
+                <div class="warning">
+                    <div class="warning_text">
+                        <h2><?= htmlspecialchars($login_err) ?></h2>
+                    </div>
+                </div>
             <?php endif; ?>
         </form>
 
