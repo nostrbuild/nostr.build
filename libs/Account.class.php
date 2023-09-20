@@ -69,7 +69,7 @@ class Account
 
   public function __construct(string $npub, mysqli $db)
   {
-    $this->npub = $npub;
+    $this->npub = trim($npub);
     $this->db = $db;
     // Populate account data
     $this->fetchAccountData();
@@ -195,7 +195,7 @@ class Account
       throw new InvalidAccountLevelException("Invalid account level: $level");
     }
 
-    $hashed_password = password_hash($password, PASSWORD_DEFAULT); // Creates a password hash
+    $hashed_password = password_hash(trim($password), PASSWORD_DEFAULT); // Creates a password hash
 
     $sql = "INSERT INTO users (usernpub, password, acctlevel) VALUES (?, ?, ?)";
     $stmt = $this->db->prepare($sql);
