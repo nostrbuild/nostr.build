@@ -106,15 +106,15 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
                                 // Only update if the API returned a value and the current session value is null/unset
                                 // By only allowing to set user properties when they are not yet set, we prevent unexpected overwrites
-                                if (property_exists($character, 'name') && $character->name !== null && null !== $_SESSION['nym']) {
+                                if (property_exists($character, 'name') && $character->name !== null && empty($_SESSION['nym'])) {
                                     $nymUpdate = $character->name;
                                 }
 
-                                if (property_exists($character, 'picture') && $character->picture !== null && null !== $_SESSION['ppic']) {
+                                if (property_exists($character, 'picture') && $character->picture !== null && empty($_SESSION['ppic'])) {
                                     $ppicUpdate = $character->picture;
                                 }
 
-                                if (property_exists($character, 'lud16') && $character->lud16 !== null && null !== $_SESSION['wallet']) {
+                                if (property_exists($character, 'lud16') && $character->lud16 !== null && empty($_SESSION['wallet'])) {
                                     $walletUpdate = $character->lud16;
                                 }
 
