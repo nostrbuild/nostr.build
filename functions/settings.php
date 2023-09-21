@@ -3,6 +3,7 @@
 require_once $_SERVER['DOCUMENT_ROOT'] . '/config.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/functions/session.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/permissions.class.php';
+require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/Account.class.php';
 
 global $link;
 $perm = new Permission();
@@ -15,35 +16,32 @@ if (!$perm->validateLoggedin()) {
 }
 
 // Assign session values
-$user =  $_SESSION["usernpub"];
 $ppic = $_SESSION["ppic"];
 $nym = $_SESSION["nym"];
 $wallet = $_SESSION["wallet"];
 
+$error = "";
+
 // Handle form submission
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
-    $nym = $_POST['nym'] ?? $nym;
-    $ppic = $_POST['ppic'] ?? $ppic;
-    $wallet = $_POST['wallet'] ?? $wallet;
+    try {
+        $account = new Account($_SESSION["usernpub"], $link);
 
-    // Prepare SQL statement to update users
-    if ($stmt = $link->prepare("UPDATE users SET nym=?, ppic=?, wallet=? WHERE usernpub=?")) {
-        $stmt->bind_param("ssss", $nym, $ppic, $wallet, $user);
+        // Update variables with POST data if available
+        $nym = $_POST['nym'] ?? $nym;
+        $ppic = $_POST['ppic'] ?? $ppic;
+        $wallet = $_POST['wallet'] ?? $wallet;
 
-        // Attempt to execute prepared statement
-        if ($stmt->execute()) {
-            echo "Updated successfully!";
-            header("location: /account");
-        } else {
-            echo "Error updating: " . $link->error;
-        }
-
-        // Close statement
-        $stmt->close();
-    } else {
-        echo "Error preparing SQL: " . $link->error;
+        $account->updateAccount(nym: $nym, ppic: $ppic, wallet: $wallet);
+        $link->close();
+        header("Location: /account");
+        exit;
+    } catch (Exception $e) {
+        error_log($e->getMessage() . PHP_EOL);
+        $error = "Something went wrong. Please try again later.";
+    } finally {
+        $link->close();
     }
-    $link->close();
 }
 ?>
 <!DOCTYPE html>
@@ -118,6 +116,11 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             <h3 class="card-header">Welcome, <b><?= htmlspecialchars((!empty($nym) ? $nym : 'anon')) ?></b></h3>
             <div class="card-body">
                 <img class="profile-img" src="<?= htmlspecialchars((!empty($ppic) ? $ppic : '/assets/01.png')) ?>" alt="Profile Pic">
+                <?php if (!empty($error)) : ?>
+                    <div class="alert alert-danger mt-3" role="alert">
+                        <?= htmlspecialchars($error) ?>
+                    </div>
+                <?php endif; ?>
                 <form action="" method="post">
                     <div class="form-group">
                         <label for="nym">Nym</label>

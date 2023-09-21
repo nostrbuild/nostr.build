@@ -3,6 +3,9 @@
 require_once $_SERVER['DOCUMENT_ROOT'] . '/config.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/functions/session.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/permissions.class.php';
+require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/Account.class.php';
+
+global $link;
 
 // Create new Permission object
 $perm = new Permission();
@@ -12,6 +15,7 @@ if ($perm->validateLoggedin()) {
     header("location: /account");
     exit;
 }
+
 
 // Define variables and initialize with empty values
 $usernpub = $password = "";
@@ -34,136 +38,34 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $password = trim($_POST["password"]);
     }
 
+    // Moderator flags:
+    /**
+     * JSON:
+     * {
+     *  "canModerate": true,
+     *  "canViewStats": false,
+     *  "canManageUsers": false,
+     *  "canEditContent": true
+     * }
+     * 
+     * To grant Moderator permissions, use the following SQL query (for now)
+     * UPDATE users SET accflags = '{"canModerate": true, "canViewStats": false, "canManageUsers": false, "canEditContent": true}' WHERE usernpub = '<npub>';
+     */
     // Validate credentials
     if (empty($usernpub_err) && empty($password_err)) {
-        // Prepare a select statement
-        $sql = "SELECT id, usernpub, password, acctlevel, nym, ppic, wallet, flag, accflags FROM users WHERE usernpub = ?";
-
-        if ($stmt = mysqli_prepare($link, $sql)) {
-            // Bind variables to the prepared statement as parameters
-            mysqli_stmt_bind_param($stmt, "s", $param_usernpub);
-
-            // Set parameters
-            $param_usernpub = $usernpub;
-
-            // Attempt to execute the prepared statement
-            if (mysqli_stmt_execute($stmt)) {
-                // Store result
-                mysqli_stmt_store_result($stmt);
-
-                // Check if usernpub exists, if yes then verify password
-                if (mysqli_stmt_num_rows($stmt) == 1) {
-                    // Bind result variables
-                    mysqli_stmt_bind_result($stmt, $id, $usernpub, $hashed_password, $acctlevel, $nym, $ppic, $wallet, $flag, $accflags);
-                    if (mysqli_stmt_fetch($stmt)) {
-                        if (password_verify($password, $hashed_password)) {
-                            // Store data in session variables
-                            $_SESSION["loggedin"] = true;
-                            $_SESSION["id"] = $id;
-                            $_SESSION["usernpub"] = $usernpub;
-                            $_SESSION["acctlevel"] = $acctlevel;
-                            $_SESSION["nym"] = $nym;
-                            $_SESSION["ppic"] = $ppic;
-                            $_SESSION["wallet"] = $wallet;
-                            $_SESSION["flag"] = $flag;
-                            $_SESSION["accflags"] = json_decode($accflags, true); // Account flags, e.g., moderator, etc.
-                            error_log("User " . $_SESSION["usernpub"] . " logged in successfully." . PHP_EOL);
-                            error_log("User " . $_SESSION["usernpub"] . " has the following permissions: " . print_r($_SESSION["accflags"], true) . PHP_EOL);
-                            /**
-                             * JSON:
-                             * {
-                             *  "canModerate": true,
-                             *  "canViewStats": false,
-                             *  "canManageUsers": false,
-                             *  "canEditContent": true
-                             * }
-                             * 
-                             * To grant Moderator permissions, use the following SQL query (for now)
-                             * UPDATE users SET accflags = '{"canModerate": true, "canViewStats": false, "canManageUsers": false, "canEditContent": true}' WHERE usernpub = '<npub>';
-                             */
-
-                            // Auto populate nym and ppic - Read npub1 user's JSON file, Decode JSON data into PHP array, all user data exists in 'data' object
-                            $api_url = 'https://nostrstuff.com/api/users/' . $_SESSION["usernpub"];
-
-                            try {
-                                $response_data = @file_get_contents($api_url);
-                                if ($response_data === false) {
-                                    throw new Exception("Error retrieving data from $api_url");
-                                }
-
-                                $response_data = json_decode($response_data);
-
-                                if (json_last_error() !== JSON_ERROR_NONE) {
-                                    throw new Exception("Error decoding JSON: " . json_last_error_msg());
-                                }
-
-                                $character = json_decode($response_data->content);
-
-                                // Variables to hold new data
-                                $nymUpdate = null;
-                                $ppicUpdate = null;
-                                $walletUpdate = null;
-
-                                // Only update if the API returned a value and the current session value is null/unset
-                                // By only allowing to set user properties when they are not yet set, we prevent unexpected overwrites
-                                if (property_exists($character, 'name') && $character->name !== null && empty($_SESSION['nym'])) {
-                                    $nymUpdate = $character->name;
-                                }
-
-                                if (property_exists($character, 'picture') && $character->picture !== null && empty($_SESSION['ppic'])) {
-                                    $ppicUpdate = $character->picture;
-                                }
-
-                                if (property_exists($character, 'lud16') && $character->lud16 !== null && empty($_SESSION['wallet'])) {
-                                    $walletUpdate = $character->lud16;
-                                }
-
-                                // Update the database and session only if necessary
-                                if ($nymUpdate !== null || $ppicUpdate !== null || $walletUpdate !== null) {
-                                    try {
-                                        $stmt = $link->prepare("UPDATE users SET nym = COALESCE(?, nym), ppic = COALESCE(?, ppic), wallet = COALESCE(?, wallet) WHERE usernpub = ?");
-                                        $stmt->bind_param('ssss', $nymUpdate, $ppicUpdate, $walletUpdate, $_SESSION["usernpub"]);
-                                        $stmt->execute();
-
-                                        if ($nymUpdate !== null) {
-                                            $_SESSION['nym'] = $nymUpdate;
-                                        }
-                                        if ($ppicUpdate !== null) {
-                                            $_SESSION['ppic'] = $ppicUpdate;
-                                        }
-                                        if ($walletUpdate !== null) {
-                                            $_SESSION['wallet'] = $walletUpdate;
-                                        }
-                                    } catch (Exception $e) {
-                                        error_log("Error updating user data in database: " . $e->getMessage());
-                                    }
-                                }
-                            } catch (Exception $e) {
-                                error_log($e->getMessage());
-                            }
-
-                            // Redirect user to account page
-                            header("location: /account");
-                        } else {
-                            // Password is not valid, display a generic error message
-                            $login_err = "Invalid usernpub or password.";
-                        }
-                    }
-                } else {
-                    // usernpub doesn't exist, display a generic error message
-                    $login_err = "Invalid usernpub or password.";
-                }
-            } else {
-                echo "Oops! Something went wrong. Please try again later.";
-            }
-
-            // Close statement
-            mysqli_stmt_close($stmt);
+        $account = new Account($usernpub, $link);
+        if ($account->verifyPassword($password)) {
+            $account->updateAccountDataFromNostrApi();
+            error_log("User " . $_SESSION["usernpub"] . " logged in successfully." . PHP_EOL);
+            error_log("User " . $_SESSION["usernpub"] . " has the following permissions: " . print_r($_SESSION["accflags"], true) . PHP_EOL);
+            header("location: /account");
+            exit;
+        } else {
+            $login_err = "Invalid usernpub or password.";
         }
     }
-
     // Close connection
-    mysqli_close($link);
+    $link->close();
 }
 ?>
 

@@ -2,6 +2,7 @@
 require_once $_SERVER['DOCUMENT_ROOT'] . '/config.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/functions/session.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/permissions.class.php';
+require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/Account.class.php';
 
 global $link;
 $perm = new Permission();
@@ -27,26 +28,20 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     } elseif ($new_password !== $confirm_password) {
         $confirm_password_err = "Passwords did not match.";
     } else {
-        $sql = "UPDATE users SET password = ? WHERE id = ?";
-
-        if ($stmt = $link->prepare($sql)) {
-            $hashed_password = password_hash($new_password, PASSWORD_DEFAULT);
-            $stmt->bind_param("si", $hashed_password, $_SESSION["id"]);
-
-            if ($stmt->execute()) {
-                session_destroy();
-                $link->close();
-                header("location: /login");
-                exit();
-            } else {
-                echo "Oops! Something went wrong. Please try again later.";
-            }
-
-            $stmt->close();
+        $account = new Account($_SESSION["usernpub"], $link);
+        try {
+            $account->changePassword($new_password);
+            session_destroy();
+            header("Location: /login");
+            $link->close(); // Exit will terminate script imeediately, so close connection first
+            exit;
+        } catch (Exception $e) {
+            error_log($e->getMessage() . PHP_EOL);
+            $new_password_err = "Something went wrong. Please try again later.";
+        } finally {
+            $link->close();
         }
     }
-
-    $link->close();
 }
 ?>
 
