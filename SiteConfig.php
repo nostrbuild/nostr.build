@@ -241,4 +241,9 @@ class SiteConfig
 
     return self::STORAGE_LIMITS[$acctLevel]['message'];
   }
+
+  public static function getNostrApiBaseUrl()
+  {
+    return 'https://nostrstuff.com/api/users/';
+  }
 }
