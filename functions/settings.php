@@ -33,6 +33,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $wallet = $_POST['wallet'] ?? $wallet;
 
         $account->updateAccount(nym: $nym, ppic: $ppic, wallet: $wallet);
+        $link->close();
+        header("Location: /account");
+        exit;
     } catch (Exception $e) {
         error_log($e->getMessage() . PHP_EOL);
         $error = "Something went wrong. Please try again later.";

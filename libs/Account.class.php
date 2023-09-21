@@ -718,6 +718,8 @@ class Account
     if ($valid) {
       // Update session parameters
       $this->setSessionParameters();
+      // Set 'loggedin' state in session
+      $_SESSION['loggedin'] = true;
     }
     return $valid;
   }
