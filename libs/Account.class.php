@@ -61,12 +61,32 @@ enum AccountLevel: int
   case Admin = 99;
 }
 
+/**
+ * Summary of Account
+ */
 class Account
 {
+  /**
+   * Summary of npub
+   * @var string
+   */
   private string $npub;
+  /**
+   * Summary of account
+   * @var array
+   */
   private array $account;
+  /**
+   * Summary of db
+   * @var mysqli
+   */
   private mysqli $db;
 
+  /**
+   * Summary of __construct
+   * @param string $npub
+   * @param mysqli $db
+   */
   public function __construct(string $npub, mysqli $db)
   {
     $this->npub = trim($npub);
@@ -75,6 +95,11 @@ class Account
     $this->fetchAccountData();
   }
 
+  /**
+   * Summary of fetchAccountData
+   * @throws \Exception
+   * @return void
+   */
   private function fetchAccountData(): void
   {
     $sql = "SELECT * FROM users WHERE usernpub = ?";
@@ -113,6 +138,100 @@ class Account
     }
   }
 
+  /**
+   * Summary of setSessionParameters
+   * @return void
+   */
+  public function setSessionParameters(): void
+  {
+    $_SESSION['id'] = $this->account['id'];
+    $_SESSION['usernpub'] = $this->npub;
+    $_SESSION['acctlevel'] = $this->account['acctlevel'];
+    $_SESSION['nym'] = $this->account['nym'];
+    $_SESSION['wallet'] = $this->account['wallet'];
+    $_SESSION['ppic'] = $this->account['ppic'];
+    $_SESSION['flag'] = $this->account['flag'];
+    $_SESSION['accflags'] = json_decode($this->account['accflags'], true);
+  }
+
+  public function getAccountFlags(): array
+  {
+    return json_decode($this->account['accflags'], true);
+  }
+
+  public function setAccountFlags(array $flags): void
+  {
+    $this->updateAccount(accflags: $flags);
+  }
+
+  public function getAccountFlag(string $flag): bool
+  {
+    $flags = $this->getAccountFlags();
+    return isset($flags[$flag]) ? $flags[$flag] : false;
+  }
+
+  public function setAccountFlag(string $flag, bool $value): void
+  {
+    $flags = $this->getAccountFlags();
+    $flags[$flag] = $value;
+    $this->setAccountFlags($flags);
+  }
+
+  public function updateAccountDataFromNostrApi(bool $force = false): void
+  {
+    $apiQueryUrl = SiteConfig::getNostrApiBaseUrl() . urlencode($this->npub);
+
+    // Initialize and set cURL options
+    $ch = curl_init();
+    curl_setopt_array($ch, [
+      CURLOPT_URL => $apiQueryUrl,
+      CURLOPT_RETURNTRANSFER => true,
+      CURLOPT_HEADER => false,
+      CURLOPT_FOLLOWLOCATION => true,
+      CURLOPT_HTTPHEADER => ['Content-Type: application/json', 'Accept: application/json'],
+    ]);
+
+    // Execute cURL and close
+    $response = curl_exec($ch);
+    curl_close($ch);
+
+    // Handle cURL errors
+    if ($response === false) {
+      error_log("Error fetching account data from Nostr API");
+      return;
+    }
+
+    // Decode JSON
+    $responseData = json_decode($response);
+    if (json_last_error() !== JSON_ERROR_NONE || $responseData === null) {
+      error_log("Error decoding JSON response from Nostr API: " . json_last_error_msg());
+      return;
+    }
+    $responseData = json_decode($responseData->content);
+
+    // Check if we should update account data
+    $shouldUpdate = $responseData !== null &&
+      (!empty($responseData->name) || !empty($responseData->lud16) || !empty($responseData->picture)) &&
+      ($force || empty($this->account['nym']) || empty($this->account['wallet']) || empty($this->account['ppic']));
+
+    if ($shouldUpdate) {
+      $this->account['nym'] = $force ? ($responseData->name ?? $this->account['nym']) : ($this->account['nym'] ?? $responseData->name ?? null);
+      $this->account['wallet'] = $force ? ($responseData->lud16 ?? $this->account['wallet']) : ($this->account['wallet'] ?? $responseData->lud16 ?? null);
+      $this->account['ppic'] = $force ? ($responseData->picture ?? $this->account['ppic']) : ($this->account['ppic'] ?? $responseData->picture ?? null);
+
+      $this->updateAccount(
+        nym: $this->account['nym'],
+        wallet: $this->account['wallet'],
+        ppic: $this->account['ppic']
+      );
+    }
+  }
+
+  /**
+   * Summary of fetchAccountSpaceConsumption
+   * @throws \Exception
+   * @return int
+   */
   private function fetchAccountSpaceConsumption(): int
   {
     $sql = "SELECT SUM(file_size) AS total FROM users_images WHERE usernpub = ?";
@@ -148,16 +267,28 @@ class Account
     return $total;
   }
 
+  /**
+   * Summary of getNpub
+   * @return string
+   */
   public function getNpub(): string
   {
     return $this->npub;
   }
 
+  /**
+   * Summary of getAccount
+   * @return array
+   */
   public function getAccount(): array
   {
     return $this->account;
   }
 
+  /**
+   * Summary of getAccountLevel
+   * @return AccountLevel
+   */
   public function getAccountLevel(): AccountLevel
   {
     $accountLevel = isset($this->account['acctlevel']) ? $this->account['acctlevel'] : -1;
@@ -182,6 +313,15 @@ class Account
       echo "An error occurred: " . $e->getMessage();
   }
   */
+  /**
+   * Summary of createAccount
+   * @param string $password
+   * @param int $level
+   * @throws \DuplicateUserException
+   * @throws \InvalidAccountLevelException
+   * @throws \Exception
+   * @return void
+   */
   public function createAccount(string $password, int $level = 0): void
   {
     // Preemptive check if the account already exists
@@ -218,13 +358,23 @@ class Account
     }
 
     $this->fetchAccountData();
+    $this->setSessionParameters();
   }
 
+  /**
+   * Summary of accountExists
+   * @return bool
+   */
   public function accountExists(): bool
   {
     return !empty($this->account);
   }
 
+  /**
+   * Summary of getRemainingSubscriptionDays
+   * @throws \Exception
+   * @return int
+   */
   public function getRemainingSubscriptionDays(): int
   {
     $planStartDate = $this->account['plan_start_date'];
@@ -257,6 +407,20 @@ class Account
     nym: 'newnym'
   );
   */
+  /**
+   * Summary of updateAccount
+   * @param string $password
+   * @param string $nym
+   * @param string $wallet
+   * @param string $ppic
+   * @param string $paid
+   * @param int $acctlevel
+   * @param string $flag
+   * @param array $accflags
+   * @param string $plan_start_date
+   * @throws \Exception
+   * @return void
+   */
   public function updateAccount(
     string $password = null,
     string $nym = null,
@@ -289,6 +453,9 @@ class Account
         $sql .= "$field = ?, ";
         $params[] = $value;
         $types .= is_int($value) ? 'i' : 's';
+
+        // Update coresponding class property
+        $this->account[$field] = $value;
       }
     }
 
@@ -313,8 +480,15 @@ class Account
     } finally {
       $stmt->close();
     }
+    // Update session parameters
+    $this->setSessionParameters();
   }
 
+  /**
+   * Summary of deleteAccount
+   * @throws \Exception
+   * @return void
+   */
   public function deleteAccount(): void
   {
     $sql = "DELETE FROM users WHERE usernpub = ?";
@@ -337,56 +511,100 @@ class Account
     }
   }
 
+  /**
+   * Summary of isAccountValid
+   * @return bool
+   */
   public function isAccountValid(): bool
   {
     return $this->getAccountLevel() !== AccountLevel::Invalid;
   }
 
+  /**
+   * Summary of isAccountVerified
+   * @return bool
+   */
   public function isAccountVerified(): bool
   {
     return $this->getAccountLevel() >= AccountLevel::Unverified;
   }
 
+  /**
+   * Summary of isAccountInvalid
+   * @return bool
+   */
   public function isAccountInvalid(): bool
   {
     return $this->getAccountLevel() === AccountLevel::Invalid;
   }
 
+  /**
+   * Summary of isAccountUnverified
+   * @return bool
+   */
   public function isAccountUnverified(): bool
   {
     return $this->getAccountLevel() === AccountLevel::Unverified;
   }
 
+  /**
+   * Summary of isAccountCreator
+   * @return bool
+   */
   public function isAccountCreator(): bool
   {
     return $this->getAccountLevel() === AccountLevel::Creator;
   }
 
+  /**
+   * Summary of isAccountProfessional
+   * @return bool
+   */
   public function isAccountProfessional(): bool
   {
     return $this->getAccountLevel() === AccountLevel::Professional;
   }
 
+  /**
+   * Summary of isAccountViewer
+   * @return bool
+   */
   public function isAccountViewer(): bool
   {
     return $this->getAccountLevel() === AccountLevel::Viewer;
   }
 
+  /**
+   * Summary of isAccountStarter
+   * @return bool
+   */
   public function isAccountStarter(): bool
   {
     return $this->getAccountLevel() === AccountLevel::Starter;
   }
 
+  /**
+   * Summary of isAccountModerator
+   * @return bool
+   */
   public function isAccountModerator(): bool
   {
     return $this->getAccountLevel() === AccountLevel::Moderator;
   }
 
+  /**
+   * Summary of isAccountAdmin
+   * @return bool
+   */
   public function isAccountAdmin(): bool
   {
     return $this->getAccountLevel() === AccountLevel::Admin;
   }
 
+  /**
+   * Summary of getRemainingStorageSpace
+   * @return int
+   */
   public function getRemainingStorageSpace(): int
   {
     $accountLevel = $this->account['acctlevel'];
@@ -397,6 +615,11 @@ class Account
     return $limit - $usedSpace;
   }
 
+  /**
+   * Summary of hasSufficientStorageSpace
+   * @param int $fileSize
+   * @return bool
+   */
   public function hasSufficientStorageSpace(int $fileSize): bool
   {
     $remainingSpace = $this->getRemainingStorageSpace();
@@ -405,6 +628,13 @@ class Account
     return $fileSize <= $remainingSpace;
   }
 
+  /**
+   * Summary of setPlan
+   * @param int $planLevel
+   * @param bool $new
+   * @throws \Exception
+   * @return void
+   */
   public function setPlan(int $planLevel, bool $new = true): void
   {
     $sql = "UPDATE users SET acctlevel = ?, plan_start_date = ? WHERE usernpub = ?";
@@ -428,6 +658,13 @@ class Account
     }
   }
 
+  /**
+   * Summary of upgradePlan
+   * @param int $newPlanLevel
+   * @param bool $resetDate
+   * @throws \Exception
+   * @return void
+   */
   public function upgradePlan(int $newPlanLevel, bool $resetDate = false): void
   {
     // Fetch existing account data to get the current plan level
@@ -467,5 +704,33 @@ class Account
 
     // If both levels are found and the new level is higher in the sequence
     return $currentLevelIndex !== false && $newLevelIndex !== false && $newLevelIndex > $currentLevelIndex;
+  }
+
+  /**
+   * Summary of verifyPassword
+   * @param string $password
+   * @return bool
+   */
+  public function verifyPassword(string $password): bool
+  {
+    $hashed_password = $this->account['password'];
+    $valid = password_verify($password, $hashed_password);
+    if ($valid) {
+      // Update session parameters
+      $this->setSessionParameters();
+    }
+    return $valid;
+  }
+
+  /**
+   * Summary of changePassword
+   * @param string $newPassword
+   * @throws \Exception
+   * @return void
+   */
+  public function changePassword(string $newPassword): void
+  {
+    $hashed_password = password_hash(trim($newPassword), PASSWORD_DEFAULT); // Creates a password hash
+    $this->updateAccount(password: $hashed_password);
   }
 }
