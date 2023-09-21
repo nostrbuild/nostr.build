@@ -36,7 +36,13 @@ $userId = $_SESSION["id"];
 
 // Instanciate account class
 $account = new Account($npub, $link);
-$daysRemaining = $account->getRemainingSubscriptionDays();
+$daysRemaining = 0;
+try {
+	// Handle cases for users who has no subscription yet
+	$daysRemaining = $account->getRemainingSubscriptionDays();
+} catch (Exception $e) {
+	error_log($e->getMessage());
+}
 
 // Fetch user's folder statistics and storage statistics
 $usersFoldersTable = new UsersImagesFolders($link);
