@@ -51,6 +51,7 @@ class UploadsData extends DatabaseTable
       'media_width' => v::optional(v::intType()->min(0)),
       'media_height' => v::optional(v::intType()->min(0)),
       'blurhash' => v::optional(v::stringType()->length(1, 255)),
+      'usernpub' => v::optional(v::stringType()->length(1, 255)),
     ];
   }
 

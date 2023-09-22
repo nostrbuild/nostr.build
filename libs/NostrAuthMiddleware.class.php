@@ -37,6 +37,8 @@ class NostrAuthMiddleware implements MiddlewareInterface
     $headers = $request->getHeaders();
 
     $npub = null; // Initialize as null
+    $accountUploadEligible = true;  // Assume the account is eligible by default
+
     try {
       // Initialize NostrAuthHandler
       $authHandler = new NostrAuthHandler($headers, $request);
@@ -62,17 +64,19 @@ class NostrAuthMiddleware implements MiddlewareInterface
 
         if (!$account->hasSufficientStorageSpace($totalSize)) {
           error_log('User ' . $npub . ' does not have sufficient storage space to upload the file');
-          $npub = null;
+          $accountUploadEligible = false;
         }
       } else {
-        $npub = null;
+        $accountUploadEligible = false;
       }
     } catch (\Exception $e) {
       error_log('NostrAuthHandler error: ' . $e->getMessage());
+      $accountUploadEligible = false;
     }
 
     // Lastly, add the npub to the request attributes
     $request = $request->withAttribute('npub', $npub);
+    $request = $request->withAttribute('account_upload_eligible', $accountUploadEligible);
     $response = $handler->handle($request);
 
     return $response;

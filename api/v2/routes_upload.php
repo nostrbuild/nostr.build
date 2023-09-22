@@ -199,11 +199,14 @@ $app->group('/upload', function (RouteCollectorProxy $group) {
     }
     // NIP-98 handling
     $npub = $request->getAttribute('npub');
+    $accountUploadEligible = $request->getAttribute('account_upload_eligible');
     $factory = $this->get('multimediaUploadFactory');
 
     if (null !== $npub) {
-      $upload = $factory->create(true, $npub);
+      error_log('npub: ' . $npub . ' uploading files');
+      $upload = $factory->create($accountUploadEligible, $npub);
     } else {
+      error_log('Unauthenticated upload of files');
       $upload = $factory->create();
     }
     error_log(PHP_EOL . "Request URL:" . $request->getUri() . PHP_EOL);
@@ -227,7 +230,16 @@ $app->group('/upload', function (RouteCollectorProxy $group) {
     if (empty($files) || count($files) > 1) {
       return jsonResponse($response, 'error', 'Either no file or more than one file provided. Only one file is expected.', new stdClass(), 400);
     }
-    $upload = $this->get('freeUpload');
+    $npub = $request->getAttribute('npub');
+    $factory = $this->get('multimediaUploadFactory');
+
+    if (null !== $npub) {
+      error_log('npub: ' . $npub . ' uploading pfp');
+      $upload = $factory->create(false, $npub);
+    } else {
+      error_log('Unauthenticated upload of pfp');
+      $upload = $factory->create();
+    }
 
     try {
       // Handle exceptions thrown by the MultimediaUpload class
@@ -237,7 +249,7 @@ $app->group('/upload', function (RouteCollectorProxy $group) {
     } catch (\Exception $e) {
       return jsonResponse($response, 'error', 'Upload failed: ' . $e->getMessage(), new stdClass(), 500);
     }
-  });
+  })->add(new NostrAuthMiddleware());
 
   // Route to upload a file via URL
   $group->post('/url', function (Request $request, Response $response) {
@@ -249,11 +261,14 @@ $app->group('/upload', function (RouteCollectorProxy $group) {
     }
     // NIP-98 handling
     $npub = $request->getAttribute('npub');
+    $accountUploadEligible = $request->getAttribute('account_upload_eligible');
     $factory = $this->get('multimediaUploadFactory');
 
     if (null !== $npub) {
-      $upload = $factory->create(true, $npub);
+      error_log('npub: ' . $npub . ' uploading from URL: ' . $data['url']);
+      $upload = $factory->create($accountUploadEligible, $npub);
     } else {
+      error_log('Unauthenticated upload from URL: ' . $data['url']);
       $upload = $factory->create();
     }
 
