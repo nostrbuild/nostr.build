@@ -7,6 +7,7 @@ require_once $_SERVER['DOCUMENT_ROOT'] . "/libs/Account.class.php";
 require_once $_SERVER['DOCUMENT_ROOT'] . "/libs/db/UploadsData.class.php";
 require_once $_SERVER['DOCUMENT_ROOT'] . "/libs/db/UsersImages.class.php";
 require_once $_SERVER['DOCUMENT_ROOT'] . "/libs/db/UsersImagesFolders.class.php";
+require_once $_SERVER['DOCUMENT_ROOT'] . "/libs/db/UploadAttempts.class.php";
 require_once $_SERVER['DOCUMENT_ROOT'] . "/SiteConfig.php"; // File size limits, etc.
 
 // Vendor autoload
@@ -86,6 +87,11 @@ class MultimediaUpload
    */
   protected $uploadsData; // Used for free uploads; instance of the UploadsData class
   /**
+   * Summary of uploadAttempts
+   * @var 
+   */
+  protected $uploadAttempts; // Used for free uploads; instance of the UploadAttempts class
+  /**
    * Summary of usersImages
    * @var 
    */
@@ -154,6 +160,7 @@ class MultimediaUpload
     $this->userNpub = $userNpub;
     $this->pro = $pro;
     $this->uploadsData = new UploadsData($db);
+    $this->uploadAttempts = new UploadAttempts($db);
     $this->gifConverter = new GifConverter();
     if ($this->pro) {
       $this->usersImages = new UsersImages($db);
@@ -888,6 +895,15 @@ class MultimediaUpload
   protected function checkForDuplicates(string $filehash, bool $profile = false): bool
   {
     $data = $this->uploadsData->getUploadData($filehash);
+
+    // This is so we can satisfy the NIP-96 requirements
+    if (!empty($this->userNpub)) {
+      try {
+        $this->uploadAttempts->recordUpload($filehash, $this->userNpub);
+      } catch (Exception $e) {
+        error_log("Failed to record upload attempt: " . $e->getMessage());
+      }
+    }
 
     if ($data === false) {
       return false;
