@@ -425,7 +425,8 @@ class MultimediaUpload
         $newFileType,
         $fileData['dimensions']['width'] ?? 0,
         $fileData['dimensions']['height'] ?? 0,
-        $fileData['blurhash'] ?? null
+        $fileData['blurhash'] ?? null,
+        $fileType['mime'] ?? null,
       );
 
       // Confirm successful insert
@@ -561,7 +562,8 @@ class MultimediaUpload
             $newFileType,
             (int)($fileData['dimensions']['width'] ?? 0),
             (int)($fileData['dimensions']['height'] ?? 0),
-            $fileData['blurhash'] ?? null
+            $fileData['blurhash'] ?? null,
+            $fileType['mime'] ?? null,
           );
           if ($insert_id === false) {
             throw new Exception('Failed to insert into database');
@@ -1223,6 +1225,7 @@ class MultimediaUpload
    * @param int $media_width
    * @param int $media_height
    * @param mixed $blurhash
+   * @param mixed $mimeType
    * @return int|bool
    */
   protected function storeInDatabaseFree(
@@ -1233,6 +1236,7 @@ class MultimediaUpload
     int $media_width = 0,
     int $media_height = 0,
     ?string $blurhash = null,
+    ?string $mimeType = null,
   ): int | bool {
     // Insert the file data into the database but don't commit yet
     try {
@@ -1243,6 +1247,8 @@ class MultimediaUpload
         'media_width' => $media_width,
         'media_height' => $media_height,
         'blurhash' => $blurhash,
+        'usernpub' => $this->userNpub, // Track free upload user to prep for NIP-96
+        'mime' => $mimeType,
         'type' => $type, // 'picture', 'video', 'unknown', 'profile'
         // All new free uploads are pending approval by default
         // Rejected files are not stored in the database
