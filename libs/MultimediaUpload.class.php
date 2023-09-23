@@ -9,6 +9,7 @@ require_once $_SERVER['DOCUMENT_ROOT'] . "/libs/db/UsersImages.class.php";
 require_once $_SERVER['DOCUMENT_ROOT'] . "/libs/db/UsersImagesFolders.class.php";
 require_once $_SERVER['DOCUMENT_ROOT'] . "/libs/db/UploadAttempts.class.php";
 require_once $_SERVER['DOCUMENT_ROOT'] . "/SiteConfig.php"; // File size limits, etc.
+require_once $_SERVER['DOCUMENT_ROOT'] . "/libs/CloudflareUploadWebhook.class.php";
 
 // Vendor autoload
 require_once $_SERVER['DOCUMENT_ROOT'] . "/vendor/autoload.php";
@@ -145,6 +146,11 @@ class MultimediaUpload
    * @var 
    */
   protected $userAccount;
+  /**
+   * Summary of uploadWebhook
+   * @var 
+   */
+  protected $uploadWebhook;
 
   /**
    * Summary of __construct
@@ -162,6 +168,10 @@ class MultimediaUpload
     $this->uploadsData = new UploadsData($db);
     $this->uploadAttempts = new UploadAttempts($db);
     $this->gifConverter = new GifConverter();
+    $this->uploadWebhook = new CloudflareUploadWebhook(
+      $_SERVER['NB_API_UPLOAD_SECRET'],
+      $_SERVER['NB_API_UPLOAD_INFO_URL'],
+    );
     if ($this->pro) {
       $this->usersImages = new UsersImages($db);
       $this->usersImagesFolders = new UsersImagesFolders($db);
@@ -472,6 +482,34 @@ class MultimediaUpload
     if (file_exists($this->file['tmp_name'])) {
       unlink($this->file['tmp_name']);
     }
+    // Signal webhook about upload
+    try {
+      // fileType Must be one of 'video' | 'audio' | 'image' | 'other'
+      $whFileType = match (explode('/', $fileType['mime'])[0]) {
+        'image' => 'image',
+        'video' => 'video',
+        'audio' => 'audio',
+        default => 'other',
+      };
+      $this->uploadWebhook->createPayload(
+        fileHash: $fileSha256,
+        fileName: $newFileName,
+        fileSize: $newFileSize,
+        fileMimeType: $fileType['mime'],
+        fileUrl: $this->generateMediaURL($newFileName, 'profile'),
+        fileType: $whFileType,
+        shouldTranscode: false,
+        uploadAccountType: $this->pro ? 'subscriber' : 'free',
+        uploadTime: time(),
+        uploadedFileInfo: $_SERVER['CLIENT_REQUEST_INFO'] ?? null,
+        uploadNpub: $this->userNpub ?? null,
+        fileOriginalUrl: null,
+      );
+      $this->uploadWebhook->sendPayload();
+      error_log('Webhook payload sent for:' . $newFileName . PHP_EOL);
+    } catch (Exception $e) {
+      error_log("Webhook signalling failed: " . $e->getMessage());
+    }
 
     error_log('Profile picutre upload successful:' . $newFileName . PHP_EOL);
     error_log('Mime:' . $fileType['mime'] . PHP_EOL);
@@ -650,6 +688,34 @@ class MultimediaUpload
         // unless something goes wrong with DB commit.
         // We want to loop over all files and not stop on the errors
         continue;
+      }
+      // Signal webhook about upload
+      try {
+        // fileType Must be one of 'video' | 'audio' | 'image' | 'other'
+        $whFileType = match (explode('/', $fileType['mime'])[0]) {
+          'image' => 'image',
+          'video' => 'video',
+          'audio' => 'audio',
+          default => 'other',
+        };
+        $this->uploadWebhook->createPayload(
+          fileHash: explode('.', $newFileName)[0], // Remove extension
+          fileName: $newFileName,
+          fileSize: $newFileSize,
+          fileMimeType: $fileType['mime'],
+          fileUrl: $this->generateMediaURL($newFileName, $fileType['type']),
+          fileType: $whFileType,
+          shouldTranscode: false,
+          uploadAccountType: $this->pro ? 'subscriber' : 'free',
+          uploadTime: time(),
+          uploadedFileInfo: $_SERVER['CLIENT_REQUEST_INFO'] ?? null,
+          uploadNpub: $this->userNpub ?? null,
+          fileOriginalUrl: null,
+        );
+        $this->uploadWebhook->sendPayload();
+        error_log('Webhook payload sent for:' . $newFileName . PHP_EOL);
+      } catch (Exception $e) {
+        error_log("Webhook signalling failed: " . $e->getMessage());
       }
       error_log('Media upload successful:' . $newFileName . PHP_EOL);
       error_log('Mime:' . $fileType['mime'] . PHP_EOL);
@@ -1015,6 +1081,35 @@ class MultimediaUpload
     }
 
     $this->addFileToUploadedFilesArray($fileData);
+    // Signal webhook about upload
+    try {
+      // fileType Must be one of 'video' | 'audio' | 'image' | 'other'
+      $whFileMime = $fileS3Metadata->get('ContentType');
+      $whFileType = match (explode('/', $whFileMime)[0]) {
+        'image' => 'image',
+        'video' => 'video',
+        'audio' => 'audio',
+        default => 'other',
+      };
+      $this->uploadWebhook->createPayload(
+        fileHash: $filehash,
+        fileName: $data['filename'],
+        fileSize: $data['file_size'],
+        fileMimeType: $whFileMime,
+        fileUrl: $this->generateMediaURL($data['filename'], $data['type']),
+        fileType: $whFileType,
+        shouldTranscode: false,
+        uploadAccountType: $this->pro ? 'subscriber' : 'free',
+        uploadTime: time(),
+        uploadedFileInfo: $_SERVER['CLIENT_REQUEST_INFO'] ?? null,
+        uploadNpub: $this->userNpub ?? null,
+        fileOriginalUrl: null,
+      );
+      $this->uploadWebhook->sendPayload();
+      error_log('Webhook payload sent for:' . $data['filename'] . PHP_EOL);
+    } catch (Exception $e) {
+      error_log("Webhook signalling failed: " . $e->getMessage());
+    }
 
     return true;
   }
