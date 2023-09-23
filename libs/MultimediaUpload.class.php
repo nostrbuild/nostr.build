@@ -404,7 +404,9 @@ class MultimediaUpload
       if ($this->checkForDuplicates($fileSha256, true)) {
         // If duplicate was detected, our data are already populated with the file info
         // It is safe to return true here, and rollback the transaction
-        error_log('Duplicate file');
+        error_log('Duplicate file:' . $fileSha256 . PHP_EOL);
+        error_log('Npub:' . $this->userNpub ?? 'anon' . PHP_EOL);
+        error_log('Client Info:' . $_SERVER['CLIENT_REQUEST_INFO'] ?? 'unknown' . PHP_EOL);
         $this->db->rollback();
         return true;
       }
@@ -471,6 +473,11 @@ class MultimediaUpload
       unlink($this->file['tmp_name']);
     }
 
+    error_log('Profile picutre upload successful:' . $newFileName . PHP_EOL);
+    error_log('Mime:' . $fileType['mime'] . PHP_EOL);
+    error_log('sha256:' . $fileSha256 . PHP_EOL);
+    error_log('Npub:' . $this->userNpub ?? 'anon' . PHP_EOL);
+    error_log('Client Info:' . $_SERVER['CLIENT_REQUEST_INFO'] ?? 'unknown' . PHP_EOL);
     // If we reached this far, upload was successful
     return true;
   }
@@ -512,6 +519,8 @@ class MultimediaUpload
         // Populate the uploadedFiles array with the file data
         if (!$this->pro && $this->checkForDuplicates($fileSha256)) {
           error_log('Duplicate file:' . $fileSha256 . PHP_EOL);
+          error_log('Npub:' . $this->userNpub ?? 'anon' . PHP_EOL);
+          error_log('Client Info:' . $_SERVER['CLIENT_REQUEST_INFO'] ?? 'unknown' . PHP_EOL);
           // Continue with the loop to process the next file
           // Duplicate is not an error, so we don't throw an exception
           continue;
@@ -642,6 +651,11 @@ class MultimediaUpload
         // We want to loop over all files and not stop on the errors
         continue;
       }
+      error_log('Media upload successful:' . $newFileName . PHP_EOL);
+      error_log('Mime:' . $fileType['mime'] . PHP_EOL);
+      error_log('sha256:' . $fileSha256 ?? 'none' . PHP_EOL);
+      error_log('Npub:' . $this->userNpub ?? 'anon' . PHP_EOL);
+      error_log('Client Info:' . $_SERVER['CLIENT_REQUEST_INFO'] ?? 'unknown' . PHP_EOL);
     }
     // Check if we had any successful uploads and if not, throw the last error
     if ($successfulUploads === 0 && $lastError !== null) {
