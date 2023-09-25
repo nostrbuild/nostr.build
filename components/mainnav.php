@@ -145,5 +145,5 @@ SVG;
       </a>
     <?php endif; ?>
   </div>
+  <a class="ref_link" style="font-size: large" href="https://btcpay.nostr.build/apps/5HcE4o7M56JrgrzpHSeSzNrK7Ss/pos"> Bitpopart <img src="https://cdn.nostr.build/assets/images/nostrasia01.png" style="width:180px;" alt="nostrasia"> T-Shirts HERE!</a>
 </nav>
-<a class="ref_link" style="font-size: large" href="https://btcpay.nostr.build/apps/5HcE4o7M56JrgrzpHSeSzNrK7Ss/pos"> Bitpopart <img src="https://cdn.nostr.build/assets/images/nostrasia01.png" width="180" alt="nostrasia"> T-Shirts HERE!</a>
