@@ -98,10 +98,37 @@ $app = AppFactory::create();
 // Middleware to add CORS headers
 $app->add(function (Request $request, RequestHandler $handler): Response {
   $response = $handler->handle($request);
-  return $response
-    ->withHeader('Access-Control-Allow-Origin', '*')
-    ->withHeader('Access-Control-Allow-Headers', 'X-Requested-With, Content-Type, Accept, Origin, Authorization')
-    ->withHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
+  // Check if the Origin header is present
+  $origin = $request->getHeaderLine('Origin');
+  if (empty($origin)) {
+    return $response; // Return the response without CORS headers if Origin is not present
+  }
+
+  // Define patterns for allowed Origins and their corresponding paths
+  $allowedOriginsAndPaths = [
+    'https://nostr\.build' => ['/api/v2/.*'],
+    'https://.*\.nostr\.build' => ['/api/v2/.*'],
+    'https://.*' => ['/api/v2/upload/.*'],
+    // add more origin and path patterns as needed
+  ];
+
+  $currentPath = $request->getUri()->getPath();
+
+  foreach ($allowedOriginsAndPaths as $originPattern => $pathPatterns) {
+    if (preg_match('#^' . $originPattern . '$#', $origin)) {
+      foreach ($pathPatterns as $pathPattern) {
+        if (preg_match('#^' . $pathPattern . '$#', $currentPath)) {
+          return $response
+            ->withHeader('Access-Control-Allow-Origin', $origin)
+            ->withHeader('Access-Control-Allow-Headers', 'X-Requested-With, Content-Type, Accept, Origin, Authorization')
+            ->withHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
+        }
+      }
+    }
+  }
+
+  // No matches found, return response without CORS headers
+  return $response;
 });
 $app->options('/{routes:.+}', function ($request, $response, $args) {
   return $response;
