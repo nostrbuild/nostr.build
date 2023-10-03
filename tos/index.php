@@ -13,9 +13,9 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/functions/session.php';
 		<meta name="description" content="nostr.build" />
 		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-		<link rel="stylesheet" href="/styles/index.css?v=2" />
-		<link rel="stylesheet" href="/styles/header.css?v=3" />
-		<link rel="stylesheet" href="/styles/tos.css?v=2" />
+		<link rel="stylesheet" href="/styles/index.css?v=3" />
+		<link rel="stylesheet" href="/styles/header.css?v=4" />
+		<link rel="stylesheet" href="/styles/tos.css?v=3" />
 		<link rel="icon" href="/assets/01.png">
 
 		<title>nostr.build Terms of Service</title>

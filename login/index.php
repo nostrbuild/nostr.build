@@ -76,8 +76,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     <meta charset="UTF-8" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <link rel="stylesheet" href="/styles/index.css?v=2" />
-    <link rel="stylesheet" href="/styles/login.css?v=2" />
+    <link rel="stylesheet" href="/styles/index.css?v=3" />
+    <link rel="stylesheet" href="/styles/login.css?v=3" />
     <link rel="icon" href="/assets/01.png">
     <title>nostr.build login</title>
 </head>
@@ -130,7 +130,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         </div>
     </main>
     <?php include $_SERVER['DOCUMENT_ROOT'] . '/components/footer.php'; ?>
-    <script src="/scripts/index.js?v=1"></script>
+    <script src="/scripts/index.js?v=2"></script>
     <script>
         document.addEventListener('DOMContentLoaded', (event) => {
             let closeButton = document.querySelector(".close");

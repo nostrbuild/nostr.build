@@ -41,10 +41,10 @@ if (!empty($rows)) {
 	<meta name="description" content="nostr.build" />
 	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-	<link rel="stylesheet" href="/styles/index.css?v=2" />
-	<link rel="stylesheet" href="/styles/profile.css?v=2" />
-	<link rel="stylesheet" href="/styles/header.css?v=3" />
-	<link rel="stylesheet" href="/styles/twbuild.css?v=51" />
+	<link rel="stylesheet" href="/styles/index.css?v=3" />
+	<link rel="stylesheet" href="/styles/profile.css?v=3" />
+	<link rel="stylesheet" href="/styles/header.css?v=4" />
+	<link rel="stylesheet" href="/styles/twbuild.css?v=52" />
 	<link rel="icon" href="/assets/01.png">
 
 	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/lightgallery/2.7.1/css/lightgallery-bundle.min.css" integrity="sha512-nUqPe0+ak577sKSMThGcKJauRI7ENhKC2FQAOOmdyCYSrUh0GnwLsZNYqwilpMmplN+3nO3zso8CWUgu33BDag==" crossorigin="anonymous" referrerpolicy="no-referrer" />

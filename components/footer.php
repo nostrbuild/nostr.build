@@ -28,4 +28,4 @@
 		</div>
 	</nav>
 </footer>
-<script defer src="/scripts/header.js?v=3"></script>
+<script defer src="/scripts/header.js?v=4"></script>
