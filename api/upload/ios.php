@@ -34,6 +34,13 @@ if (sizeof($uploadData) > 0 && $uploadData[0]['url'] != null) {
 }
 
 header('Content-Type: application/json; charset=utf-8');
+// Add CORS headers
+$origin = $_SERVER['HTTP_ORIGIN'] ?? '';
+if (!empty($origin) && $origin === 'https://damus.io') {
+  header('Access-Control-Allow-Origin: ' . $origin);
+  header('Access-Control-Allow-Headers: X-Requested-With, Content-Type, Accept, Origin, Authorization');
+  header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, PATCH, OPTIONS');
+}
 if ($result === false) {
   http_response_code(400);
   echo json_encode("Upload failed: " . $error);
