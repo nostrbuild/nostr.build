@@ -36,7 +36,7 @@ if (sizeof($uploadData) > 0 && $uploadData[0]['url'] != null) {
 header('Content-Type: application/json; charset=utf-8');
 // Add CORS headers
 $origin = $_SERVER['HTTP_ORIGIN'] ?? '';
-if (!empty($origin) && $origin === 'https://flycat.club') {
+if (!empty($origin) && ($origin === 'https://flycat.club' || preg_match('/^https:\/\/.*\.flycat\.club/', $origin))) {
   header('Access-Control-Allow-Origin: ' . $origin);
   header('Access-Control-Allow-Headers: X-Requested-With, Content-Type, Accept, Origin, Authorization');
   header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, PATCH, OPTIONS');
