@@ -959,6 +959,8 @@ class MultimediaUpload
     // Calculate remaining space and check if file size exceeds the remaining space for pro users
     if ($this->pro) {
       // TODO: Need to validate array of files, so we do not allow to go over the limit with batch
+      error_log('Remaining space: ' . $this->userAccount->getRemainingStorageSpace() .
+        ', uploading:' . $this->file['size'] . PHP_EOL);
       return $this->userAccount->hasSufficientStorageSpace($this->file['size']);
     }
 
