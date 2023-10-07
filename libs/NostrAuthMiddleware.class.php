@@ -65,6 +65,8 @@ class NostrAuthMiddleware implements MiddlewareInterface
         if (!$account->hasSufficientStorageSpace($totalSize)) {
           error_log('User ' . $npub . ' does not have sufficient storage space to upload the file');
           $accountUploadEligible = false;
+        } else {
+          error_log('User ' . $npub . ' has sufficient storage space to upload the file:' . $account->getRemainingStorageSpace() . ' bytes');
         }
       } else {
         $accountUploadEligible = false;
