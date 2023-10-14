@@ -132,7 +132,7 @@ $userStorageRemaining = $userOverLimit ? 0 : $userStorageLimit - $storageUsed;
 
 			<?php
 			// Menu items for Creators and Admins
-			if ($perm->validatePermissionsLevelAny(1, 2, 99)) :
+			if ($perm->validatePermissionsLevelAny(1, 99)) :
 			?>
 				<button class="nav_item" onclick="window.location.href='https://btcpay.nostr.build';">
 					<svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -175,7 +175,7 @@ $userStorageRemaining = $userOverLimit ? 0 : $userStorageLimit - $storageUsed;
 				</button>
 			<?php
 			endif;
-			if ($perm->validatePermissionsLevelAny(1) || $perm->hasPrivilege('canModerate') || $perm->isAdmin()) :
+			if ($perm->validatePermissionsLevelAny(1, 2) || $perm->hasPrivilege('canModerate') || $perm->isAdmin()) :
 			?>
 				<button class="nav_item" onclick="window.location.href='/adultview/'; ">
 					<svg width="20px" height="20px" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" stroke="#000" stroke-width="0.24000000000000005">
