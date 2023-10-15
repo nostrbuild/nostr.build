@@ -155,7 +155,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
       <ul>
         <li>
           <span class="whitespace-pre-line">Storage on AWS S3 with Cloudflare global CDN
-            Damus, Amethyst, Snort, Coracle & noStrudel integration (nip98)
+            Damus/Amethyst/Snort/Coracle/noStrudel integration
             Add/Delete media from your private folders
             Bitcoin Only | Never Ads | Billed Annually
           </span>
