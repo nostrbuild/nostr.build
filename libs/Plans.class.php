@@ -131,7 +131,7 @@ class Plans
         '<b><a class="ref_link" target="_blank" href="https://nostr.build/creators/">Host on nostr.build Creators page</a></b>',
         '<b>20GB of private storage</b>',
         'BTCPay Server Account',
-        'View All : 500k+ pics, GIFs & videos',
+        'View All : 800k+ pics, GIFs & videos',
         'Add/Delete your media'
       ],
       'sats',
@@ -148,7 +148,7 @@ class Plans
       $originalPrices[self::PROFESSIONAL],
       [
         '<b>10GB of private storage</b>',
-        '<b>View All : 500k+ pics, GIFs & videos</b>',
+        '<b>View All : 800k+ pics, GIFs & videos</b>',
         'Add/Delete your media'
       ],
       'sats',
@@ -181,7 +181,7 @@ class Plans
       'viewall plan image',
       $originalPrices[self::VIEWER],
       [
-        '<b>View All : 500k+ pics, GIFs & videos</b>',
+        '<b>View All : 800k+ pics, GIFs & videos</b>',
         '<b>No private storage!</b>'
       ],
       'sats',
