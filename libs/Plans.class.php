@@ -148,7 +148,6 @@ class Plans
       $originalPrices[self::PROFESSIONAL],
       [
         '<b>10GB of private storage</b>',
-        '<b>BTCPay Server Account</b>',
         '<b>View All : 500k+ pics, GIFs & videos</b>',
         'Add/Delete your media'
       ],
