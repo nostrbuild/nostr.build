@@ -10,6 +10,7 @@ require_once $_SERVER['DOCUMENT_ROOT'] . "/libs/db/UsersImagesFolders.class.php"
 require_once $_SERVER['DOCUMENT_ROOT'] . "/libs/db/UploadAttempts.class.php";
 require_once $_SERVER['DOCUMENT_ROOT'] . "/SiteConfig.php"; // File size limits, etc.
 require_once $_SERVER['DOCUMENT_ROOT'] . "/libs/CloudflareUploadWebhook.class.php";
+require_once $_SERVER['DOCUMENT_ROOT'] . "/libs/VideoTranscoding.class.php";
 
 // Vendor autoload
 require_once $_SERVER['DOCUMENT_ROOT'] . "/vendor/autoload.php";
@@ -678,6 +679,8 @@ class MultimediaUpload
           'dimensions' => $fileData['dimensions'] ?? [],
         ]);
         $this->db->commit();
+
+
         // Increment the counter of successful uploads
         $successfulUploads++;
       } catch (Exception $e) {
@@ -690,6 +693,7 @@ class MultimediaUpload
         continue;
       }
       // Signal webhook about upload
+      $originalMediaUrl = $this->generateMediaURL($newFileName, $fileType['type']);
       try {
         // fileType Must be one of 'video' | 'audio' | 'image' | 'other'
         $whFileType = match (explode('/', $fileType['mime'])[0]) {
@@ -703,7 +707,7 @@ class MultimediaUpload
           fileName: $newFileName,
           fileSize: $newFileSize,
           fileMimeType: $fileType['mime'],
-          fileUrl: $this->generateMediaURL($newFileName, $fileType['type']),
+          fileUrl: $originalMediaUrl,
           fileType: $whFileType,
           shouldTranscode: false,
           uploadAccountType: $this->pro ? 'subscriber' : 'free',
@@ -722,6 +726,20 @@ class MultimediaUpload
       error_log('sha256:' . $fileSha256 ?? 'none' . PHP_EOL);
       error_log('Npub:' . $this->userNpub ?? 'anon' . PHP_EOL);
       error_log('Client Info:' . $_SERVER['CLIENT_REQUEST_INFO'] ?? 'unknown' . PHP_EOL);
+
+      // If video, and non-pro upload, we need to queue the video for transcoding
+      // TODO: Disable until we implement deletion and cache invalidation
+      if (false && $fileType['type'] === 'video' && !$this->pro) {
+        // Queue the video for transcoding
+        try {
+          $jobSubmitter = new SubmitVideoTranscodingJob($this->file['tmp_name'], $this->userNpub);
+          // TODO: We should use a separate URL that is guaranteed to be have original video
+          $jobSubmitter->submit_video_transcoding_job($originalMediaUrl, [720]);
+          error_log('Video transcoding job submitted for:' . $newFileName . PHP_EOL);
+        } catch (Exception $e) {
+          error_log("Video transcoding job submission failed: " . $e->getMessage() . PHP_EOL);
+        }
+      }
     }
     // Check if we had any successful uploads and if not, throw the last error
     if ($successfulUploads === 0 && $lastError !== null) {
