@@ -474,23 +474,37 @@ class SubmitVideoTranscodingJob
       throw new Exception("Failed to store video information to DynamoDB");
     }
 
-    /* TODO: Uncomment this section once we have the video transcoding lambda and fargate ready
-    $videoId = $dynamodb_metadata['videoId'];
-    $sqs_job_body = $this->prepare_video_sqs_metadata($videoId);
+    $sqs_job_body = $this->prepare_video_sqs_metadata(
+      $dynamodb_metadata['videoId'],
+      $source_url,
+      $desired_resolutions,
+      $dynamodb_metadata['desired_codecs'],
+      $dynamodb_metadata['duration'],
+    );
     $jobId = $this->submit_to_sqs($sqs_job_body);
 
     $updates = ['jobId' => $jobId, 'status' => 'Submitted'];
-    if (!$this->update_dynamodb_item($videoId, 'video#metadata', $updates)) {
+    if (!$this->update_dynamodb_item($dynamodb_metadata['videoId'], 'video#metadata', $updates)) {
       throw new Exception("Failed to update jobId and status in DynamoDB");
     }
-    */
 
     return $dynamodb_metadata;
   }
 
-  private function prepare_video_sqs_metadata(string $videoId): array
-  {
+  private function prepare_video_sqs_metadata(
+    string $videoId,
+    string $source_url,
+    array $desired_resolutions,
+    array $desired_codecs,
+    int $duration,
+    string $recordType = "video#metadata"
+  ): array {
     $jobBody["videoId"] = $videoId;
+    $jobBody["recordType"] = $recordType;
+    $jobBody["sourceVideoUrl"] = $source_url;
+    $jobBody["desiredResolutions"] = $desired_resolutions;
+    $jobBody["desiredCodecs"] = $desired_codecs;
+    $jobBody["duration"] = $duration;
     return $jobBody;
   }
 
@@ -524,12 +538,42 @@ class SubmitVideoTranscodingJob
   {
     $this->choose_sqs_queue();
 
-    $video_information_json = json_encode($video_information_array, JSON_UNESCAPED_SLASHES);
+    $video_information_json = json_encode([], JSON_UNESCAPED_SLASHES);
     $result = $this->sqs_client->sendMessage([
-      'MessageBody' => $video_information_json,
+      'MessageBody' => $video_information_json, // REQUIRED, give it an empty array JSON
+      'MessageAttributes' => [
+        'videoId' => [
+          'DataType' => 'String',
+          'StringValue' => $video_information_array['videoId']
+        ],
+        'recordType' => [
+          'DataType' => 'String',
+          'StringValue' => $video_information_array['recordType']
+        ],
+        'sourceVideoUrl' => [
+          'DataType' => 'String',
+          'StringValue' => $video_information_array['sourceVideoUrl']
+        ],
+        'desiredResolutions' => [
+          'DataType' => 'String.Array',
+          'StringValue' => json_encode($video_information_array['desiredResolutions'], JSON_UNESCAPED_SLASHES)
+        ],
+        'desiredCodecs' => [
+          'DataType' => 'String.Array',
+          'StringValue' => json_encode($video_information_array['desiredCodecs'], JSON_UNESCAPED_SLASHES)
+        ],
+        'duration' => [
+          'DataType' => 'Number.float',
+          'StringValue' => $video_information_array['duration']
+        ],
+        'userNpub' => [
+          'DataType' => 'String',
+          'StringValue' => $this->user_npub ?? 'npub1anonymous'
+        ],
+      ],
       'QueueUrl' => $this->aws_sqs_queue_url,
       'MessageGroupId' => 'VideoTranscoding',
-      'MessageDeduplicationId' => md5($video_information_json)
+      'MessageDeduplicationId' => md5($video_information_json),
     ]);
 
     if (!isset($result["MessageId"]) || $result["MessageId"] === null) {
