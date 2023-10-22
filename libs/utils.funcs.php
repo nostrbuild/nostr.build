@@ -235,3 +235,11 @@ function generateUniqueFilename($prefix, $tempDirectory = null)
 
   return $tempFilePath;
 }
+
+function getIdFromFilename($filename)
+{
+  $filename_base = pathinfo($filename, PATHINFO_FILENAME);
+  return preg_match('/^[a-f0-9]{64}$/i', $filename_base) === 1 ?
+    $filename_base :
+    hash('sha256', $filename_base);
+}
