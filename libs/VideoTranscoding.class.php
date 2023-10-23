@@ -111,7 +111,7 @@ audioBitRate: Bitrate of the audio stream. (Number)
 audioDuration: Duration of the audio stream in seconds. (Number)
 
 SQS (Simple Queue Service):
-status: Current processing status of the video. Values: Pending, Submitted, Processing, Completed, Failed (String) 
+mediaStatus: Current processing status of the video. Values: Pending, Submitted, Processing, Completed, Failed (String) 
 sourceVideoUrl: URL to the original video file. (String)
 desiredCodecs: Desired codecs for transcoding. (List of Strings)
 desiredResolutions: Desired resolutions for transcoding. (List of Strings)
@@ -483,7 +483,7 @@ class SubmitVideoTranscodingJob
     );
     $jobId = $this->submit_to_sqs($sqs_job_body);
 
-    $updates = ['jobId' => $jobId, 'status' => 'Submitted'];
+    $updates = ['jobId' => $jobId, 'mediaStatus' => 'Submitted'];
     if (!$this->update_dynamodb_item($dynamodb_metadata['videoId'], 'video#metadata', $updates)) {
       throw new Exception("Failed to update jobId and status in DynamoDB");
     }
@@ -769,7 +769,7 @@ class VideoMetadata
       'audioBitRate' => $audioStream['bit_rate'] ?? 0, // Bitrate of the audio stream
       'audioDuration' => $audioStream['duration'] ?? 0, // Duration of the audio stream in seconds
       // SQS
-      'status' => 'Pending', // Current processing status of the video. Values: Pending, Submitted, Processing, Completed, Failed
+      'mediaStatus' => 'Pending', // Current processing status of the video. Values: Pending, Submitted, Processing, Completed, Failed
       'sourceVideoUrl' => $this->data['metadata']['source_video_url'] ?? '', // URL to the original video file
       'desiredCodecs' => $this->data['metadata']['desired_codecs'] ?? [], // Desired codecs for transcoding
       'desiredResolutions' => $this->data['metadata']['desired_resolutions'] ?? [], // Desired resolutions for transcoding
