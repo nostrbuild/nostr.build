@@ -7,6 +7,8 @@ use Aws\DynamoDb\Exception\DynamoDbException;
 use Aws\DynamoDb\Marshaler;
 use Aws\Sqs\SqsClient;
 
+use function DI\get;
+
 /* DynamoDB Table Specs
 
 Table Name: VideoCatalog
@@ -465,10 +467,10 @@ class SubmitVideoTranscodingJob
     $this->dynamodb_client = new DynamoDbClient($dynamoConfig);
   }
 
-  public function submit_video_transcoding_job(string $source_url, array $desired_resolutions): array
+  public function submit_video_transcoding_job(string $source_url, array $desired_resolutions, array $desired_codecs = ["h264"], string $plan = "free"): array
   {
 
-    $dynamodb_metadata = $this->prepare_video_ddb_metadata($source_url, $desired_resolutions);
+    $dynamodb_metadata = $this->prepare_video_ddb_metadata($source_url, $desired_resolutions, $desired_codecs, $plan);
 
     if (!$this->store_video_information_to_dynamodb($dynamodb_metadata)) {
       throw new Exception("Failed to store video information to DynamoDB");
@@ -478,7 +480,7 @@ class SubmitVideoTranscodingJob
       $dynamodb_metadata['videoId'],
       $source_url,
       $desired_resolutions,
-      $dynamodb_metadata['desired_codecs'],
+      $dynamodb_metadata['desiredCodecs'],
       $dynamodb_metadata['duration'],
     );
     $jobId = $this->submit_to_sqs($sqs_job_body);
@@ -508,7 +510,7 @@ class SubmitVideoTranscodingJob
     return $jobBody;
   }
 
-  private function prepare_video_ddb_metadata(string $source_url, array $desired_resolutions, array $desired_codecs = ["h264"]): array
+  private function prepare_video_ddb_metadata(string $source_url, array $desired_resolutions, array $desired_codecs = ["h264"], string $plan = "free"): array
   {
     // Get video filename and derive video ID
     $filename = basename(parse_url($source_url, PHP_URL_PATH));
@@ -523,6 +525,7 @@ class SubmitVideoTranscodingJob
     $video_metadata_content["metadata"]["is_vertical_video"] = $this->video_info_class->is_vertical_video();
     $video_metadata_content["metadata"]["orientation"] = $this->video_info_class->get_video_orientation()["rotate"];
     $video_metadata_content["metadata"]["userNpub"] = $this->user_npub;
+    $video_metadata_content["metadata"]["userPlan"] = $plan;
     $video_metadata_content["metadata"]["mime_type"] = $video_mime_type;
     $video_metadata_content["metadata"]["checksum"] = hash_file("sha256", $this->video_file);
     $video_metadata_content["metadata"]["desired_resolutions"] = $desired_resolutions;
@@ -538,9 +541,9 @@ class SubmitVideoTranscodingJob
   {
     $this->choose_sqs_queue();
 
-    $video_information_json = json_encode([], JSON_UNESCAPED_SLASHES);
+    $video_information_json = json_encode($video_information_array, JSON_UNESCAPED_SLASHES);
     $result = $this->sqs_client->sendMessage([
-      'MessageBody' => $video_information_json, // REQUIRED, give it an empty array JSON
+      'MessageBody' => $video_information_json,
       'MessageAttributes' => [
         'videoId' => [
           'DataType' => 'String',
@@ -568,12 +571,17 @@ class SubmitVideoTranscodingJob
         ],
         'userNpub' => [
           'DataType' => 'String',
-          'StringValue' => $this->user_npub ?? 'npub1anonymous'
+          'StringValue' => empty($this->user_npub) ? 'npub1anonymous' : $this->user_npub
+        ],
+        'accountPlan' => [
+          'DataType' => 'String',
+          'StringValue' => $video_information_array['accountPlan'] ?? 'free'
         ],
       ],
       'QueueUrl' => $this->aws_sqs_queue_url,
-      'MessageGroupId' => 'VideoTranscoding',
-      'MessageDeduplicationId' => md5($video_information_json),
+      // Only applicable for FIFO queues
+      //'MessageGroupId' => $video_information_array['videoId'],
+      //'MessageDeduplicationId' => md5($video_information_json),
     ]);
 
     if (!isset($result["MessageId"]) || $result["MessageId"] === null) {
@@ -590,7 +598,9 @@ class SubmitVideoTranscodingJob
     $video_is_hdr = $this->video_info_class->is_hdr();
     $video_size = $this->video_info_class->get_video_size();
 
-    $this->aws_sqs_queue_url = ($video_size < 1024 ** 2 * 100 || ($video_duration < 90 && $video_is_hdr === false)) ? $this->aws_sqs_queue_url_lambda : $this->aws_sqs_queue_url_fg;
+    $this->aws_sqs_queue_url = ($video_size < 1024 ** 2 * 100 || ($video_duration < 90 && $video_is_hdr === false)) ?
+      $this->aws_sqs_queue_url_lambda :
+      $this->aws_sqs_queue_url_fg;
   }
 
   private function store_video_information_to_dynamodb(array $content, string $table = 'VideoCatalog'): bool
@@ -704,6 +714,7 @@ class VideoMetadata
       'createdAt' => date('Y-m-d H:i:s'), // Timestamp when the video was submitted
       'updatedAt' => date('Y-m-d H:i:s'), // Timestamp when the video was last updated
       'userNpub' => $this->data['metadata']['userNpub'] ?? 'npub1anonymous', // User's npub or default if not available
+      'userPlan' => $this->data['metadata']['userPlan'] ?? 'free', // User's plan or default if not available
       'checksum' => $this->data['metadata']['checksum'] ?? '', // SHA256 hash of the original video file
       'filename' => $this->fileName ?? '', // Original filename of the video
       'size' => $this->data['format']['size'] ?? 0, // Size of the video file in bytes
