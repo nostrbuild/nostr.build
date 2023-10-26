@@ -151,7 +151,8 @@ class GifConverter
     }
 
     // All the magic happens in the following line
-    $gifCommand = "{$this->ffmpegPath} -y -hide_banner -i {$inputFile} -vf \"scale=w='if(gt(iw,ih),-4,{$this->maxGifWidth})':h='if(gt(iw,ih),{$this->maxGifHeight},-4)'\" {$this->tempFile} 2>&1";
+    // Use palettegen and paletteuse to preserve colors and reduce artifacts
+    $gifCommand ="{$this->ffmpegPath} -y -hide_banner -i {$inputFile} -filter_complex \"scale=w='if(gt(iw,ih),-4,{$this->maxGifWidth})':h='if(gt(iw,ih),{$this->maxGifHeight},-4)',split[v1][v2]; [v1]palettegen=stats_mode=full [palette]; [v2][palette]paletteuse=dither=sierra2_4a\" -vsync 0 {$this->tempFile} 2>&1";
 
     exec($gifCommand, $output, $returnVar);
 
