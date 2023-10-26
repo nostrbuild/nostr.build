@@ -729,12 +729,15 @@ class MultimediaUpload
 
       // If video, and non-pro upload, we need to queue the video for transcoding
       // TODO: Disable until we implement deletion and cache invalidation
-      if (false && $fileType['type'] === 'video' && !$this->pro) {
+      if (false && $fileType['type'] === 'video') {
         // Queue the video for transcoding
         try {
           $jobSubmitter = new SubmitVideoTranscodingJob($this->file['tmp_name'], $this->userNpub);
-          // TODO: We should use a separate URL that is guaranteed to be have original video
-          $jobSubmitter->submit_video_transcoding_job($originalMediaUrl, [720]);
+          // TODO: We should use a separate URL that is guaranteed to have the original video
+          $desired_resolutions = $this->pro ? [1080] : [720];
+          $desired_codecs = $this->pro ? ['h264'] : ['h264'];
+          $user_plan = $this->pro ? 'subscriber' : 'free';
+          $jobSubmitter->submit_video_transcoding_job($originalMediaUrl, $desired_resolutions, $desired_codecs, $user_plan);
           error_log('Video transcoding job submitted for:' . $newFileName . PHP_EOL);
         } catch (Exception $e) {
           error_log("Video transcoding job submission failed: " . $e->getMessage() . PHP_EOL);
