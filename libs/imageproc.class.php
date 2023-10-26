@@ -425,6 +425,7 @@ class ImageProcessor
       ->addOptimizer(new Gifsicle([
         '-b',
         '-O3',
+        '--careful',
       ]))
       ->addOptimizer(new Cwebp([
         $webpQuality,
