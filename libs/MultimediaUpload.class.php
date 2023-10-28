@@ -421,8 +421,8 @@ class MultimediaUpload
         // If duplicate was detected, our data are already populated with the file info
         // It is safe to return true here, and rollback the transaction
         error_log('Duplicate file:' . $fileSha256 . PHP_EOL);
-        error_log('Npub:' . $this->userNpub ?? 'anon' . PHP_EOL);
-        error_log('Client Info:' . $_SERVER['CLIENT_REQUEST_INFO'] ?? 'unknown' . PHP_EOL);
+        //error_log('Npub:' . $this->userNpub ?? 'anon' . PHP_EOL);
+        //error_log('Client Info:' . $_SERVER['CLIENT_REQUEST_INFO'] ?? 'unknown' . PHP_EOL);
         $this->db->rollback();
         return [true, 200, 'Upload successful.'];
       }
@@ -518,16 +518,16 @@ class MultimediaUpload
         orginalSha256Hash: $fileSha256, // NIP-96
       );
       $this->uploadWebhook->sendPayload();
-      error_log('Webhook payload sent for:' . $newFileName . PHP_EOL);
+      //error_log('Webhook payload sent for:' . $newFileName . PHP_EOL);
     } catch (Exception $e) {
       error_log("Webhook signalling failed: " . $e->getMessage());
     }
 
-    error_log('Profile picutre upload successful:' . $newFileName . PHP_EOL);
-    error_log('Mime:' . $fileType['mime'] . PHP_EOL);
-    error_log('sha256:' . $fileSha256 . PHP_EOL);
-    error_log('Npub:' . $this->userNpub ?? 'anon' . PHP_EOL);
-    error_log('Client Info:' . $_SERVER['CLIENT_REQUEST_INFO'] ?? 'unknown' . PHP_EOL);
+    //error_log('Profile picutre upload successful:' . $newFileName . PHP_EOL);
+    //error_log('Mime:' . $fileType['mime'] . PHP_EOL);
+    //error_log('sha256:' . $fileSha256 . PHP_EOL);
+    //error_log('Npub:' . $this->userNpub ?? 'anon' . PHP_EOL);
+    //error_log('Client Info:' . $_SERVER['CLIENT_REQUEST_INFO'] ?? 'unknown' . PHP_EOL);
     // If we reached this far, upload was successful
     return [true, 200, 'Profile picture uploaded successfully'];
   }
@@ -553,7 +553,7 @@ class MultimediaUpload
     // Wrap in a try-catch block to catch any exceptions and handle what we can
     // Loop through the files array that was passed in
     foreach ($this->filesArray as $file) {
-      error_log('Processing file: ' . print_r($file, true) . PHP_EOL);
+      //error_log('Processing file: ' . print_r($file, true) . PHP_EOL);
       try {
         // Begin a database transaction, so that we can rollback if anything fails
         $this->db->begin_transaction();
@@ -571,8 +571,8 @@ class MultimediaUpload
         // Populate the uploadedFiles array with the file data
         if (!$this->pro && $this->checkForDuplicates($fileSha256)) {
           error_log('Duplicate file:' . $fileSha256 . PHP_EOL);
-          error_log('Npub:' . $this->userNpub ?? 'anon' . PHP_EOL);
-          error_log('Client Info:' . $_SERVER['CLIENT_REQUEST_INFO'] ?? 'unknown' . PHP_EOL);
+          //error_log('Npub:' . $this->userNpub ?? 'anon' . PHP_EOL);
+          //error_log('Client Info:' . $_SERVER['CLIENT_REQUEST_INFO'] ?? 'unknown' . PHP_EOL);
           // Continue with the loop to process the next file
           // Duplicate is not an error, so we don't throw an exception
           continue;
@@ -737,15 +737,15 @@ class MultimediaUpload
           orginalSha256Hash: $fileSha256, // NIP-96
         );
         $this->uploadWebhook->sendPayload();
-        error_log('Webhook payload sent for:' . $newFileName . PHP_EOL);
+        //error_log('Webhook payload sent for:' . $newFileName . PHP_EOL);
       } catch (Exception $e) {
         error_log("Webhook signalling failed: " . $e->getMessage());
       }
-      error_log('Media upload successful:' . $newFileName . PHP_EOL);
-      error_log('Mime:' . $fileType['mime'] . PHP_EOL);
-      error_log('sha256:' . $fileSha256 ?? 'none' . PHP_EOL);
-      error_log('Npub:' . $this->userNpub ?? 'anon' . PHP_EOL);
-      error_log('Client Info:' . $_SERVER['CLIENT_REQUEST_INFO'] ?? 'unknown' . PHP_EOL);
+      //error_log('Media upload successful:' . $newFileName . PHP_EOL);
+      //error_log('Mime:' . $fileType['mime'] . PHP_EOL);
+      //error_log('sha256:' . $fileSha256 ?? 'none' . PHP_EOL);
+      //error_log('Npub:' . $this->userNpub ?? 'anon' . PHP_EOL);
+      //error_log('Client Info:' . $_SERVER['CLIENT_REQUEST_INFO'] ?? 'unknown' . PHP_EOL);
 
       // If video, and non-pro upload, we need to queue the video for transcoding
       // TODO: Disable until we implement deletion and cache invalidation
@@ -1018,8 +1018,8 @@ class MultimediaUpload
     // Calculate remaining space and check if file size exceeds the remaining space for pro users
     if ($this->pro) {
       // TODO: Need to validate array of files, so we do not allow to go over the limit with batch
-      error_log('Remaining space: ' . $this->userAccount->getRemainingStorageSpace() .
-        ', uploading:' . $this->file['size'] . PHP_EOL);
+      //error_log('Remaining space: ' . $this->userAccount->getRemainingStorageSpace() .
+      //  ', uploading:' . $this->file['size'] . PHP_EOL);
       if (!$this->userAccount->hasSufficientStorageSpace($this->file['size'])) {
         error_log('File size exceeds the remaining space of ' . formatSizeUnits($this->userAccount->getRemainingStorageSpace()));
         return [false, 413, "File size exceeds the remaining space of " . formatSizeUnits($this->userAccount->getRemainingStorageSpace())];
@@ -1069,7 +1069,7 @@ class MultimediaUpload
       $height = $dimensions['height'];
 
       // DEBUG log
-      error_log("Updating uploads_data table with width: $width, height: $height, blurhash: $blurhash");
+      //error_log("Updating uploads_data table with width: $width, height: $height, blurhash: $blurhash");
 
       $this->uploadsData->update(
         $data['id'],
@@ -1173,7 +1173,7 @@ class MultimediaUpload
         //orginalSha256Hash: $filehash, // NIP-96 not needed for duplicates
       );
       $this->uploadWebhook->sendPayload();
-      error_log('Webhook payload sent for:' . $data['filename'] . PHP_EOL);
+      //error_log('Webhook payload sent for:' . $data['filename'] . PHP_EOL);
     } catch (Exception $e) {
       error_log("Webhook signalling failed: " . $e->getMessage());
     }
