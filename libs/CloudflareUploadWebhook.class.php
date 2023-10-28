@@ -83,7 +83,7 @@ class CloudflareUploadWebhook
       $token = base64_encode($this->generateHMACToken($randomString, $expiry));
       $url = $this->apiEndpoint . "/$randomString/$expiry";
       // DEBUG
-      error_log("Sending payload:" . json_encode($this->payload, JSON_UNESCAPED_SLASHES) . "\n");
+      //error_log("Sending payload:" . json_encode($this->payload, JSON_UNESCAPED_SLASHES) . "\n");
 
       $ch = curl_init($url);
       curl_setopt($ch, CURLOPT_POST, true);
