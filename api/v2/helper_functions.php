@@ -195,7 +195,8 @@ function nip96Response(Response $response, string $status, string $message, $dat
     ? createNip96SuccessResponse($data, $message, $processing_url)
     : createNip96ErrorResponse($message);
 
-  $response->getBody()->write(json_encode($responseBody));
+  error_log('nip96Response: ' . json_encode($responseBody, JSON_UNESCAPED_SLASHES));
+  $response->getBody()->write(json_encode($responseBody, JSON_UNESCAPED_SLASHES));
   return $response->withHeader('Content-Type', 'application/json')->withStatus($statusCode);
 }
 
@@ -216,7 +217,7 @@ function createNip96SuccessResponse(array $data, string $message, string $proces
   $nip94_event = [
     'tags' => [
       ["url", $data['url']],
-      ["ox", $data['original_sha256'], $_SERVER['HTTP_HOST']]
+      ["ox", $data['original_sha256'], "https://{$_SERVER['HTTP_HOST']}"]
     ],
     'content' => "" // Empty by design
   ];
