@@ -1104,7 +1104,7 @@ class MultimediaUpload
       'size' => $data['file_size'],
       'blurhash' => $blurhash,
       'dimensions' => ['width' => $width, 'height' => $height],
-      'dimensionsString' => $width ?? 0 . 'x' . $height ?? 0,
+      'dimensionsString' => sprintf("%sx%s",$width ?? 0, $height ?? 0),
     ];
 
     if ($profile) {
