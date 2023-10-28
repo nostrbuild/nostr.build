@@ -84,3 +84,34 @@ class NostrAuthMiddleware implements MiddlewareInterface
     return $response;
   }
 }
+
+/**
+ * Summary of FormAuthorizationMiddleware
+ * Handles the case where the Authorization header is not set, but the form data contains the Authorization field
+ */
+class FormAuthorizationMiddleware implements MiddlewareInterface
+{
+  /**
+   * Summary of process
+   * @param Psr\Http\Message\ServerRequestInterface $request
+   * @param Psr\Http\Server\RequestHandlerInterface $handler
+   * @return Psr\Http\Message\ResponseInterface
+   */
+  public function process(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface
+  {
+    // If the 'Authorization' header is not set
+    if (!$request->hasHeader('Authorization')) {
+      // Get parsed body
+      $body = $request->getParsedBody();
+
+      // Check if the 'Authorization' field is set in the form data
+      if (isset($body['Authorization']) && !empty($body['Authorization'])) {
+        // Add it to the request headers
+        $request = $request->withHeader('Authorization', $body['Authorization']);
+      }
+    }
+
+    // Call the next middleware or route
+    return $handler->handle($request);
+  }
+}
