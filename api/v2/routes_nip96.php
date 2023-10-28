@@ -33,7 +33,7 @@ $app->group('/nip96', function (RouteCollectorProxy $group) {
     ];
 
     // Log request route
-    error_log('Route: /nip96/upload');
+    //error_log('Route: /nip96/upload');
 
     // If no files are provided or more than one is submitted, return a 400 response
     if (empty($files) || count($files) > 1) {
@@ -66,7 +66,7 @@ $app->group('/nip96', function (RouteCollectorProxy $group) {
         data: new stdClass(),
       );
     }
-    error_log(PHP_EOL . "Request URL:" . $request->getUri() . PHP_EOL);
+    //error_log(PHP_EOL . "Request URL:" . $request->getUri() . PHP_EOL);
 
     try {
       // Handle exceptions thrown by the MultimediaUpload class
@@ -78,6 +78,7 @@ $app->group('/nip96', function (RouteCollectorProxy $group) {
         [$status, $code, $message] = $upload->uploadFiles();
       }
       if (!$status) {
+      error_log('Upload failed' . json_encode(['code' => $code, 'message' => $message]));
         return nip96Response(
           response: $response,
           status: 'error',
@@ -87,14 +88,16 @@ $app->group('/nip96', function (RouteCollectorProxy $group) {
         );
       }
       $data = $upload->getUploadedFiles();
+      //error_log('Upload successful' . json_encode(['code' => $code, 'message' => $message]));
       return nip96Response(
         response: $response,
         status: 'success',
         statusCode: $code,
         message: $message,
-        data: $data,
+        data: reset($data),
       );
     } catch (\Exception $e) {
+      error_log('Upload failed: ' . $e->getMessage());
       return nip96Response(
         response: $response,
         status: 'error',
@@ -105,6 +108,18 @@ $app->group('/nip96', function (RouteCollectorProxy $group) {
     }
   })->add(new NostrAuthMiddleware())
     ->add(new FormAuthorizationMiddleware()); // NIP-96 handling of form based authorization
+
+  // Phony GET route for nip96 upload
+  $group->get('/upload', function (Request $request, Response $response) {
+    error_log('Route: /nip96/upload - GET');
+    return nip96Response(
+      response: $response,
+      status: 'success',
+      statusCode: 200, // 405 Method Not Allowed
+      message: 'Method not allowed',
+      data: new stdClass(),
+    );
+  });
 
   // Route to upload a file via URL
   $group->get('/ping', function (Request $request, Response $response) {
