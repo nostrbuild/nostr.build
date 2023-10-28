@@ -1,7 +1,7 @@
 {
   "api_url": "https://nostr.build/api/v2/nip96/upload",
   "download_url": "https://media.nostr.build",
-  "supported_nips": [96, 98],
+  "supported_nips": [94, 96, 98],
   "tos_url": "https://nostr.build/tos/",
   "content_types": ["image/*", "video/*", "audio/*"],
   "plans": {
