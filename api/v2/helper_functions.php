@@ -191,12 +191,12 @@ function createErrorResponse(string $message): array
  */
 function nip96Response(Response $response, string $status, string $message, $data, string $processing_url = null, int $statusCode = 200): Response
 {
-    $responseBody = ($status === 'success') 
-        ? createNip96SuccessResponse($data, $processing_url) 
-        : createNip96ErrorResponse($message);
+  $responseBody = ($status === 'success')
+    ? createNip96SuccessResponse($data, $message, $processing_url)
+    : createNip96ErrorResponse($message);
 
-    $response->getBody()->write(json_encode($responseBody));
-    return $response->withHeader('Content-Type', 'application/json')->withStatus($statusCode);
+  $response->getBody()->write(json_encode($responseBody));
+  return $response->withHeader('Content-Type', 'application/json')->withStatus($statusCode);
 }
 
 /**
@@ -208,81 +208,81 @@ function nip96Response(Response $response, string $status, string $message, $dat
  */
 function createNip96SuccessResponse(array $data, string $message, string $processing_url = null): array
 {
-    if (!is_array($data)) {
-        return [];
-    }
+  if (!is_array($data)) {
+    return [];
+  }
 
-    // Set core NIP-94 event fields
-    $nip94_event = [
-        'tags' => [
-            ["url", $data['url']],
-            ["ox", $data['original_sha256'], $_SERVER['HTTP_HOST']]
-        ],
-        'content' => "" // Empty by design
-    ];
+  // Set core NIP-94 event fields
+  $nip94_event = [
+    'tags' => [
+      ["url", $data['url']],
+      ["ox", $data['original_sha256'], $_SERVER['HTTP_HOST']]
+    ],
+    'content' => "" // Empty by design
+  ];
 
-    if (isset($data['sha256']) || isset($data['original_sha256'])) {
-        $nip94_event['tags'][] = ["x", $data['sha256'] ?? $data['original_sha256']];
-    }
+  if (isset($data['sha256']) || isset($data['original_sha256'])) {
+    $nip94_event['tags'][] = ["x", $data['sha256'] ?? $data['original_sha256']];
+  }
 
-    if (isset($data['mime'])) {
-        $nip94_event['tags'][] = ["m", $data['mime']];
-    }
+  if (isset($data['mime'])) {
+    $nip94_event['tags'][] = ["m", $data['mime']];
+  }
 
-    if (isset($data['dimensionsString'])) {
-        $nip94_event['tags'][] = ["dim", $data['dimensionsString']];
-    }
+  if (isset($data['dimensionsString'])) {
+    $nip94_event['tags'][] = ["dim", $data['dimensionsString']];
+  }
 
-    if (isset($data['blurhash'])) {
-        $nip94_event['tags'][] = ["bh", $data['blurhash']];
-    }
+  if (isset($data['blurhash'])) {
+    $nip94_event['tags'][] = ["bh", $data['blurhash']];
+  }
 
-    $metadata = [
-        'size' => $data['size']
-    ];
+  $metadata = [
+    'size' => $data['size']
+  ];
 
-    if (isset($data['duration'])) {
-        $metadata['duration'] = $data['duration'];
-    }
+  if (isset($data['duration'])) {
+    $metadata['duration'] = $data['duration'];
+  }
 
-    if (isset($data['thumbnail'])) {
-        $metadata['thumbnail'] = $data['thumbnail'];
-    }
+  if (isset($data['thumbnail'])) {
+    $metadata['thumbnail'] = $data['thumbnail'];
+  }
 
-    if (isset($data['poster'])) {
-        $metadata['poster'] = $data['poster'];
-    }
+  if (isset($data['poster'])) {
+    $metadata['poster'] = $data['poster'];
+  }
 
-    if (isset($data['animated_poster'])) {
-        $metadata['animated_poster'] = $data['animated_poster'];
-    }
+  if (isset($data['animated_poster'])) {
+    $metadata['animated_poster'] = $data['animated_poster'];
+  }
 
-    if (isset($data['hls_stream'])) {
-        $metadata['hls_stream'] = $data['hls_stream'];
-    }
+  if (isset($data['hls_stream'])) {
+    $metadata['hls_stream'] = $data['hls_stream'];
+  }
 
-    if (isset($data['storyboard_vtt'])) {
-        $metadata['storyboard_vtt'] = $data['storyboard_vtt'];
-    }
+  if (isset($data['storyboard_vtt'])) {
+    $metadata['storyboard_vtt'] = $data['storyboard_vtt'];
+  }
 
-    if (isset($data['alternative_formats'])) {
-        $metadata['alternative_formats'] = $data['alternative_formats'];
-    }
+  if (isset($data['alternative_formats'])) {
+    $metadata['alternative_formats'] = $data['alternative_formats'];
+  }
 
-    // Add other optional metadata fields if they exist...
+  // Add other optional metadata fields if they exist...
 
-    $response = [
-        'status' => 'success',
-        'message' => $message,
-        'nip94_event' => $nip94_event,
-        'metadata' => $metadata
-    ];
+  $response = [
+    'status' => 'success',
+    'message' => $message,
+    'nip94_event' => $nip94_event,
+    'metadata' => $metadata
+  ];
 
-    if ($processing_url) {
-        $response['processing_url'] = $processing_url;
-    }
+  if ($processing_url) {
+    $response['processing_url'] = $processing_url;
+  }
 
-    return $response;
+  return $response;
 }
 
 /**
@@ -292,8 +292,8 @@ function createNip96SuccessResponse(array $data, string $message, string $proces
  */
 function createNip96ErrorResponse(string $message): array
 {
-    return [
-        'status' => 'error',
-        'message' => $message
-    ];
+  return [
+    'status' => 'error',
+    'message' => $message
+  ];
 }
