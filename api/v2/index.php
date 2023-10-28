@@ -108,8 +108,8 @@ $app->add(function (Request $request, RequestHandler $handler): Response {
   $allowedOriginsAndPaths = [
     'https://nostr\.build' => ['/api/v2/.*'],
     'https://.*\.nostr\.build' => ['/api/v2/.*'],
-    'https?://localhost(:[0-9]+)?' => ['/api/v2/upload/.*'],
-    'https://.*' => ['/api/v2/upload/.*'],
+    'http(s)?://localhost(:[0-9]+)?' => ['/api/v2/upload/.*', '/api/v2/nip96/.*'],
+    'https://.*' => ['/api/v2/upload/.*', '/api/v2/nip96/.*'],
     // add more origin and path patterns as needed
   ];
 
@@ -139,6 +139,7 @@ $app->addErrorMiddleware(true, true, true);
 $app->addBodyParsingMiddleware();
 
 require_once __DIR__ . '/routes_upload.php'; // Include free upload routes
+require_once __DIR__ . '/routes_nip96.php'; // Include nip96 upload routes
 require_once __DIR__ . '/routes_uppy.php'; // Include uppy upload routes
 require_once __DIR__ . '/routes_account.php'; // Include pro account routes
 require_once __DIR__ . '/routes_btcpay.php'; // Include btcpay routes

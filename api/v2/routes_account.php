@@ -39,8 +39,16 @@ $app->group('/account', function (RouteCollectorProxy $group) {
     try {
       // Handle exceptions thrown by the MultimediaUpload class
       $upload->setPsrFiles($files);
-      $data = ($upload->uploadFiles()) ? $upload->getUploadedFiles() : new stdClass();
-      return jsonResponse($response, 'success', 'Files uploaded successfully', $data);
+
+      [$status, $code, $message] = $upload->uploadFiles();
+
+      if (!$status) {
+        // Handle the non-true status scenario
+        return jsonResponse($response, 'error', $message, new stdClass(), $code);
+      }
+
+      $data = $upload->getUploadedFiles();
+      return jsonResponse($response, 'success', $message, $data, $code);
     } catch (\Exception $e) {
       return jsonResponse($response, 'error', 'Upload failed: ' . $e->getMessage(), new stdClass(), 500);
     }
@@ -65,8 +73,16 @@ $app->group('/account', function (RouteCollectorProxy $group) {
     try {
       // Handle exceptions thrown by the MultimediaUpload class
       $upload->setPsrFiles($files, $metadata);
-      $data = ($upload->uploadFiles()) ? $upload->getUploadedFiles() : new stdClass();
-      return uppyResponse($response, 'success', 'Files uploaded successfully', $data);
+
+      [$status, $code, $message] = $upload->uploadFiles();
+
+      if (!$status) {
+        // Handle the non-true status scenario
+        return uppyResponse($response, 'error', $message, new stdClass(), $code);
+      }
+
+      $data = $upload->getUploadedFiles();
+      return uppyResponse($response, 'success', $message, $data, $code);
     } catch (\Exception $e) {
       return uppyResponse($response, 'error', 'Upload failed: ' . $e->getMessage(), new stdClass(), 500);
     }
@@ -163,8 +179,17 @@ $app->group('/account', function (RouteCollectorProxy $group) {
 
     try {
       // Handle exceptions thrown by the MultimediaUpload class
-      $result = ($upload->uploadFileFromUrl($data['url'])) ? $upload->getUploadedFiles() : new stdClass();
-      return jsonResponse($response, 'success', 'URL processed successfully', $result);
+
+      [$status, $code, $message] = $upload->uploadFileFromUrl($data['url']);
+
+      if (!$status) {
+        // Handle the non-true status scenario
+        return jsonResponse($response, 'error', $message, new stdClass(), $code);
+      }
+
+      $result = $upload->getUploadedFiles();
+      return jsonResponse($response, 'success', $message, $result, $code);
+
     } catch (\Exception $e) {
       return jsonResponse($response, 'error', 'URL processing failed: ' . $e->getMessage(), new stdClass(), 500);
     }

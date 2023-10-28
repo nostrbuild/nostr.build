@@ -152,6 +152,11 @@ class MultimediaUpload
    * @var 
    */
   protected $uploadWebhook;
+  /**
+   * Summary of formParams
+   * @var 
+   */
+  protected $formParams;
 
   /**
    * Summary of __construct
@@ -381,7 +386,7 @@ class MultimediaUpload
 
   /**
    * Summary of uploadProfilePicture
-   * @return bool
+   * @return array
    * For profile picture we only accept pictures and only a single file
    * The flow should be as follows:
    * 1) Accept file from user
@@ -390,11 +395,11 @@ class MultimediaUpload
    * 4) Store file in database (filename, metadata, file size, type)
    * 
    */
-  public function uploadProfilePicture(): bool
+  public function uploadProfilePicture(): array
   {
     // Check if $this->filesArray is empty, and throw an exception if it is
     if (!is_array($this->filesArray) || empty($this->filesArray)) {
-      throw new Exception('No files to upload');
+      return [false, 400, 'No files to upload'];
     }
 
     // Work only with the single file, there is no need to loop over the whole array
@@ -404,7 +409,7 @@ class MultimediaUpload
       $this->file = $this->filesArray[0];
       $fileType = detectFileExt($this->file['tmp_name']);
       if ($fileType['type'] !== 'image' && $fileType['type'] !== 'video') {
-        throw new Exception('Invalid file type, only images and videos are allowed');
+        return [false, 400, 'Invalid file type, only images and videos are allowed'];
       }
 
       // Calculate the sha256 hash of the file before any transformations
@@ -416,15 +421,16 @@ class MultimediaUpload
         // If duplicate was detected, our data are already populated with the file info
         // It is safe to return true here, and rollback the transaction
         error_log('Duplicate file:' . $fileSha256 . PHP_EOL);
-        error_log('Npub:' . $this->userNpub ?? 'anon' . PHP_EOL);
-        error_log('Client Info:' . $_SERVER['CLIENT_REQUEST_INFO'] ?? 'unknown' . PHP_EOL);
+        //error_log('Npub:' . $this->userNpub ?? 'anon' . PHP_EOL);
+        //error_log('Client Info:' . $_SERVER['CLIENT_REQUEST_INFO'] ?? 'unknown' . PHP_EOL);
         $this->db->rollback();
-        return true;
+        return [true, 200, 'Upload successful.'];
       }
 
       // Validate the file before we proceed
-      if (!$this->validateFile()) {
-        throw new Exception('File validation failed');
+      $validationResult = $this->validateFile();
+      if ($validationResult[0] !== true) {
+        return $validationResult;
       }
       // Perform image manipulations
       $fileData = $this->processProfileImage($fileType);
@@ -451,12 +457,14 @@ class MultimediaUpload
 
       // Confirm successful insert
       if ($insert_id === false) {
-        throw new Exception('Failed to insert into database');
+        error_log('Failed to insert file into database');
+        return [false, 500, 'Server error, please try again later'];
       }
 
       // Upload the file to S3
       if (!$this->uploadToS3($newFilePrefix . $newFileName)) {
-        throw new Exception('Upload to S3 failed');
+        error_log('Failed to upload file to S3');
+        return [false, 500, 'Server error, please try again later'];
       }
 
       // Populate the uploadedFiles array with the file data
@@ -464,11 +472,13 @@ class MultimediaUpload
         'input_name' => $this->file['input_name'],
         'name' => $newFileName,
         'url' => $this->generateMediaURL($newFileName, 'profile'), // Construct URL
-        'sha256' => $fileSha256,
+        'sha256' => $this->generateFileName(0), // Post-processing sha256 hash
+        'original_sha256' => $fileSha256, // Store the original file hash - NIP-96
         'type' => $newFileType,
         'mime' => $fileType['mime'],
         'size' => $newFileSize,
         'dimensions' => $fileData['dimensions'] ?? [],
+        'dimensionsString' => isset($fileData['dimensions']) ? sprintf('%dx%d', $fileData['dimensions']['width'] ?? 0, $fileData['dimensions']['height'] ?? 0) : '0x0',
         'blurhash' => $fileData['blurhash'] ?? '',
       ]);
 
@@ -477,7 +487,7 @@ class MultimediaUpload
     } catch (Exception $e) {
       error_log("Profile picture upload failed: " . $e->getMessage());
       $this->db->rollback();
-      return false;
+      return [false, 500, 'Server error, please try again later'];
     }
     // Remove temp file if exists
     if (file_exists($this->file['tmp_name'])) {
@@ -505,42 +515,45 @@ class MultimediaUpload
         uploadedFileInfo: $_SERVER['CLIENT_REQUEST_INFO'] ?? null,
         uploadNpub: $this->userNpub ?? null,
         fileOriginalUrl: null,
+        orginalSha256Hash: $fileSha256, // NIP-96
       );
       $this->uploadWebhook->sendPayload();
-      error_log('Webhook payload sent for:' . $newFileName . PHP_EOL);
+      //error_log('Webhook payload sent for:' . $newFileName . PHP_EOL);
     } catch (Exception $e) {
       error_log("Webhook signalling failed: " . $e->getMessage());
     }
 
-    error_log('Profile picutre upload successful:' . $newFileName . PHP_EOL);
-    error_log('Mime:' . $fileType['mime'] . PHP_EOL);
-    error_log('sha256:' . $fileSha256 . PHP_EOL);
-    error_log('Npub:' . $this->userNpub ?? 'anon' . PHP_EOL);
-    error_log('Client Info:' . $_SERVER['CLIENT_REQUEST_INFO'] ?? 'unknown' . PHP_EOL);
+    //error_log('Profile picutre upload successful:' . $newFileName . PHP_EOL);
+    //error_log('Mime:' . $fileType['mime'] . PHP_EOL);
+    //error_log('sha256:' . $fileSha256 . PHP_EOL);
+    //error_log('Npub:' . $this->userNpub ?? 'anon' . PHP_EOL);
+    //error_log('Client Info:' . $_SERVER['CLIENT_REQUEST_INFO'] ?? 'unknown' . PHP_EOL);
     // If we reached this far, upload was successful
-    return true;
+    return [true, 200, 'Profile picture uploaded successfully'];
   }
 
   /**
    * Summary of uploadFiles
    * @throws \Exception
-   * @return bool
+   * @return array
    */
-  public function uploadFiles(): bool
+  public function uploadFiles(): array
   {
     // Check if $this->filesArray is empty, and throw an exception if it is
     if (!is_array($this->filesArray) || empty($this->filesArray)) {
-      throw new Exception('No files to upload');
+      return [false, 400, 'No files to upload'];
     }
 
     // Keep track of the last errors thrown by the loop
     $lastError = null;
+    // Keep track of validation errors
+    $returnError = [];
     // Keep track of the successful uploads
     $successfulUploads = 0;
     // Wrap in a try-catch block to catch any exceptions and handle what we can
     // Loop through the files array that was passed in
     foreach ($this->filesArray as $file) {
-      error_log('Processing file: ' . print_r($file, true) . PHP_EOL);
+      //error_log('Processing file: ' . print_r($file, true) . PHP_EOL);
       try {
         // Begin a database transaction, so that we can rollback if anything fails
         $this->db->begin_transaction();
@@ -558,8 +571,8 @@ class MultimediaUpload
         // Populate the uploadedFiles array with the file data
         if (!$this->pro && $this->checkForDuplicates($fileSha256)) {
           error_log('Duplicate file:' . $fileSha256 . PHP_EOL);
-          error_log('Npub:' . $this->userNpub ?? 'anon' . PHP_EOL);
-          error_log('Client Info:' . $_SERVER['CLIENT_REQUEST_INFO'] ?? 'unknown' . PHP_EOL);
+          //error_log('Npub:' . $this->userNpub ?? 'anon' . PHP_EOL);
+          //error_log('Client Info:' . $_SERVER['CLIENT_REQUEST_INFO'] ?? 'unknown' . PHP_EOL);
           // Continue with the loop to process the next file
           // Duplicate is not an error, so we don't throw an exception
           continue;
@@ -568,8 +581,10 @@ class MultimediaUpload
         // All initial validations are performed here, e.g., file size, type, etc.
         // This also should validate against the table of known rejected files,
         // or files that were requested to be deleted by the user
-        if (!$this->validateFile()) {
-          throw new Exception('File validation failed');
+        $validationResult = $this->validateFile();
+        if ($validationResult[0] !== true) {
+          $returnError[] = $validationResult;
+          throw new Exception('File validation failed: ' . json_encode($validationResult));
         }
 
         // Identify what file we are dealing with, e.g., image, video, audio
@@ -621,6 +636,7 @@ class MultimediaUpload
             $fileType['mime'] ?? null,
           );
           if ($insert_id === false) {
+            $returnError[] = [false, 500, 'Failed to insert into database'];
             throw new Exception('Failed to insert into database');
           }
         } else {
@@ -631,8 +647,9 @@ class MultimediaUpload
           // and retrieving files in sequence, we will use a hashid of the ID
 
           // Insert the file data into the database but don't commit yet
-          $insert_id = $this->storeInDatabasePro();
+          $insert_id = $this->storeInDatabasePro($fileSha256);
           if ($insert_id === false) {
+            $returnError[] = [false, 500, 'Failed to insert into database'];
             throw new Exception('Failed to insert into database');
           }
 
@@ -657,10 +674,12 @@ class MultimediaUpload
             $fileData['blurhash'] ?? null,
             $fileType['mime'],
           )) {
+            $returnError[] = [false, 500, 'Failed to update database'];
             throw new Exception('Failed to update database');
           }
         }
         if (!$this->uploadToS3($newFilePrefix . $newFileName)) {
+          $returnError[] = [false, 500, 'Failed to upload to S3'];
           throw new Exception('Upload to S3 failed');
         }
         // Populate the uploadedFiles array with the file data
@@ -672,15 +691,15 @@ class MultimediaUpload
           'responsive' => $this->generateResponsiveImagesURL($newFileName, $fileType['type']), // Construct responsive images URLs
           'blurhash' => $fileData['blurhash'] ?? '',
           'sha256' => $this->generateFileName(0), // Reuse method to generate a hash of transformed file
+          'original_sha256' => $fileSha256, // NIP-96
           'type' => $newFileType,
           'mime' => $fileType['mime'],
           'size' => $newFileSize, // Capture the file size after transformations
           'metadata' => $fileData['metadata'] ?? [],
           'dimensions' => $fileData['dimensions'] ?? [],
+          'dimensionsString' => isset($fileData['dimensions']) ? sprintf('%dx%d', $fileData['dimensions']['width'] ?? 0, $fileData['dimensions']['height'] ?? 0) : '0x0',
         ]);
         $this->db->commit();
-
-
         // Increment the counter of successful uploads
         $successfulUploads++;
       } catch (Exception $e) {
@@ -715,17 +734,18 @@ class MultimediaUpload
           uploadedFileInfo: $_SERVER['CLIENT_REQUEST_INFO'] ?? null,
           uploadNpub: $this->userNpub ?? null,
           fileOriginalUrl: null,
+          orginalSha256Hash: $fileSha256, // NIP-96
         );
         $this->uploadWebhook->sendPayload();
-        error_log('Webhook payload sent for:' . $newFileName . PHP_EOL);
+        //error_log('Webhook payload sent for:' . $newFileName . PHP_EOL);
       } catch (Exception $e) {
         error_log("Webhook signalling failed: " . $e->getMessage());
       }
-      error_log('Media upload successful:' . $newFileName . PHP_EOL);
-      error_log('Mime:' . $fileType['mime'] . PHP_EOL);
-      error_log('sha256:' . $fileSha256 ?? 'none' . PHP_EOL);
-      error_log('Npub:' . $this->userNpub ?? 'anon' . PHP_EOL);
-      error_log('Client Info:' . $_SERVER['CLIENT_REQUEST_INFO'] ?? 'unknown' . PHP_EOL);
+      //error_log('Media upload successful:' . $newFileName . PHP_EOL);
+      //error_log('Mime:' . $fileType['mime'] . PHP_EOL);
+      //error_log('sha256:' . $fileSha256 ?? 'none' . PHP_EOL);
+      //error_log('Npub:' . $this->userNpub ?? 'anon' . PHP_EOL);
+      //error_log('Client Info:' . $_SERVER['CLIENT_REQUEST_INFO'] ?? 'unknown' . PHP_EOL);
 
       // If video, and non-pro upload, we need to queue the video for transcoding
       // TODO: Disable until we implement deletion and cache invalidation
@@ -745,11 +765,18 @@ class MultimediaUpload
       }
     }
     // Check if we had any successful uploads and if not, throw the last error
-    if ($successfulUploads === 0 && $lastError !== null) {
-      throw new Exception($lastError->getMessage());
+    if ($successfulUploads === 0 && ($lastError !== null || $returnError !== [])) {
+      if ($lastError !== null && $returnError === []) {
+        return [false, 500, 'Server error, please try again later'];
+      } else {
+        return $returnError[0];
+      }
+    } elseif ($successfulUploads > 0 && $returnError !== []) {
+      return [true, 200, 'Some files failed to upload'];
     }
 
-    return true;
+    // If we reached this far, upload was successful
+    return [true, 200, "Upload successful."];
   }
 
   /**
@@ -757,7 +784,7 @@ class MultimediaUpload
    * @param string $url
    * @param bool $pfp
    * @throws \Exception
-   * @return bool
+   * @return array
    * 
    * Thos method will perform the following:
    * 1) HEAD request to get the file size and type
@@ -766,16 +793,18 @@ class MultimediaUpload
    * 4) Download the file to a temporary location
    * 5) Set the file property to the downloaded file
    */
-  public function uploadFileFromUrl(string $url, $pfp = false): bool
+  public function uploadFileFromUrl(string $url, $pfp = false): array
   {
-    $sizeLimit = $this->pro ? $this->userAccount->getRemainingStorageSpace() : SiteConfig::FREE_UPLOAD_LIMIT;
+    $sizeLimit = $this->pro ?
+      $this->userAccount->getRemainingStorageSpace() :
+      SiteConfig::FREE_UPLOAD_LIMIT;
 
     // Get the metadata from the URL
     try {
       $metadata = $this->getUrlMetadata($url);
     } catch (Exception $e) {
       error_log($e->getMessage());
-      throw new Exception($e->getMessage());
+      return [false, 400, $e->getMessage()];
     }
 
     // Extract the file type from the MIME type
@@ -783,12 +812,14 @@ class MultimediaUpload
 
     // Ensure the file is of a valid type (image, video, or audio)
     if (!in_array($fileType, ['image', 'video', 'audio'])) {
-      throw new Exception('Invalid file type: ' . $fileType);
+      error_log('Invalid file type: ' . $fileType);
+      return [false, 400, 'Invalid file type'];
     }
 
     // Check the file size against the limit
     if (intval($metadata['size']) > $sizeLimit) {
-      throw new Exception('File size exceeds the limit of ' . formatSizeUnits($sizeLimit));
+      error_log('File size exceeds the limit of ' . formatSizeUnits($sizeLimit));
+      return [false, 413, 'File size exceeds the limit of ' . formatSizeUnits($sizeLimit)];
     }
 
     // Create a curl instance for the actual download
@@ -796,7 +827,8 @@ class MultimediaUpload
 
     // Fail if the URL is not found or not accessible
     if ($ch === false) {
-      throw new Exception('Failed to initialize cURL');
+      error_log('Failed to initialize cURL');
+      return [false, 500, 'Server error, please try again later'];
     }
 
     // Set options for the actual download
@@ -808,13 +840,15 @@ class MultimediaUpload
     // Create a new file in the system's temp directory
     $tempFile = tempnam(sys_get_temp_dir(), 'url_download');
     if ($tempFile === false) {
-      throw new Exception('Failed to create temporary file');
+      error_log('Failed to create temporary file');
+      return [false, 500, 'Server error, please try again later'];
     }
     $fp = fopen($tempFile, 'wb');
 
     // Check if the file was created successfully
     if ($fp === false) {
-      throw new Exception('Failed to open file for writing');
+      error_log('Failed to open file for writing');
+      return [false, 500, 'Server error, please try again later'];
     }
 
     // Set options to download the file
@@ -822,12 +856,14 @@ class MultimediaUpload
 
     // Set option to have a hard limit on how many bytes we will download
     // This should prevent from the potential DOS attack
+    $curlSizeExceeded = false;
     curl_setopt($ch, CURLOPT_NOPROGRESS, false);
-    curl_setopt($ch, CURLOPT_PROGRESSFUNCTION, function ($ch, $downloadSize, $downloaded, $uploadSize, $uploaded) use (&$fileSize, $sizeLimit) {
+    curl_setopt($ch, CURLOPT_PROGRESSFUNCTION, function ($ch, $downloadSize, $downloaded, $uploadSize, $uploaded) use (&$fileSize, $sizeLimit, &$curlSizeExceeded) {
       // Assign the file size to a variable that is accessible outside of this function
       $fileSize = $downloaded;
       // Check if the file size exceeds the limit
       if ($fileSize > $sizeLimit) {
+        $curlSizeExceeded = true;
         return 1; // Abort the download by returning a non-zero value
       }
       // Carry on with the download
@@ -847,11 +883,13 @@ class MultimediaUpload
       // Log the error
       error_log(curl_error($ch));
       // Check if the error was caused by the file size limit
-      if ($fileSize > $sizeLimit) {
-        throw new Exception('File size exceeds the limit of ' . formatSizeUnits($sizeLimit));
+      if ($fileSize > $sizeLimit || $curlSizeExceeded) {
+        error_log('File size exceeds the limit of ' . formatSizeUnits($sizeLimit));
+        return [false, 413, 'File size exceeds the limit of ' . formatSizeUnits($sizeLimit)];
       }
-      // Throw the error
-      throw new Exception('cURL error: ' . curl_error($ch));
+      // Return the error
+      error_log('cURL error: ' . curl_error($ch));
+      return [false, 500, 'Server error, please try again later'];
     }
 
     // Close the cURL resource
@@ -957,35 +995,38 @@ class MultimediaUpload
    * Summary of validateFile
    * @return bool
    */
-  protected function validateFile(): bool
+  protected function validateFile(): array
   {
     // Validate if file upload is OK
     if ($this->file['error'] !== UPLOAD_ERR_OK) {
       error_log('File upload error: ' . $this->file['error']);
-      return false;
+      return [false, 400, "File upload error "];
     }
 
     // Check if the file size exceeds the upload limit for free users
     if (!$this->pro && $this->file['size'] > SiteConfig::FREE_UPLOAD_LIMIT) {
       error_log('File size exceeds the limit of ' . formatSizeUnits(SiteConfig::FREE_UPLOAD_LIMIT));
-      return false;
+      return [false, 413, "File size exceeds the limit of " . formatSizeUnits(SiteConfig::FREE_UPLOAD_LIMIT)];
     }
 
     // Check if file has been rejected for free users
     if (!$this->pro && $this->uploadsData->checkRejected($this->file['sha256'])) {
       error_log('File has been flagged as rejected');
-      return false;
+      return [false, 403, "File has been flagged as rejected"];
     }
 
     // Calculate remaining space and check if file size exceeds the remaining space for pro users
     if ($this->pro) {
       // TODO: Need to validate array of files, so we do not allow to go over the limit with batch
-      error_log('Remaining space: ' . $this->userAccount->getRemainingStorageSpace() .
-        ', uploading:' . $this->file['size'] . PHP_EOL);
-      return $this->userAccount->hasSufficientStorageSpace($this->file['size']);
+      //error_log('Remaining space: ' . $this->userAccount->getRemainingStorageSpace() .
+      //  ', uploading:' . $this->file['size'] . PHP_EOL);
+      if (!$this->userAccount->hasSufficientStorageSpace($this->file['size'])) {
+        error_log('File size exceeds the remaining space of ' . formatSizeUnits($this->userAccount->getRemainingStorageSpace()));
+        return [false, 413, "File size exceeds the remaining space of " . formatSizeUnits($this->userAccount->getRemainingStorageSpace())];
+      }
     }
 
-    return true;
+    return [true, 200, "Validation successful"];
   }
 
   /**
@@ -1028,7 +1069,7 @@ class MultimediaUpload
       $height = $dimensions['height'];
 
       // DEBUG log
-      error_log("Updating uploads_data table with width: $width, height: $height, blurhash: $blurhash");
+      //error_log("Updating uploads_data table with width: $width, height: $height, blurhash: $blurhash");
 
       $this->uploadsData->update(
         $data['id'],
@@ -1057,11 +1098,13 @@ class MultimediaUpload
       'input_name' => $this->file['input_name'],
       'name' => $data['filename'],
       'sha256' => $filehash,
+      'original_sha256' => $filehash, // NIP-96
       'type' => $data['type'],
       'mime' => $fileS3Metadata->get('ContentType'),
       'size' => $data['file_size'],
       'blurhash' => $blurhash,
       'dimensions' => ['width' => $width, 'height' => $height],
+      'dimensionsString' => sprintf("%sx%s",$width ?? 0, $height ?? 0),
     ];
 
     if ($profile) {
@@ -1122,14 +1165,15 @@ class MultimediaUpload
         fileUrl: $this->generateMediaURL($data['filename'], $data['type']),
         fileType: $whFileType,
         shouldTranscode: false,
-        uploadAccountType: $this->pro ? 'subscriber' : 'free',
+        uploadAccountType: $this->pro ? 'subscriber' : 'free', // Not likely to be used by subscribers ever
         uploadTime: time(),
         uploadedFileInfo: $_SERVER['CLIENT_REQUEST_INFO'] ?? null,
         uploadNpub: $this->userNpub ?? null,
         fileOriginalUrl: null,
+        //orginalSha256Hash: $filehash, // NIP-96 not needed for duplicates
       );
       $this->uploadWebhook->sendPayload();
-      error_log('Webhook payload sent for:' . $data['filename'] . PHP_EOL);
+      //error_log('Webhook payload sent for:' . $data['filename'] . PHP_EOL);
     } catch (Exception $e) {
       error_log("Webhook signalling failed: " . $e->getMessage());
     }
@@ -1344,13 +1388,14 @@ class MultimediaUpload
    * Summary of storeInDatabasePro
    * @return int|bool
    */
-  protected function storeInDatabasePro(): int | bool
+  protected function storeInDatabasePro(string $originalSha256): int | bool
   {
     // Insert the file data into the database but don't commit yet
     try {
       $tempFile = generateUniqueFilename('file_upload_');
       $insert_id = $this->usersImages->insert([
         'usernpub' => $this->userNpub,
+        'sha256_hash' => $originalSha256, // NIP-96
         'image' => $tempFile, // Temporary name, will be updated later
         // Private by default
         'flag' => 0, // 0 - private, 1 - public
@@ -1487,5 +1532,16 @@ class MultimediaUpload
   public function getApiClient()
   {
     return $this->apiClient;
+  }
+
+  /**
+   * Summary of formParams
+   * @param  $formParams Summary of formParams
+   * @return self
+   */
+  public function setFormParams($formParams): self
+  {
+    $this->formParams = $formParams;
+    return $this;
   }
 }
