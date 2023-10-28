@@ -44,7 +44,8 @@ class CloudflareUploadWebhook
     int $uploadTime = null,
     string $fileOriginalUrl = null,
     string $uploadNpub = null,
-    string $uploadedFileInfo = null
+    string $uploadedFileInfo = null,
+    string $orginalSha256Hash = null // NIP-96
   ): void {
     $uploadTime = $uploadTime ?? time();  // Set default value if null
 
@@ -58,6 +59,7 @@ class CloudflareUploadWebhook
       'shouldTranscode' => $shouldTranscode,
       'uploadAccountType' => $uploadAccountType,
       'uploadTime' => $uploadTime,
+      'orginalSha256Hash' => $orginalSha256Hash ?? '', // NIP96
     ];
 
     if ($fileOriginalUrl !== null) {

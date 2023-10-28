@@ -17,7 +17,7 @@ if (isset($_POST['img_url']) && !empty($_POST['img_url'])) {
 } else {
   try {
     $upload->setFiles($_FILES);
-    $result = $upload->uploadFiles();
+    [$result, $code, $message] = $upload->uploadFiles();
   } catch (Exception $e) {
     $error = $e->getMessage();
     $result = false;
@@ -42,8 +42,8 @@ if (!empty($origin) && ($origin === 'https://flycat.club' || preg_match('/^https
   header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, PATCH, OPTIONS');
 }
 if ($result === false) {
-  http_response_code(400);
-  echo json_encode("Upload failed: " . $error);
+  http_response_code($code ?? 500);
+  echo json_encode("Upload failed: " . $message ?? $error);
   exit();
 }
 echo json_encode($uploadData['url']);

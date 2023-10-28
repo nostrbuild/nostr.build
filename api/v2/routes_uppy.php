@@ -22,8 +22,15 @@ $app->group('/uppy', function (RouteCollectorProxy $group) {
     try {
       // Handle exceptions thrown by the MultimediaUpload class
       $upload->setPsrFiles($files);
-      $data = ($upload->uploadFiles()) ? $upload->getUploadedFiles() : new stdClass();
-      return uppyResponse($response, 'success', 'Files uploaded successfully', $data);
+      [$status, $code, $message] = $upload->uploadFiles();
+
+      if (!$status) {
+        // Handle the non-true status scenario
+        return uppyResponse($response, 'error', $message, new stdClass(), $code);
+      }
+
+      $data = $upload->getUploadedFiles();
+      return uppyResponse($response, 'success', $message, $data, $code);
     } catch (\Exception $e) {
       return uppyResponse($response, 'error', 'Upload failed: ' . $e->getMessage(), new stdClass(), 500);
     }

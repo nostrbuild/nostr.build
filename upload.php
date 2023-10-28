@@ -44,14 +44,15 @@ $total_size_gb = round($stats['total_size'] / (1024 * 1024 * 1024), 2); // Conve
 	$error = "Success";
 	try {
 		if (isset($_POST['img_url']) && !empty($_POST['img_url'])) {
-			$result = $upload->uploadFileFromUrl($_POST['img_url'], isset($_POST["submit_ppic"]));
+			[$s, $c, $m] = $upload->uploadFileFromUrl($_POST['img_url'], isset($_POST["submit_ppic"]));
 		} elseif (isset($_POST["submit_ppic"])) {
 			$upload->setFiles($_FILES);
-			$result = $upload->uploadProfilePicture();
+			[$s, $c, $m] = $upload->uploadProfilePicture();
 		} else {
 			$upload->setFiles($_FILES);
-			$result = $upload->uploadFiles();
+			[$s, $c, $m] = $upload->uploadFiles();
 		}
+		$result = $s;
 	} catch (Exception $e) {
 		$erro = $e->getMessage();
 		$result = false;
@@ -69,7 +70,8 @@ $total_size_gb = round($stats['total_size'] / (1024 * 1024 * 1024), 2); // Conve
 	// Check if $uploadOk is set to 0 by an error
 	if ($result === false) :
 	?>
-		&emsp;<a style="color:#F0F0F0">Sorry, your file was not uploaded, try a different media type.</a>
+		&emsp;<a style="color:#F0F0F0" href="/">Sorry, your file was not uploaded, try a different media type.</a>
+		<div style="color:#F0F0F0"><?= $m ?></div>
 	<?php
 	// if everything is ok, try to upload file
 	else :
