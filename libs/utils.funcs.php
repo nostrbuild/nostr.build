@@ -4,8 +4,8 @@ function getFileType(string $ext): string
 {
   $fileTypes = [
     'image' => ['jpg', 'png', 'apng', 'gif', 'webp', 'svg', 'bmp', 'tiff', 'psd', 'heic', 'heif', 'avif', 'jp2', 'jpx', 'jpm', 'jxr', 'jfif', 'ico'],
-    'audio' => ['mp3', 'ogg', 'wav', 'aac', 'webm', 'flac', 'aif', 'wma'],
-    'video' => ['mp4', 'webm', 'ogv', 'avi', 'wmv', 'mov', 'mpeg', '3gp', '3g2', 'flv', 'm4v']
+    'audio' => ['mp3', 'ogg', 'wav', 'aac', 'webm', 'flac', 'aif', 'wma', 'm4a', 'm4b', 'm4p', 'm4r', 'm4v', 'mp2', 'mpa', 'mpga', 'mp4a', 'mpga', 'mpg', 'mpv2', 'mp2v', 'mpe', 'm2a', 'm2v', 'm2s', 'm2t', 'm2ts', 'm2v', 'm3a'],
+    'video' => ['mp4', 'webm', 'ogv', 'avi', 'wmv', 'mov', 'mpeg', '3gp', '3g2', 'flv', 'm4v', 'mkv', 'mpg', 'm2v', 'm4p', 'm4v', 'mp2', 'mpa', 'mpe', 'mpv', 'm2ts', 'mts', 'ts', 'mxf', 'asf', 'rm', 'rmvb', 'vob', 'f4v', 'm2v', 'm2ts', 'mts', 'ts', 'mxf', 'asf', 'rm', 'rmvb', 'vob', 'f4v'],
   ];
   foreach ($fileTypes as $type => $extensions) {
     if (in_array($ext, $extensions)) {
@@ -80,6 +80,16 @@ function detectFileExt($file)
     'audio/flac' => 'flac', // Free Lossless Audio Codec (FLAC)
     'audio/x-aiff' => 'aif', // Audio Interchange File Format (AIFF)
     'audio/x-ms-wma' => 'wma', // Windows Media Audio (WMA)
+    'audio/x-m4a' => 'm4a', // M4A audio
+    'audio/x-m4b' => 'm4b', // M4B audio
+    'audio/mp4' => 'mp4a', // MP4 audio
+    'audio/mpegurl' => 'm3u', // M3U audio playlist
+    'audio/x-mpegurl' => 'm3u', // M3U audio playlist
+    'audio/x-ms-wax' => 'wax', // Windows Media Audio Redirector (WAX)
+    'audio/x-realaudio' => 'ra', // RealAudio
+    'audio/x-pn-realaudio' => 'ram', // RealAudio Metadata
+    'audio/x-pn-realaudio-plugin' => 'rmp', // RealAudio Plugin
+    'audio/x-wav' => 'wav', // Waveform Audio File Format (WAV)
 
     // Video
     'video/mp4' => 'mp4', // MP4 video
@@ -93,6 +103,23 @@ function detectFileExt($file)
     'video/3gpp2' => '3g2', // 3GPP2 mobile video
     'video/x-flv' => 'flv', // Flash Video (FLV)
     'video/x-m4v' => 'm4v', // M4V video
+    'video/x-matroska' => 'mkv', // Matroska Multimedia Container (MKV)
+    'video/x-mpeg2' => 'mp2v', // MPEG-2 video
+    'video/x-m4p' => 'm4p', // M4P video
+    'video/mp2t' => 'm2ts', // MPEG-2 transport stream
+    'video/MP2T' => 'ts', // MPEG-2 transport stream
+    'video/mp2p' => 'mp2', // MPEG-2 Program Stream
+    'video/x-mxf' => 'mxf', // Material Exchange Format (MXF)
+    'video/x-ms-asf' => 'asf', // Advanced Systems Format (ASF)
+    'video/x-ms-wm' => 'asf', // Advanced Systems Format (ASF)
+    'video/x-pn-realvideo' => 'rm', // RealVideo
+    'video/x-ms-vob' => 'vob', // DVD Video Object (VOB)
+    'video/x-f4v' => 'f4v', // Flash Video (F4V)
+    'video/x-fli' => 'fli', // FLIC video
+    'video/x-m2v' => 'm2v', // MPEG-2 video
+    'video/x-ms-wmx' => 'wmx', // Windows Media Video Redirector (WMX)
+    'video/x-ms-wvx' => 'wvx', // Windows Media Video Playlist (WVX)
+    'video/x-sgi-movie' => 'movie', // Silicon Graphics movie
   ];
 
   if (!isset($mimeTypes[$mimeType])) {
