@@ -11,6 +11,7 @@ require_once $_SERVER['DOCUMENT_ROOT'] . "/libs/db/UploadAttempts.class.php";
 require_once $_SERVER['DOCUMENT_ROOT'] . "/SiteConfig.php"; // File size limits, etc.
 require_once $_SERVER['DOCUMENT_ROOT'] . "/libs/CloudflareUploadWebhook.class.php";
 require_once $_SERVER['DOCUMENT_ROOT'] . "/libs/VideoTranscoding.class.php";
+require_once $_SERVER['DOCUMENT_ROOT'] . "/libs/VideoRepackager.class.php";
 
 // Vendor autoload
 require_once $_SERVER['DOCUMENT_ROOT'] . "/vendor/autoload.php";
@@ -601,11 +602,22 @@ class MultimediaUpload
             $fileData = $this->processProUploadImage($fileType);
           } else {
             $fileData = $this->processFreeUploadImage($fileType);
-            // We need to detect the file type again, because it may have changed du to conversion
+            // We need to detect the file type again, because it may have changed due to conversion
             $fileType = detectFileExt($this->file['tmp_name']);
           }
         } else {
           $fileData = [];
+        }
+        // Repackage video files for all uploads under 200MiB
+        if ($fileType['type'] === 'video' && $this->file['size'] < 1024 ** 2 * 200) { // 200MB
+          try {
+            $videoRepackager = new VideoRepackager($this->file['tmp_name']);
+            $this->file['tmp_name'] = $videoRepackager->repackageVideo();
+            // We need to detect the file type again, because it may have changed due to conversion
+            $fileType = detectFileExt($this->file['tmp_name']);
+          } catch (Exception $e) {
+            error_log("Video repackaging failed: " . $e->getMessage());
+          }
         }
         // By this time the image has been processed and saved to a temporary location
         // It is now ready to be uploaded to S3 and information about it stored in the database
@@ -1104,7 +1116,7 @@ class MultimediaUpload
       'size' => $data['file_size'],
       'blurhash' => $blurhash,
       'dimensions' => ['width' => $width, 'height' => $height],
-      'dimensionsString' => sprintf("%sx%s",$width ?? 0, $height ?? 0),
+      'dimensionsString' => sprintf("%sx%s", $width ?? 0, $height ?? 0),
     ];
 
     if ($profile) {
