@@ -1,0 +1,47 @@
+name: Build and Install on Windows
+
+on:
+  push:
+    branches: [ maestro ]
+  pull_request:
+    branches: [ maestro ]
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        submodules: true
+        fetch-depth: 0
+
+    - name: Setup vcpkg
+      uses: lukka/run-vcpkg@main
+      id: runvcpkg
+      with:
+        vcpkgJsonGlob: 'vcpkg.json'
+        runVcpkgInstall: true
+
+    - name: Set up Go
+      uses: actions/setup-go@v3
+      with:
+        go-version: 1.18
+
+    - name: Set PKG_CONFIG_PATH and PATH
+      run: |
+        echo "PKG_CONFIG_PATH=${{ steps.runvcpkg.outputs.RUNVCPKG_VCPKG_ROOT_OUT }}/installed/x64-windows/lib/pkgconfig;${{ steps.runvcpkg.outputs.RUNVCPKG_VCPKG_ROOT_OUT }}/installed/x86-windows/lib/pkgconfig;${{ env.VCPKG_INSTALLED_DIR }}\${{ env.VCPKG_DEFAULT_TRIPLET }}\lib\pkgconfig;D:/a/heif-converter-image/b/vcpkg_installed/x64-windows/lib/pkgconfig" | Out-File -Append -FilePath $env:GITHUB_ENV -Encoding utf8
+        echo "PATH=${{ steps.runvcpkg.outputs.RUNVCPKG_VCPKG_ROOT_OUT }}/installed/x64-windows/bin;${{ steps.runvcpkg.outputs.RUNVCPKG_VCPKG_ROOT_OUT }}/installed/x86-windows/bin;D:/a/heif-converter-image/b/vcpkg_installed/x64-windows/bin;${env:PATH}" | Out-File -Append -FilePath $env:GITHUB_ENV -Encoding utf8
+
+    - name: Build
+      run: |
+        go env -w GOOS=windows
+        go test
+        go build -o bin/heif-converter-windows.exe
+
+    - name: Archive Production Artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: heif-converter-windows
+        path: |
+          ./bin/*
