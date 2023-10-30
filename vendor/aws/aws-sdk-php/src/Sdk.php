@@ -74,6 +74,10 @@ namespace Aws;
  * @method \Aws\MultiRegionClient createMultiRegionBackupStorage(array $args = [])
  * @method \Aws\Batch\BatchClient createBatch(array $args = [])
  * @method \Aws\MultiRegionClient createMultiRegionBatch(array $args = [])
+ * @method \Aws\Bedrock\BedrockClient createBedrock(array $args = [])
+ * @method \Aws\MultiRegionClient createMultiRegionBedrock(array $args = [])
+ * @method \Aws\BedrockRuntime\BedrockRuntimeClient createBedrockRuntime(array $args = [])
+ * @method \Aws\MultiRegionClient createMultiRegionBedrockRuntime(array $args = [])
  * @method \Aws\BillingConductor\BillingConductorClient createBillingConductor(array $args = [])
  * @method \Aws\MultiRegionClient createMultiRegionBillingConductor(array $args = [])
  * @method \Aws\Braket\BraketClient createBraket(array $args = [])
@@ -194,6 +198,8 @@ namespace Aws;
  * @method \Aws\MultiRegionClient createMultiRegionDataPipeline(array $args = [])
  * @method \Aws\DataSync\DataSyncClient createDataSync(array $args = [])
  * @method \Aws\MultiRegionClient createMultiRegionDataSync(array $args = [])
+ * @method \Aws\DataZone\DataZoneClient createDataZone(array $args = [])
+ * @method \Aws\MultiRegionClient createMultiRegionDataZone(array $args = [])
  * @method \Aws\DatabaseMigrationService\DatabaseMigrationServiceClient createDatabaseMigrationService(array $args = [])
  * @method \Aws\MultiRegionClient createMultiRegionDatabaseMigrationService(array $args = [])
  * @method \Aws\Detective\DetectiveClient createDetective(array $args = [])
@@ -272,8 +278,6 @@ namespace Aws;
  * @method \Aws\MultiRegionClient createMultiRegionFraudDetector(array $args = [])
  * @method \Aws\GameLift\GameLiftClient createGameLift(array $args = [])
  * @method \Aws\MultiRegionClient createMultiRegionGameLift(array $args = [])
- * @method \Aws\GameSparks\GameSparksClient createGameSparks(array $args = [])
- * @method \Aws\MultiRegionClient createMultiRegionGameSparks(array $args = [])
  * @method \Aws\Glacier\GlacierClient createGlacier(array $args = [])
  * @method \Aws\MultiRegionClient createMultiRegionGlacier(array $args = [])
  * @method \Aws\GlobalAccelerator\GlobalAcceleratorClient createGlobalAccelerator(array $args = [])
@@ -464,6 +468,8 @@ namespace Aws;
  * @method \Aws\MultiRegionClient createMultiRegionMobile(array $args = [])
  * @method \Aws\Neptune\NeptuneClient createNeptune(array $args = [])
  * @method \Aws\MultiRegionClient createMultiRegionNeptune(array $args = [])
+ * @method \Aws\Neptunedata\NeptunedataClient createNeptunedata(array $args = [])
+ * @method \Aws\MultiRegionClient createMultiRegionNeptunedata(array $args = [])
  * @method \Aws\NetworkFirewall\NetworkFirewallClient createNetworkFirewall(array $args = [])
  * @method \Aws\MultiRegionClient createMultiRegionNetworkFirewall(array $args = [])
  * @method \Aws\NetworkManager\NetworkManagerClient createNetworkManager(array $args = [])
@@ -496,6 +502,8 @@ namespace Aws;
  * @method \Aws\MultiRegionClient createMultiRegionPaymentCryptography(array $args = [])
  * @method \Aws\PaymentCryptographyData\PaymentCryptographyDataClient createPaymentCryptographyData(array $args = [])
  * @method \Aws\MultiRegionClient createMultiRegionPaymentCryptographyData(array $args = [])
+ * @method \Aws\PcaConnectorAd\PcaConnectorAdClient createPcaConnectorAd(array $args = [])
+ * @method \Aws\MultiRegionClient createMultiRegionPcaConnectorAd(array $args = [])
  * @method \Aws\Personalize\PersonalizeClient createPersonalize(array $args = [])
  * @method \Aws\MultiRegionClient createMultiRegionPersonalize(array $args = [])
  * @method \Aws\PersonalizeEvents\PersonalizeEventsClient createPersonalizeEvents(array $args = [])
@@ -711,7 +719,7 @@ namespace Aws;
  */
 class Sdk
 {
-    const VERSION = '3.277.8';
+    const VERSION = '3.283.15';
 
     /** @var array Arguments for creating clients */
     private $args;

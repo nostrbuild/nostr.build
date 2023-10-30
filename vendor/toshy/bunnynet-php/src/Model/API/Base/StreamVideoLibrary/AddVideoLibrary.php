@@ -20,7 +20,7 @@ class AddVideoLibrary implements EndpointInterface, EndpointBodyInterface
 
     public function getPath(): string
     {
-        return 'videolibrary/%d';
+        return 'videolibrary';
     }
 
     public function getHeaders(): array
