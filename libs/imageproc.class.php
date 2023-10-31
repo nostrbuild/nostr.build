@@ -68,6 +68,11 @@ $imageblurhash = $imageProcessor->calculateBlurhash();
 class ImageProcessor
 {
   /**
+   * Summary of heifConverter
+   * @var string
+   */
+  private $heifConverter = "/usr/bin/heif-convert";
+  /**
    * Summary of imagick
    * @var 
    */
@@ -272,6 +277,44 @@ class ImageProcessor
     return $this;
   }
 
+  /**
+   * Summary of convertHeicToJpeg
+   * @return ImageProcessor
+   */
+  public function convertHeicToJpeg(): self
+  {
+    // Using mimetypes detect if image is HEIC or HEIF
+    $mimeType = mime_content_type($this->imagePath);
+    if ($mimeType === 'image/heic' || $mimeType === 'image/heif') {
+      try {
+        $command = $this->heifConverter . " -q 100 " . escapeshellarg($this->imagePath) . " " . escapeshellarg($this->imagePath . ".jpg");
+        // Execute the command
+        exec($command, $output, $returnCode);
+        if ($returnCode === 0) {
+          // Delete the original HEIC/HEIF image
+          unlink($this->imagePath);
+          // Rename the converted image to the original image name
+          rename($this->imagePath . ".jpg", $this->imagePath);
+          // Cleanup other files produced by heif-convert
+          $pathInfo = pathinfo($this->imagePath);
+          $glob = glob($pathInfo['dirname'] . '/' . $pathInfo['filename'] . '-*');
+          foreach ($glob as $file) {
+            if ($file !== $this->imagePath) {
+              unlink($file);
+            }
+          }
+          // Reinitialize Imagick after converting
+          $this->reinitializeImagick(force: true);
+          $this->isSaved = false;
+        } else {
+          error_log("Could not convert HEIC/HEIF image: $this->imagePath" . PHP_EOL);
+        }
+      } catch (Exception $e) {
+        error_log($e->getMessage() . PHP_EOL);
+      }
+    }
+    return $this;
+  }
   /**
    * Summary of convertToJpeg
    * @return ImageProcessor
@@ -516,9 +559,9 @@ class ImageProcessor
    * Summary of reinitializeImagick
    * @return void
    */
-  private function reinitializeImagick(): void
+  private function reinitializeImagick(bool $force = false): void
   {
-    if ($this->isSaved) {
+    if ($this->isSaved || $force) {
       $this->imagick->clear();
       $this->imagick->destroy();
       $this->imagick = new Imagick(realpath($this->imagePath));

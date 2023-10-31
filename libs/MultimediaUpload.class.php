@@ -602,9 +602,9 @@ class MultimediaUpload
             $fileData = $this->processProUploadImage($fileType);
           } else {
             $fileData = $this->processFreeUploadImage($fileType);
-            // We need to detect the file type again, because it may have changed due to conversion
-            $fileType = detectFileExt($this->file['tmp_name']);
           }
+          // We need to detect the file type again, because it may have changed due to conversion
+          $fileType = detectFileExt($this->file['tmp_name']);
         } else {
           $fileData = [];
         }
@@ -1214,7 +1214,8 @@ class MultimediaUpload
       $this->file['tmp_name'] = $tmp_gif;
     }
     $img = new ImageProcessor($this->file['tmp_name']);
-    $img->convertToJpeg() // Convert to JPEG for images that are not visually affected by the conversion
+    $img->convertHeicToJpeg()
+      ->convertToJpeg() // Convert to JPEG for images that are not visually affected by the conversion
       ->fixImageOrientation()
       ->resizeImage(1920, 1920) // Resize to 1920x1920 (HD)
       ->reduceQuality(75) // 75 should be a good balance between quality and size
@@ -1249,7 +1250,8 @@ class MultimediaUpload
       $this->file['tmp_name'] = $tmp_gif;
     }
     $img = new ImageProcessor($this->file['tmp_name']);
-    $img->fixImageOrientation()
+    $img->convertHeicToJpeg()
+      ->fixImageOrientation()
       ->stripImageMetadata()
       ->save();
     $img->optimiseImage(); // Optimise the image, can take upto 60 seconds
