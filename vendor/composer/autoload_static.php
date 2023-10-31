@@ -54,10 +54,6 @@ class ComposerStaticInitd84b9ad25db27c0cce0ffcf6c71b28b7
         array (
             'Nyholm\\Psr7\\' => 12,
         ),
-        'M' => 
-        array (
-            'Maestroerror\\' => 13,
-        ),
         'L' => 
         array (
             'Laravel\\SerializableClosure\\' => 28,
@@ -165,10 +161,6 @@ class ComposerStaticInitd84b9ad25db27c0cce0ffcf6c71b28b7
         'Nyholm\\Psr7\\' => 
         array (
             0 => __DIR__ . '/..' . '/nyholm/psr7/src',
-        ),
-        'Maestroerror\\' => 
-        array (
-            0 => __DIR__ . '/..' . '/maestroerror/php-heic-to-jpg/src',
         ),
         'Laravel\\SerializableClosure\\' => 
         array (
