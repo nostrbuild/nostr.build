@@ -1251,6 +1251,7 @@ class MultimediaUpload
     }
     $img = new ImageProcessor($this->file['tmp_name']);
     $img->convertHeicToJpeg()
+      ->convertTiffToJpeg() // Convert TIFF to JPG even for paid accounts
       ->fixImageOrientation()
       ->stripImageMetadata()
       ->save();

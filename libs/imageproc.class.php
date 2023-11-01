@@ -359,6 +359,39 @@ class ImageProcessor
   }
 
   /**
+   * Summary of convertTiffToJpeg
+   * @return ImageProcessor
+   */
+  public function convertTiffToJpeg(): self
+  {
+    $imageFormat = strtolower($this->imagick->getImageFormat());
+
+    error_log("Image format: $imageFormat" . PHP_EOL);
+    // Check if the image format is TIFF
+    if ($imageFormat !== 'tiff') {
+      error_log("Image is not TIFF, not converting." . PHP_EOL);
+      return $this;
+    }
+
+    // For the animation check, we'll use getNumberImages() which returns 1 for non-animated images.
+    // For animated GIFs, it will return the number of animation frames (more than 1)
+    $isAnimated = $this->imagick->getNumberImages() > 1;
+
+    // Check if the image format is one of the formats that support animation and if it's animated
+    if ($isAnimated) {
+      return $this;
+    }
+
+    // If we got to this point, it's safe to convert the image to JPEG
+    $this->imagick->setImageFormat('jpeg');
+
+    // The image format has changed, we should unset saved flag
+    $this->isSaved = false;
+
+    return $this;
+  }
+
+  /**
    * Summary of stripImageMetadata
    * @return ImageProcessor
    */
