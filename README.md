@@ -30,6 +30,7 @@ nostr.build provides a free API to publically facing nostr or bitcoin projects t
 ## Customization Considerations 
 
 If installing this code on your own platform, the below are some examples of things that can be easily customized for a different experience.
+
 - Change upload limit from 15MB to a larger or smaller value
 - Add or remove certain media options. Maybe make this 'image only' or 'video only'
 - Change Account options to align to your platform
