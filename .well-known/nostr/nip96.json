@@ -21,38 +21,6 @@
         "video": ["resizing", "format_conversion", "compression"]
       }
     },
-    "view_only": {
-      "name": "View All - Only",
-      "is_nip98_required": true,
-      "url": "https://nostr.build/signup/new/",
-      "max_byte_size": 0,
-      "file_expiration": [0, 0],
-      "media_transformations": {
-        "image": [
-          "resizing",
-          "format_conversion",
-          "compression",
-          "metadata_stripping"
-        ],
-        "video": ["resizing", "format_conversion", "compression"]
-      }
-    },
-    "5gb": {
-      "name": "5GB - Only",
-      "is_nip98_required": true,
-      "url": "https://nostr.build/signup/new/",
-      "max_byte_size": 5368709120,
-      "file_expiration": [0, 0],
-      "media_transformations": {
-        "image": [
-          "resizing",
-          "format_conversion",
-          "compression",
-          "metadata_stripping"
-        ],
-        "video": ["resizing", "format_conversion", "compression"]
-      }
-    },
     "professional": {
       "name": "Professional",
       "is_nip98_required": true,

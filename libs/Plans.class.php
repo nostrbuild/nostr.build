@@ -156,39 +156,6 @@ class Plans
       $fromPlanPrice,
       $currentPlanLevel
     );
-
-    self::$PLANS[self::STARTER] = new Plan(
-      self::STARTER,
-      '5GB - Only',
-      'https://cdn.nostr.build/assets/signup/5bg.png',
-      '5gb plan image',
-      $originalPrices[self::STARTER],
-      [
-        '<b>5GB of private storage</b>',
-        '<b>Add/Delete your media</b>',
-        '<b>No View All!</b>'
-      ],
-      'sats',
-      $remainingDays,
-      $fromPlanPrice,
-      $currentPlanLevel
-    );
-
-    self::$PLANS[self::VIEWER] = new Plan(
-      self::VIEWER,
-      'View All - Only',
-      'https://cdn.nostr.build/assets/signup/viewall.gif',
-      'viewall plan image',
-      $originalPrices[self::VIEWER],
-      [
-        '<b>View All : 800k+ pics, GIFs & videos</b>',
-        '<b>No private storage!</b>'
-      ],
-      'sats',
-      $remainingDays,
-      $fromPlanPrice,
-      $currentPlanLevel
-    );
   }
 
   public static function isValidPlan(int $plan): bool
