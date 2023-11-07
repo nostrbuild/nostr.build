@@ -17,9 +17,14 @@ class ComposerStaticInitd84b9ad25db27c0cce0ffcf6c71b28b7
         'a4a119a56e50fbb293281d9a48007e0e' => __DIR__ . '/..' . '/symfony/polyfill-php80/bootstrap.php',
         '8a9dc1de0ca7e01f3e08231539562f61' => __DIR__ . '/..' . '/aws/aws-sdk-php/src/functions.php',
         'b33e3d135e5d9e47d845c576147bda89' => __DIR__ . '/..' . '/php-di/php-di/src/functions.php',
+        'decc78cc4436b1292c6c0d151b19445c' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/bootstrap.php',
     );
 
     public static $prefixLengthsPsr4 = array (
+        'p' => 
+        array (
+            'phpseclib3\\' => 11,
+        ),
         'k' => 
         array (
             'kornrunner\\Blurhash\\' => 20,
@@ -49,6 +54,7 @@ class ComposerStaticInitd84b9ad25db27c0cce0ffcf6c71b28b7
             'Psr\\Http\\Message\\' => 17,
             'Psr\\Http\\Client\\' => 16,
             'Psr\\Container\\' => 14,
+            'ParagonIE\\ConstantTime\\' => 23,
         ),
         'N' => 
         array (
@@ -96,6 +102,10 @@ class ComposerStaticInitd84b9ad25db27c0cce0ffcf6c71b28b7
     );
 
     public static $prefixDirsPsr4 = array (
+        'phpseclib3\\' => 
+        array (
+            0 => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib',
+        ),
         'kornrunner\\Blurhash\\' => 
         array (
             0 => __DIR__ . '/..' . '/kornrunner/blurhash/src',
@@ -157,6 +167,10 @@ class ComposerStaticInitd84b9ad25db27c0cce0ffcf6c71b28b7
         'Psr\\Container\\' => 
         array (
             0 => __DIR__ . '/..' . '/psr/container/src',
+        ),
+        'ParagonIE\\ConstantTime\\' => 
+        array (
+            0 => __DIR__ . '/..' . '/paragonie/constant_time_encoding/src',
         ),
         'Nyholm\\Psr7\\' => 
         array (
