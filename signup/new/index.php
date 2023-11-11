@@ -116,7 +116,12 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
       if (!$npubVerifiedFlag) {
         $account_create_error = "The npub1 public key you entered does not match the one you verified. Please enter the correct public key.";
       }
-      $account->createAccount($password, 0 /* level, default to 0 */, $npubVerifiedFlag, $enableNostrLoginFlag);
+      $account->createAccount($password, 0 /* level, default to 0 */);
+      if ($npubVerifiedFlag && $enableNostrLoginFlag) {
+        // If the npub is verified, set the session variable
+        $account->verifyNpub();
+        $account->allowNpubLogin();
+      }
     } catch (DuplicateUserException $e) {
       $account_create_error = 'This npub1 public key is already in use. Please enter a different public key.';
     } catch (InvalidAccountLevelException $e) {
