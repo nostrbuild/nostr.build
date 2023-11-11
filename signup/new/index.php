@@ -116,7 +116,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
       if (!$npubVerifiedFlag) {
         $account_create_error = "The npub1 public key you entered does not match the one you verified. Please enter the correct public key.";
       }
-      $account->createAccount($password, 0 /* level, default to 0 */);
+      $account->createAccount($password, 0 /* level, default to 0 */, $npubVerifiedFlag, $enableNostrLoginFlag);
       if ($npubVerifiedFlag && $enableNostrLoginFlag) {
         // If the npub is verified, set the session variable
         $account->verifyNpub();
