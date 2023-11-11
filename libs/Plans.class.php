@@ -130,7 +130,6 @@ class Plans
       [
         '<b><a class="ref_link" target="_blank" href="https://nostr.build/creators/">Host on nostr.build Creators page</a></b>',
         '<b>20GB of private storage</b>',
-        'BTCPay Server Account',
         'View All : 800k+ pics, GIFs & videos',
         'Add/Delete your media'
       ],
