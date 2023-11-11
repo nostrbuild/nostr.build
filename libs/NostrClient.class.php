@@ -34,7 +34,7 @@ class NostrClient
     return hash_hmac('sha256', $hashData, $this->apiSecret, true);
   }
 
-  public function sendDm(string $toNpubHex, string $message)
+  public function sendDm(string $toNpubHex, string | array $message)
   {
     try {
       $randomString = $this->generateRandomString();
@@ -45,7 +45,7 @@ class NostrClient
 
       $content = [
         [
-          'type' => 'dm', // 'dm', 'event', 'presigned_note'
+          'type' => 'dm', // 'dm', 'event', 'presigned_note', 'multidm'
           'to' => $toNpubHex,
           'message' => $message,
         ]

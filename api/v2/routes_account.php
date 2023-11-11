@@ -270,7 +270,7 @@ $app->group('/account', function (RouteCollectorProxy $group) {
         // Send a DM to the user
         try {
           $nc = new NostrClient($_SERVER['NB_API_NOSTR_CLIENT_SECRET'], $_SERVER['NB_API_NOSTR_CLIENT_URL']);
-          $nc->sendDm($npub, 'Your verification code is: ' . $dmCode);
+          $nc->sendDm($npub, ['Your verification code is:', (string)$dmCode]);
         } catch (\Exception $e) {
           error_log('Error sending DM: ' . $e->getMessage());
           return jsonResponse($response, 'error', 'Error sending DM', new stdClass(), 500);
