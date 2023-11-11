@@ -7,7 +7,7 @@ function showToast() {
 	}, 1500);
 }
 
-let copyAddress = document.querySelector(".image_address");
+let copyAddress = document.getElementById("copyButton");
 
 copyAddress.addEventListener("click", () => {
 	showToast();
