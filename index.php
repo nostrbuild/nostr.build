@@ -185,6 +185,7 @@ SVG;
 			<h1>nostr media uploader</h1>
 			<p>removes metadata, free, nostr focused</p>
 			<div class="info_cards">
+				<a href="/signup/new" class="info" style="text-decoration-line: none; background: linear-gradient(184.15deg, #ffffff 47.52%, #884ea4 96.61%); color: #150d29;"><span>Create Account</span></a>
 				<div class="info"><span><?= $total_size_gb ?></span>GB used</div>
 				<div class="info"><span><?= number_format($total_files) ?></span> total uploads</div>
 			</div>
