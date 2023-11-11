@@ -115,3 +115,69 @@ class FormAuthorizationMiddleware implements MiddlewareInterface
     return $handler->handle($request);
   }
 }
+
+class NostrLoginMiddleware implements MiddlewareInterface
+{
+  public function process(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface
+  {
+    global $link;
+    $headers = $request->getHeaders();
+
+    $npub = null; // Initialize as null
+    $accountExists = false;  // Assume the account does not exist by default
+    $npubLoginAllowed = false; // Assume the account is not allowed to login by default
+    $npubVerified = false; // Assume the account is not verified by default
+    try {
+      // Initialize NostrAuthHandler
+      $authHandler = new NostrAuthHandler($headers, $request);
+
+      $authHandler->handle();
+      $npub = $authHandler->getNpub();
+
+      // Initialize Account class
+      $account = new Account($npub, $link);
+
+      // Verify account if it exists and is valid
+      if ($account->accountExists() && $account->isAccountValid() && !$account->isNpubVerified()) {
+        $account->verifyNpub();
+      }
+
+      if (
+        $account->accountExists() &&
+        $account->isAccountValid() &&
+        $account->isNpubLoginAllowed()
+      ) {
+        error_log('Account exists, is valid and is allowed to login');
+        $accountExists = true;
+        $npubLoginAllowed = true;
+        $npubVerified = true;
+        $account->verifyNip98Login();
+      } elseif (
+        $account->accountExists() &&
+        $account->isAccountValid() &&
+        !$account->isNpubLoginAllowed()
+      ) {
+        error_log('Account exists, is valid but is not allowed to login');
+        $accountExists = true;
+        $npubVerified = true;
+      } else {
+        error_log('Account does not exist or is not valid');
+        $npubVerified = true;
+        $account->updateAccountDataFromNostrApi(true, false); // Update account data from Nostr API, but do not touch DB
+        $account->setSessionParameters();
+      }
+    } catch (\Exception $e) {
+      error_log('NostrAuthHandler error: ' . $e->getMessage());
+      $accountExists = false;
+    }
+
+    // Lastly, add the npub to the request attributes
+    $request = $request->withAttribute('npub', $npub)
+      ->withAttribute('account_exists', $accountExists)
+      ->withAttribute('npub_verified', $npubVerified)
+      ->withAttribute('npub_login_allowed', $npubLoginAllowed);
+    $response = $handler->handle($request);
+
+    return $response;
+  }
+}

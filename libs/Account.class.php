@@ -6,22 +6,24 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/SiteConfig.php';
 Main class to work with accounts
 For reference:
 desc users;
-+-----------------+--------------+------+-----+-------------------+-------------------+
-| Field           | Type         | Null | Key | Default           | Extra             |
-+-----------------+--------------+------+-----+-------------------+-------------------+
-| id              | int          | NO   | PRI | NULL              | auto_increment    |
-| usernpub        | varchar(70)  | NO   | UNI | NULL              |                   |
-| password        | varchar(255) | NO   |     | NULL              |                   |
-| nym             | varchar(64)  | NO   |     | NULL              |                   |
-| wallet          | varchar(255) | NO   |     | NULL              |                   |
-| ppic            | varchar(255) | NO   |     | NULL              |                   |
-| paid            | varchar(255) | NO   |     | NULL              |                   |
-| acctlevel       | int          | NO   |     | NULL              |                   |
-| flag            | varchar(10)  | NO   |     | NULL              |                   |
-| created_at      | datetime     | YES  |     | CURRENT_TIMESTAMP | DEFAULT_GENERATED |
-| accflags        | json         | YES  |     | NULL              |                   |
-| plan_start_date | datetime     | YES  |     | NULL              |                   |
-+-----------------+--------------+------+-----+-------------------+-------------------+
++------------------+--------------+------+-----+-------------------+-------------------+
+| Field            | Type         | Null | Key | Default           | Extra             |
++------------------+--------------+------+-----+-------------------+-------------------+
+| id               | int          | NO   | PRI | NULL              | auto_increment    |
+| usernpub         | varchar(70)  | NO   | UNI | NULL              |                   |
+| password         | varchar(255) | NO   |     | NULL              |                   |
+| nym              | varchar(64)  | NO   |     | NULL              |                   |
+| wallet           | varchar(255) | NO   |     | NULL              |                   |
+| ppic             | varchar(255) | NO   |     | NULL              |                   |
+| paid             | varchar(255) | NO   |     | NULL              |                   |
+| acctlevel        | int          | NO   |     | NULL              |                   |
+| flag             | varchar(10)  | NO   |     | NULL              |                   |
+| created_at       | datetime     | YES  |     | CURRENT_TIMESTAMP | DEFAULT_GENERATED |
+| accflags         | json         | YES  |     | NULL              |                   |
+| plan_start_date  | datetime     | YES  |     | NULL              |                   |
+| npub_verified    | tinyint(1)   | NO   |     | 0                 |                   |
+| allow_npub_login | tinyint(1)   | NO   |     | 0                 |                   |
++------------------+--------------+------+-----+-------------------+-------------------+
 
  desc users_images;
 +--------------+--------------+------+-----+------------------------------+-------------------+
@@ -39,6 +41,7 @@ desc users;
 | media_height | int          | YES  |     | 0                            |                   |
 | blurhash     | varchar(255) | YES  |     | LEHV6nWB2yk8pyo0adR*.7kCMdnj |                   |
 | mime_type    | varchar(255) | YES  |     | application/octet-stream     |                   |
+| sha256_hash  | varchar(255) | YES  |     | NULL                         |                   |
 +--------------+--------------+------+-----+------------------------------+-------------------+
 */
 
@@ -144,14 +147,22 @@ class Account
    */
   public function setSessionParameters(): void
   {
-    $_SESSION['id'] = $this->account['id'];
-    $_SESSION['usernpub'] = $this->npub;
-    $_SESSION['acctlevel'] = $this->account['acctlevel'];
-    $_SESSION['nym'] = $this->account['nym'];
-    $_SESSION['wallet'] = $this->account['wallet'];
-    $_SESSION['ppic'] = $this->account['ppic'];
-    $_SESSION['flag'] = $this->account['flag'];
-    $_SESSION['accflags'] = json_decode($this->account['accflags'], true);
+    $_SESSION['id'] = $this->account['id'] ?? 0;
+    $_SESSION['usernpub'] = $this->npub ?? '';
+    $_SESSION['acctlevel'] = $this->account['acctlevel'] ?? 0;
+    $_SESSION['nym'] = $this->account['nym'] ?? '';
+    $_SESSION['wallet'] = $this->account['wallet'] ?? '';
+    $_SESSION['ppic'] = $this->account['ppic'] ?? '';
+    $_SESSION['flag'] = $this->account['flag'] ?? '';
+    $_SESSION['npub_verified'] = $this->account['npub_verified'] ?? 0;
+    $_SESSION['allow_npub_login'] = $this->account['allow_npub_login'] ?? 0;
+
+    $accFlags = json_decode($this->account['accflags'] ?? '{}', true);
+    if (json_last_error() === JSON_ERROR_NONE) {
+      $_SESSION['accflags'] = $accFlags;
+    } else {
+      $_SESSION['accflags'] = [];
+    }
   }
 
   public function getAccountFlags(): array
@@ -177,7 +188,7 @@ class Account
     $this->setAccountFlags($flags);
   }
 
-  public function updateAccountDataFromNostrApi(bool $force = false): void
+  public function updateAccountDataFromNostrApi(bool $force = false, bool $update_db = true): void
   {
     $apiQueryUrl = SiteConfig::getNostrApiBaseUrl() . urlencode($this->npub);
 
@@ -196,13 +207,13 @@ class Account
     curl_close($ch);
 
     // Handle cURL errors
-    if ($response === false) {
+    if ($response === false || curl_errno($ch) !== CURLE_OK) {
       error_log("Error fetching account data from Nostr API");
       return;
     }
 
     // Decode JSON
-    $responseData = json_decode($response);
+    $responseData = json_decode($response ?? '{}');
     if (json_last_error() !== JSON_ERROR_NONE || $responseData === null) {
       error_log("Error decoding JSON response from Nostr API: " . json_last_error_msg());
       return;
@@ -219,11 +230,13 @@ class Account
       $this->account['wallet'] = $force ? ($responseData->lud16 ?? $this->account['wallet']) : ($this->account['wallet'] ?? $responseData->lud16 ?? null);
       $this->account['ppic'] = $force ? ($responseData->picture ?? $this->account['ppic']) : ($this->account['ppic'] ?? $responseData->picture ?? null);
 
-      $this->updateAccount(
-        nym: $this->account['nym'],
-        wallet: $this->account['wallet'],
-        ppic: $this->account['ppic']
-      );
+      if ($update_db) {
+        $this->updateAccount(
+          nym: $this->account['nym'],
+          wallet: $this->account['wallet'],
+          ppic: $this->account['ppic']
+        );
+      }
     }
   }
 
@@ -313,16 +326,19 @@ class Account
       echo "An error occurred: " . $e->getMessage();
   }
   */
+
   /**
    * Summary of createAccount
    * @param string $password
    * @param int $level
+   * @param int $npub_verified
+   * @param int $allow_npub_login
    * @throws \DuplicateUserException
    * @throws \InvalidAccountLevelException
    * @throws \Exception
    * @return void
    */
-  public function createAccount(string $password, int $level = 0): void
+  public function createAccount(string $password, int $level = 0, int $npub_verified = 0, int $allow_npub_login = 0): void
   {
     // Preemptive check if the account already exists
     if ($this->accountExists()) {
@@ -337,7 +353,7 @@ class Account
 
     $hashed_password = password_hash(trim($password), PASSWORD_DEFAULT); // Creates a password hash
 
-    $sql = "INSERT INTO users (usernpub, password, acctlevel) VALUES (?, ?, ?)";
+    $sql = "INSERT INTO users (usernpub, password, acctlevel, npub_verified, allow_npub_login) VALUES (?, ?, ?, ?, ?)";
     $stmt = $this->db->prepare($sql);
 
     if (!$stmt) {
@@ -345,7 +361,7 @@ class Account
     }
 
     try {
-      $stmt->bind_param('ssi', $this->npub, $hashed_password, $level);
+      $stmt->bind_param('ssiii', $this->npub, $hashed_password, $level, $npub_verified, $allow_npub_login);
       if (!$stmt->execute()) {
         if ($this->db->errno == 1062) { // Duplicate entry error code
           throw new DuplicateUserException("User with npub $this->npub already exists (race condition)");
@@ -430,7 +446,9 @@ class Account
     int $acctlevel = null,
     string $flag = null,
     array $accflags = null,
-    string $plan_start_date = null
+    string $plan_start_date = null,
+    int $npub_verified = null,
+    int $allow_npub_login = null
   ) {
     $updates = [
       'password' => $password,
@@ -442,6 +460,8 @@ class Account
       'flag' => $flag,
       'accflags' => $accflags ? json_encode($accflags) : null,
       'plan_start_date' => $plan_start_date,
+      'npub_verified' => $npub_verified,
+      'allow_npub_login' => $allow_npub_login,
     ];
 
     $sql = "UPDATE users SET ";
@@ -602,6 +622,27 @@ class Account
   }
 
   /**
+   * Summary of isNpubVerified
+   * @return bool
+   */
+  public function isNpubVerified(): bool
+  {
+    return $this->account['npub_verified'] === 1;
+  }
+
+  /**
+   * Summary of isNpubLoginAllowed
+   * @return bool
+   */
+  public function isNpubLoginAllowed(): bool
+  {
+    if ($this->isNpubVerified() === false) {
+      return false;
+    }
+    return $this->account['allow_npub_login'] === 1;
+  }
+
+  /**
    * Summary of getRemainingStorageSpace
    * @return int
    */
@@ -722,6 +763,60 @@ class Account
       $_SESSION['loggedin'] = true;
     }
     return $valid;
+  }
+
+  /**
+   * Summary of verifyNip98Login
+   * @return bool
+   */
+  public function verifyNip98Login(): bool
+  {
+    if ($this->isNpubLoginAllowed() === false) {
+      return false;
+    }
+    try {
+      $this->updateAccountDataFromNostrApi();
+    } catch (Exception $e) {
+      error_log("Error getting user info from API: " . $e->getMessage());
+    }
+    $this->setSessionParameters();
+    $_SESSION['loggedin'] = true;
+    return true;
+  }
+
+  /**
+   * Summary of allowNpubLogin
+   * @param bool $allow
+   * @return void
+   */
+  public function allowNpubLogin(bool $allow = true): void
+  {
+    if ($this->isNpubVerified() === true) {
+      $this->updateAccount(allow_npub_login: $allow);
+      $this->account['allow_npub_login'] = $allow;
+      $this->setSessionParameters();
+    }
+  }
+
+  /**
+   * Summary of disallowNpubLogin
+   * @return void
+   */
+  public function disallowNpubLogin(): void
+  {
+    $this->allowNpubLogin(false);
+  }
+
+  /**
+   * Summary of verifyNpub
+   * @param bool $verified
+   * @return void
+   */
+  public function verifyNpub(bool $verified = true): void
+  {
+    $this->updateAccount(npub_verified: $verified);
+    $this->account['npub_verified'] = $verified;
+    $this->setSessionParameters();
   }
 
   /**

@@ -56,6 +56,13 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $account = new Account($usernpub, $link);
         if ($account->verifyPassword($password)) {
             $account->updateAccountDataFromNostrApi();
+            // Check if enable_nostr_login is set and update the account
+            if (
+                isset($_POST["enable_nostr_login"]) &&
+                $account->isNpubVerified()
+            ) {
+                $account->allowNpubLogin();
+            }
             error_log("User " . $_SESSION["usernpub"] . " logged in successfully." . PHP_EOL);
             error_log("User " . $_SESSION["usernpub"] . " has the following permissions: " . print_r($_SESSION["accflags"], true) . PHP_EOL);
             header("location: /account");
@@ -77,9 +84,68 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="stylesheet" href="/styles/index.css?v=3" />
-    <link rel="stylesheet" href="/styles/login.css?v=3" />
+    <link rel="stylesheet" href="/styles/login.css?v=4" />
     <link rel="icon" href="/assets/01.png">
     <title>nostr.build login</title>
+    <style>
+        /* Custom checkbox style */
+        .checkbox-container {
+            display: flex;
+            align-items: center;
+            justify-content: flex-start;
+            margin-top: 20px;
+            position: relative;
+        }
+
+        /* Hides the default checkbox */
+        #enable_nostr_login {
+            opacity: 0;
+            position: absolute;
+        }
+
+        #enable_nostr_login+label::before {
+            content: '';
+            display: inline-block;
+            vertical-align: middle;
+            width: 20px;
+            height: 20px;
+            background: #f2f2f2;
+            border-radius: 3px;
+            border: 2px solid #7c7c7c;
+            margin-right: 8px;
+            cursor: pointer;
+            transition: background 0.3s, border-color 0.3s;
+        }
+
+        /* Custom checkbox checkmark */
+        #enable_nostr_login:checked+label::before {
+            background-color: #8a2be2;
+            border-color: #8a2be2;
+        }
+
+        /* Checkmark icon */
+        #enable_nostr_login:checked+label::after {
+            content: '✔';
+            position: absolute;
+            left: 8px;
+            top: 0;
+            color: white;
+            font-size: 25px;
+        }
+
+        #enable_nostr_login+label {
+            cursor: pointer;
+            color: #a58ead;
+            text-shadow: 0px 2px 16px rgba(159, 108, 209, 0.32);
+            font-size: 1rem;
+            line-height: 25px;
+        }
+
+        #enable_nostr_login+label:hover::before {
+            border-color: #8a2be2;
+        }
+    </style>
+
 </head>
 
 <body>
@@ -87,11 +153,22 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
         <form action="<?= htmlspecialchars($_SERVER["PHP_SELF"]); ?>" method="post" class="login_form">
             <h1 class="login_title">Login</h1>
-            <p class="login_text">Please fill in your credentials to login</p>
-            <input placeholder="Your public key(npub)" type="text" name="usernpub" class="login_key <?= (!empty($usernpub_err)) ? 'is-invalid' : ''; ?>" value="<?= $usernpub; ?>">
-            <input placeholder="Password" type="password" name="password" class="login_password <?= (!empty($password_err)) ? 'is-invalid' : ''; ?>">
+            <!-- Signup button at the top -->
+            <div class="login_button" style="text-align: center; margin-bottom: 0rem; display: flex; justify-content: center; align-items: center">
+                <a href="/signup" class="login_button" style="text-decoration: none; display: inline-flex; align-items: center; justify-content: center; height: 40px;;background: linear-gradient(95.49deg, #ffffff 0%, #2edf95 100%);">Create Account</a>
+            </div>
+            <hr style="width:100%;margin:0rem 0rem 0rem 0rem">
+            <input name="nip07_login" class="nip07_button login_button" type="submit" value="Login with Nostr (NIP-07)">
+            <span class="login_text" style="margin:0rem;font-size:2rem">or</span>
+            <input autocomplete="username" placeholder="Your public key(npub)" type="text" name="usernpub" class="login_key <?= (!empty($usernpub_err)) ? 'is-invalid' : ''; ?>" value="<?= $usernpub; ?>">
+            <input autocomplete="current-password" placeholder="Password" type="password" name="password" class="login_password <?= (!empty($password_err)) ? 'is-invalid' : ''; ?>">
+            <!-- Checkbox container -->
+            <div class="checkbox-container" id="checkboxContainer" style="display:none;">
+                <input type="checkbox" id="enable_nostr_login" name="enable_nostr_login" disabled>
+                <label for="enable_nostr_login" style="margin-left: 6px;">Enable Nostr Login</label>
+                <p class="login_text">You must login with password first, to enable Nostr Login.</p>
+            </div>
             <input class="login_button" type="submit" value="Login">
-            <p class="sign_up_link">Don’t have an account? <a href="/signup"> Sign up now </a></p>
             <?php if (!empty($login_err)) : ?>
                 <div class="warning">
                     <div class="warning_text">
@@ -130,7 +207,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         </div>
     </main>
     <?php include $_SERVER['DOCUMENT_ROOT'] . '/components/footer.php'; ?>
-    <script src="/scripts/index.js?v=2"></script>
+    <script src="/scripts/dist/login.js?v=7"></script>
     <script>
         document.addEventListener('DOMContentLoaded', (event) => {
             let closeButton = document.querySelector(".close");
@@ -139,6 +216,25 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                     let warning = document.querySelector(".warning");
                     if (warning) {
                         warning.classList.add("hidden_element");
+                    }
+                });
+            }
+
+            // Check if NIP-07 extension is installed and enable NIP-07 login
+            let nip07Button = document.querySelector("[name='nip07_login']");
+            let enableNostrLoginElement = document.getElementById('checkboxContainer');
+            if (nip07Button) {
+                nip07Button.addEventListener("click", async (e) => {
+                    e.preventDefault();
+                    await loginWithNip07(window.location.origin + "/api/v2/account/login", window.location.origin + "/account", nip07Button, enableNostrLoginElement)
+                });
+            }
+            // Function to disable input of anything that will start with 'nsec1' into the usernpub field
+            let usernpubInput = document.querySelector("[name='usernpub']");
+            if (usernpubInput) {
+                usernpubInput.addEventListener("input", (e) => {
+                    if (e.target.value.length > 4 && (e.target.value.startsWith("nsec1") || !e.target.value.startsWith("npub1"))) {
+                        e.target.value = "";
                     }
                 });
             }

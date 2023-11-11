@@ -5,6 +5,7 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/S3Service.class.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/db/UsersImages.class.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/db/UsersImagesFolders.class.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/BTCPayWebhook.class.php';
+require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/Account.class.php';
 
 use DI\Container;
 use Slim\Factory\AppFactory;
@@ -54,6 +55,14 @@ $container->set('userImagesFolders', function () {
   global $link;
   return new UsersImagesFolders($link);
 });
+
+$container->set('accountClass', function () {
+  return function (string $npub) {
+    global $link;
+    return new Account($npub, $link);
+  };
+});
+
 
 //Setup container for webhooks
 $container->set('btcpayWebhook', function () {

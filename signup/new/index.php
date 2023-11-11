@@ -70,7 +70,15 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
   // Validate usernpub
   $usernpub = trim($_POST["usernpub"]);
-  if (empty($usernpub)) {
+  if (empty($_SESSION['npub_verified'])) {
+    $account_create_error = "Please verify your npub1 public key.";
+  } elseif (
+    !empty($usernpub) &&
+    !empty($_SESSION['npub_verified']) &&
+    $_SESSION['npub_verified'] != $usernpub
+  ) {
+    $account_create_error = "The npub1 public key you entered does not match the one you verified. Please enter the correct public key.";
+  } elseif (empty($usernpub)) {
     $account_create_error = "Please enter a usernpub.";
   } elseif (!$bech32->isValidNpub1Address($usernpub)) {
     $account_create_error = 'Invalid npub1 public key. Please enter a valid public key that begins with "npub1". Do NOT enter your private key!';
@@ -103,7 +111,12 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
       if ($account->accountExists()) {
         $account_create_error = 'This npub1 public key is already in use. Please enter a different public key.';
       }
-      $account->createAccount($password, 0 /* level, default to 0 */);
+      $npubVerifiedFlag = $_SESSION['npub_verified'] === $usernpub ? 1 : 0;
+      $enableNostrLoginFlag = isset($_POST['enable-nostr-login']) && $npubVerified ? 1 : 0;
+      if (!$npubVerifiedFlag) {
+        $account_create_error = "The npub1 public key you entered does not match the one you verified. Please enter the correct public key.";
+      }
+      $account->createAccount($password, 0 /* level, default to 0 */, $npubVerifiedFlag, $enableNostrLoginFlag);
     } catch (DuplicateUserException $e) {
       $account_create_error = 'This npub1 public key is already in use. Please enter a different public key.';
     } catch (InvalidAccountLevelException $e) {
@@ -134,12 +147,14 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
   <meta charSet="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Nostr.build account signup</title>
-  <link rel="stylesheet" href="/styles/twbuild.css?v=12" />
+  <link rel="stylesheet" href="/styles/twbuild.css?v=17" />
   <link rel="stylesheet" href="/styles/index.css?v=2" />
   <link rel="stylesheet" href="/styles/signup.css?v=2" />
   <link rel="icon" href="/assets/primo_nostr.png" />
   <script defer src="/scripts/fw/alpinejs.min.js?v=5"></script>
+  <!--
   <script defer src="/scripts/fw/htmx.min.js?v=5"></script>
+  -->
   <style>
     [x-cloak] {
       display: none !important;
@@ -164,7 +179,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     </div>
   </header>
   <main>
-    <nav hx-boost="true" class="flex items-center justify-center" aria-label="Progress">
+    <nav hx-boost="false" class="flex items-center justify-center" aria-label="Progress">
       <p class="text-sm font-medium text-gray-300">Step <?= $step ?> of <?= count($steps) ?></p>
       <ol role="list" class="ml-8 flex items-center space-x-5">
         <?php foreach ($steps as $index => $value) : ?>
@@ -206,7 +221,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
               <!-- Plans -->
               <?php foreach (Plans::$PLANS as $plan) : ?>
 
-                <div hx-boost="true" class="rounded-3xl p-8 ring-1 ring-gray-200 <?= $plan->id == $selectedPlan ? 'ring-2 ring-indigo-600' : '' ?>">
+                <div hx-boost="fasle" class="rounded-3xl p-8 ring-1 ring-gray-200 <?= $plan->id == $selectedPlan ? 'ring-2 ring-indigo-600' : '' ?>">
                   <img class="mx-auto h-auto w-auto pb-3" src="<?= $plan->image ?>" alt="<?= $plan->imageAlt ?>">
                   <h3 id="tier-<?= $plan->id ?>" class="text-center text-lg font-semibold leading-8 <?= $plan->id == $selectedPlan ? 'text-indigo-300' : 'text-gray-100' ?>"><?= $plan->name ?></h3>
                   <p class="mt-6 flex items-baseline gap-x-1">
@@ -256,48 +271,133 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         <!-- Create Account -->
         <?php
         $userNpub = $_SESSION['signup_npub'] ?? null;
+        $userNpubVerified = $_SESSION['npub_verified'] ?? null;
+        $userPfp = $_SESSION['ppic'] ?? null;
+        $userNpub = $_SESSION['usernpub'] ?? null;
+        $userNym = $_SESSION['nym'] ?? null;
         ?>
         <div class="mt-10 px-8 sm:mx-auto sm:w-full sm:max-w-sm">
           <div class="flex justify-center group">
             <div class="flex items-center">
               <div>
-                <img class="inline-block h-9 w-9 rounded-full" src="/signup/logo/nblogo@0.1x.png" alt="Profile Picture">
+                <img class="inline-block h-9 w-9 rounded-full" src="<?= !empty($userPfp) ? htmlentities($userPfp) : '/signup/logo/nblogo@0.1x.png' ?>" alt="Profile Picture">
               </div>
               <div class="ml-3">
-                <p class="text-sm font-medium text-gray-300 group-hover:text-gray-100"><?= isset($userNym) ? htmlspecialchars($userNym) : 'Anon' ?></p>
-                <p class="text-xs font-medium text-gray-500 group-hover:text-gray-300"><?= isset($userNpub) ? htmlspecialchars($userNpub) : 'npub1...' ?></p>
+                <p class="text-sm font-medium text-gray-300 group-hover:text-gray-100"><?= !empty($userNym) ? htmlspecialchars($userNym) : 'Anon' ?></p>
+                <p class="text-xs font-medium text-gray-500 group-hover:text-gray-300"><?= !empty($userNpub) ? substr(htmlspecialchars($userNpub), 0, 16) . '...' : 'npub1...' ?></p>
               </div>
             </div>
           </div>
           <form class="space-y-6" action="#" method="POST">
+            <?php if (empty($userNpubVerified)) : ?>
+              <div>
+                <p class="text-sm font-medium leading-6 text-gray-300">Please verify your Nostr identity to proceed.</p>
+                <button id="signup-verify-nip07-button" type="submit" class="flex w-full justify-center rounded-md bg-indigo-600 px-3 py-1.5 text-sm font-semibold leading-6 text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600">Verfiy using extention (NIP-07)</button>
+              </div>
+              <div>
+                <p class="flex w-full justify-center text-md font-medium leading-6 text-gray-300">Or</p>
+              </div>
+            <?php endif; ?>
             <div>
               <label for="usernpub" class="block text-sm font-medium leading-6 text-gray-100">Your npub</label>
               <div class="mt-2">
-                <input id="usernpub" name="usernpub" type="text" autocomplete="new-username" required class="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6" placeholder="npub1...">
+                <?php if (isset($userNpubVerified) && $userNpubVerified) : ?>
+                  <input id="usernpub" name="usernpub" type="text" autocomplete="new-username" required class="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6" placeholder="" value="<?= htmlspecialchars($userNpubVerified) ?>" readonly>
+                <?php else : ?>
+                  <input id="usernpub" name="usernpub" type="text" autocomplete="new-username" required class="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6" placeholder="npub1...">
+                <?php endif; ?>
               </div>
             </div>
 
-            <div class="relative -space-y-px rounded-md shadow-sm">
-              <div class="pointer-events-none absolute inset-0 z-10 rounded-md ring-1 ring-inset ring-gray-300"></div>
-              <div>
-                <label for="password" class="sr-only">Password</label>
-                <input id="password" name="password" type="password" autocomplete="new-password" required class="relative block w-full rounded-t-md border-0 py-1.5 text-gray-900 ring-1 ring-inset ring-gray-100 placeholder:text-gray-400 focus:z-10 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6" placeholder="Password">
+            <?php if (empty($userNpubVerified)) : ?>
+              <div id="signup-verify-dm-input" style="display: none;">
+                <label for="signup-verify-dm-code" class="block text-sm font-medium leading-6 text-gray-100">Verification Code</label>
+                <input id="signup-verify-dm-code" name="signup-verify-dm-code" type="tel" pattern="[0-9]{6}" title="Please enter a 6-digit verification code" autocomplete="off" required class="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6" placeholder="000000" value="" maxlength="6" minlength="6">
               </div>
               <div>
-                <label for="password" class="sr-only">Confirm Password</label>
-                <input id="confirm_password" name="confirm_password" type="password" autocomplete="new-password" required class="relative block w-full rounded-b-md border-0 py-1.5 text-gray-900 ring-1 ring-inset ring-gray-900 placeholder:text-gray-400 focus:z-10 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6" placeholder="Confirm password">
+                <button id="signup-verify-dm-button" type="submit" class="flex w-full justify-center rounded-md bg-indigo-600 px-3 py-1.5 text-sm font-semibold leading-6 text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600">Verify using direct message (DM)</button>
               </div>
-            </div>
-            <?php if (!empty($account_create_error)) : ?>
-              <p class="mt-2 text-sm text-red-600" id="email-error"><?= htmlentities($account_create_error) ?></p>
+            <?php else : ?>
+
+              <div class="relative -space-y-px rounded-md shadow-sm">
+                <div class="pointer-events-none absolute inset-0 z-10 rounded-md ring-1 ring-inset ring-gray-300"></div>
+                <div>
+                  <label for="password" class="sr-only">Password</label>
+                  <input id="password" name="password" type="password" autocomplete="new-password" required class="relative block w-full rounded-t-md border-0 py-1.5 text-gray-900 ring-1 ring-inset ring-gray-100 placeholder:text-gray-400 focus:z-10 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6" placeholder="Password">
+                </div>
+                <div>
+                  <label for="password" class="sr-only">Confirm Password</label>
+                  <input id="confirm_password" name="confirm_password" type="password" autocomplete="new-password" required class="relative block w-full rounded-b-md border-0 py-1.5 text-gray-900 ring-1 ring-inset ring-gray-900 placeholder:text-gray-400 focus:z-10 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6" placeholder="Confirm password">
+                </div>
+              </div>
+              <?php if (!empty($account_create_error)) : ?>
+                <p class="mt-2 text-sm text-red-600" id="email-error"><?= htmlentities($account_create_error) ?></p>
+              <?php endif; ?>
+              <div class="flex w-full justify-center">
+                <label for="enable-nostr-login" class="mt-2 text-sm font-medium leading-6 text-gray-300 text-center">Enable Login with Nostr Identity</label>
+                <input type="checkbox" id="enable-nostr-login" name="enable-nostr-login" class="mt-2 m-2 p-2" checked>
+              </div>
+              <div>
+                <button type="submit" class="flex w-full justify-center rounded-md bg-indigo-600 px-3 py-1.5 text-sm font-semibold leading-6 text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600">Create Account</button>
+                <h4 class="mt-2 text-sm font-medium leading-6 text-gray-300 text-center">Already have an account? <a href="/login" class="text-indigo-300 hover:text-indigo-200">Log in</a></h4>
+                <h4 class="mt-2 text-sm font-medium leading-6 text-gray-300 text-center">Creating an account agrees to our <a href="/tos" class="text-indigo-300 hover:text-indigo-200" target="_blank">Terms of Service</a>.</h4>
+              </div>
+
             <?php endif; ?>
-            <div>
-              <button type="submit" class="flex w-full justify-center rounded-md bg-indigo-600 px-3 py-1.5 text-sm font-semibold leading-6 text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600">Create Account</button>
-              <h4 class="mt-2 text-sm font-medium leading-6 text-gray-300 text-center">Already have an account? <a href="/login" class="text-indigo-300 hover:text-indigo-200">Log in</a></h4>
-              <h4 class="mt-2 text-sm font-medium leading-6 text-gray-300 text-center">Creating an account agrees to our <a href="/tos" class="text-indigo-300 hover:text-indigo-200" target="_blank">Terms of Service</a>.</h4>
-            </div>
           </form>
         </div>
+        <script src="/scripts/dist/signup.js?v=4"></script>
+        <script>
+          document.addEventListener('DOMContentLoaded', (event) => {
+            // Check if NIP-07 extension is installed and enable NIP-07 login
+            let nip07Button = document.getElementById('signup-verify-nip07-button');
+            if (nip07Button) {
+              nip07Button.addEventListener("click", async (e) => {
+                e.preventDefault();
+                await verifyWithNip07(window.location.origin + "/api/v2/account/verify", nip07Button)
+              });
+            }
+
+            // Verify npub ownership using Nostr DM (NIP-04)
+            let dmButton = document.getElementById('signup-verify-dm-button');
+            let dmCodeInput = document.getElementById('signup-verify-dm-input');
+            let npubInput = document.getElementById('usernpub');
+            if (dmButton) {
+              dmButton.addEventListener("click", async (e) => {
+                e.preventDefault();
+                await verifyWithDM(window.location.origin + "/api/v2/account/verify", dmButton, dmCodeInput, npubInput)
+              });
+            }
+            if (dmCodeInput) {
+              //intercept enter keypress on dm code input
+              dmCodeInput.addEventListener("keypress", async (e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  await verifyWithDM(window.location.origin + "/api/v2/account/verify", dmButton, dmCodeInput, npubInput)
+                }
+              });
+            }
+            if (npubInput) {
+              //intercept enter keypress on npub input
+              npubInput.addEventListener("keypress", async (e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  await verifyWithDM(window.location.origin + "/api/v2/account/verify", dmButton, dmCodeInput, npubInput)
+                }
+              });
+            }
+
+            // Function to disable input of anything that will start with 'nsec1' into the usernpub field
+            let usernpubInput = document.querySelector("[name='usernpub']");
+            if (usernpubInput) {
+              usernpubInput.addEventListener("input", (e) => {
+                if (e.target.value.length > 4 && (e.target.value.startsWith("nsec1") || !e.target.value.startsWith("npub1"))) {
+                  e.target.value = "";
+                }
+              });
+            }
+          });
+        </script>
       <?php break;
       case 3:
       ?>
@@ -332,11 +432,17 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
           $_SESSION['signup_invoiceId'] = $invoiceId;
         }
         ?>
-        <div class="flex justify-center mx-auto max-w-7xl sm:px-6 lg:px-8 py-16">
+        <div class="flex flex-col justify-center mx-auto max-w-7xl sm:px-6 lg:px-8 py-16 space-y-4">
           <button onclick="window.btcpay.showInvoice('<?= $invoiceId ?>');" type="button" class="self-center inline-flex items-center gap-x-2 rounded-md bg-indigo-600 px-3.5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600">
             Show Invoice
             <svg class="-mr-0.5 h-5 w-5" aria-hidden="true" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M20.25 6.375c0 2.278-3.694 4.125-8.25 4.125S3.75 8.653 3.75 6.375m16.5 0c0-2.278-3.694-4.125-8.25-4.125S3.75 4.097 3.75 6.375m16.5 0v11.25c0 2.278-3.694 4.125-8.25 4.125s-8.25-1.847-8.25-4.125V6.375m16.5 0v3.75m-16.5-3.75v3.75m16.5 0v3.75C20.25 16.153 16.556 18 12 18s-8.25-1.847-8.25-4.125v-3.75m16.5 0c0 2.278-3.694 4.125-8.25 4.125s-8.25-1.847-8.25-4.125" />
+              <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z" />
+            </svg>
+          </button>
+          <button onclick="window.location.href = '?step=1';" type="button" class="self-center inline-flex items-center gap-x-2 rounded-md bg-indigo-600 px-3.5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600">
+            Change Plan
+            <svg class="-mr-0.5 h-5 w-5" aria-hidden="true" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 6.75h12M8.25 12h12m-12 5.25h12M3.75 6.75h.007v.008H3.75V6.75zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zM3.75 12h.007v.008H3.75V12zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm-.375 5.25h.007v.008H3.75v-.008zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
             </svg>
           </button>
         </div>
@@ -412,7 +518,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
   </main>
 
   <!-- Footer -->
-	<?php include $_SERVER['DOCUMENT_ROOT'] . '/components/footer.php'; ?>
+  <?php include $_SERVER['DOCUMENT_ROOT'] . '/components/footer.php'; ?>
 
   <script src="https://btcpay.nostr.build/modal/btcpay.js"></script>
   <script>
