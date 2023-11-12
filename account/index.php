@@ -95,7 +95,7 @@ $userStorageRemaining = $userOverLimit ? 0 : $userStorageLimit - $storageUsed;
 	<aside class="sidebar">
 		<h1 class="sidebar_title">nostr.build</h1>
 		<div class="account_selector">
-			<a href="/functions/settings.php"><img src="<?= empty($ppic) ? '/assets/temp_ppic.png' : $ppic ?>" alt="user image" class="user_img"></a>
+			<a href="/functions/settings.php"><img src="<?= empty($ppic) ? '/assets/temp_ppic.png' : $ppic ?>" alt="user image" class="rounded-full w-6 h-6"></a>
 			<div class="user_info">
 				<p class="user_name"><?= htmlentities($nym) ?></p>
 				<p class="user_address"><?= strlen($user) > 17 ? substr(htmlspecialchars($user), 0, 17) . "..." : htmlspecialchars($user) ?></p>
@@ -108,8 +108,9 @@ $userStorageRemaining = $userOverLimit ? 0 : $userStorageLimit - $storageUsed;
 					</svg>
 				</button>
 				<button class="accounts_button" onclick="window.location.href='/functions/settings.php';">
-					<svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-						<path fill-rule="evenodd" clip-rule="evenodd" d="M3.52876 5.52876C3.78911 5.26841 4.21122 5.26841 4.47157 5.52876L8.00016 9.05736L11.5288 5.52876C11.7891 5.26841 12.2112 5.26841 12.4716 5.52876C12.7319 5.78911 12.7319 6.21122 12.4716 6.47157L8.47156 10.4716C8.21123 10.7319 7.7891 10.7319 7.52876 10.4716L3.52876 6.47157C3.26841 6.21122 3.26841 5.78911 3.52876 5.52876Z" fill="#D0BED8" />
+					<svg width="16" height="16" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="#e5e7eb">
+						<path stroke-linecap="round" stroke-linejoin="round" d="M10.343 3.94c.09-.542.56-.94 1.11-.94h1.093c.55 0 1.02.398 1.11.94l.149.894c.07.424.384.764.78.93.398.164.855.142 1.205-.108l.737-.527a1.125 1.125 0 011.45.12l.773.774c.39.389.44 1.002.12 1.45l-.527.737c-.25.35-.272.806-.107 1.204.165.397.505.71.93.78l.893.15c.543.09.94.56.94 1.109v1.094c0 .55-.397 1.02-.94 1.11l-.893.149c-.425.07-.765.383-.93.78-.165.398-.143.854.107 1.204l.527.738c.32.447.269 1.06-.12 1.45l-.774.773a1.125 1.125 0 01-1.449.12l-.738-.527c-.35-.25-.806-.272-1.203-.107-.397.165-.71.505-.781.929l-.149.894c-.09.542-.56.94-1.11.94h-1.094c-.55 0-1.019-.398-1.11-.94l-.148-.894c-.071-.424-.384-.764-.781-.93-.398-.164-.854-.142-1.204.108l-.738.527c-.447.32-1.06.269-1.45-.12l-.773-.774a1.125 1.125 0 01-.12-1.45l.527-.737c.25-.35.273-.806.108-1.204-.165-.397-.505-.71-.93-.78l-.894-.15c-.542-.09-.94-.56-.94-1.109v-1.094c0-.55.398-1.02.94-1.11l.894-.149c.424-.07.765-.383.93-.78.165-.398.143-.854-.107-1.204l-.527-.738a1.125 1.125 0 01.12-1.45l.773-.773a1.125 1.125 0 011.45-.12l.737.527c.35.25.807.272 1.204.107.397-.165.71-.505.78-.929l.15-.894z" />
+						<path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
 					</svg>
 				</button>
 			</div>

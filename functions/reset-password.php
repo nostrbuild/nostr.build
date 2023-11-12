@@ -52,56 +52,29 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Reset Password</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css">
-    <style>
-        body {
-            font: 14px sans-serif;
-            background-color: #f8f9fa;
-        }
-
-        .container {
-            max-width: 400px;
-        }
-
-        .card {
-            border-radius: 15px;
-        }
-
-        .card-header {
-            text-align: center;
-        }
-
-        .card-body {
-            display: flex;
-            flex-direction: column;
-        }
-
-        .form-group {
-            margin-top: 15px;
-        }
-    </style>
+    <link href="/styles/twbuild.css?v=1" rel="stylesheet">
 </head>
 
-<body>
-    <div class="container py-5">
-        <div class="card">
-            <h3 class="card-header">Reset Password</h3>
-            <div class="card-body">
+<body class="bg-gray-100 font-sans">
+    <div class="container mx-auto py-5 px-4 max-w-sm">
+        <div class="card bg-white shadow-lg rounded-lg overflow-hidden">
+            <h3 class="text-center text-lg font-bold p-4">Reset Password</h3>
+            <div class="card-body flex flex-col p-4">
                 <p>Please fill out this form to reset your password.</p>
                 <form action="" method="post">
-                    <div class="form-group">
-                        <label>New Password</label>
-                        <input type="password" name="new_password" class="form-control <?= (!empty($new_password_err)) ? 'is-invalid' : ''; ?>" value="<?= htmlspecialchars($new_password); ?>">
-                        <span class="invalid-feedback"><?= $new_password_err; ?></span>
+                    <div class="form-group mb-4">
+                        <label class="font-bold">New Password</label>
+                        <input type="password" name="new_password" class="form-control block w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 <?= (!empty($new_password_err)) ? 'border-red-500' : ''; ?>" value="<?= htmlspecialchars($new_password); ?>">
+                        <span class="text-red-500 text-sm"><?= $new_password_err; ?></span>
                     </div>
-                    <div class="form-group">
-                        <label>Confirm Password</label>
-                        <input type="password" name="confirm_password" class="form-control <?= (!empty($confirm_password_err)) ? 'is-invalid' : ''; ?>">
-                        <span class="invalid-feedback"><?= $confirm_password_err; ?></span>
+                    <div class="form-group mb-4">
+                        <label class="font-bold">Confirm Password</label>
+                        <input type="password" name="confirm_password" class="form-control block w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 <?= (!empty($confirm_password_err)) ? 'border-red-500' : ''; ?>">
+                        <span class="text-red-500 text-sm"><?= $confirm_password_err; ?></span>
                     </div>
                     <div class="form-group mt-3">
-                        <input type="submit" class="btn btn-primary btn-block" value="Submit">
-                        <a class="btn btn-link btn-block" href="/account">Cancel</a>
+                        <input type="submit" class="w-full text-white bg-blue-500 hover:bg-blue-700 focus:ring-4 focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center" value="Submit">
+                        <a class="block text-center text-blue-600 hover:text-blue-700 mt-4" href="/account">Cancel</a>
                     </div>
                 </form>
             </div>

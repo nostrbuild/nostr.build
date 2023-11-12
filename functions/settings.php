@@ -51,97 +51,40 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>nostr.build Profile Settings</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css">
-    <style>
-        body {
-            font: 14px sans-serif;
-            background-color: #f8f9fa;
-        }
-
-        .container {
-            max-width: 450px;
-        }
-
-        .card {
-            border-radius: 15px;
-        }
-
-        .card-header {
-            text-align: center;
-        }
-
-        .card-body {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            width: 100%;
-            /* Set the width of the card body to 90% */
-        }
-
-        .profile-img {
-            width: 170px;
-            height: 170px;
-            border-radius: 50%;
-            object-fit: cover;
-        }
-
-        .form-group {
-            margin-top: 15px;
-            width: 100%;
-            /* Set the width of the form group to 100% */
-        }
-
-        /* Set the width of the form control to 100% */
-        .form-group .form-control {
-            width: 100%;
-        }
-
-        .form-group input[type="submit"] {
-            margin-top: 15px;
-            width: 100%;
-            /* Make the button full width */
-        }
-
-        form {
-            width: 90%;
-            /* Set the width of the form to 90% */
-        }
-    </style>
-
+    <link href="/styles/twbuild.css?v=2" rel="stylesheet">
 </head>
 
-<body>
-    <div class="container py-5">
-        <div class="card">
-            <h3 class="card-header">Welcome, <b><?= htmlspecialchars((!empty($nym) ? $nym : 'anon')) ?></b></h3>
-            <div class="card-body">
-                <img class="profile-img" src="<?= htmlspecialchars((!empty($ppic) ? $ppic : '/assets/01.png')) ?>" alt="Profile Pic">
+<body class="bg-gray-100 text-sm text-gray-800">
+    <div class="mx-auto py-5 px-4 max-w-sm">
+        <div class="bg-white shadow-lg rounded-lg overflow-hidden">
+            <h3 class="text-center text-lg font-bold p-4">Welcome, <b><?= htmlspecialchars((!empty($nym) ? $nym : 'anon')) ?></b></h3>
+            <div class="flex flex-col items-center p-4">
+                <img class="w-32 h-32 rounded-full object-cover" src="<?= htmlspecialchars((!empty($ppic) ? $ppic : '/assets/01.png')) ?>" alt="Profile Pic">
                 <?php if (!empty($error)) : ?>
-                    <div class="alert alert-danger mt-3" role="alert">
+                    <div class="mt-3 p-3 bg-red-100 border border-red-400 text-red-700 rounded" role="alert">
                         <?= htmlspecialchars($error) ?>
                     </div>
                 <?php endif; ?>
-                <form action="" method="post">
-                    <div class="form-group">
-                        <label for="nym">Nym</label>
-                        <input class="form-control" type="text" name="nym" id="nym" placeholder="@nym" value="<?= htmlspecialchars($nym) ?>">
+                <form action="" method="post" class="w-full mt-4">
+                    <div class="mb-4">
+                        <label for="nym" class="block text-gray-700 text-sm font-bold mb-2">Nym</label>
+                        <input class="block w-full px-3 py-2 border border-gray-300 rounded-md text-gray-700 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500" type="text" name="nym" id="nym" placeholder="@nym" value="<?= htmlspecialchars($nym) ?>">
                     </div>
-                    <div class="form-group">
-                        <label for="ppic">Profile Picture URL</label>
-                        <input class="form-control" type="text" name="ppic" id="ppic" placeholder="profile picture URL" value="<?= htmlspecialchars($ppic) ?>">
+                    <div class="mb-4">
+                        <label for="ppic" class="block text-gray-700 text-sm font-bold mb-2">Profile Picture URL</label>
+                        <input class="block w-full px-3 py-2 border border-gray-300 rounded-md text-gray-700 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500" type="text" name="ppic" id="ppic" placeholder="profile picture URL" value="<?= htmlspecialchars($ppic) ?>">
                     </div>
-                    <div class="form-group">
-                        <label for="wallet">Your Wallet Address</label>
-                        <input class="form-control" type="text" name="wallet" id="wallet" placeholder="your wallet address" value="<?= htmlspecialchars($wallet) ?>">
+                    <div class="mb-4">
+                        <label for="wallet" class="block text-gray-700 text-sm font-bold mb-2">Your Wallet Address</label>
+                        <input class="block w-full px-3 py-2 border border-gray-300 rounded-md text-gray-700 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500" type="text" name="wallet" id="wallet" placeholder="your wallet address" value="<?= htmlspecialchars($wallet) ?>">
                     </div>
-                    <div class="form-group mt-3">
-                        <input class="btn btn-primary btn-block" type="submit" value="Update">
+                    <div class="mt-3">
+                        <input class="btn block w-full text-white bg-blue-500 hover:bg-blue-700 focus:ring-4 focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center" type="submit" value="Update">
                     </div>
                 </form>
-                <a href="reset-password.php" class="btn btn-warning mt-3">Reset Password</a>
+                <a href="reset-password.php" class="btn mt-3 text-white bg-yellow-400 hover:bg-yellow-500 focus:ring-4 focus:ring-yellow-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center">Reset Password</a>
             </div>
         </div>
     </div>
 </body>
-
 </html>
