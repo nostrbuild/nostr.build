@@ -198,25 +198,99 @@ $app->group('/account', function (RouteCollectorProxy $group) {
 
   // Route to login account using NostrAuth
   $group->post('/login', function (Request $request, Response $response) {
-    // Get attributes from the middleware
-    $npub = $request->getAttribute('npub');
-    $accountExists = $request->getAttribute('account_exists') || false;
-    $npubVerified = $request->getAttribute('npub_verified') || false;
-    $npubLoginAllowed = $request->getAttribute('npub_login_allowed') || false;
-    if (!empty($npub) && $accountExists && $npubLoginAllowed) {
-      // If the account exists, return a 200 response
-      return jsonResponse($response, 'success', 'Account exists, and npub login enabled', new stdClass(), 200);
-    } elseif (!empty($npub) && !$accountExists) {
-      // Account does not exist, return a 404 response
-      // Set signup npub in session to be used in the signup route
-      $_SESSION['npub_verified'] = $npub;
-      return jsonResponse($response, 'error', 'Account does not exist.', new stdClass(), 404);
-    } elseif (!empty($npub) && $accountExists && !$npubLoginAllowed) {
-      // Account exists but is not allowed to login, return a 403 response
-      return jsonResponse($response, 'error', 'Account exists but npub login not enabled.', new stdClass(), 403);
+    $body = $request->getParsedBody();
+
+    if (empty($body['npub'])) { // NIP-98 Flow
+      // Get attributes from the middleware
+      $npub = $request->getAttribute('npub');
+      $accountExists = $request->getAttribute('account_exists') || false;
+      $npubVerified = $request->getAttribute('npub_verified') || false;
+      $npubLoginAllowed = $request->getAttribute('npub_login_allowed') || false;
+      if (!empty($npub) && $accountExists && $npubLoginAllowed && $npubVerified) {
+        // If the account exists, return a 200 response
+        return jsonResponse($response, 'success', 'Account exists, and npub login enabled', new stdClass(), 200);
+      } elseif (!empty($npub) && !$accountExists) {
+        // Account does not exist, return a 404 response
+        // Set signup npub in session to be used in the signup route
+        $_SESSION['npub_verified'] = $npub;
+        return jsonResponse($response, 'error', 'Account does not exist.', new stdClass(), 404);
+      } elseif (!empty($npub) && $accountExists && !$npubLoginAllowed) {
+        // Account exists but is not allowed to login, return a 403 response
+        return jsonResponse($response, 'error', 'Account exists but npub login not enabled.', new stdClass(), 403);
+      } else {
+        // If the account does not exist, return a 401 response
+        return jsonResponse($response, 'error', 'Not authorized', new stdClass(), 401);
+      }
     } else {
-      // If the account does not exist, return a 401 response
-      return jsonResponse($response, 'error', 'Not authorized', new stdClass(), 401);
+      // DM Based login
+      $npub = $body['npub'];
+      try {
+        $account = $this->get('accountClass')($npub);
+      } catch (\Exception $e) {
+        return jsonResponse($response, 'error', 'Login failed: ' . $e->getMessage(), new stdClass(), 500);
+      }
+
+
+      // Check if the user submitted a DM code
+      if (!empty($body['dm_code'])) {
+        // Process the DM code
+        $dmCode = $body['dm_code'];
+        // Verify that what we sent in DM matches what user submitted, and return a 200 response
+        $timedDmCode = $_SESSION['timed_dm_code'];
+        $expires = $timedDmCode['expires'];
+        if (time() > $expires) {
+          // If the DM code has expired, return a 401 response
+          error_log('DM code expired');
+          return jsonResponse($response, 'error', 'Login failed, code expired', new stdClass(), 401);
+        }
+        if ($timedDmCode['code'] === $dmCode) {
+          // npub is verified, set session parameters
+          $_SESSION['npub_verified'] = $npub;
+          error_log('Npub verified: ' . $npub);
+          try {
+            // Reject login if account does not exist
+            if (!$account->accountExists()) {
+              return jsonResponse($response, 'error', 'Account does not exist.', new stdClass(), 404);
+            }
+            // Update DB to set npub_verified to true
+            if (!$account->isNpubVerified()) {
+              $account->verifyNpub();
+            }
+            if (!$account->isNpubLoginAllowed()) {
+              // Check if user enabled npub login
+              return jsonResponse($response, 'error', 'Login failed', new stdClass(), 403);
+            }
+            if (!$account->verifyNostrLogin()) {
+              // This should never happen, but just in case
+              return jsonResponse($response, 'error', 'Login failed', new stdClass(), 401);
+            }
+          } catch (\Exception $e) {
+            return jsonResponse($response, 'error', 'Login failed: ' . $e->getMessage(), new stdClass(), 500);
+          }
+          return jsonResponse($response, 'success', 'Login successful.', new stdClass(), 200);
+        } else {
+          // If the DM code does not match, return a 401 response
+          error_log('DM code does not match: ' . $dmCode . ' !== ' . $timedDmCode['code']);
+          return jsonResponse($response, 'error', 'Login failed, code does not match.', new stdClass(), 401);
+        }
+      } else {
+        // If the user did not submit a DM code, send a DM to the user
+        // Generate random secure string and send it in a DM to the user
+        $dmCode = base64_encode(random_bytes(32));
+        $_SESSION['timed_dm_code']['code'] = $dmCode;
+        $_SESSION['timed_dm_code']['expires'] = time() + 300 + 10; // 5 minutes + 10 seconds
+        try {
+          $nc = new NostrClient($_SERVER['NB_API_NOSTR_CLIENT_SECRET'], $_SERVER['NB_API_NOSTR_CLIENT_URL']);
+          if (!$nc->sendDm($npub, ['Your temporary login code is:', $dmCode])) {
+            throw new Exception('Error sending DM');
+          }
+        } catch (\Exception $e) {
+          error_log('Error sending DM: ' . $e->getMessage());
+          return jsonResponse($response, 'error', 'Error sending DM', new stdClass(), 500);
+        }
+        // Return a 200 response
+        return jsonResponse($response, 'success', 'DM sent', new stdClass(), 200);
+      }
     }
   })->add(new NostrLoginMiddleware());
 
@@ -265,12 +339,14 @@ $app->group('/account', function (RouteCollectorProxy $group) {
         // Generate random 6 digit code
         $dmCode = rand(100000, 999999);
         $_SESSION['timed_dm_code']['code'] = $dmCode;
-        $_SESSION['timed_dm_code']['expires'] = time() + 600; // 10 minutes
+        $_SESSION['timed_dm_code']['expires'] = time() + 660 + 10; // 11 minutes + 10 seconds
         error_log('DM code: ' . $dmCode);
         // Send a DM to the user
         try {
           $nc = new NostrClient($_SERVER['NB_API_NOSTR_CLIENT_SECRET'], $_SERVER['NB_API_NOSTR_CLIENT_URL']);
-          $nc->sendDm($npub, ['Your verification code is:', (string)$dmCode]);
+          if (!$nc->sendDm($npub, ['Your verification code is:', (string)$dmCode])) {
+            throw new Exception('Error sending DM');
+          }
         } catch (\Exception $e) {
           error_log('Error sending DM: ' . $e->getMessage());
           return jsonResponse($response, 'error', 'Error sending DM', new stdClass(), 500);

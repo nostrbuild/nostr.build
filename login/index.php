@@ -172,6 +172,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             <span class="login_text" style="margin:0rem;font-size:2rem">or</span>
             <input autocomplete="username" placeholder="Your public key(npub)" type="text" name="usernpub" class="login_key <?= (!empty($usernpub_err)) ? 'is-invalid' : ''; ?>" value="<?= $usernpub; ?>">
             <input autocomplete="current-password" placeholder="Password" type="password" name="password" class="login_password <?= (!empty($password_err)) ? 'is-invalid' : ''; ?>">
+            <input autocomplete="off" placeholder="Verification DM Code" type="password" name="dm_code" class="login_password" style="display: none;">
             <!-- Checkbox container -->
             <div class="checkbox-container" id="checkboxContainer" style="display:none;">
                 <input type="checkbox" id="enable_nostr_login" name="enable_nostr_login" disabled>
@@ -179,6 +180,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 <p class="login_text">You must login with password first, to enable Nostr Login.</p>
             </div>
             <input class="login_button" type="submit" value="Login">
+            <input class="login_button" type="submit" value="Login via Nostr DM" name="dm_login">
             <?php if (!empty($login_err)) : ?>
                 <div class="warning">
                     <div class="warning_text">
@@ -217,7 +219,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         </div>
     </main>
     <?php include $_SERVER['DOCUMENT_ROOT'] . '/components/footer.php'; ?>
-    <script src="/scripts/dist/login.js?v=8"></script>
+    <script src="/scripts/dist/login.js?v=10"></script>
     <script>
         document.addEventListener('DOMContentLoaded', (event) => {
             let closeButton = document.querySelector(".close");
@@ -237,6 +239,18 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 nip07Button.addEventListener("click", async (e) => {
                     e.preventDefault();
                     await loginWithNip07(window.location.origin + "/api/v2/account/login", window.location.origin + "/account", nip07Button, enableNostrLoginElement)
+                });
+            }
+            // Check if DM login button is present
+            let DMButton = document.querySelector("[name='dm_login']");
+            let DMCodeInput = document.querySelector("[name='dm_code']");
+            let DMNpubInput = document.querySelector("[name='usernpub']");
+            let DMPasswordField = document.querySelector("[name='password']");
+            let LoginButton = document.querySelector("[value='Login']");
+            if (DMButton) {
+                DMButton.addEventListener("click", async (e) => {
+                    e.preventDefault();
+                    await loginWithDM(window.location.origin + "/api/v2/account/login", DMButton, DMCodeInput, DMNpubInput, DMPasswordField, enableNostrLoginElement, LoginButton)
                 });
             }
             // Function to disable input of anything that will start with 'nsec1' into the usernpub field

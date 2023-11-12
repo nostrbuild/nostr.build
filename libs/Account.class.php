@@ -769,9 +769,9 @@ class Account
    * Summary of verifyNip98Login
    * @return bool
    */
-  public function verifyNip98Login(): bool
+  public function verifyNostrLogin(bool $force = false): bool
   {
-    if ($this->isNpubLoginAllowed() === false) {
+    if ($force || $this->isNpubLoginAllowed() === false) {
       return false;
     }
     try {
