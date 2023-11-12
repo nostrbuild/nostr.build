@@ -97,6 +97,8 @@ import { nip98 } from 'nostr-tools'
             clearInterval(global.dmTimerInterval);
             triggerButton.value = 'Nostr login not enabled';
             triggerButton.disabled = true;
+            triggerButton.style.background = 'rgba(61, 53, 92, 0.3)';
+            triggerButton.style.color = '#d0bed8';
             // Show the enable nostr login checkbox
             enableNostrLoginCheckbox.style.display = 'block';
             enableNostrLoginCheckbox.querySelector('input[type="checkbox"]').disabled = false;
