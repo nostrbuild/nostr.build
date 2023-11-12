@@ -151,7 +151,7 @@ class NostrLoginMiddleware implements MiddlewareInterface
         $accountExists = true;
         $npubLoginAllowed = true;
         $npubVerified = true;
-        $account->verifyNip98Login();
+        $account->verifyNostrLogin();
       } elseif (
         $account->accountExists() &&
         $account->isAccountValid() &&
