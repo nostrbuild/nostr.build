@@ -55,9 +55,9 @@ SVG;
         View All
       </a>
     <?php endif; ?>
-    <a href="/memestr" class="nav_button">
+    <a href="https://shop.nostr.build" class="nav_button">
       <?= $svg_memestr_icon ?>
-      Memestr
+      Shop
     </a>
     <a href="/edu" class="nav_button">
       <?= $svg_edu_icon ?>
