@@ -112,11 +112,11 @@ SVG;
         View All
       </a>
     <?php endif; ?>
-    <a href="/memestr" class="nav_button">
+    <a href="https://shop.nostr.build" class="nav_button">
       <span>
         <?= $svg_memestr_icon ?>
       </span>
-      Memestr
+      Shop
     </a>
     <a href="/edu" class="nav_button">
       <span>
@@ -145,4 +145,5 @@ SVG;
       </a>
     <?php endif; ?>
   </div>
+    <a class="ref_link" style="font-size: large" href="https://nostr.build/signup/new/">Get <img src="https://i.nostr.build/yeWK.png" style="width:115px;" alt="Premium Accounts"> here!</a>
 </nav>
