@@ -145,5 +145,5 @@ SVG;
       </a>
     <?php endif; ?>
   </div>
-    <a class="ref_link" style="font-size: large" href="https://nostr.build/signup/new/">Get <img src="https://i.nostr.build/yeWK.png" style="width:115px;" alt="Premium Accounts"> here!</a>
+    <a class="ref_link" style="font-size: large" href="https://nostr.build/signup/new/"><img src="https://i.nostr.build/0Q82.png" style="width:220px;" alt="Premium Accounts"></a>
 </nav>
