@@ -1,6 +1,7 @@
 <?php
 // Use centralized config
 require_once $_SERVER['DOCUMENT_ROOT'] . '/SiteConfig.php';
+require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/utils.funcs.php';
 
 /*
 Main class to work with accounts
@@ -12,6 +13,7 @@ desc users;
 | id               | int          | NO   | PRI | NULL              | auto_increment    |
 | usernpub         | varchar(70)  | NO   | UNI | NULL              |                   |
 | password         | varchar(255) | NO   |     | NULL              |                   |
+| pbkdf2_password  | varchar(255) | NO   |     | NULL              |                   |
 | nym              | varchar(64)  | NO   |     | NULL              |                   |
 | wallet           | varchar(255) | NO   |     | NULL              |                   |
 | ppic             | varchar(255) | NO   |     | NULL              |                   |
@@ -352,8 +354,9 @@ class Account
     }
 
     $hashed_password = password_hash(trim($password), PASSWORD_DEFAULT); // Creates a password hash
+    $pbkdf2_hashed_password = hashPasswordPBKDF2(trim($password)); // Creates a PBKDF2 password hash
 
-    $sql = "INSERT INTO users (usernpub, password, acctlevel, npub_verified, allow_npub_login) VALUES (?, ?, ?, ?, ?)";
+    $sql = "INSERT INTO users (usernpub, password, pbkdf2_password, acctlevel, npub_verified, allow_npub_login) VALUES (?, ?, ?, ?, ?, ?)";
     $stmt = $this->db->prepare($sql);
 
     if (!$stmt) {
@@ -361,7 +364,7 @@ class Account
     }
 
     try {
-      $stmt->bind_param('ssiii', $this->npub, $hashed_password, $level, $npub_verified, $allow_npub_login);
+      $stmt->bind_param('sssiii', $this->npub, $hashed_password, $pbkdf2_hashed_password, $level, $npub_verified, $allow_npub_login);
       if (!$stmt->execute()) {
         if ($this->db->errno == 1062) { // Duplicate entry error code
           throw new DuplicateUserException("User with npub $this->npub already exists (race condition)");
@@ -426,6 +429,7 @@ class Account
   /**
    * Summary of updateAccount
    * @param string $password
+   * @param string $pbkdf2_password
    * @param string $nym
    * @param string $wallet
    * @param string $ppic
@@ -439,6 +443,7 @@ class Account
    */
   public function updateAccount(
     string $password = null,
+    string $pbkdf2_password = null,
     string $nym = null,
     string $wallet = null,
     string $ppic = null,
@@ -452,6 +457,7 @@ class Account
   ) {
     $updates = [
       'password' => $password,
+      'pbkdf2_password' => $pbkdf2_password,
       'nym' => $nym,
       'wallet' => $wallet,
       'ppic' => $ppic,
@@ -757,6 +763,15 @@ class Account
     $hashed_password = $this->account['password'];
     $valid = password_verify($password, $hashed_password);
     if ($valid) {
+      // Prefill PBKDF2 password hash if not set
+      if (empty($this->account['pbkdf2_password'])) {
+        $pbkdf2_hashed_password = hashPasswordPBKDF2(trim($password)); // Creates a PBKDF2 password hash
+        $this->updateAccount(pbkdf2_password: $pbkdf2_hashed_password);
+      } else {
+        $valid_pbkdf2 = verifyPasswordPBKDF2(trim($password), $this->account['pbkdf2_password']);
+        // Log PBKDF2 password hash verification result
+        error_log("PBKDF2 password hash verification result: " . ($valid_pbkdf2 ? 'true' : 'false') . PHP_EOL);
+      }
       // Update session parameters
       $this->setSessionParameters();
       // Set 'loggedin' state in session
@@ -828,6 +843,8 @@ class Account
   public function changePassword(string $newPassword): void
   {
     $hashed_password = password_hash(trim($newPassword), PASSWORD_DEFAULT); // Creates a password hash
-    $this->updateAccount(password: $hashed_password);
+    // Also update PBKDF2 password hash
+    $pbkdf2_hashed_password = hashPasswordPBKDF2(trim($newPassword)); // Creates a PBKDF2 password hash
+    $this->updateAccount(password: $hashed_password, pbkdf2_password: $pbkdf2_hashed_password);
   }
 }
