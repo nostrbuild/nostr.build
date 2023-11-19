@@ -270,3 +270,34 @@ function getIdFromFilename($filename)
     $filename_base :
     hash('sha256', $filename_base);
 }
+
+/**
+ * Hash a password using PBKDF2 and return a combined string of the Base64-encoded salt and hash.
+ * 
+ * @param string $password The password to hash.
+ * @return string A combined string of the Base64-encoded salt and hash.
+ */
+function hashPasswordPBKDF2(string $password): string
+{
+  $salt = random_bytes(16);
+  $hash = hash_pbkdf2("sha256", $password, $salt, 100000, 0, true);
+  $base64Salt = base64_encode($salt);
+  $base64Hash = base64_encode($hash);
+  return $base64Salt . ':' . $base64Hash;
+}
+
+/**
+ * Verify a password against a stored hash.
+ * 
+ * @param string $password The password to verify.
+ * @param string $storedCombined The stored combined string of Base64-encoded salt and hash.
+ * @return bool True if the password matches, false otherwise.
+ */
+function verifyPasswordPBKDF2(string $password, string $storedCombined): bool
+{
+  [$base64Salt, $base64Hash] = explode(':', $storedCombined);
+  $salt = base64_decode($base64Salt);
+  $hash = base64_decode($base64Hash);
+  $computedHash = hash_pbkdf2("sha256", $password, $salt, 100000, 0, true);
+  return hash_equals($computedHash, $hash);
+}
