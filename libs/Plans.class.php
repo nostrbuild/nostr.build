@@ -9,6 +9,8 @@ class Plan
   public string $image;
   public string $imageAlt;
   public string $price;
+  public string $promo;
+  public string $discountPercentage;
   public int $priceInt;
   public array $features;
   public string $currency;
@@ -32,6 +34,8 @@ class Plan
     $this->imageAlt = $imageAlt;
     $this->features = $features;
     $this->currency = $currency;
+    $this->promo = false;
+    $this->discountPercentage = 0;
 
     if ($remainingDays === 0) {
       $proratedPrice = $price - $fromPlanPrice;
@@ -66,17 +70,18 @@ class Plans
     // private constructor to prevent creating a new instance
   }
 
-  public static function init(?int $remainingDays = null, ?int $currentPlanLevel = null): void
+  public static function init(?int $remainingDays = null, ?int $currentPlanLevel = null, ?array $promotions = null): void
   {
     $originalPrices = [
       self::CREATOR => 100_000,
       self::PROFESSIONAL => 50_000,
-      self::STARTER => 21_000,
-      self::VIEWER => 21_000,
+      self::STARTER => 50_000,
+      self::VIEWER => 50_000,
       self::NEW => 0,
       self::MODERATOR => 0,
       self::ADMIN => 0
     ];
+
 
     // Calculate the price based on the level and days remaining
     // Take into account special cases like NEW, MODERATOR, ADMIN
@@ -155,6 +160,33 @@ class Plans
       $fromPlanPrice,
       $currentPlanLevel
     );
+
+    if (is_array($promotions) && !empty($promotions)) {
+      // Loop over all plans and check if there is a promotion for them
+      // Apply the promotion if there is one
+      foreach (self::$PLANS as $plan) {
+        // Pick promotion with the highest discount for the plan
+        $applicablePromotions = array_filter($promotions, function ($promotion) use ($plan) {
+          // Ensure the plan ID is the expected type, e.g., cast to integer if necessary
+          return in_array((int)$plan->id, array_map('intval', $promotion['promotion_applicable_plans']));
+        });
+        $promotion = array_reduce($applicablePromotions, function ($highestDiscount, $currentPromotion) {
+          return $highestDiscount['promotion_percentage'] > $currentPromotion['promotion_percentage'] ? $highestDiscount : $currentPromotion;
+        }, ['promotion_percentage' => 0]);
+        // Apply the promotion if there is one
+        if ($promotion['promotion_percentage'] > 0) {
+          $plan->priceInt = $plan->priceInt * (1 - $promotion['promotion_percentage'] / 100);
+          $plan->price = number_format($plan->priceInt, 0, '.', ',');
+          // Prepend the promotion to the features with the end date
+          array_unshift($plan->features, "<span class=\"promotion_text\">Valid until {$promotion['promotion_end_time']} UTC.</span>");
+          array_unshift($plan->features, "<span class=\"promotion_text\">Save {$promotion['promotion_percentage']}% with {$promotion['promotion_name']}!</span>");
+          // Indicate that there is a promotion
+          $plan->promo = true;
+          $plan->discountPercentage = $promotion['promotion_percentage'];
+          self::$PLANS[$plan->id] = $plan;
+        }
+      }
+    }
   }
 
   public static function isValidPlan(int $plan): bool
@@ -162,11 +194,11 @@ class Plans
     return array_key_exists($plan, self::$PLANS);
   }
 
-  public static function getInstance(?int $remainingDays = null, ?int $currentPlanLevel = null): Plans
+  public static function getInstance(?int $remainingDays = null, ?int $currentPlanLevel = null, ?array $promotions = null): Plans
   {
     if (self::$instance === null) {
       self::$instance = new Plans();
-      self::$instance::init($remainingDays, $currentPlanLevel);
+      self::$instance::init($remainingDays, $currentPlanLevel, $promotions);
     }
     return self::$instance;
   }
