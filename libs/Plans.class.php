@@ -170,9 +170,17 @@ class Plans
           // Ensure the plan ID is the expected type, e.g., cast to integer if necessary
           return in_array((int)$plan->id, array_map('intval', $promotion['promotion_applicable_plans']));
         });
+        // Pick the promotion with the highest discount or the latest end date if there is a tie
         $promotion = array_reduce($applicablePromotions, function ($highestDiscount, $currentPromotion) {
-          return $highestDiscount['promotion_percentage'] > $currentPromotion['promotion_percentage'] ? $highestDiscount : $currentPromotion;
-        }, ['promotion_percentage' => 0]);
+          if (
+            $highestDiscount['promotion_percentage'] < $currentPromotion['promotion_percentage'] ||
+            ($highestDiscount['promotion_percentage'] == $currentPromotion['promotion_percentage'] &&
+              strtotime($highestDiscount['promotion_end_time']) < strtotime($currentPromotion['promotion_end_time']))
+          ) {
+            return $currentPromotion;
+          }
+          return $highestDiscount;
+        }, ['promotion_percentage' => 0, 'promotion_end_time' => '']);
         // Apply the promotion if there is one
         if ($promotion['promotion_percentage'] > 0) {
           $plan->priceInt = $plan->priceInt * (1 - $promotion['promotion_percentage'] / 100);
