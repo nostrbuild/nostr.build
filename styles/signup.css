@@ -20,6 +20,7 @@ h1 {
 	text-align: center;
 
 	background: linear-gradient(184.15deg, #ffffff 47.52%, #884ea4 96.61%);
+	background-clip: text;
 	-webkit-background-clip: text;
 	-webkit-text-fill-color: transparent;
 	background-clip: text;
@@ -27,6 +28,27 @@ h1 {
 
 	text-shadow: 0px 4px 32px rgba(159, 108, 209, 0.46);
 	padding: 30px 0 16px;
+}
+
+.promotion_text {
+	font-weight: 600;
+	font-size: 18px;
+	line-height: 24px;
+	/* identical to box height */
+
+	text-align: center;
+
+	background: linear-gradient(184.15deg, #FFA500 0%, #FFD700 50%, #884ea4 96.61%);
+	/* Gradient starts with orange (#FFA500), transitions to yellow (#FFD700),
+		 and ends with the existing purple (#884ea4) */
+
+	background-clip: text;
+	-webkit-background-clip: text;
+	-webkit-text-fill-color: transparent;
+	background-clip: text;
+	text-fill-color: transparent;
+
+	text-shadow: 0px 4px 24px rgba(159, 108, 209, 0.46);
 }
 
 .information ul {
