@@ -9,7 +9,7 @@
   <meta name="keywords" content="nostr, damus image uploader, image link, snort.social, astril.ninja, image, uploader, media upload, damus pictures, video uploader,nostr repository ">
   <meta name="description" content="Image, video and media uploader for nostr, damus, astral.ninja, snort.social, and most all nostr clients. Upload any kind of media and get a link to post, or use our iOS app to automatically uppload images straight from your keyboard.">
   <title>nostr.build media uploader</title>
-  <link rel="stylesheet" href="nostrstyle.css?v=3" media="screen">
+  <link rel="stylesheet" href="nostrstyle.css?v=4" media="screen">
   <link id="u-theme-google-font" rel="stylesheet" href="https://fonts.bunny.net/css?family=Montserrat:100,100i,200,200i,300,300i,400,400i,500,500i,600,600i,700,700i,800,800i,900,900i|Open+Sans:300,300i,400,400i,500,500i,600,600i,700,700i,800,800i">
   <link id="u-page-google-font" rel="stylesheet" href="https://fonts.bunny.net/css?family=Roboto+Condensed:300,300i,400,400i,700,700i">
 
