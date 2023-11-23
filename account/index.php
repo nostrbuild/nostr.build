@@ -210,6 +210,7 @@ $userStorageRemaining = $userOverLimit ? 0 : $userStorageLimit - $storageUsed;
 						&ensp;<a href="admin/approve.php" target="_blank">Approve Content</a><BR>
 						&ensp;<a href="admin/stats.php" target="_blank">Free uploads stats</a><BR>
 						&ensp;<a href="admin/account_stats.php" target="_blank">Account stats</a><BR>
+						&ensp;<a href="admin/promo.php" target="_blank">Manage Promotions</a><BR>
 					</div>
 				</div>
 			<?php
