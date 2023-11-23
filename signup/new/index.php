@@ -16,6 +16,7 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/Plans.class.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/Account.class.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/Bech32.class.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/Signup.class.php';
+require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/db/Promotions.class.php';
 
 // Create new Permission object
 $perm = new Permission();
@@ -45,14 +46,24 @@ if (isset($_GET['reset'])) {
 // Setup environment
 global $link;
 global $btcpayConfig;
-Plans::init(); // Initialize plans
+// Get all applicable promotions
+$promotionsTable = new Promotions($link);
+$promotions = [];
+try {
+  $promotions = $promotionsTable->getCurrentPromotions();
+} catch (Exception $e) {
+  error_log($e->getMessage());
+  // Do nothing
+}
+
+Plans::init(promotions: $promotions); // Initialize plans
 
 // Create new Signup instance
 $signup = new Signup(new BTCPayClient(
   $btcpayConfig['apiKey'],
   $btcpayConfig['host'],
   $btcpayConfig['storeId'],
-), Plans::getInstance());
+), Plans::getInstance(promotions: $promotions));
 
 // Get selected plan
 $selectedPlan = $signup->getSelectedPlanId();
@@ -152,9 +163,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
   <meta charSet="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Nostr.build account signup</title>
-  <link rel="stylesheet" href="/styles/twbuild.css?v=18" />
+  <link rel="stylesheet" href="/styles/twbuild.css?v=22" />
   <link rel="stylesheet" href="/styles/index.css?v=3" />
-  <link rel="stylesheet" href="/styles/signup.css?v=3" />
+  <link rel="stylesheet" href="/styles/signup.css?v=4" />
   <link rel="icon" href="/assets/primo_nostr.png" />
   <script defer src="/scripts/fw/alpinejs.min.js?v=6"></script>
   <!--
@@ -229,9 +240,14 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 <div hx-boost="fasle" class="rounded-3xl p-8 ring-1 ring-gray-200 <?= $plan->id == $selectedPlan ? 'ring-2 ring-indigo-600' : '' ?>">
                   <img class="mx-auto h-auto w-auto pb-3" src="<?= $plan->image ?>" alt="<?= $plan->imageAlt ?>">
                   <h3 id="tier-<?= $plan->id ?>" class="text-center text-lg font-semibold leading-8 <?= $plan->id == $selectedPlan ? 'text-indigo-300' : 'text-gray-100' ?>"><?= $plan->name ?></h3>
-                  <p class="mt-6 flex items-baseline gap-x-1">
+                  <p class="mt-6 flex items-baseline gap-x-1 relative">
                     <span class="text-4xl font-bold tracking-tight text-gray-100"><?= $plan->price ?></span>
                     <span class="text-sm font-semibold leading-6 text-gray-300"><?= $plan->currency ?></span>
+                    <?php if ($plan->promo) : ?>
+                      <span class="absolute top-0 right-0 bg-red-500 text-white text-xs font-bold py-1 px-2 rounded-full transform -translate-y-1/3">
+                        <?= $plan->discountPercentage ?>% off
+                      </span>
+                    <?php endif; ?>
                   </p>
                   <a href="?step=2&plan=<?= $plan->id ?>" aria-describedby="tier-<?= $plan->id ?>" class="mt-6 block rounded-md py-2 px-3 text-center text-sm font-semibold leading-6 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 <?= $plan->id == $selectedPlan ? 'bg-indigo-600 text-white shadow-sm hover:bg-indigo-500' : 'text-indigo-300 ring-1 ring-inset ring-indigo-200 hover:ring-indigo-300' ?>">Buy plan</a>
                   <ul role="list" class="mt-8 space-y-3 text-sm leading-6 text-gray-300">
