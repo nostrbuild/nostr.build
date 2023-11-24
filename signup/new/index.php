@@ -163,7 +163,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
   <meta charSet="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Nostr.build account signup</title>
-  <link rel="stylesheet" href="/styles/twbuild.css?v=23" />
+  <link rel="stylesheet" href="/styles/twbuild.css?v=24" />
   <link rel="stylesheet" href="/styles/index.css?v=4" />
   <link rel="stylesheet" href="/styles/signup.css?v=5" />
   <link rel="icon" href="/assets/primo_nostr.png" />
@@ -178,7 +178,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
   </style>
 </head>
 
-<body class="min-h-screen">
+<body class="min-h-screen bg-gradient-to-tr from-[#292556] to-[#120a24]">
   <header>
     <img class="top_img block mx-auto" src="https://cdn.nostr.build/assets/signup.png" alt="nostr.build image" />
     <h1 class="text-2xl">nostr.build account options</h1>
@@ -238,7 +238,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
               <?php foreach (Plans::$PLANS as $plan) : ?>
 
                 <div hx-boost="fasle" class="rounded-3xl p-8 ring-1 ring-gray-200 <?= $plan->id == $selectedPlan ? 'ring-2 ring-indigo-600' : '' ?>">
-                  <img class="mx-auto h-auto w-auto pb-3" src="<?= $plan->image ?>" alt="<?= $plan->imageAlt ?>">
+                  <!--
+                    <img class="mx-auto h-auto w-auto pb-3" src="<?= $plan->image ?>" alt="<?= $plan->imageAlt ?>">
+              -->
                   <h3 id="tier-<?= $plan->id ?>" class="text-center text-lg font-semibold leading-8 <?= $plan->id == $selectedPlan ? 'text-indigo-300' : 'text-gray-100' ?>"><?= $plan->name ?></h3>
                   <p class="mt-6 flex items-baseline gap-x-1 relative">
                     <span class="text-4xl font-bold tracking-tight text-gray-100"><?= $plan->price ?></span>
