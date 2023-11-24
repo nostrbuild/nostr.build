@@ -760,8 +760,8 @@ class Account
    */
   public function verifyPassword(string $password): bool
   {
-    $hashed_password = $this->account['password'];
-    $valid = password_verify($password, $hashed_password);
+    $hashed_password = $this->account['password'] ?? null;
+    $valid = $hashed_password === null ? false : password_verify($password, $hashed_password);
     if ($valid) {
       // Prefill PBKDF2 password hash if not set
       if (empty($this->account['pbkdf2_password'])) {
