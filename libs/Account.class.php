@@ -376,6 +376,13 @@ class Account
       $stmt->close();
     }
 
+    // Update account data from API
+    try {
+      $this->updateAccountDataFromNostrApi();
+    } catch (Exception $e) {
+      error_log("Error getting user info from API: " . $e->getMessage());
+    }
+
     $this->fetchAccountData();
     $this->setSessionParameters();
   }
@@ -781,7 +788,7 @@ class Account
   }
 
   /**
-   * Summary of verifyNip98Login
+   * Summary of verifyNostrLogin
    * @return bool
    */
   public function verifyNostrLogin(bool $force = false): bool
