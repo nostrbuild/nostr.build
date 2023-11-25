@@ -194,6 +194,13 @@ class Account
   {
     $apiQueryUrl = SiteConfig::getNostrApiBaseUrl() . urlencode($this->npub);
 
+    // Check if we should update account data
+    $shouldUpdate = $force || empty($this->account['nym']) || empty($this->account['wallet']) || empty($this->account['ppic']);
+    // If we don't need to update, return early
+    if ($shouldUpdate === false) {
+      return;
+    }
+
     // Initialize and set cURL options
     $ch = curl_init();
     curl_setopt_array($ch, [
@@ -224,8 +231,7 @@ class Account
 
     // Check if we should update account data
     $shouldUpdate = $responseData !== null &&
-      (!empty($responseData->name) || !empty($responseData->lud16) || !empty($responseData->picture)) &&
-      ($force || empty($this->account['nym']) || empty($this->account['wallet']) || empty($this->account['ppic']));
+      (!empty($responseData->name) || !empty($responseData->lud16) || !empty($responseData->picture));
 
     if ($shouldUpdate) {
       $this->account['nym'] = $force ? ($responseData->name ?? $this->account['nym']) : ($this->account['nym'] ?? $responseData->name ?? null);
