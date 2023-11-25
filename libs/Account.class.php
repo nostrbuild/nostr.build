@@ -234,9 +234,9 @@ class Account
       (!empty($responseData->name) || !empty($responseData->lud16) || !empty($responseData->picture));
 
     if ($shouldUpdate) {
-      $this->account['nym'] = $force ? ($responseData->name ?? $this->account['nym']) : ($this->account['nym'] ?? $responseData->name ?? null);
-      $this->account['wallet'] = $force ? ($responseData->lud16 ?? $this->account['wallet']) : ($this->account['wallet'] ?? $responseData->lud16 ?? null);
-      $this->account['ppic'] = $force ? ($responseData->picture ?? $this->account['ppic']) : ($this->account['ppic'] ?? $responseData->picture ?? null);
+      $this->account['nym'] = $force ? ($responseData->name ?? $this->account['nym']) : (empty($this->account['nym']) ? $responseData->name ?? '' : $this->account['nym']);
+      $this->account['wallet'] = $force ? ($responseData->lud16 ?? $this->account['wallet']) : (empty($this->account['wallet']) ? $responseData->lud16 ?? '' : $this->account['wallet']);
+      $this->account['ppic'] = $force ? ($responseData->picture ?? $this->account['ppic']) : (empty($this->account['ppic']) ? $responseData->picture ?? '' : $this->account['ppic']);
 
       if ($update_db) {
         $this->updateAccount(
