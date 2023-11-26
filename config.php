@@ -36,6 +36,7 @@ $s3Config = [
         'secret' => $_SERVER['AWS_SECRET'],
     ],
     'bucket' => $_SERVER['AWS_BUCKET'],
+    'use_aws_shared_config_files' => false,
 ];
 
 $r2Config = [
@@ -47,6 +48,7 @@ $r2Config = [
         'secret' => $_SERVER['R2_SECRET_KEY'],
     ],
     'bucket' => $_SERVER['R2_BUCKET'],
+    'use_aws_shared_config_files' => false,
 ];
 
 $awsConfig = [
