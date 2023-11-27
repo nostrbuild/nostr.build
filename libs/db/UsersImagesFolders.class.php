@@ -3,6 +3,18 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/db/DatabaseTable.class.php';
 require $_SERVER['DOCUMENT_ROOT'] . '/vendor/autoload.php';
 
 use Respect\Validation\Validator as v;
+/*
+desc users_images_folders;
++------------+--------------+------+-----+-------------------+-------------------+
+| Field      | Type         | Null | Key | Default           | Extra             |
++------------+--------------+------+-----+-------------------+-------------------+
+| id         | int          | NO   | PRI | NULL              | auto_increment    |
+| usernpub   | varchar(70)  | NO   | MUL | NULL              |                   |
+| folder     | varchar(255) | NO   |     | NULL              |                   |
+| created_at | datetime     | YES  |     | CURRENT_TIMESTAMP | DEFAULT_GENERATED |
+| parent_id  | int          | YES  | MUL | NULL              |                   |
++------------+--------------+------+-----+-------------------+-------------------+
+*/
 
 class UsersImagesFolders extends DatabaseTable
 {
@@ -106,13 +118,23 @@ class UsersImagesFolders extends DatabaseTable
     return $account_folders_data;
   }
 
-  public function findFolderByNameOrCreate(string $folder_name): int
+  public function findFolderByNameOrCreate(string $usernpub, string $folder_name, int $parent_id = null): int
   {
+    if (empty($folder_name)) {
+      throw new Exception('Folder name cannot be empty');
+    }
     $this->db->begin_transaction();
 
     // First, try to select the folder
-    $selectStmt = $this->db->prepare("SELECT id FROM {$this->tableName} WHERE folder = ?");
-    $selectStmt->bind_param("s", $folder_name);
+    if ($parent_id) {
+      $sql = "SELECT id FROM {$this->tableName} WHERE folder = ? AND usernpub = ? AND parent_id = ?";
+      $selectStmt = $this->db->prepare($sql);
+      $selectStmt->bind_param("ssi", $folder_name, $usernpub, $parent_id);
+    } else {
+      $sql = "SELECT id FROM {$this->tableName} WHERE folder = ? AND usernpub = ?";
+      $selectStmt = $this->db->prepare($sql);
+      $selectStmt->bind_param("ss", $folder_name, $usernpub);
+    }
     $selectStmt->execute();
     $result = $selectStmt->get_result();
     $data = $result->fetch_assoc();
@@ -125,8 +147,13 @@ class UsersImagesFolders extends DatabaseTable
       $folderId = $data['id'];
     } else {
       // If the folder doesn't exist, insert it and get the last inserted id
-      $insertStmt = $this->db->prepare("INSERT INTO {$this->tableName} (folder) VALUES (?)");
-      $insertStmt->bind_param("s", $folder_name);
+      if ($parent_id) {
+        $insertStmt = $this->db->prepare("INSERT INTO {$this->tableName} (folder, usernpub, parent_id) VALUES (?,?,?)");
+        $insertStmt->bind_param("ssi", $folder_name, $usernpub, $parent_id);
+      } else {
+        $insertStmt = $this->db->prepare("INSERT INTO {$this->tableName} (folder, usernpub) VALUES (?,?)");
+        $insertStmt->bind_param("ss", $folder_name, $usernpub);
+      }
       $insertStmt->execute();
       $insertStmt->close();
 
@@ -137,6 +164,20 @@ class UsersImagesFolders extends DatabaseTable
     $this->db->commit();
 
     // Return the ID
+    return $folderId;
+  }
+
+  public function findFolderByNameOrCreateHierarchy(string $usernpub, array $folderList): int
+  {
+    $folderId = null;
+    $folderName = null;
+
+    foreach ($folderList as $folder) {
+      $folderName = $folder;
+      $folderId = $this->findFolderByNameOrCreate($usernpub, $folderName, $folderId);
+    }
+
+    // Return the ID of the last folder
     return $folderId;
   }
 }
