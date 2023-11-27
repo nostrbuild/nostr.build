@@ -71,10 +71,10 @@ $userStorageRemaining = $userOverLimit ? 0 : $userStorageLimit - $storageUsed;
 
 	<link rel="stylesheet" href="/styles/account.css?v=4" />
 	<link href="/scripts/dist/index.css?v=18" rel="stylesheet">
-	<link href="/styles/twbuild.css?v=44" rel="stylesheet">
+	<link href="/styles/twbuild.css?v=45" rel="stylesheet">
 	<link rel="icon" href="/assets/primo_nostr.png" />
 
-	<script defer src="/scripts/dist/index.js?v=31"></script>
+	<script defer src="/scripts/dist/index.js?v=34"></script>
 	<script defer src="/scripts/fw/alpinejs-intersect.min.js?v=7"></script>
 	<script defer src="/scripts/fw/alpinejs.min.js?v=7"></script>
 	<script defer src="/scripts/fw/htmx.min.js?v=7"></script>
@@ -320,7 +320,7 @@ $userStorageRemaining = $userOverLimit ? 0 : $userStorageLimit - $storageUsed;
 				foreach ($usersFoldersStats['FOLDERS'] as $folder => $folderStats) :
 					if ($folder == '/') continue;
 				?>
-					<li type="button" class="folder" onclick="folderClicked(<?= json_encode($folder) ?> , '<?= $usersFoldersStats['TOTAL']['fileCount'] ?>');">
+					<li type="button" class="folder" onclick="folderClicked('<?= htmlspecialchars($folder) ?>' , '<?= $usersFoldersStats['TOTAL']['fileCount'] ?>');">
 						<svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
 							<path opacity="0.4" d="M10.8332 5.83333L9.90359 3.9741C9.636 3.43899 9.50225 3.17144 9.30267 2.97597C9.12617 2.80311 8.91342 2.67164 8.67992 2.59109C8.41584 2.5 8.11668 2.5 7.51841 2.5H4.33317C3.39975 2.5 2.93304 2.5 2.57652 2.68166C2.26291 2.84144 2.00795 3.09641 1.84816 3.41002C1.6665 3.76653 1.6665 4.23324 1.6665 5.16667V5.83333" stroke="#D0BED8" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round" />
 							<path d="M1.6665 5.8335H14.3332C15.7333 5.8335 16.4333 5.8335 16.9682 6.10598C17.4386 6.34566 17.821 6.72811 18.0607 7.19852C18.3332 7.7333 18.3332 8.43333 18.3332 9.8335V13.5002C18.3332 14.9003 18.3332 15.6003 18.0607 16.1352C17.821 16.6056 17.4386 16.988 16.9682 17.2277C16.4333 17.5002 15.7333 17.5002 14.3332 17.5002H5.6665C4.26637 17.5002 3.5663 17.5002 3.03153 17.2277C2.56112 16.988 2.17867 16.6056 1.93899 16.1352C1.6665 15.6003 1.6665 14.9003 1.6665 13.5002V5.8335Z" stroke="#D0BED8" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round" />
@@ -514,14 +514,16 @@ $userStorageRemaining = $userOverLimit ? 0 : $userStorageLimit - $storageUsed;
 						if ($folder == '/') continue;
 				?>
 						<div style="margin:auto; margin-bottom: 1.25rem; color: #fff;">
-							<a onclick="folderClicked(<?= json_encode($folder) ?>);" ondblclick="folderDoubleClicked(<?= json_encode($folder) ?> , '<?= $usersFoldersStats['TOTAL']['fileCount'] ?>');">
-								<img height="120" id="<?= $folderStats['id'] ?>" src="/p/Folder.png" alt="image" />
+							<a onclick="folderClicked('<?= htmlspecialchars($folder) ?>');" ondblclick="folderDoubleClicked('<?= htmlspecialchars($folder) ?>' , '<?= $usersFoldersStats['TOTAL']['fileCount'] ?>');">
+								<svg class="w-24 h-24" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
+									<path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12.75V12A2.25 2.25 0 014.5 9.75h15A2.25 2.25 0 0121.75 12v.75m-8.69-6.44l-2.12-2.12a1.5 1.5 0 00-1.061-.44H4.5A2.25 2.25 0 002.25 6v12a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9a2.25 2.25 0 00-2.25-2.25h-5.379a1.5 1.5 0 01-1.06-.44z" />
+								</svg>
 							</a>
 							<div style="display: flex; justify-content: space-between; margin: 0 0.75rem 0 0.75rem">
 								<label><?= htmlentities($folder) ?></label>
 								<input data-folder-id="<?= $folderStats['id'] ?>" type="checkbox" id="cb<?= $folderStats['id'] ?>" style="width: 2rem; margin-left: 1rem;" onclick="checkboxClicked('<?= $folderStats['id'] ?>' , 0)" />
 							</div>
-						</div><BR><BR>
+						</div>
 					<?php
 					endforeach;
 				else :
