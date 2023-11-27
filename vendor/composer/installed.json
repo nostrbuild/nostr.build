@@ -2,17 +2,17 @@
     "packages": [
         {
             "name": "aws/aws-crt-php",
-            "version": "v1.2.3",
-            "version_normalized": "1.2.3.0",
+            "version": "v1.2.4",
+            "version_normalized": "1.2.4.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/awslabs/aws-crt-php.git",
-                "reference": "5545a4fa310aec39f54279fdacebcce33b3ff382"
+                "reference": "eb0c6e4e142224a10b08f49ebf87f32611d162b2"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/awslabs/aws-crt-php/zipball/5545a4fa310aec39f54279fdacebcce33b3ff382",
-                "reference": "5545a4fa310aec39f54279fdacebcce33b3ff382",
+                "url": "https://api.github.com/repos/awslabs/aws-crt-php/zipball/eb0c6e4e142224a10b08f49ebf87f32611d162b2",
+                "reference": "eb0c6e4e142224a10b08f49ebf87f32611d162b2",
                 "shasum": ""
             },
             "require": {
@@ -25,7 +25,7 @@
             "suggest": {
                 "ext-awscrt": "Make sure you install awscrt native extension to use any of the functionality."
             },
-            "time": "2023-10-16T20:10:06+00:00",
+            "time": "2023-11-08T00:42:13+00:00",
             "type": "library",
             "installation-source": "dist",
             "autoload": {
@@ -53,23 +53,23 @@
             ],
             "support": {
                 "issues": "https://github.com/awslabs/aws-crt-php/issues",
-                "source": "https://github.com/awslabs/aws-crt-php/tree/v1.2.3"
+                "source": "https://github.com/awslabs/aws-crt-php/tree/v1.2.4"
             },
             "install-path": "../aws/aws-crt-php"
         },
         {
             "name": "aws/aws-sdk-php",
-            "version": "3.283.15",
-            "version_normalized": "3.283.15.0",
+            "version": "3.289.0",
+            "version_normalized": "3.289.0.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/aws/aws-sdk-php.git",
-                "reference": "44b70c15c2a5d0fd2cfc74ee529a7877f1e7457d"
+                "reference": "c8aafbfb34e33b8fb002f2f81c241c1df3a82b54"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/aws/aws-sdk-php/zipball/44b70c15c2a5d0fd2cfc74ee529a7877f1e7457d",
-                "reference": "44b70c15c2a5d0fd2cfc74ee529a7877f1e7457d",
+                "url": "https://api.github.com/repos/aws/aws-sdk-php/zipball/c8aafbfb34e33b8fb002f2f81c241c1df3a82b54",
+                "reference": "c8aafbfb34e33b8fb002f2f81c241c1df3a82b54",
                 "shasum": ""
             },
             "require": {
@@ -110,7 +110,7 @@
                 "ext-openssl": "Allows working with CloudFront private distributions and verifying received SNS messages",
                 "ext-sockets": "To use client-side monitoring"
             },
-            "time": "2023-10-30T18:09:22+00:00",
+            "time": "2023-11-27T03:48:32+00:00",
             "type": "library",
             "extra": {
                 "branch-alias": {
@@ -151,7 +151,7 @@
             "support": {
                 "forum": "https://forums.aws.amazon.com/forum.jspa?forumID=80",
                 "issues": "https://github.com/aws/aws-sdk-php/issues",
-                "source": "https://github.com/aws/aws-sdk-php/tree/3.283.15"
+                "source": "https://github.com/aws/aws-sdk-php/tree/3.289.0"
             },
             "install-path": "../aws/aws-sdk-php"
         },
@@ -730,17 +730,17 @@
         },
         {
             "name": "laravel/serializable-closure",
-            "version": "v1.3.2",
-            "version_normalized": "1.3.2.0",
+            "version": "v1.3.3",
+            "version_normalized": "1.3.3.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/laravel/serializable-closure.git",
-                "reference": "076fe2cf128bd54b4341cdc6d49b95b34e101e4c"
+                "reference": "3dbf8a8e914634c48d389c1234552666b3d43754"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/laravel/serializable-closure/zipball/076fe2cf128bd54b4341cdc6d49b95b34e101e4c",
-                "reference": "076fe2cf128bd54b4341cdc6d49b95b34e101e4c",
+                "url": "https://api.github.com/repos/laravel/serializable-closure/zipball/3dbf8a8e914634c48d389c1234552666b3d43754",
+                "reference": "3dbf8a8e914634c48d389c1234552666b3d43754",
                 "shasum": ""
             },
             "require": {
@@ -752,7 +752,7 @@
                 "phpstan/phpstan": "^1.8.2",
                 "symfony/var-dumper": "^5.4.11"
             },
-            "time": "2023-10-17T13:38:16+00:00",
+            "time": "2023-11-08T14:08:06+00:00",
             "type": "library",
             "extra": {
                 "branch-alias": {
@@ -915,17 +915,17 @@
         },
         {
             "name": "nyholm/psr7",
-            "version": "1.8.0",
-            "version_normalized": "1.8.0.0",
+            "version": "1.8.1",
+            "version_normalized": "1.8.1.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/Nyholm/psr7.git",
-                "reference": "3cb4d163b58589e47b35103e8e5e6a6a475b47be"
+                "reference": "aa5fc277a4f5508013d571341ade0c3886d4d00e"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/Nyholm/psr7/zipball/3cb4d163b58589e47b35103e8e5e6a6a475b47be",
-                "reference": "3cb4d163b58589e47b35103e8e5e6a6a475b47be",
+                "url": "https://api.github.com/repos/Nyholm/psr7/zipball/aa5fc277a4f5508013d571341ade0c3886d4d00e",
+                "reference": "aa5fc277a4f5508013d571341ade0c3886d4d00e",
                 "shasum": ""
             },
             "require": {
@@ -945,7 +945,7 @@
                 "phpunit/phpunit": "^7.5 || ^8.5 || ^9.4",
                 "symfony/error-handler": "^4.4"
             },
-            "time": "2023-05-02T11:26:24+00:00",
+            "time": "2023-11-13T09:31:12+00:00",
             "type": "library",
             "extra": {
                 "branch-alias": {
@@ -980,7 +980,7 @@
             ],
             "support": {
                 "issues": "https://github.com/Nyholm/psr7/issues",
-                "source": "https://github.com/Nyholm/psr7/tree/1.8.0"
+                "source": "https://github.com/Nyholm/psr7/tree/1.8.1"
             },
             "funding": [
                 {
@@ -1054,17 +1054,17 @@
         },
         {
             "name": "php-di/php-di",
-            "version": "7.0.5",
-            "version_normalized": "7.0.5.0",
+            "version": "7.0.6",
+            "version_normalized": "7.0.6.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/PHP-DI/PHP-DI.git",
-                "reference": "9ea40a5a6970bf1ca5cbe148bc16cbad6ca3db6c"
+                "reference": "8097948a89f6ec782839b3e958432f427cac37fd"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/PHP-DI/PHP-DI/zipball/9ea40a5a6970bf1ca5cbe148bc16cbad6ca3db6c",
-                "reference": "9ea40a5a6970bf1ca5cbe148bc16cbad6ca3db6c",
+                "url": "https://api.github.com/repos/PHP-DI/PHP-DI/zipball/8097948a89f6ec782839b3e958432f427cac37fd",
+                "reference": "8097948a89f6ec782839b3e958432f427cac37fd",
                 "shasum": ""
             },
             "require": {
@@ -1086,7 +1086,7 @@
             "suggest": {
                 "friendsofphp/proxy-manager-lts": "Install it if you want to use lazy injection (version ^1)"
             },
-            "time": "2023-08-10T14:57:56+00:00",
+            "time": "2023-11-02T10:04:50+00:00",
             "type": "library",
             "installation-source": "dist",
             "autoload": {
@@ -1114,7 +1114,7 @@
             ],
             "support": {
                 "issues": "https://github.com/PHP-DI/PHP-DI/issues",
-                "source": "https://github.com/PHP-DI/PHP-DI/tree/7.0.5"
+                "source": "https://github.com/PHP-DI/PHP-DI/tree/7.0.6"
             },
             "funding": [
                 {
@@ -1904,31 +1904,31 @@
         },
         {
             "name": "spatie/image-optimizer",
-            "version": "1.7.1",
-            "version_normalized": "1.7.1.0",
+            "version": "1.7.2",
+            "version_normalized": "1.7.2.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/spatie/image-optimizer.git",
-                "reference": "af179994e2d2413e4b3ba2d348d06b4eaddbeb30"
+                "reference": "62f7463483d1bd975f6f06025d89d42a29608fe1"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/spatie/image-optimizer/zipball/af179994e2d2413e4b3ba2d348d06b4eaddbeb30",
-                "reference": "af179994e2d2413e4b3ba2d348d06b4eaddbeb30",
+                "url": "https://api.github.com/repos/spatie/image-optimizer/zipball/62f7463483d1bd975f6f06025d89d42a29608fe1",
+                "reference": "62f7463483d1bd975f6f06025d89d42a29608fe1",
                 "shasum": ""
             },
             "require": {
                 "ext-fileinfo": "*",
                 "php": "^7.3|^8.0",
                 "psr/log": "^1.0 | ^2.0 | ^3.0",
-                "symfony/process": "^4.2|^5.0|^6.0"
+                "symfony/process": "^4.2|^5.0|^6.0|^7.0"
             },
             "require-dev": {
                 "pestphp/pest": "^1.21",
                 "phpunit/phpunit": "^8.5.21|^9.4.4",
-                "symfony/var-dumper": "^4.2|^5.0|^6.0"
+                "symfony/var-dumper": "^4.2|^5.0|^6.0|^7.0"
             },
-            "time": "2023-07-27T07:57:32+00:00",
+            "time": "2023-11-03T10:08:02+00:00",
             "type": "library",
             "installation-source": "dist",
             "autoload": {
@@ -1956,14 +1956,14 @@
             ],
             "support": {
                 "issues": "https://github.com/spatie/image-optimizer/issues",
-                "source": "https://github.com/spatie/image-optimizer/tree/1.7.1"
+                "source": "https://github.com/spatie/image-optimizer/tree/1.7.2"
             },
             "install-path": "../spatie/image-optimizer"
         },
         {
             "name": "symfony/deprecation-contracts",
-            "version": "v3.3.0",
-            "version_normalized": "3.3.0.0",
+            "version": "v3.4.0",
+            "version_normalized": "3.4.0.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/symfony/deprecation-contracts.git",
@@ -2012,7 +2012,7 @@
             "description": "A generic function and convention to trigger deprecation notices",
             "homepage": "https://symfony.com",
             "support": {
-                "source": "https://github.com/symfony/deprecation-contracts/tree/v3.3.0"
+                "source": "https://github.com/symfony/deprecation-contracts/tree/v3.4.0"
             },
             "funding": [
                 {
