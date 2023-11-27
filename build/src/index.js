@@ -232,8 +232,8 @@ const uppy = new Uppy({
     limit: 5,
     timeout: 0, // remove timeout
     meta: {
-      folderName: null, // Initialize folderName metadata
-      folderHierarchy: null, // Initialize folderHierarchy metadata
+      folderName: '', // Initialize folderName metadata
+      folderHierarchy: [], // Initialize folderHierarchy metadata
     },
   }, {
     // Override the default `limit` behavior
@@ -265,7 +265,7 @@ const uppy = new Uppy({
     //console.log('Added file', file);
     const path = file.data.relativePath ?? file.data.webkitRelativePath;
     let folderHierarchy = [];
-    let folderName = null;
+    let folderName = '';
 
     if (path) {
       const folderPath = path.replace(/\\/g, '/'); // Normalize backslashes to forward slashes
@@ -276,8 +276,8 @@ const uppy = new Uppy({
     console.log('Folder name', folderName);
     console.log('Folder hierarchy', folderHierarchy);
     uppy.setFileMeta(file.id, {
-      folderName: folderName,
-      folderHierarchy: folderHierarchy,
+      folderName: JSON.stringify(folderName),
+      folderHierarchy: JSON.stringify(folderHierarchy),
     });
   })
   .on('complete', (result) => {
