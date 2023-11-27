@@ -29,12 +29,76 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/functions/session.php';
 	<main>
 		<h1>Builders</h1>
 		<div class="builders_container">
-			<a href="/assets/greenskull">
+			<a href="https://nostrudel.ninja/">
 				<figure class="builder_card">
 					<div class="card_header">
-						<figcaption class="card_title">green skull</figcaption>
+						<figcaption class="card_title">hzrd149</figcaption>
 					</div>
-					<img src="https://cdn.nostr.build/assets/builders/greenskull.png" alt="green skull image" />
+					<img src="https://nostr.build/i/p/nostr.build_d8a82acc6ac86b2e167ab2dbfb3a2eafb01979801ad68ec827d7693a6e76b316.png" alt="hzrd149 image" />
+				</figure>
+			</a>
+			<a href="https://www.btcsessions.ca/">
+				<figure class="builder_card">
+					<div class="card_header">
+						<figcaption class="card_title">BTC Sessions</figcaption>
+					</div>
+					<img src="https://static.wixstatic.com/media/f33f9f_e6084386861743ffa347bc29eecf565f~mv2.gif" alt="BTCSessions image" />
+				</figure>
+			</a>
+			<a href="https://bitcoinfixesthis.org">
+				<figure class="builder_card">
+					<div class="card_header">
+						<figcaption class="card_title">Don't ₿elieve the Hype</figcaption>
+					</div>
+					<img src="https://i.nostr.build/am9Q.jpg" alt="Dont_₿elieve_the_Hype image" />
+				</figure>
+			</a>
+			<a href="https://zeusln.app">
+				<figure class="builder_card">
+					<div class="card_header">
+						<figcaption class="card_title">EVAN: ZEUS WALLET</figcaption>
+					</div>
+					<img src="https://zeusln.app/nostr/evan.jpg" alt="EVAN image" />
+				</figure>
+			</a>
+			<a href="https://github.com/SeedSigner/seedsigner">
+				<figure class="builder_card">
+					<div class="card_header">
+						<figcaption class="card_title">SeedSigner</figcaption>
+					</div>
+					<img src="https://nostr.build/i/221.gif" alt="SeedSigner image" />
+				</figure>
+			</a>
+			<a href="https://coracle.social">
+				<figure class="builder_card">
+					<div class="card_header">
+						<figcaption class="card_title">hodlbod</figcaption>
+					</div>
+					<img src="https://us-southeast-1.linodeobjects.com/dufflepud/uploads/b2a7ef93-fa12-469b-bf3d-0f2654cab346.jpg" alt="hodlbod image" />
+				</figure>
+			</a>
+			<a href="https://primal.net">
+				<figure class="builder_card">
+					<div class="card_header">
+						<figcaption class="card_title">Miljan</figcaption>
+					</div>
+					<img src="https://m.primal.net/HGGp.png" alt="miljan image" />
+				</figure>
+			</a>
+			<a href="https://jeffg.fyi/">
+				<figure class="builder_card">
+					<div class="card_header">
+						<figcaption class="card_title">JeffG</figcaption>
+					</div>
+					<img src="https://m.primal.net/HIVN.jpg" alt="JeffG image" />
+				</figure>
+			</a>
+			<a href="https://nostrplebs.com">
+				<figure class="builder_card">
+					<div class="card_header">
+						<figcaption class="card_title">Semisol</figcaption>
+					</div>
+					<img src="https://i.nostrimg.com/prank-enthusiast-willingly.gif" alt="semisol image" />
 				</figure>
 			</a>
 			<a href="https://fiatjaf.com">
@@ -307,6 +371,14 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/functions/session.php';
 						<figcaption class="card_title">Lightning Store</figcaption>
 					</div>
 					<img src="https://cdn.nostr.build/assets/builders/lnstore.gif" alt="lnstore image" />
+				</figure>
+			</a>
+			<a href="/assets/greenskull">
+				<figure class="builder_card">
+					<div class="card_header">
+						<figcaption class="card_title">green skull</figcaption>
+					</div>
+					<img src="https://cdn.nostr.build/assets/builders/greenskull.png" alt="green skull image" />
 				</figure>
 			</a>
 
