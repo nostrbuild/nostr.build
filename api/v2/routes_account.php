@@ -61,9 +61,6 @@ $app->group('/account', function (RouteCollectorProxy $group) {
 
     // Get file(s) metadata
     $metadata = $request->getParsedBody();
-    if (is_string($metadata)) {
-      $metadata = json_decode($metadata, true);
-    }
 
     // If no files are provided, return a 400 response
     if (empty($files)) {
@@ -75,6 +72,7 @@ $app->group('/account', function (RouteCollectorProxy $group) {
     try {
       // Handle exceptions thrown by the MultimediaUpload class
       $upload->setPsrFiles($files, $metadata);
+      $upload->setUppyMetadata($metadata);
 
       [$status, $code, $message] = $upload->uploadFiles();
 
