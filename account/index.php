@@ -70,11 +70,11 @@ $userStorageRemaining = $userOverLimit ? 0 : $userStorageLimit - $storageUsed;
 	<title>nostr.build account</title>
 
 	<link rel="stylesheet" href="/styles/account.css?v=4" />
-	<link href="/scripts/dist/index.css?v=16" rel="stylesheet">
+	<link href="/scripts/dist/index.css?v=18" rel="stylesheet">
 	<link href="/styles/twbuild.css?v=44" rel="stylesheet">
 	<link rel="icon" href="/assets/primo_nostr.png" />
 
-	<script defer src="/scripts/dist/index.js?v=27"></script>
+	<script defer src="/scripts/dist/index.js?v=31"></script>
 	<script defer src="/scripts/fw/alpinejs-intersect.min.js?v=7"></script>
 	<script defer src="/scripts/fw/alpinejs.min.js?v=7"></script>
 	<script defer src="/scripts/fw/htmx.min.js?v=7"></script>

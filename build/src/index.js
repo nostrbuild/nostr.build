@@ -192,7 +192,7 @@ const uppy = new Uppy({
 const uppy = new Uppy({
   debug: false,
   allowedFileTypes: ['image/*', 'video/*', 'audio/*'],
-  //maxFileSize: 15 * 1024 * 1024,
+  maxFileSize: 4096 * 1024 * 1024, // 4 GB
   //maxTotalFileSize: 150 * 1024 * 1024,
   onBeforeFileAdded: (currentFile, files) => {
     const allowedTypes = ['video', 'audio', 'image'];
@@ -230,10 +230,15 @@ const uppy = new Uppy({
     formData: true,
     bundle: false,
     limit: 5,
+    timeout: 0, // remove timeout
     meta: {
       folderName: null, // Initialize folderName metadata
       folderHierarchy: null, // Initialize folderHierarchy metadata
     },
+  }, {
+    // Override the default `limit` behavior
+    limit: 0,
+    timeout: 0, // remove timeout
   })
   .on('upload-success', (file, response) => {
     if (Array.isArray(response.body)) {
