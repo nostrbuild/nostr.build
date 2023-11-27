@@ -37,12 +37,12 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/functions/session.php';
 					<img src="https://nostr.build/i/p/nostr.build_d8a82acc6ac86b2e167ab2dbfb3a2eafb01979801ad68ec827d7693a6e76b316.png" alt="hzrd149 image" />
 				</figure>
 			</a>
-			<a href="https://www.btcsessions.ca/">
+			<a href="https://damus.io/">
 				<figure class="builder_card">
 					<div class="card_header">
-						<figcaption class="card_title">BTC Sessions</figcaption>
+						<figcaption class="card_title">Vanessa</figcaption>
 					</div>
-					<img src="https://static.wixstatic.com/media/f33f9f_e6084386861743ffa347bc29eecf565f~mv2.gif" alt="BTCSessions image" />
+					<img src="https://image.nostr.build/aa6a75a57c3e6da7fe83f9114ebe661bae6eb379a21d2e1f057d1f6e297e966a.jpg" alt="Vanessa image" />
 				</figure>
 			</a>
 			<a href="https://bitcoinfixesthis.org">
@@ -53,20 +53,20 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/functions/session.php';
 					<img src="https://i.nostr.build/am9Q.jpg" alt="Dont_₿elieve_the_Hype image" />
 				</figure>
 			</a>
+			<a href="https://www.btcsessions.ca/">
+				<figure class="builder_card">
+					<div class="card_header">
+						<figcaption class="card_title">BTC Sessions</figcaption>
+					</div>
+					<img src="https://static.wixstatic.com/media/f33f9f_e6084386861743ffa347bc29eecf565f~mv2.gif" alt="BTCSessions image" />
+				</figure>
+			</a>
 			<a href="https://zeusln.app">
 				<figure class="builder_card">
 					<div class="card_header">
-						<figcaption class="card_title">EVAN: ZEUS WALLET</figcaption>
+						<figcaption class="card_title">EVAN</figcaption>
 					</div>
 					<img src="https://zeusln.app/nostr/evan.jpg" alt="EVAN image" />
-				</figure>
-			</a>
-			<a href="https://github.com/SeedSigner/seedsigner">
-				<figure class="builder_card">
-					<div class="card_header">
-						<figcaption class="card_title">SeedSigner</figcaption>
-					</div>
-					<img src="https://nostr.build/i/221.gif" alt="SeedSigner image" />
 				</figure>
 			</a>
 			<a href="https://coracle.social">
@@ -99,6 +99,22 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/functions/session.php';
 						<figcaption class="card_title">Semisol</figcaption>
 					</div>
 					<img src="https://i.nostrimg.com/prank-enthusiast-willingly.gif" alt="semisol image" />
+				</figure>
+			</a>
+			<a href="https://github.com/SeedSigner/seedsigner">
+				<figure class="builder_card">
+					<div class="card_header">
+						<figcaption class="card_title">SeedSigner</figcaption>
+					</div>
+					<img src="https://nostr.build/i/221.gif" alt="SeedSigner image" />
+				</figure>
+			</a>
+			<a href="https://nostr.report">
+				<figure class="builder_card">
+					<div class="card_header">
+						<figcaption class="card_title">Marce</figcaption>
+					</div>
+					<img src="https://image.nostr.build/845f66f76c32fd0bda088f362d9f5c9810f88ad640309aed7697de247784c59e.jpg" alt="Marce image" />
 				</figure>
 			</a>
 			<a href="https://fiatjaf.com">
