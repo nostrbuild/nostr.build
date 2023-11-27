@@ -29,7 +29,7 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/functions/session.php';
 	<main>
 		<h1>Builders</h1>
 		<div class="builders_container">
-			<a href="https://nostrudel.ninja/">
+			<a href="https://nostrudel.ninja/" target="_blank">
 				<figure class="builder_card">
 					<div class="card_header">
 						<figcaption class="card_title">hzrd149</figcaption>
@@ -37,7 +37,7 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/functions/session.php';
 					<img src="https://nostr.build/i/p/nostr.build_d8a82acc6ac86b2e167ab2dbfb3a2eafb01979801ad68ec827d7693a6e76b316.png" alt="hzrd149 image" />
 				</figure>
 			</a>
-			<a href="https://damus.io/">
+			<a href="https://damus.io/" target="_blank">
 				<figure class="builder_card">
 					<div class="card_header">
 						<figcaption class="card_title">Vanessa</figcaption>
@@ -45,7 +45,7 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/functions/session.php';
 					<img src="https://image.nostr.build/aa6a75a57c3e6da7fe83f9114ebe661bae6eb379a21d2e1f057d1f6e297e966a.jpg" alt="Vanessa image" />
 				</figure>
 			</a>
-			<a href="https://bitcoinfixesthis.org">
+			<a href="https://bitcoinfixesthis.org" target="_blank">
 				<figure class="builder_card">
 					<div class="card_header">
 						<figcaption class="card_title">Don't ₿elieve the Hype</figcaption>
@@ -53,7 +53,7 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/functions/session.php';
 					<img src="https://i.nostr.build/am9Q.jpg" alt="Dont_₿elieve_the_Hype image" />
 				</figure>
 			</a>
-			<a href="https://www.btcsessions.ca/">
+			<a href="https://www.btcsessions.ca/" target="_blank">
 				<figure class="builder_card">
 					<div class="card_header">
 						<figcaption class="card_title">BTC Sessions</figcaption>
@@ -61,7 +61,7 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/functions/session.php';
 					<img src="https://static.wixstatic.com/media/f33f9f_e6084386861743ffa347bc29eecf565f~mv2.gif" alt="BTCSessions image" />
 				</figure>
 			</a>
-			<a href="https://zeusln.app">
+			<a href="https://zeusln.app" target="_blank">
 				<figure class="builder_card">
 					<div class="card_header">
 						<figcaption class="card_title">EVAN</figcaption>
@@ -69,7 +69,7 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/functions/session.php';
 					<img src="https://zeusln.app/nostr/evan.jpg" alt="EVAN image" />
 				</figure>
 			</a>
-			<a href="https://coracle.social">
+			<a href="https://coracle.social" target="_blank">
 				<figure class="builder_card">
 					<div class="card_header">
 						<figcaption class="card_title">hodlbod</figcaption>
@@ -77,7 +77,7 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/functions/session.php';
 					<img src="https://us-southeast-1.linodeobjects.com/dufflepud/uploads/b2a7ef93-fa12-469b-bf3d-0f2654cab346.jpg" alt="hodlbod image" />
 				</figure>
 			</a>
-			<a href="https://primal.net">
+			<a href="https://primal.net" target="_blank">
 				<figure class="builder_card">
 					<div class="card_header">
 						<figcaption class="card_title">Miljan</figcaption>
@@ -85,7 +85,7 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/functions/session.php';
 					<img src="https://m.primal.net/HGGp.png" alt="miljan image" />
 				</figure>
 			</a>
-			<a href="https://jeffg.fyi/">
+			<a href="https://jeffg.fyi/" target="_blank">
 				<figure class="builder_card">
 					<div class="card_header">
 						<figcaption class="card_title">JeffG</figcaption>
@@ -93,7 +93,7 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/functions/session.php';
 					<img src="https://m.primal.net/HIVN.jpg" alt="JeffG image" />
 				</figure>
 			</a>
-			<a href="https://nostrplebs.com">
+			<a href="https://nostrplebs.com" target="_blank">
 				<figure class="builder_card">
 					<div class="card_header">
 						<figcaption class="card_title">Semisol</figcaption>
@@ -101,7 +101,7 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/functions/session.php';
 					<img src="https://i.nostrimg.com/prank-enthusiast-willingly.gif" alt="semisol image" />
 				</figure>
 			</a>
-			<a href="https://github.com/SeedSigner/seedsigner">
+			<a href="https://github.com/SeedSigner/seedsigner" target="_blank">
 				<figure class="builder_card">
 					<div class="card_header">
 						<figcaption class="card_title">SeedSigner</figcaption>
@@ -109,7 +109,15 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/functions/session.php';
 					<img src="https://nostr.build/i/221.gif" alt="SeedSigner image" />
 				</figure>
 			</a>
-			<a href="https://nostr.report">
+			<a href="https://nostrcheck.me/" target="_blank">
+				<figure class="builder_card">
+					<div class="card_header">
+						<figcaption class="card_title">Quentin</figcaption>
+					</div>
+					<img src="https://nostrcheck.me/media/quentin/avatar.webp?v=555" alt="Quentin image" />
+				</figure>
+			</a>
+			<a href="https://nostr.report" target="_blank">
 				<figure class="builder_card">
 					<div class="card_header">
 						<figcaption class="card_title">Marce</figcaption>
@@ -117,7 +125,15 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/functions/session.php';
 					<img src="https://image.nostr.build/845f66f76c32fd0bda088f362d9f5c9810f88ad640309aed7697de247784c59e.jpg" alt="Marce image" />
 				</figure>
 			</a>
-			<a href="https://fiatjaf.com">
+			<a href="https://nostr.world" target="_blank">
+				<figure class="builder_card">
+					<div class="card_header">
+						<figcaption class="card_title">McShane</figcaption>
+					</div>
+					<img src="https://image.nostr.build/90964f9bf9accefc53fde4112692c8560755fbf0e15fd2030df6b11f1fe6655b.jpg" alt="McShane image" />
+				</figure>
+			</a>
+			<a href="https://fiatjaf.com" target="_blank">
 				<figure class="builder_card">
 					<div class="card_header">
 						<figcaption class="card_title">fiatjaf</figcaption>
@@ -125,7 +141,7 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/functions/session.php';
 					<img src="https://cdn.nostr.build/assets/builders/fiatjaf.png" alt="fiatjaf image" />
 				</figure>
 			</a>
-			<a href="https://coinkite.com">
+			<a href="https://coinkite.com" target="_blank">
 				<figure class="builder_card">
 					<div class="card_header">
 						<figcaption class="card_title">NVK</figcaption>
@@ -133,7 +149,7 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/functions/session.php';
 					<img src="https://cdn.nostr.build/assets/builders/nvk.png" alt="nvk image" />
 				</figure>
 			</a>
-			<a href="https://iris.to/sirius">
+			<a href="https://iris.to/sirius" target="_blank">
 				<figure class="builder_card">
 					<div class="card_header">
 						<figcaption class="card_title">Martti Malmi</figcaption>
@@ -141,7 +157,7 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/functions/session.php';
 					<img src="https://cdn.nostr.build/assets/builders/martti.png" alt="Martti image" />
 				</figure>
 			</a>
-			<a href="https://snort.social/kieran">
+			<a href="https://snort.social/kieran" target="_blank">
 				<figure class="builder_card">
 					<div class="card_header">
 						<figcaption class="card_title">Kieran</figcaption>
@@ -149,7 +165,7 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/functions/session.php';
 					<img src="https://cdn.nostr.build/assets/builders/kieran.png" alt="kieran image" />
 				</figure>
 			</a>
-			<a href="https://damus.io/">
+			<a href="https://damus.io/" target="_blank">
 				<figure class="builder_card">
 					<div class="card_header">
 						<figcaption class="card_title">Will</figcaption>
@@ -157,7 +173,7 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/functions/session.php';
 					<img src="https://cdn.nostr.build/assets/builders/will.png" alt="will image" />
 				</figure>
 			</a>
-			<a href="https://damus.io/">
+			<a href="https://damus.io/" target="_blank">
 				<figure class="builder_card">
 					<div class="card_header">
 						<figcaption class="card_title">elsat</figcaption>
@@ -165,7 +181,7 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/functions/session.php';
 					<img src="https://cdn.nostr.build/assets/builders/elsat.png" alt="elsat image" />
 				</figure>
 			</a>
-			<a href="https://damus.io/">
+			<a href="https://damus.io/" target="_blank">
 				<figure class="builder_card">
 					<div class="card_header">
 						<figcaption class="card_title">Swift</figcaption>
@@ -173,7 +189,7 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/functions/session.php';
 					<img src="https://cdn.nostr.build/assets/builders/swift.png" alt="swift image" />
 				</figure>
 			</a>
-			<a href="https://vitorpamplona.com">
+			<a href="https://vitorpamplona.com" target="_blank">
 				<figure class="builder_card">
 					<div class="card_header">
 						<figcaption class="card_title">Vitor</figcaption>
@@ -181,7 +197,7 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/functions/session.php';
 					<img src="https://cdn.nostr.build/assets/builders/vitor.png" alt="vitor image" />
 				</figure>
 			</a>
-			<a href="https://nostrgram.co/">
+			<a href="https://nostrgram.co/" target="_blank">
 				<figure class="builder_card">
 					<div class="card_header">
 						<figcaption class="card_title">jleger2023</figcaption>
@@ -189,7 +205,7 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/functions/session.php';
 					<img src="https://cdn.nostr.build/assets/builders/jleger.gif" alt="jleger2023 image" />
 				</figure>
 			</a>
-			<a href="https://orangepill.dev/">
+			<a href="https://orangepill.dev/" target="_blank">
 				<figure class="builder_card">
 					<div class="card_header">
 						<figcaption class="card_title">EzoFox</figcaption>
@@ -197,7 +213,7 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/functions/session.php';
 					<img src="https://cdn.nostr.build/assets/builders/ezo.png" alt="ezo image" />
 				</figure>
 			</a>
-			<a href="https://uselessshit.co/">
+			<a href="https://uselessshit.co/" target="_blank">
 				<figure class="builder_card">
 					<div class="card_header">
 						<figcaption class="card_title">pitiunited</figcaption>
@@ -205,7 +221,7 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/functions/session.php';
 					<img src="https://cdn.nostr.build/assets/builders/pit.gif" alt="useless image" />
 				</figure>
 			</a>
-			<a href="https://nostrplebs.com">
+			<a href="https://nostrplebs.com" target="_blank">
 				<figure class="builder_card">
 					<div class="card_header">
 						<figcaption class="card_title">Derek Ross</figcaption>
@@ -213,7 +229,7 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/functions/session.php';
 					<img src="https://cdn.nostr.build/assets/builders/derek.png" alt="derek image" />
 				</figure>
 			</a>
-			<a href="https://github.com/michaelhall923">
+			<a href="https://github.com/michaelhall923" target="_blank">
 				<figure class="builder_card">
 					<div class="card_header">
 						<figcaption class="card_title">Henry</figcaption>
@@ -221,7 +237,7 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/functions/session.php';
 					<img src="https://cdn.nostr.build/assets/builders/henry.png" alt="henry image" />
 				</figure>
 			</a>
-			<a href="https://nostr.build/">
+			<a href="https://nostr.build/" target="_blank">
 				<figure class="builder_card">
 					<div class="card_header">
 						<figcaption class="card_title">nostr.build</figcaption>
@@ -229,7 +245,7 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/functions/session.php';
 					<img src="https://cdn.nostr.build/assets/builders/nostrbuild.png" alt="nostrbuild image" />
 				</figure>
 			</a>
-			<a href="https://eden.nostr.land">
+			<a href="https://eden.nostr.land" target="_blank">
 				<figure class="builder_card">
 					<div class="card_header">
 						<figcaption class="card_title">Cameri</figcaption>
@@ -237,7 +253,7 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/functions/session.php';
 					<img src="https://cdn.nostr.build/assets/builders/cameri.png" alt="cameri image" />
 				</figure>
 			</a>
-			<a href="https://primal.net/fishcake">
+			<a href="https://nostr.build" target="_blank">
 				<figure class="builder_card">
 					<div class="card_header">
 						<figcaption class="card_title">Fishcake</figcaption>
@@ -245,7 +261,7 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/functions/session.php';
 					<img src="https://cdn.nostr.build/assets/builders/fishcake.png" alt="fishcake image" />
 				</figure>
 			</a>
-			<a href="https://github.com/ng5jr/nostr.build">
+			<a href="https://github.com/ng5jr/nostr.build" target="_blank">
 				<figure class="builder_card">
 					<div class="card_header">
 						<figcaption class="card_title">Ro₿erto</figcaption>
@@ -253,7 +269,7 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/functions/session.php';
 					<img src="https://cdn.nostr.build/assets/builders/roberto.png" alt="roberto image" />
 				</figure>
 			</a>
-			<a href="https://github.com/ng5jr/nostr.build">
+			<a href="https://github.com/ng5jr/nostr.build" target="_blank">
 				<figure class="builder_card">
 					<div class="card_header">
 						<figcaption class="card_title">nahuelg5</figcaption>
@@ -261,7 +277,7 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/functions/session.php';
 					<img src="https://cdn.nostr.build/assets/builders/nahuelg5.png" alt="nahuelg5 image" />
 				</figure>
 			</a>
-			<a href="https://github.com/ng5jr/nostr.build">
+			<a href="https://github.com/ng5jr/nostr.build" target="_blank">
 				<figure class="builder_card">
 					<div class="card_header">
 						<figcaption class="card_title">Samsamskies</figcaption>
@@ -269,7 +285,7 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/functions/session.php';
 					<img src="https://cdn.nostr.build/assets/builders/samsamskies.png" alt="roberto image" />
 				</figure>
 			</a>
-			<a href="https://walletscrutiny.com/">
+			<a href="https://walletscrutiny.com/" target="_blank">
 				<figure class="builder_card">
 					<div class="card_header">
 						<figcaption class="card_title">WalletScrutiny</figcaption>
@@ -277,7 +293,7 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/functions/session.php';
 					<img src="https://cdn.nostr.build/assets/builders/wallet.png" alt="walletscrutiny image" />
 				</figure>
 			</a>
-			<a href="https://nostr.info/">
+			<a href="https://nostr.info/" target="_blank">
 				<figure class="builder_card">
 					<div class="card_header">
 						<figcaption class="card_title">Giszmo</figcaption>
@@ -285,7 +301,7 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/functions/session.php';
 					<img src="https://cdn.nostr.build/assets/builders/giszmo.png" alt="Giszmo image" />
 				</figure>
 			</a>
-			<a href="https://dergigi.com/">
+			<a href="https://dergigi.com/" target="_blank">
 				<figure class="builder_card">
 					<div class="card_header">
 						<figcaption class="card_title">Gigi</figcaption>
@@ -293,7 +309,7 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/functions/session.php';
 					<img src="https://cdn.nostr.build/assets/builders/gigi.png" alt="gigi image" />
 				</figure>
 			</a>
-			<a href="https://nostr.report/">
+			<a href="https://nostr.report/" target="_blank">
 				<figure class="builder_card">
 					<div class="card_header">
 						<figcaption class="card_title">The Nostr Report</figcaption>
@@ -301,7 +317,7 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/functions/session.php';
 					<img src="https://cdn.nostr.build/assets/builders/nostrreport.gif" alt="nostrreport image" />
 				</figure>
 			</a>
-			<a href="https://pablof7z.com/">
+			<a href="https://pablof7z.com/" target="_blank">
 				<figure class="builder_card">
 					<div class="card_header">
 						<figcaption class="card_title">PABLOF7z</figcaption>
@@ -309,7 +325,7 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/functions/session.php';
 					<img src="https://cdn.nostr.build/assets/builders/pablo.png" alt="pablof7z image" />
 				</figure>
 			</a>
-			<a href="https://linktr.ee/">
+			<a href="https://linktr.ee/" target="_blank">
 				<figure class="builder_card">
 					<div class="card_header">
 						<figcaption class="card_title">iefan</figcaption>
@@ -317,7 +333,7 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/functions/session.php';
 					<img src="https://cdn.nostr.build/assets/builders/iefan.png" alt="iefan image" />
 				</figure>
 			</a>
-			<a href="https://habla.news/">
+			<a href="https://habla.news/" target="_blank">
 				<figure class="builder_card">
 					<div class="card_header">
 						<figcaption class="card_title">verbiricha</figcaption>
@@ -325,7 +341,7 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/functions/session.php';
 					<img src="https://cdn.nostr.build/assets/builders/verbiricha.png" alt="verbiricha image" />
 				</figure>
 			</a>
-			<a href="https://nostrBadges.com/">
+			<a href="https://nostrBadges.com/" target="_blank">
 				<figure class="builder_card">
 					<div class="card_header">
 						<figcaption class="card_title">Jason</figcaption>
@@ -333,7 +349,7 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/functions/session.php';
 					<img src="https://cdn.nostr.build/assets/builders/jason.png" alt="jason image" />
 				</figure>
 			</a>
-			<a href="https://nostrland.com">
+			<a href="https://nostrland.com" target="_blank">
 				<figure class="builder_card">
 					<div class="card_header">
 						<figcaption class="card_title">Karnage</figcaption>
@@ -341,7 +357,7 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/functions/session.php';
 					<img src="https://cdn.nostr.build/assets/builders/karnage.gif" alt="karnage image" />
 				</figure>
 			</a>
-			<a href="https://nodeless.io/">
+			<a href="https://nodeless.io/" target="_blank">
 				<figure class="builder_card">
 					<div class="card_header">
 						<figcaption class="card_title">utxo</figcaption>
@@ -349,7 +365,7 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/functions/session.php';
 					<img src="https://cdn.nostr.build/assets/builders/utxo.gif" alt="utxo image" />
 				</figure>
 			</a>
-			<a href="https://iris.to/rabble">
+			<a href="https://iris.to/rabble" target="_blank">
 				<figure class="builder_card">
 					<div class="card_header">
 						<figcaption class="card_title">rabble</figcaption>
@@ -357,7 +373,7 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/functions/session.php';
 					<img src="https://cdn.nostr.build/assets/builders/rabble.png" alt="rabble image" />
 				</figure>
 			</a>
-			<a href="https://getcurrent.io">
+			<a href="https://getcurrent.io" target="_blank">
 				<figure class="builder_card">
 					<div class="card_header">
 						<figcaption class="card_title">StarBuilder</figcaption>
@@ -365,7 +381,7 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/functions/session.php';
 					<img src="https://cdn.nostr.build/assets/builders/starbuilder.png" alt="starbuilder image" />
 				</figure>
 			</a>
-			<a href="https://app.getcurrent.io">
+			<a href="https://app.getcurrent.io" target="_blank">
 				<figure class="builder_card">
 					<div class="card_header">
 						<figcaption class="card_title">egge</figcaption>
@@ -373,7 +389,7 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/functions/session.php';
 					<img src="https://cdn.nostr.build/assets/builders/egge.png" alt="egge image" />
 				</figure>
 			</a>
-			<a href="https://btcpayserver.org/">
+			<a href="https://btcpayserver.org/" target="_blank">
 				<figure class="builder_card">
 					<div class="card_header">
 						<figcaption class="card_title">Rockstar</figcaption>
@@ -381,7 +397,7 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/functions/session.php';
 					<img src="https://cdn.nostr.build/assets/builders/rockstar.png" alt="rockstar image" />
 				</figure>
 			</a>
-			<a href="https://lightning.store">
+			<a href="https://lightning.store" target="_blank">
 				<figure class="builder_card">
 					<div class="card_header">
 						<figcaption class="card_title">Lightning Store</figcaption>
@@ -389,7 +405,7 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/functions/session.php';
 					<img src="https://cdn.nostr.build/assets/builders/lnstore.gif" alt="lnstore image" />
 				</figure>
 			</a>
-			<a href="/assets/greenskull">
+			<a href="/assets/greenskull" target="_blank">
 				<figure class="builder_card">
 					<div class="card_header">
 						<figcaption class="card_title">green skull</figcaption>
@@ -397,7 +413,6 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/functions/session.php';
 					<img src="https://cdn.nostr.build/assets/builders/greenskull.png" alt="green skull image" />
 				</figure>
 			</a>
-
 		</div>
 	</main>
 
