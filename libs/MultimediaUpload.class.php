@@ -158,6 +158,18 @@ class MultimediaUpload
    * @var 
    */
   protected $formParams;
+  /**
+   * Summary of uppyMetadata
+   * @var 
+   * (
+   * [relativePath] => <relative path> // filder/file.jpg
+   * [name] => <file name> // file.jpg
+   * [type] => <mime type> // image/jpeg
+   * [folderName] => <folder name> // folder
+   * [folderHierarchy] => <list of folders> // ['folder', 'subfolder']
+   * )
+   */
+  protected $uppyMetadata;
 
   /**
    * Summary of __construct
@@ -1479,7 +1491,6 @@ class MultimediaUpload
    * @param int $mediaHeight
    * @param mixed $blurhash
    * @param string $fileMimeType
-   * @param mixed $folder_name
    * @return bool
    */
   protected function updateDatabasePro(
@@ -1490,18 +1501,31 @@ class MultimediaUpload
     int $mediaHeight,
     ?string $blurhash,
     string $fileMimeType,
-    ?string $folder_name = null
   ): bool {
     // Update the database with the new file name and size
     $folder_id = null;
-    if ($folder_name !== null) {
-      $folder_id = $this->usersImagesFolders->findFolderByNameOrCreate($folder_name);
+    $folder_name = !empty($this->uppyMetadata['folderName'])
+      ? json_decode($this->uppyMetadata['folderName']) ?? ''
+      : null;
+    if (
+      !empty($this->uppyMetadata['folderHierarchy']) &&
+      is_array($this->uppyMetadata['folderHierarchy']) &&
+      count($this->uppyMetadata['folderHierarchy']) > 0
+    ) {
+      // We have a folder hierarchy, so we need to find the folder ID
+      try {
+        //$folder_id = $this->usersImagesFolders->findFolderByNameOrCreateHierarchy($this->userNpub, $this->uppyMetadata['folderHierarchy']);
+        $folder_id = $this->usersImagesFolders->findFolderByNameOrCreate($this->userNpub, $folder_name ?? '');
+      } catch (Exception $e) {
+        error_log($e->getMessage());
+      }
     }
     try {
       $this->usersImages->update($id, [
         'image' => $newName,
         'file_size' => $fileSize,
         'folder_id' => $folder_id,
+        'folder' => $folder_name ?? '', // Legacy crap
         'media_width' => $mediaWidth,
         'media_height' => $mediaHeight,
         'blurhash' => $blurhash,
@@ -1557,6 +1581,20 @@ class MultimediaUpload
   public function setFormParams($formParams): self
   {
     $this->formParams = $formParams;
+    return $this;
+  }
+
+  /**
+   * Summary of setUppyMetadata
+   * @param array $uppyMetadata
+   */
+  public function setUppyMetadata(array $uppyMetadata): self
+  {
+    // Check if [folderHierarchy] is set and not empty, and convert it from JSON to array
+    if (!empty($uppyMetadata['folderHierarchy']) && is_string($uppyMetadata['folderHierarchy'])) {
+      $uppyMetadata['folderHierarchy'] = json_decode($uppyMetadata['folderHierarchy'], true);
+    }
+    $this->uppyMetadata = $uppyMetadata;
     return $this;
   }
 }
