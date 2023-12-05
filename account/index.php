@@ -568,13 +568,13 @@ $userStorageRemaining = $userOverLimit ? 0 : $userStorageLimit - $storageUsed;
 							<input id="input<?= $divId ?>" value="<?= htmlentities($images_row['folder']) ?>" style="display: none;" />
 							<figure class="image_card">
 								<?php if ($type == 'image') : ?>
-									<img id="<?= $element ?>" x-data="{ src: '<?= $thumb_url ?>'}" x-intersect.once="$el.src = src" data-src="<?= $image_url ?>" alt="" class="image <?= $images_row['flag'] ? 'publicly-shared' : '' ?>" />
+									<img id="<?= $element ?>" x-data="{ src: '<?= $thumb_url ?>'}" x-intersect.margin.500px="$el.src = src" data-src="<?= $image_url ?>" alt="" class="image <?= $images_row['flag'] ? 'publicly-shared' : '' ?>" />
 								<?php elseif ($type == 'video') : ?>
-									<video id="img<?= $element ?>" x-data="{ src: '<?= $thumb_url ?>'}" x-intersect.once="$el.src = src, $nextTick(() => $el.load())" alt="" class="image <?= $images_row['flag'] ? 'publicly-shared' : '' ?>" preload="auto" controls>
+									<video id="img<?= $element ?>" x-data="{ src: '<?= $thumb_url ?>'}" x-intersect.margin.500px="$el.src = src, $nextTick(() => $el.load())" alt="" class="image <?= $images_row['flag'] ? 'publicly-shared' : '' ?>" preload="auto" controls>
 										<source id="<?= $element ?>" type="<?= $images_row['mime_type'] ?>" data-src="<?= $image_url ?>">
 									</video>
 								<?php elseif ($type == 'audio') : ?>
-									<audio id="img<?= $element ?>" x-data="{ src: '<?= $thumb_url ?>'}" x-intersect.once="$el.src = src, $nextTick(() => $el.load())" alt="" class="image <?= $images_row['flag'] ? 'publicly-shared' : '' ?>" controls>
+									<audio id="img<?= $element ?>" x-data="{ src: '<?= $thumb_url ?>'}" x-intersect.margin.500px="$el.src = src, $nextTick(() => $el.load())" alt="" class="image <?= $images_row['flag'] ? 'publicly-shared' : '' ?>" controls>
 										<source id="<?= $element ?>" type="<?= $images_row['mime_type'] ?>" data-src="<?= $image_url ?>">
 									</audio>
 								<?php endif; ?>
