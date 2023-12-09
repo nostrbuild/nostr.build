@@ -238,6 +238,10 @@ function createNip96SuccessResponse(array $data, string $message, string $proces
     $nip94_event['tags'][] = ["bh", $data['blurhash']];
   }
 
+  if (isset($data['blurhash'])) {
+    $nip94_event['tags'][] = ["blurhash", $data['blurhash']];
+  }
+
   $metadata = [
     'size' => $data['size']
   ];
