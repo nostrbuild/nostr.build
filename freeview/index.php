@@ -62,6 +62,7 @@ $sql = match ($view_type) {
 				},
 				autoplayVideoOnSlide: true,
 				gotoNextSlideOnVideoEnd: true,
+				exThumbImage: 'data-src',
 			});
 
 			const observer = new IntersectionObserver((entries, observer) => {
@@ -70,10 +71,14 @@ $sql = match ($view_type) {
 						const img = entry.target;
 						const realSrc = img.getAttribute('data-src');
 						const realSrcset = img.getAttribute('data-srcset');
+						const realSizes = img.getAttribute('data-sizes');
 
 						img.src = realSrc;
 						if (realSrcset) {
 							img.srcset = realSrcset;
+						}
+						if (realSizes) {
+							img.sizes = realSizes;
 						}
 
 						observer.unobserve(img);
@@ -236,8 +241,7 @@ $sql = match ($view_type) {
 								<?php if ($view_type === 'gif') : ?>
 									<img height="<?= $media_height ?>" width="<?= $media_width ?>" loading="lazy" class="w-full" src="<?= $thumbnail_path ?>" alt="image" />
 								<?php else : ?>
-									<?php /*<img height="<?= $media_height ?>" width="<?= $media_width ?>" loading="lazy" class="w-full" src="<?= $thumbnail_path ?>" srcset="<?= $srcset ?>" sizes="<?= $sizes ?>" alt="image" /> */ ?>
-									<img height="<?= $media_height ?>" width="<?= $media_width ?>" loading="lazy" class="w-full blurhash-image" src="<?= $bh_dataUrl ?>" data-src="<?= $thumbnail_path ?>" data-srcset="<?= $srcset ?>" sizes="<?= $sizes ?>" alt="image" />
+									<img height="<?= $media_height ?>" width="<?= $media_width ?>" loading="lazy" class="w-full blurhash-image" src="<?= $bh_dataUrl ?>" data-src="<?= $thumbnail_path ?>" data-srcset="<?= $srcset ?>" data-sizes="<?= $sizes ?>" alt="image" />
 								<?php endif; ?>
 							</div>
 						<?php endif; ?>
