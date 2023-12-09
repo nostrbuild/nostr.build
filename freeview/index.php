@@ -1,4 +1,7 @@
 <?php
+require_once __DIR__ . '/../vendor/autoload.php';
+
+use kornrunner\Blurhash\Blurhash;
 // Include config, session, and Permission class files
 require_once $_SERVER['DOCUMENT_ROOT'] . '/config.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/functions/session.php';
@@ -61,62 +64,29 @@ $sql = match ($view_type) {
 				gotoNextSlideOnVideoEnd: true,
 			});
 
-			function observeImages() {
-				const imageContainers = document.querySelectorAll(".image-container:not(.observed)");
+			const observer = new IntersectionObserver((entries, observer) => {
+				entries.forEach(entry => {
+					if (entry.isIntersecting) {
+						const img = entry.target;
+						const realSrc = img.getAttribute('data-src');
+						const realSrcset = img.getAttribute('data-srcset');
 
-				const observer = new IntersectionObserver((entries, observer) => {
-					entries.forEach(entry => {
-						if (entry.isIntersecting) {
-							const imgContainer = entry.target;
-							const img = imgContainer.querySelector("img.lazy-loaded");
-							const loader = imgContainer.querySelector('[role="status"]'); // Assuming role="status" is unique within the container
-
-							// Show the loader
-							loader.style.opacity = "1";
-							loader.style.zIndex = "2";
-
-							const handleLoad = function() {
-								const blurhashSibling = img.nextElementSibling;
-
-								if (blurhashSibling && blurhashSibling.tagName.toLowerCase() === "blurhash-img") {
-									//blurhashSibling.remove();
-									blurhashSibling.style.height = "0";
-									blurhashSibling.style.visibility = "hidden";
-									blurhashSibling.style.opacity = "0";
-									blurhashSibling.style.zIndex = "-1";
-
-									img.style.height = "auto";
-									img.style.visibility = "visible";
-									img.style.opacity = "1";
-									img.style.zIndex = "1"; // add this line to bring the image forward
-
-									// Hide the loader
-									loader.style.opacity = "0";
-									loader.style.zIndex = "-1";
-								}
-
-								img.removeEventListener("load", handleLoad);
-							};
-
-							img.addEventListener("load", handleLoad);
-
-							if (img.complete) {
-								img.dispatchEvent(new Event("load"));
-							}
-
-							observer.unobserve(imgContainer);
-							imgContainer.classList.add("observed"); // Mark this image as observed
+						img.src = realSrc;
+						if (realSrcset) {
+							img.srcset = realSrcset;
 						}
-					});
-				});
 
-				imageContainers.forEach(img => {
-					observer.observe(img);
+						observer.unobserve(img);
+					}
 				});
-			}
+			}, {
+				rootMargin: '0px 0px 200px 0px',
+				threshold: 0.01
+			});
 
-			observeImages(); // Initial run
-			// If you're dynamically loading new content, you can run `observeImages()` again
+			const images = document.querySelectorAll('img.blurhash-image');
+			images.forEach(img => observer.observe(img));
+
 		});
 	</script>
 
@@ -134,11 +104,6 @@ $sql = match ($view_type) {
 			opacity: 0;
 			transition: opacity 0.6s ease-in-out;
 			z-index: -1;
-		}
-
-		blurhash-img {
-			--aspect-ratio: 4/6;
-			/* This is just a default, your PHP will override this */
 		}
 	</style>
 </head>
@@ -171,11 +136,71 @@ $sql = match ($view_type) {
 				$ext = pathinfo($filename, PATHINFO_EXTENSION);
 				$thumbnail_path = htmlspecialchars(SiteConfig::getThumbnailUrl($view_type === 'vid' ? 'video' : 'image') . $filename);
 				$full_path = htmlspecialchars(SiteConfig::getFullyQualifiedUrl($view_type === 'vid' ? 'video' : 'image') . $filename);
-				$blurhash = htmlspecialchars($row['blurhash']);
 
 				$media_width = empty($row['media_width']) || $row['media_width'] == 0 ? 4 : $row['media_width'];
 				$media_height = empty($row['media_height']) || $row['media_height'] == 0 ? 6 : $row['media_height'];
 				$aspect_ratio = "{$media_height}/{$media_width}";
+
+				// Blurhash
+				if ($view_type !== 'vid' && $view_type !== 'gif' && !empty($row['blurhash'])) {
+					$bh_dataUrl = '';
+					try {
+						$bh_width = max((int) round($media_width / 40), 1); // Ensure width is at least 1
+						$bh_height = max((int) round($media_height / 40), 1); // Ensure height is at least 1
+
+						$pixels = Blurhash::decode($row['blurhash'], $bh_width, $bh_height);
+
+						// Verify that pixels array is not empty and correctly structured
+						if (!is_array($pixels) || empty($pixels) || !is_array($pixels[0])) {
+							throw new Exception('Invalid pixel array from Blurhash decode.');
+						}
+
+						$bh_image = imagecreatetruecolor($bh_width, $bh_height);
+						if (!$bh_image instanceof GdImage) {
+							throw new Exception('Could not create a new true color image.');
+						}
+
+						for ($y = 0; $y < $bh_height; ++$y) {
+							for ($x = 0; $x < $bh_width; ++$x) {
+								if (!isset($pixels[$y][$x])) {
+									throw new Exception('Missing pixel data.');
+								}
+								[$r, $g, $b] = $pixels[$y][$x];
+								if (!imagesetpixel($bh_image, $x, $y, imagecolorallocate($bh_image, $r, $g, $b))) {
+									throw new Exception('Could not set pixel.');
+								}
+							}
+						}
+
+						$bh_stream = fopen('php://memory', 'w+');
+						if (!$bh_stream) {
+							throw new Exception('Could not open memory stream.');
+						}
+
+						if (!imagepng($bh_image, $bh_stream)) {
+							throw new Exception('Could not output image to stream.');
+						}
+						rewind($bh_stream);
+
+						$streamContents = stream_get_contents($bh_stream);
+						if ($streamContents === false) {
+							throw new Exception('Could not get stream contents.');
+						}
+						$bh_dataUrl = 'data:image/png;base64,' . base64_encode($streamContents);
+					} catch (Exception $e) {
+						error_log($e->getMessage());
+						$bh_dataUrl = ''; // In case of any error, set data URL to empty
+					} finally {
+						if (isset($bh_image) && ($bh_image instanceof GdImage || is_resource($bh_image))) {
+							imagedestroy($bh_image); // Free image resource
+						}
+						if (isset($bh_stream) && is_resource($bh_stream)) {
+							fclose($bh_stream); // Close stream
+						}
+					}
+				} else {
+					$bh_dataUrl = '';
+				}
 
 				// Responsive image sizes
 				$resolutionToWidth = [
@@ -202,22 +227,18 @@ $sql = match ($view_type) {
 					<a href="<?= $full_path ?>" target="_blank" rel="noopener noreferrer">
 						<?php if ($view_type === 'vid') : ?>
 							<!-- A video poster is required for lightgallery to work -->
-							<img src="https://cdn.nostr.build/assets/video/jpg/video-poster@0.5x.jpg" alt="video poster" style="display: none;" />
+							<img height="728" width="408" src="https://cdn.nostr.build/assets/video/jpg/video-poster@0.5x.jpg" alt="video poster" style="display: none;" />
 							<video class="mb-2" controls preload="auto">
 								<source src="<?= $thumbnail_path ?>" type="video/mp4">
 							</video>
 						<?php else : ?>
 							<div class="image-container mb-2">
 								<?php if ($view_type === 'gif') : ?>
-									<img loading="lazy" class="w-full lazy-loaded" src="<?= $thumbnail_path ?>" alt="image" />
+									<img height="<?= $media_height ?>" width="<?= $media_width ?>" loading="lazy" class="w-full" src="<?= $thumbnail_path ?>" alt="image" />
 								<?php else : ?>
-									<img loading="lazy" class="w-full lazy-loaded" src="<?= $thumbnail_path ?>" srcset="<?= $srcset ?>" sizes="<?= $sizes ?>" alt="image" />
+									<?php /*<img height="<?= $media_height ?>" width="<?= $media_width ?>" loading="lazy" class="w-full" src="<?= $thumbnail_path ?>" srcset="<?= $srcset ?>" sizes="<?= $sizes ?>" alt="image" /> */ ?>
+									<img height="<?= $media_height ?>" width="<?= $media_width ?>" loading="lazy" class="w-full blurhash-image" src="<?= $bh_dataUrl ?>" data-src="<?= $thumbnail_path ?>" data-srcset="<?= $srcset ?>" sizes="<?= $sizes ?>" alt="image" />
 								<?php endif; ?>
-								<blurhash-img class="w-full" hash="<?= $blurhash ?>" style="--aspect-ratio: <?= $aspect_ratio ?>">
-								</blurhash-img>
-								<div role="status" class="absolute inset-0 grid place-items-center">
-									<span class="sr-only">Loading...</span>
-								</div>
 							</div>
 						<?php endif; ?>
 					</a>
