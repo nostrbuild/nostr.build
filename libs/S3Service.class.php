@@ -59,7 +59,7 @@ class S3Service
   }
 
   // Upload a file to S3
-  public function uploadToS3($sourcePath, $destinationPath)
+  public function uploadToS3($sourcePath, $destinationPath, $sha256 = '')
   {
     // Number of retries for the upload
     $maxRetries = 3;
@@ -82,6 +82,9 @@ class S3Service
       'StorageClass' => 'STANDARD',
       'CacheControl' => 'max-age=2592000',
       'ContentType' => $mimeType,
+      'Metadata' => [
+        'sha256' => $sha256
+      ],
     ];
 
     // Define the options for R2 upload
@@ -95,6 +98,9 @@ class S3Service
       'StorageClass' => 'STANDARD',
       'CacheControl' => 'max-age=2592000',
       'ContentType' => $mimeType,
+      'Metadata' => [
+        'sha256' => $sha256
+      ],
     ];
 
     $attemptUpload = function ($client, $options, $retriesLeft) use (&$attemptUpload, $maxRetries) {

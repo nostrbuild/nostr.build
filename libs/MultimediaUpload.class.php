@@ -702,7 +702,9 @@ class MultimediaUpload
             throw new Exception('Failed to update database');
           }
         }
-        if (!$this->uploadToS3($newFilePrefix . $newFileName)) {
+        // Generate transformed file hash
+        $transformedFileSha256 = $this->generateFileName(0);
+        if (!$this->uploadToS3($newFilePrefix . $newFileName, $transformedFileSha256)) {
           $returnError[] = [false, 500, 'Failed to upload to S3'];
           throw new Exception('Upload to S3 failed');
         }
@@ -714,7 +716,7 @@ class MultimediaUpload
           'thumbnail' => $this->generateImageThumbnailURL($newFileName, $fileType['type']), // Construct thumbnail URL
           'responsive' => $this->generateResponsiveImagesURL($newFileName, $fileType['type']), // Construct responsive images URLs
           'blurhash' => $fileData['blurhash'] ?? '',
-          'sha256' => $this->generateFileName(0), // Reuse method to generate a hash of transformed file
+          'sha256' => $transformedFileSha256, // Post-processing sha256 hash
           'original_sha256' => $fileSha256, // NIP-96
           'type' => $newFileType,
           'mime' => $fileType['mime'],
@@ -1105,10 +1107,12 @@ class MultimediaUpload
       );
     }
 
+    $stored_object_sha256 = '';
     try {
       $key = $this->determinePrefix($data['type']) . $data['filename'];
       // TODO: Needs update to handle non-prefixed paths based on media type
       $fileS3Metadata = $this->s3Service->getObjectMetadataFromS3($key);
+      $stored_object_sha256 = $fileS3Metadata['Metadata']['sha256'] ?? '';
 
       if ($fileS3Metadata === false) {
         throw new Exception('Failed to get S3 metadata');
@@ -1121,7 +1125,7 @@ class MultimediaUpload
     $fileData = [
       'input_name' => $this->file['input_name'],
       'name' => $data['filename'],
-      'sha256' => $filehash,
+      'sha256' => $stored_object_sha256,
       'original_sha256' => $filehash, // NIP-96
       'type' => $data['type'],
       'mime' => $fileS3Metadata->get('ContentType'),
@@ -1544,10 +1548,10 @@ class MultimediaUpload
    * @return bool
    * Method that will upload the file to S3
    */
-  protected function uploadToS3(string $objectName): bool
+  protected function uploadToS3(string $objectName, $sha256 = ''): bool
   {
     try {
-      $this->s3Service->uploadToS3($this->file['tmp_name'], $objectName);
+      $this->s3Service->uploadToS3($this->file['tmp_name'], $objectName, $sha256);
     } catch (Exception $e) {
       error_log($e->getMessage());
       return false;
