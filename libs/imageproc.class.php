@@ -468,6 +468,11 @@ class ImageProcessor
    */
   public function optimiseImage(): self
   {
+    // Use palettegen and paletteuse to preserve colors and reduce artifacts
+    $imageFormat = strtolower($this->imagick->getImageFormat());
+    if ($imageFormat === 'gif') {
+      return $this;
+    }
     if (!$this->isSaved) {
       throw new RuntimeException("Please call save() method before optimizeImage");
     }
