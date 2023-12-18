@@ -33,6 +33,7 @@ class GifConverter
    * @var string
    */
   private $ffprobePath = "/usr/local/bin/ffprobe";
+  private $gifsiclePath = "/usr/bin/gifsicle";
   /**
    * Summary of cropWidth
    * @var int
@@ -63,8 +64,8 @@ class GifConverter
    * Summary of maxGifWidth
    * @var int
    */
-  private $maxGifWidth = 500;
-  private $maxGifHeight = 500;
+  private $maxGifWidth = 360;
+  private $maxGifHeight = 360;
 
 
   /**
@@ -135,6 +136,9 @@ class GifConverter
       throw new Exception("Error running FFmpeg command to generate gif: " . implode("\n", $output));
     }
 
+    // Optimize the gif
+    $this->downsizeGif($this->tempFile);
+
     return $this->tempFile;
   }
 
@@ -150,14 +154,13 @@ class GifConverter
       throw new Exception('No input file specified. Please provide a file path.');
     }
 
-    // All the magic happens in the following line
-    // Use palettegen and paletteuse to preserve colors and reduce artifacts
-    $gifCommand ="{$this->ffmpegPath} -y -hide_banner -i {$inputFile} -filter_complex \"scale=w='if(gt(iw,ih),-4,{$this->maxGifWidth})':h='if(gt(iw,ih),{$this->maxGifHeight},-4)',split[v1][v2]; [v1]palettegen=stats_mode=full [palette]; [v2][palette]paletteuse=dither=sierra2_4a\" -vsync 0 {$this->tempFile} 2>&1";
+    // Now optimize the gif
+    $optimizeCommand = "{$this->gifsiclePath} --resize-fit {$this->maxGifWidth}x{$this->maxGifHeight} -O3 -b --lossy=80 {$inputFile} -o {$this->tempFile} 2>&1";
 
-    exec($gifCommand, $output, $returnVar);
+    exec($optimizeCommand, $output, $returnVar);
 
     if ($returnVar !== 0) {
-      throw new Exception("Error running FFmpeg command to generate gif: " . implode("\n", $output));
+      throw new Exception("Error running gifsicle command to optimize gif: " . implode("\n", $output));
     }
 
     return $this->tempFile;
