@@ -73,7 +73,22 @@ class UploadsData extends DatabaseTable
     // Fetch statistics from the database
     //$sql = "SELECT COUNT(*) as total_files, SUM(file_size) as total_size FROM {$this->tableName}";
     // Move toward summary table instead, to avoid undue load on the database
-    $sql = "SELECT total_files, total_size FROM uploads_summary WHERE id = 1;";
+    $sql = "SELECT 
+                (us.total_files + IFNULL(ui.count, 0)) AS total_files,
+                (us.total_size + IFNULL(ui.total_image_size, 0)) AS total_size
+            FROM 
+                uploads_summary AS us
+            LEFT JOIN 
+                (SELECT 
+                    COUNT(*) AS count, 
+                    SUM(file_size) AS total_image_size 
+                FROM 
+                    users_images) AS ui
+            ON 
+                us.id = 1
+            WHERE 
+                us.id = 1;
+            ";
     try {
       $stmt = $this->db->prepare($sql);
       $stmt->execute();
