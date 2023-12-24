@@ -155,7 +155,7 @@ class GifConverter
     }
 
     // Now optimize the gif
-    $optimizeCommand = "{$this->gifsiclePath} --careful --resize-fit {$this->maxGifWidth}x{$this->maxGifHeight} -O3 -b --lossy=80 {$inputFile} -o {$this->tempFile} 2>&1";
+    $optimizeCommand = "{$this->gifsiclePath} --careful --resize-fit {$this->maxGifWidth}x{$this->maxGifHeight} -O3 -b --lossy=15 {$inputFile} -o {$this->tempFile} 2>&1";
 
     exec($optimizeCommand, $output, $returnVar);
 
