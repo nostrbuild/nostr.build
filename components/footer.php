@@ -24,16 +24,8 @@
 			</ul>
 		</div>
 		<div class="footer_made_by">
-			&copy; nostr.build 2023
+			&copy; nostr.build 2024
 		</div>
 	</nav>
 </footer>
 <script defer src="/scripts/header.js?v=6"></script>
-<script src="https://unpkg.com/magic-snowflakes/dist/snowflakes.min.js"></script>
-<script>
-    var sf = new Snowflakes({
-        color: "#d7f1f9",
-        minOpacity: 0.4,
-        maxOpacity: 0.8
-    });
-</script>
