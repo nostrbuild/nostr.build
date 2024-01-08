@@ -17,24 +17,27 @@
     "@tailwindcss/aspect-ratio": "^0.4.2",
     "@tailwindcss/forms": "^0.5.7",
     "@tailwindcss/typography": "^0.5.9",
-    "@uppy/url": "^3.3.2",
+    "@uppy/url": "^3.5.0",
     "alpinejs": "^3.12.3",
-    "nostr-tools": "^1.17.0",
-    "sortablejs": "^1.15.0",
-    "uppy": "^3.19.1"
+    "nostr-tools": "^2.1.2",
+    "sortablejs": "^1.15.1",
+    "uppy": "^3.21.0"
   },
   "devDependencies": {
     "autoprefixer": "^10.4.14",
     "buffer": "^6.0.3",
-    "cssnano": "^6.0.1",
-    "parcel": "2.10.3",
-    "postcss": "^8.4.24",
+    "cssnano": "^6.0.3",
+    "parcel": "2.11.0",
+    "postcss": "^8.4.33",
     "process": "^0.11.10",
-    "tailwindcss": "^3.3.2"
+    "tailwindcss": "^3.4.1"
   },
   "targets": {
     "default": {
       "distDir": "../scripts/dist"
     }
+  },
+  "@parcel/resolver-default": {
+    "packageExports": true
   }
 }
