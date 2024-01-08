@@ -69,16 +69,16 @@ $userStorageRemaining = $userOverLimit ? 0 : $userStorageLimit - $storageUsed;
 	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 	<title>nostr.build account</title>
 
-	<link rel="stylesheet" href="/styles/account.css?v=4" />
-	<link href="/scripts/dist/index.css?v=18" rel="stylesheet">
-	<link href="/styles/twbuild.css?v=45" rel="stylesheet">
+	<link rel="stylesheet" href="/styles/account.css?v=5" />
+	<link href="/scripts/dist/index.css?v=19" rel="stylesheet">
+	<link href="/styles/twbuild.css?v=46" rel="stylesheet">
 	<link rel="icon" href="/assets/primo_nostr.png" />
 
-	<script defer src="/scripts/dist/index.js?v=34"></script>
-	<script defer src="/scripts/fw/alpinejs-intersect.min.js?v=7"></script>
-	<script defer src="/scripts/fw/alpinejs.min.js?v=7"></script>
-	<script defer src="/scripts/fw/htmx.min.js?v=7"></script>
-	<script defer src="/scripts/fw/htmx/loading-states.js?v=7"></script>
+	<script defer src="/scripts/dist/index.js?v=35"></script>
+	<script defer src="/scripts/fw/alpinejs-intersect.min.js?v=8"></script>
+	<script defer src="/scripts/fw/alpinejs.min.js?v=8"></script>
+	<script defer src="/scripts/fw/htmx.min.js?v=8"></script>
+	<script defer src="/scripts/fw/htmx/loading-states.js?v=8"></script>
 	<style>
 		[x-cloak] {
 			display: none !important;
@@ -636,7 +636,7 @@ $userStorageRemaining = $userOverLimit ? 0 : $userStorageLimit - $storageUsed;
 			</div>
 
 	</main>
-	<script src="/scripts/account.js?v=5"></script>
+	<script src="/scripts/account.js?v=6"></script>
 
 	<script>
 		var previousBtId;

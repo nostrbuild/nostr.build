@@ -163,13 +163,13 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
   <meta charSet="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Nostr.build account signup</title>
-  <link rel="stylesheet" href="/styles/twbuild.css?v=24" />
-  <link rel="stylesheet" href="/styles/index.css?v=4" />
-  <link rel="stylesheet" href="/styles/signup.css?v=5" />
+  <link rel="stylesheet" href="/styles/twbuild.css?v=25" />
+  <link rel="stylesheet" href="/styles/index.css?v=5" />
+  <link rel="stylesheet" href="/styles/signup.css?v=6" />
   <link rel="icon" href="/assets/primo_nostr.png" />
-  <script defer src="/scripts/fw/alpinejs.min.js?v=7"></script>
+  <script defer src="/scripts/fw/alpinejs.min.js?v=8"></script>
   <!--
-  <script defer src="/scripts/fw/htmx.min.js?v=7"></script>
+  <script defer src="/scripts/fw/htmx.min.js?v=8"></script>
   -->
   <style>
     [x-cloak] {
@@ -369,7 +369,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             <?php endif; ?>
           </form>
         </div>
-        <script src="/scripts/dist/signup.js?v=6"></script>
+        <script src="/scripts/dist/signup.js?v=7"></script>
         <script>
           document.addEventListener('DOMContentLoaded', (event) => {
             // Check if NIP-07 extension is installed and enable NIP-07 login

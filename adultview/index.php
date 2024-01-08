@@ -59,10 +59,10 @@ $morePages = $result->num_rows > $perpage ? true : false;
 	<meta name="description" content="nostr.build" />
 	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-	<link rel="stylesheet" href="/styles/index.css?v=5" />
-	<link rel="stylesheet" href="/styles/profile.css?v=5" />
-	<link rel="stylesheet" href="/styles/header.css?v=6" />
-	<link rel="stylesheet" href="/styles/twbuild.css?v=49" />
+	<link rel="stylesheet" href="/styles/index.css?v=6" />
+	<link rel="stylesheet" href="/styles/profile.css?v=6" />
+	<link rel="stylesheet" href="/styles/header.css?v=7" />
+	<link rel="stylesheet" href="/styles/twbuild.css?v=50" />
 	<link rel="icon" href="/assets/0.png">
 
 	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/lightgallery/2.7.2/css/lightgallery-bundle.min.css" integrity="sha512-nUqPe0+ak577sKSMThGcKJauRI7ENhKC2FQAOOmdyCYSrUh0GnwLsZNYqwilpMmplN+3nO3zso8CWUgu33BDag==" crossorigin="anonymous" referrerpolicy="no-referrer" />
