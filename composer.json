@@ -13,6 +13,6 @@
         "guzzlehttp/guzzle": "^7.7"
     },
     "require-dev": {
-        "uma/secp256k1-nostr": "^0.1.0"
+        "uma/secp256k1-nostr": "^0.1.1"
     }
 }

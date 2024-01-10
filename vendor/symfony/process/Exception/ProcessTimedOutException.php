@@ -23,8 +23,8 @@ class ProcessTimedOutException extends RuntimeException
     public const TYPE_GENERAL = 1;
     public const TYPE_IDLE = 2;
 
-    private $process;
-    private $timeoutType;
+    private Process $process;
+    private int $timeoutType;
 
     public function __construct(Process $process, int $timeoutType)
     {
@@ -38,26 +38,17 @@ class ProcessTimedOutException extends RuntimeException
         ));
     }
 
-    /**
-     * @return Process
-     */
-    public function getProcess()
+    public function getProcess(): Process
     {
         return $this->process;
     }
 
-    /**
-     * @return bool
-     */
-    public function isGeneralTimeout()
+    public function isGeneralTimeout(): bool
     {
         return self::TYPE_GENERAL === $this->timeoutType;
     }
 
-    /**
-     * @return bool
-     */
-    public function isIdleTimeout()
+    public function isIdleTimeout(): bool
     {
         return self::TYPE_IDLE === $this->timeoutType;
     }
