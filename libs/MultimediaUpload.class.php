@@ -1033,7 +1033,7 @@ class MultimediaUpload
     if (!$this->pro && $this->file['size'] > SiteConfig::FREE_UPLOAD_LIMIT) {
       error_log('File size exceeds the limit of ' . formatSizeUnits(SiteConfig::FREE_UPLOAD_LIMIT));
       return [false, 413, "File size exceeds the limit of " . formatSizeUnits(SiteConfig::FREE_UPLOAD_LIMIT) . 
-      "Purchase an account <a href='https://nostr.build/signup/new'>HERE</a> for large file uploads"];
+      "Purchase an account here https://nostr.build/signup for large file uploads"];
     }
 
     // Check if file has been rejected for free users
