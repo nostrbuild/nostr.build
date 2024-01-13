@@ -11,7 +11,7 @@ fs.readdir(directoryPath, function (err, files) {
   files.forEach(function (file) {
     let filePath = path.join(directoryPath, file);
     let content = fs.readFileSync(filePath, 'utf8');
-    let modifiedContent = content.replace("from 'p-queue'", "from 'p-queue/dist'");
+    let modifiedContent = content.replace("from 'p-queue'", "from 'p-queue'");
     fs.writeFileSync(filePath, modifiedContent);
   });
 });
