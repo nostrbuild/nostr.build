@@ -70,7 +70,8 @@ $total_size_gb = round($stats['total_size'] / (1024 * 1024 * 1024), 2); // Conve
 	// Check if $uploadOk is set to 0 by an error
 	if ($result === false) :
 	?>
-		&emsp;<a style="color:#F0F0F0" href="/">Sorry, your file was not uploaded, try a different media type.</a>
+		&emsp;Sorry, your file was not uploaded! Make sure it is supported media or purchase an account for large files.
+		&nbsp;<a style="color:#F0F0F0" href="https://nostr.build/signup">Purchase a nostr.build account HERE</a>
 		<div style="color:#F0F0F0"><?= $m ?></div>
 	<?php
 	// if everything is ok, try to upload file
