@@ -84,7 +84,6 @@ $total_size_gb = round($stats['total_size'] / (1024 * 1024 * 1024), 2); // Conve
 				<div class="info_cards">
 					<div class="info"><span><?= $total_size_gb ?></span>GB used</div>
 					<div class="info"><span><?= number_format($total_files) ?></span> total uploads</div>
-					<a href="/signup/new" class="info" style="text-decoration-line: none; background: linear-gradient(184.15deg, #ffffff 47.52%, #884ea4 96.61%); color: #150d29;"><span>Create Account</span></a>
 				</div>
 			</div>
 			<div class="drag-area">
@@ -117,7 +116,9 @@ $total_size_gb = round($stats['total_size'] / (1024 * 1024 * 1024), 2); // Conve
 					</div>
 				</div>
 
+				<?php if ($perm->isGuest()) { ?>
 				<button id="createAccount" onclick="myCreateAccount()" class="image_address"> <img src="https://cdn.nostr.build/assets/primo_nostr_icon.png">Create Account</button>
+				<?php } ?>
 				<button id="copyButton" onclick="myCopyFunction()" class="image_address"> <img src="https://cdn.nostr.build/assets/copy.png">Copy Media Link</button>
 
 				<script>
