@@ -33,7 +33,6 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/functions/session.php';
   </header>
 
   <main class="about_page">
-    <h2>nostr.build</h2>
     <h1>Edu</h1>
 
     <figure class="img_container double_img">
