@@ -93,7 +93,7 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/functions/session.php';
 					<img src="https://m.primal.net/HIVN.jpg" alt="JeffG image" />
 				</figure>
 			</a>
-			<a href="https://nostrplebs.com" target="_blank">
+			<a href="https://nostr.land" target="_blank">
 				<figure class="builder_card">
 					<div class="card_header">
 						<figcaption class="card_title">Semisol</figcaption>
