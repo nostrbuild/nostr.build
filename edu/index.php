@@ -55,7 +55,8 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/functions/session.php';
       <a class="ref_link" href="https://cdn.nostr.build/assets/edu/11_PROVIDES_SETTLEMENT_FINALITY.pdf" target="_blank">#11: Provides Settlement Finality & Is a Bearer Asset</a><br />
       <a class="ref_link" href="https://cdn.nostr.build/assets/edu/12_PSUEDONYM_US_AND_TRUSTLESS.pdf" target="_blank">#12: Pseudonymous & Trustless</a><br />
       <a class="ref_link" href="https://cdn.nostr.build/assets/edu/13_SECURE_AND_SCALABLE.pdf" target="_blank">#13: Secure & Scalable</a><br />
-      <a class="ref_link" href="https://cdn.nostr.build/assets/edu/14_DISINFLATIONARY_DEFLATIONARY.pdf" target="_blank">#14: Disinflationary/Deflationary</a><br /><br />
+      <a class="ref_link" href="https://cdn.nostr.build/assets/edu/14_DISINFLATIONARY_DEFLATIONARY.pdf" target="_blank">#14: Disinflationary/Deflationary</a><br />
+      <a class="ref_link" href="https://cdn.nostr.build/assets/edu/PHOENIX-WALLET-V2.0.3-TUTORIAL.pdf" target="_blank">Phoenix Wallet Tutorial: Self-Custodial Bitcoin Lightning Wallet</a><br /><br />
     </p>
 
     <p> Roll Your Own Seed Worksop with <a class="ref_link" href="https://dplusplus.me" target="_blank">@D++</a></p><br />
