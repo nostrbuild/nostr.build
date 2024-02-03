@@ -126,6 +126,24 @@ class Plans
     In all other cases, the amount used so far is calculated based on a daily rate
     and subtracted from the upgrade price. The remaining days are unchanged.
     */
+
+    self::$PLANS[self::PROFESSIONAL] = new Plan(
+      self::PROFESSIONAL,
+      'Professional',
+      'https://cdn.nostr.build/assets/signup/pro.png',
+      'pro plan image',
+      $originalPrices[self::PROFESSIONAL],
+      [
+        '<b>10GB of private storage</b>',
+        '<b>View All : 800k+ pics, GIFs & videos</b>',
+        'Add/Delete your media'
+      ],
+      'sats',
+      $remainingDays,
+      $fromPlanPrice,
+      $currentPlanLevel
+    );
+
     self::$PLANS[self::CREATOR] = new Plan(
       self::CREATOR,
       'Creator',
@@ -144,22 +162,6 @@ class Plans
       $currentPlanLevel
     );
 
-    self::$PLANS[self::PROFESSIONAL] = new Plan(
-      self::PROFESSIONAL,
-      'Professional',
-      'https://cdn.nostr.build/assets/signup/pro.png',
-      'pro plan image',
-      $originalPrices[self::PROFESSIONAL],
-      [
-        '<b>10GB of private storage</b>',
-        '<b>View All : 800k+ pics, GIFs & videos</b>',
-        'Add/Delete your media'
-      ],
-      'sats',
-      $remainingDays,
-      $fromPlanPrice,
-      $currentPlanLevel
-    );
 
     if (is_array($promotions) && !empty($promotions)) {
       // Loop over all plans and check if there is a promotion for them
