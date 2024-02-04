@@ -168,7 +168,7 @@ SVG;
 
 	<link rel="stylesheet" href="/styles/index.css?v=6" />
 	<link rel="stylesheet" href="/styles/header.css?v=7" />
-	<link rel="icon" href="/assets/nb-logo-color-w.svg">
+	<link rel="icon" href="/assets/nb-logo-color-w.jpg">
 
 	<script defer src="/scripts/index.js?v=7"></script>
 
