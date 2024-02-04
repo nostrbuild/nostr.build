@@ -73,7 +73,7 @@ class Plans
   public static function init(?int $remainingDays = null, ?int $currentPlanLevel = null, ?array $promotions = null): void
   {
     $originalPrices = [
-      self::CREATOR => 129_000,
+      self::CREATOR => 120_000,
       self::PROFESSIONAL => 69_000,
       self::STARTER => 69_000,
       self::VIEWER => 69_000,
