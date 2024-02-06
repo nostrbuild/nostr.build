@@ -1029,8 +1029,15 @@ class MultimediaUpload
       return [false, 400, "File upload error "];
     }
 
+    $fileType = detectFileExt($this->file['tmp_name']);
+    $multiplierSize = 1;
+    // Check if uploaded file is an image, and add a fuzz factor to account for future optimization
+    if ($fileType['type'] === 'image') {
+      $multiplierSize = 2; // Multiplier for future optimization
+    }
+
     // Check if the file size exceeds the upload limit for free users
-    if (!$this->pro && $this->file['size'] > SiteConfig::FREE_UPLOAD_LIMIT) {
+    if (!$this->pro && $this->file['size'] > (SiteConfig::FREE_UPLOAD_LIMIT * $multiplierSize)) {
       error_log('File size exceeds the limit of ' . formatSizeUnits(SiteConfig::FREE_UPLOAD_LIMIT));
       return [false, 413, "File size exceeds the limit of " . formatSizeUnits(SiteConfig::FREE_UPLOAD_LIMIT)];
     }
