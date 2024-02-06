@@ -13,7 +13,7 @@ It is easy to use, simply go to https://nostr.build using your favorise browser 
 <img src="https://nostr.build/i/6154824466ae933fd71ef422d5316bc6bed7a6d8bc8667ae2e4492f1a063346f.jpg"  height="400">        <img src="https://nostr.build/i/4d2dccdeadc168d277b755d863a53f43b52e59cae65ec3896baab42df433ecb8.jpg"  height="400">
 
 Other free services include:
-- Media uploads to 15MB
+- Media uploads to 5MB
 - User profile pics cropped to the correct size for nostr and other social media platforms
 - EXIF (metadata) striping from images
 - Curated list of nostr related memes and content from over 40 nostr Creators
@@ -31,7 +31,7 @@ nostr.build provides a free API to publically facing nostr or bitcoin projects t
 
 If installing this code on your own platform, the below are some examples of things that can be easily customized for a different experience.
 
-- Change upload limit from 15MB to a larger or smaller value
+- Change upload limit from 5MB to a larger or smaller value
 - Add or remove certain media options. Maybe make this 'image only' or 'video only'
 - Change Account options to align to your platform
 - Change the html look and feel of the website
