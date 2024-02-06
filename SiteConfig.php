@@ -125,7 +125,7 @@ class SiteConfig
     '0' => ['limit' => 0, 'message' => 'No Storage, consider upgrading'],
   ];
 
-  const FREE_UPLOAD_LIMIT = 5 * 1024 * 1024; // 5MB in bytes
+  const FREE_UPLOAD_LIMIT = 10 * 1024 * 1024; // 10MB in bytes
 
   public static function getHost($mediaType)
   {
