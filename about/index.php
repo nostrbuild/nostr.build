@@ -78,7 +78,7 @@ $perm = new Permission();
       We will also continue to add additional features to our free service,
       including:<br />
 
-      - Media uploads up to (5MB) hosted on Cloudflare<br />
+      - Media uploads up to (10MB) hosted on Cloudflare<br />
       - <a class="ref_link" href="https://www.cloudflare.com/" target="_blank">Cloudflare</a> global CDN network for images and GIFs<br />
       - No ads! Only community projects, nostr builders, creators, devs,
       artists and memes<br />
