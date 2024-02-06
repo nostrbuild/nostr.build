@@ -78,7 +78,7 @@ $perm = new Permission();
       We will also continue to add additional features to our free service,
       including:<br />
 
-      - Media uploads up to (25MB) hosted on AWS S3<br />
+      - Media uploads up to (5MB) hosted on Cloudflare<br />
       - <a class="ref_link" href="https://www.cloudflare.com/" target="_blank">Cloudflare</a> global CDN network for images and GIFs<br />
       - No ads! Only community projects, nostr builders, creators, devs,
       artists and memes<br />
@@ -115,12 +115,11 @@ $perm = new Permission();
 
       Account features include:<br />
       - Cloudflare CDN network for all media including videos<br />
-      - No max on file size upload - account sizes 5/10/20GB<br />
+      - No max on file size upload - account sizes 10/20/50GB<br />
       - Post you media to the Creators page on nostr.build<br />
       - Ability to easily ‘Delete’ media after posted<br />
       - Private folders not seen in the View All gallery<br />
       - Access to View All free media ever uploaded to nostr.build, over 500k images, GIFs and videos!<br />
-      - BTCPay Server account<br />
       ** See all <a class="ref_link" href="https://nostr.build/signup">nostr.build Accounts</a> and features<br />
     </p>
     <figure class="img_container double_img">
