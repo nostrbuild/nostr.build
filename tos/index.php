@@ -32,7 +32,7 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/functions/session.php';
 		<h3>Overview</h3>
 		<h4>Effective December 24, 2022</h4>
 		<p>
-			Using our app, api or website to do anything other than access the links to this "Terms" page or accessing any
+			Using our website, api or any connected apps (Damus, Amethyst, NoStrudel, Coracle, Snort, Iris, etc.) to do anything other than access the links to this "Terms" page or accessing any
 			page of our website other than our home page and this "Terms" page constitutes your consent to these terms of use
 			and to our Privacy Policy. If you do not consent, do not use our
 			website. Your use of our website to do anything beyond simply accessing/viewing it (that is, uploading,
@@ -53,15 +53,15 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/functions/session.php';
 			advertising, avatars, or anything else that turns us into your content delivery network. If you do – and we will
 			be the judge – or if you do anything illegal, in addition to any other legal rights we may have, we will ban you
 			along with the site you're hotlinking from, delete all your
-			images, report you to the authorities if necessary, and prevent you from viewing any images hosted on nostr.build.
+			media, report you to the authorities if necessary, and prevent you from viewing any media hosted on nostr.build.
 			We mean it. Stuff to do, please Please have tons of fun! That's what nostr.build is all about. If something isn't
 			fun -- if you see anything on our site that shouldn't be there
 			because it violates our policies, is illegal (e.g. revenge porn or child porn), or for some other reason, please
 			let us know by emailing us at admin@nostr.build pr @nostr.build on nostr.
 		</p>
-		<h4>About images you upload</h4>
+		<h4>About Media you upload</h4>
 		<p>
-			You can upload images anonymously and share them online with only the people you choose to share them with. If you
+			You can upload media anonymously and share them online with only the people you choose to share them with. If you
 			upload using nostr's free service, they may be featured in the gallery or View All section. If you share an image
 			publicly with nostr, Facebook, Twitter, Digg, Reddit, etc.,
 			then it may also end up in the View All or Gallery section.
@@ -107,13 +107,13 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/functions/session.php';
 			signature, or of someone authorized to act on your behalf. Instructions on how we may contact you: preferably
 			email, but also address and phone. Because a high percentage of DMCA takedown notices are not valid, nostr.build
 			reserves the right to ignore DMCA notifications based on unregistered
-			works. Email: nostr.build@gmail.com.
+			works. Email: admin@nostr.build.
 		</p>
 		<p>
 			If we receive a DMCA takedown demand for material you posted that we believe constitutes fair use, we will attempt
 			to notify you if we have your contact info; otherwise we are under no obligation to notify you regarding the
 			removal. We reserve the right to refuse to remove any material that
-			in our view constitutes fair use. If we identify you as a "repeat infringer," we will block or remove your images
+			in our view constitutes fair use. If we identify you as a "repeat infringer," we will block or remove your media
 			and terminate any accounts you have with us. (If we notify you of a DMCA removal and you respond with a legitimate
 			counter-notice, that won't count toward being a repeat
 			infringer.) Keep in mind that we reserve the right to remove any content at any time whether or not it infringes
@@ -129,7 +129,7 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/functions/session.php';
 			as it can be. It includes any disputes, controversies, claims, etc., arising from or relating to your use of
 			nostr.build, your relationship with nostr.build, and these Terms,
 			under any legal theory including contract, warranty, tort, statute, or regulation. Arbitration Procedure To
-			initiate an arbitration, you must submit a Demand for Arbitration to the email address of nostr.build@gmail.com.
+			initiate an arbitration, you must submit a Demand for Arbitration to the email address of admin@nostr.build.
 			The AAA will conduct any arbitration under its Consumer Arbitration
 			Rules (unless you are not an individual or the value of the dispute is more than $75,000 in which case it will
 			adopt the Commercial Arbitration Rules). For more information, see www.adr.org. These Terms govern to the extent
@@ -171,7 +171,7 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/functions/session.php';
 			FROM ITS SITE, nostr.build HAS NO DUTY TO MONITOR ANY CONTENT ON ITS SITE. nostr.build DOES NOT ASSUME
 			RESPONSIBILITY FOR THE ACCURACY, APPROPRIATENESS, OR HARMLESSNESS OF ANY
 			CONTENT APPEARING ON nostr.build THAT IS NOT PRODUCED BY nostr.build, INCLUDING BUT NOT LIMITED TO USER CONTENT,
-			ADVERTISING CONTENT, OR OTHERWISE. Your sole remedy for the loss of any services and/or of any images or other
+			ADVERTISING CONTENT, OR OTHERWISE. Your sole remedy for the loss of any services and/or of any images, media or other
 			data you may have stored on nostr.build's service is to discontinue
 			your use of our service. nostr.build WILL NOT BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
 			CONSEQUENTIAL, OR PUNITIVE DAMAGES ARISING OUT OF YOUR USE OF, OR INABILITY TO USE, nostr.build'S SERVICES, EVEN
