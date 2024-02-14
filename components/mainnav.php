@@ -26,6 +26,9 @@ SVG;
 $svg_edu_icon = <<<SVG
 <svg width="16" height="16" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M13.333 12.667v-2H4.667a2 2 0 0 0-2 2m3.2 2H11.2c.747 0 1.12 0 1.405-.146.251-.128.455-.332.583-.582.145-.286.145-.659.145-1.406V3.467c0-.747 0-1.12-.145-1.406a1.333 1.333 0 0 0-.583-.582c-.285-.146-.658-.146-1.405-.146H5.867c-1.12 0-1.68 0-2.108.218a2 2 0 0 0-.874.874c-.218.428-.218.988-.218 2.108v6.934c0 1.12 0 1.68.218 2.108a2 2 0 0 0 .874.874c.427.218.988.218 2.108.218Z" stroke="url(#paint0_linear_502_4618)" stroke-width="1.333" stroke-linecap="round" stroke-linejoin="round"/><defs><linearGradient id="paint0_linear_502_4618" x1="2.4" y1="1.333" x2="16.47" y2="10.016" gradientUnits="userSpaceOnUse"><stop stop-color="#46B5F3"/><stop offset="1" stop-color="#283CF0"/></linearGradient></defs></svg>
 SVG;
+$svg_plans_icon = <<<SVG
+<svg width="16" height="16" fill="none" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6 12 3.269 3.125A59.769 59.769 0 0 1 21.485 12 59.768 59.768 0 0 1 3.27 20.875L5.999 12Zm0 0h7.5" /></svg>
+SVG;
 $svg_menu_icon = <<<SVG
 <svg width="24" height="24" fill="none" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" clip-rule="evenodd" d="M2 12a1 1 0 0 1 1-1h18a1 1 0 1 1 0 2H3a1 1 0 0 1-1-1ZM2 6a1 1 0 0 1 1-1h18a1 1 0 1 1 0 2H3a1 1 0 0 1-1-1ZM2 18a1 1 0 0 1 1-1h12a1 1 0 1 1 0 2H3a1 1 0 0 1-1-1Z" fill="#D0BED8"/></svg>
 SVG;
@@ -36,6 +39,10 @@ SVG;
     <?= $svg_logo ?>
   </a>
   <div class="center_buttons">
+    <a href="/plans/" class="nav_button">
+      <?= $svg_plans_icon ?>
+      Plans
+    </a>
     <a href="/builders" class="nav_button">
       <?= $svg_builder_icon ?>
       Builders
@@ -81,6 +88,12 @@ SVG;
 </header>
 <nav>
   <div class="menu">
+    <a href="/plans/" class="nav_button">
+      <span>
+        <?= $svg_plans_icon ?>
+      </span>
+      Plans
+    </a>
     <a href="/builders" class="nav_button">
       <span>
         <?= $svg_builder_icon ?>
@@ -142,6 +155,6 @@ SVG;
     <?php endif; ?>
   </div>
   <?php if ($perm->isGuest()) { ?>
-    <a class="ref_link" style="font-size: large" href="https://nostr.build/signup/new/"><img src="https://i.nostr.build/0Q82.png" style="width:220px;" alt="Premium Accounts"></a>
-    <?php } ?>
+    <a class="ref_link" style="font-size: large" href="https://nostr.build/plans/"><img src="https://i.nostr.build/0Q82.png" style="width:220px;" alt="Premium Accounts"></a>
+  <?php } ?>
 </nav>
