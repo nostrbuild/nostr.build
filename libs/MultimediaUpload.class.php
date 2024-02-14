@@ -1057,6 +1057,11 @@ class MultimediaUpload
         error_log('File size exceeds the remaining space of ' . formatSizeUnits($this->userAccount->getRemainingStorageSpace()));
         return [false, 413, "File size exceeds the remaining space of " . formatSizeUnits($this->userAccount->getRemainingStorageSpace())];
       }
+      // Check if account has expired
+      if ($this->userAccount->isExpired()) {
+        error_log('Account has expired');
+        return [false, 403, "Account has expired, please renew at https://nostr.build/plans/"];
+      }
     }
 
     return [true, 200, "Validation successful"];

@@ -68,6 +68,12 @@ class NostrAuthMiddleware implements MiddlewareInterface
         } else {
           error_log('User ' . $npub . ' has sufficient storage space to upload the file:' . $account->getRemainingStorageSpace() . ' bytes');
         }
+
+        // Validate account expiration
+        if ($account->isExpired()) {
+          error_log('User ' . $npub . ' account has expired');
+          $accountUploadEligible = false;
+        }
       } else {
         $accountUploadEligible = false;
       }

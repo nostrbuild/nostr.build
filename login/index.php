@@ -165,7 +165,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             </svg>
             <!-- Signup button at the top -->
             <div class="login_button" style="text-align: center; margin-bottom: 0rem; display: flex; justify-content: center; align-items: center">
-                <a href="/signup" class="login_button" style="text-decoration: none; display: inline-flex; align-items: center; justify-content: center; height: 40px;;background: linear-gradient(95.49deg, #ffffff 0%, #2edf95 100%);">Create Account</a>
+                <a href="/plans/" class="login_button" style="text-decoration: none; display: inline-flex; align-items: center; justify-content: center; height: 40px;;background: linear-gradient(95.49deg, #ffffff 0%, #2edf95 100%);">Create Account</a>
             </div>
             <hr style="width:100%;margin:0rem 0rem 0rem 0rem">
             <input name="nip07_login" class="nip07_button login_button" type="submit" value="Login with Nostr (NIP-07)">

@@ -100,7 +100,7 @@ $perm = new Permission();
     </figure>
     <h3>Paid accounts</h3>
     <section class="paragraph para_square">
-      <a href="https://nostr.build/signup"><img class="about_img img_square" src="https://cdn.nostr.build/assets/primo_nostr.png" alt="nostr.build account logo" width="80" /></a>
+      <a href="https://nostr.build/plans/"><img class="about_img img_square" src="https://cdn.nostr.build/assets/primo_nostr.png" alt="nostr.build account logo" width="80" /></a>
       <p>
         nostr.build offers accounts with premium features charged annually.
         Accounts can be purchased with a lighting wallet or Bitcoin. Proceeds
@@ -120,7 +120,7 @@ $perm = new Permission();
       - Ability to easily ‘Delete’ media after posted<br />
       - Private folders not seen in the View All gallery<br />
       - Access to View All free media ever uploaded to nostr.build, over 500k images, GIFs and videos!<br />
-      ** See all <a class="ref_link" href="https://nostr.build/signup">nostr.build Accounts</a> and features<br />
+      ** See all <a class="ref_link" href="https://nostr.build/plans/">nostr.build Accounts</a> and features<br />
     </p>
     <figure class="img_container double_img">
       <img class="about_img img_horizontal" src="https://cdn.nostr.build/assets/about/awss3.png" alt="aws logo" width="180" />
@@ -130,7 +130,7 @@ $perm = new Permission();
     <h4>How to use Account related features:</h4>
     <section class="paragraph">
       <p>
-        - First, purchase an account <a class="ref_link" href="https://nostr.build/signup">HERE!</a><br />
+        - First, purchase an account <a class="ref_link" href="https://nostr.build/plans/">HERE!</a><br />
         - Folders: Click on ‘New Folder’ in the left menu bar, name your folder and click Create.<br />
         - Move media to a folder: ‘checkbox’ the media you want to move, and
         ‘Double Click’ the folder to move it there.<br />

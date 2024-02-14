@@ -1,6 +1,7 @@
 <?php
 declare(strict_types=1);
 require_once $_SERVER['DOCUMENT_ROOT'] . '/config.php';
+require_once $_SERVER['DOCUMENT_ROOT'] . '/functions/session.php';
 require_once __DIR__ . '/Account.class.php';
 
 require $_SERVER['DOCUMENT_ROOT'] . '/vendor/autoload.php';
@@ -100,15 +101,27 @@ class BTCPayWebhook
         $accountPlan = $invoice->getData()['metadata']['plan'];
         // Get the order ID from the invoice metadata
         $orderId = $invoice->getData()['metadata']['orderId'];
+        // Get the order type from the invoice metadata (new, renewal, upgrade)
+        $orderType = $invoice->getData()['metadata']['orderType'];
+        // Get the order period from the invoice metadata
+        $orderPeriod = $invoice->getData()['metadata']['orderPeriod'];
 
         error_log(PHP_EOL . "Order ID: " . $orderId . PHP_EOL);
         error_log("User npub: " . $userNpub . PHP_EOL);
         error_log("Account plan: " . $accountPlan . PHP_EOL);
+        error_log("Order type: " . $orderType . PHP_EOL);
+        error_log("Order period: " . $orderPeriod . PHP_EOL);
 
         // Create a new account instance
         $account = new Account($userNpub, $link);
-        // Create a new account
-        $account->setPlan($accountPlan);
+        // Update the account plan and end date
+        $new = match ($orderType) {
+          'signup' => true,
+          'renewal' => false,
+          'upgrade' => true,
+          default => true,
+        };
+        $account->setPlan($accountPlan, $orderPeriod, $new);
         error_log("[INFO] Account " . $account->getNpub() . ' updated to a new plan: ' . $accountPlan . PHP_EOL);
       } catch (Exception $e) {
         error_log("Failed to update account: " . $e . PHP_EOL);
