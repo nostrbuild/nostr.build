@@ -154,7 +154,7 @@ SVG;
       </a>
     <?php endif; ?>
   </div>
-  <?php if ($perm->isGuest()) { ?>
+  <?php if ($perm->isGuest()) : ?>
     <a class="ref_link" style="font-size: large" href="https://nostr.build/plans/"><img src="https://i.nostr.build/0Q82.png" style="width:220px;" alt="Premium Accounts"></a>
-  <?php } ?>
+  <?php endif; ?>
 </nav>
