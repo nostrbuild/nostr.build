@@ -13,7 +13,6 @@ desc users;
 | id               | int          | NO   | PRI | NULL              | auto_increment    |
 | usernpub         | varchar(70)  | NO   | UNI | NULL              |                   |
 | password         | varchar(255) | NO   |     | NULL              |                   |
-| pbkdf2_password  | varchar(255) | NO   |     | NULL              |                   |
 | nym              | varchar(64)  | NO   |     | NULL              |                   |
 | wallet           | varchar(255) | NO   |     | NULL              |                   |
 | ppic             | varchar(255) | NO   |     | NULL              |                   |
@@ -25,6 +24,8 @@ desc users;
 | plan_start_date  | datetime     | YES  |     | NULL              |                   |
 | npub_verified    | tinyint(1)   | NO   |     | 0                 |                   |
 | allow_npub_login | tinyint(1)   | NO   |     | 0                 |                   |
+| pbkdf2_password  | varchar(255) | YES  |     | NULL              |                   |
+| plan_until_date  | datetime     | YES  |     | NULL              |                   |
 +------------------+--------------+------+-----+-------------------+-------------------+
 
  desc users_images;
@@ -58,6 +59,7 @@ enum AccountLevel: int
 {
   case Invalid = -1;
   case Unverified = 0;
+  case Advanced = 10;
   case Creator = 1;
   case Professional = 2;
   case Viewer = 4;
@@ -316,6 +318,16 @@ class Account
     return AccountLevel::from($accountLevel);
   }
 
+  /**
+   * Summary of getAccountLevel
+   * @return integer
+   */
+  public function getAccountLevelInt(): int
+  {
+    $accountLevel = isset($this->account['acctlevel']) ? $this->account['acctlevel'] : -1;
+    return (int) $accountLevel;
+  }
+
   /*
   // Example usage:
   try {
@@ -410,15 +422,20 @@ class Account
   public function getRemainingSubscriptionDays(): int
   {
     $planStartDate = $this->account['plan_start_date'];
+    $planEndDate = $this->account['plan_until_date'];
     if ($planStartDate === null) {
       throw new Exception("Plan start date is not set for this account");
     }
 
     $startDate = new DateTime($planStartDate);
-    $endDate = clone $startDate;
-    $endDate->add(new DateInterval('P1Y')); // Add one year to the start date
+    $endDate = new DateTime($planEndDate ?? 'now');
 
     $currentDate = new DateTime();
+
+    // Account for special account levels Admin, Moderator and return 9,999 days
+    if ($this->getAccountLevel() === AccountLevel::Admin || $this->getAccountLevel() === AccountLevel::Moderator) {
+      return 9999;
+    }
 
     if ($currentDate < $startDate) {
       // Subscription has not started yet
@@ -430,6 +447,11 @@ class Account
       $remainingDays = $currentDate->diff($endDate)->days;
       return $remainingDays;
     }
+  }
+
+  public function isExpired(): bool
+  {
+    return $this->getRemainingSubscriptionDays() === 0;
   }
 
   /*
@@ -451,6 +473,7 @@ class Account
    * @param string $flag
    * @param array $accflags
    * @param string $plan_start_date
+   * @param string $plan_until_date
    * @throws \Exception
    * @return void
    */
@@ -465,6 +488,7 @@ class Account
     string $flag = null,
     array $accflags = null,
     string $plan_start_date = null,
+    string $plan_until_date = null,
     int $npub_verified = null,
     int $allow_npub_login = null
   ) {
@@ -479,6 +503,7 @@ class Account
       'flag' => $flag,
       'accflags' => $accflags ? json_encode($accflags) : null,
       'plan_start_date' => $plan_start_date,
+      'plan_until_date' => $plan_until_date,
       'npub_verified' => $npub_verified,
       'allow_npub_login' => $allow_npub_login,
     ];
@@ -661,6 +686,11 @@ class Account
     return $this->account['allow_npub_login'] === 1;
   }
 
+  public function getAccountAdditionStorage(): int
+  {
+    return $this->account['acctAddonStorage'] ?? 0 * 1024 * 1024 * 1024; // Convert GB to bytes
+  }
+
   /**
    * Summary of getRemainingStorageSpace
    * @return int
@@ -668,7 +698,8 @@ class Account
   public function getRemainingStorageSpace(): int
   {
     $accountLevel = $this->account['acctlevel'];
-    $limit = SiteConfig::getStorageLimit($accountLevel) ?? 0; // Default to 0 if level not found
+    $accountAddonStorage = $this->getAccountAdditionStorage();
+    $limit = SiteConfig::getStorageLimit($accountLevel, $accountAddonStorage) ?? 0; // Default to 0 if level not found
 
     $usedSpace = $this->fetchAccountSpaceConsumption();
 
@@ -695,9 +726,9 @@ class Account
    * @throws \Exception
    * @return void
    */
-  public function setPlan(int $planLevel, bool $new = true): void
+  public function setPlan(int $planLevel, string $period = '1y', bool $new = true): void
   {
-    $sql = "UPDATE users SET acctlevel = ?, plan_start_date = ? WHERE usernpub = ?";
+    $sql = "UPDATE users SET acctlevel = ?, plan_start_date = ?, plan_until_date = ? WHERE usernpub = ?";
     $stmt = $this->db->prepare($sql);
 
     if (!$stmt) {
@@ -706,7 +737,13 @@ class Account
 
     try {
       $planStartDate = $new ? date('Y-m-d') : $this->account['plan_start_date'] ?? date('Y-m-d');
-      if (!$stmt->bind_param('iss', $planLevel, $planStartDate, $this->npub)) {
+      $planEndDate = match ($period) {
+        '1y' => date('Y-m-d', strtotime($planStartDate . ' +1 year')),
+        '2y' => date('Y-m-d', strtotime($planStartDate . ' +2 year')),
+        '3y' => date('Y-m-d', strtotime($planStartDate . ' +3 year')),
+        default => date('Y-m-d', strtotime($planStartDate . ' +1 year')),
+      };
+      if (!$stmt->bind_param('isss', $planLevel, $planStartDate, $planEndDate, $this->npub)) {
         throw new Exception("Error binding parameters: " . $stmt->error);
       }
 
@@ -756,6 +793,7 @@ class Account
       AccountLevel::Starter, // 5
       AccountLevel::Professional, // 2
       AccountLevel::Creator, // 1
+      AccountLevel::Advanced, // 10
       AccountLevel::Admin, // 99
     ];
 

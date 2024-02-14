@@ -22,7 +22,7 @@ if (!$perm->validateLoggedin()  || !isset($_SESSION["usernpub"])) {
 
 // If account is not verified, redirect to signup page
 if ($perm->validatePermissionsLevelEqual(0)) {
-	header("Location: /signup");
+	header("Location: /plans/");
 	$link->close();
 	exit;
 }
@@ -44,6 +44,13 @@ try {
 	error_log($e->getMessage());
 }
 
+// If user has no subscription, redirect to plans page
+if ($daysRemaining <= 0) {
+	header("Location: /plans/");
+	$link->close();
+	exit;
+}
+
 // Fetch user's folder statistics and storage statistics
 $usersFoldersTable = new UsersImagesFolders($link);
 $usersFoldersStats = $usersFoldersTable->getFoldersStats($user);
@@ -53,7 +60,7 @@ $usersFoldersStats = $usersFoldersTable->getFoldersStats($user);
 $storageUsed = $usersFoldersStats['TOTAL']['totalSize'] ?? 0;
 
 // Get user storage limit based on their level
-$userStorageLimit = SiteConfig::getStorageLimit($acctlevel);
+$userStorageLimit = SiteConfig::getStorageLimit($acctlevel, $account->getAccountAdditionStorage());
 
 // Check if user is over their limit
 $userOverLimit = $storageUsed >= $userStorageLimit || $userStorageLimit === 0;
@@ -157,7 +164,7 @@ $userStorageRemaining = $userOverLimit ? 0 : $userStorageLimit - $storageUsed;
 			endif;
 
 			// Menu items for all verified accounts, and moderators
-			if ($perm->validatePermissionsLevelAny(1, 2, 3, 4) || $perm->hasPrivilege('canModerate') || $perm->isAdmin()) :
+			if ($perm->validatePermissionsLevelAny(1, 2, 3, 4, 10) || $perm->hasPrivilege('canModerate') || $perm->isAdmin()) :
 			?>
 
 				<button class="nav_item" onclick="window.location.href='/viewall/'; ">
@@ -176,7 +183,7 @@ $userStorageRemaining = $userOverLimit ? 0 : $userStorageLimit - $storageUsed;
 				</button>
 			<?php
 			endif;
-			if ($perm->validatePermissionsLevelAny(1, 2) || $perm->hasPrivilege('canModerate') || $perm->isAdmin()) :
+			if ($perm->validatePermissionsLevelAny(1, 2, 10) || $perm->hasPrivilege('canModerate') || $perm->isAdmin()) :
 			?>
 				<button class="nav_item" onclick="window.location.href='/adultview/'; ">
 					<svg width="20px" height="20px" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" stroke="#000" stroke-width="0.24000000000000005">
@@ -386,7 +393,7 @@ $userStorageRemaining = $userOverLimit ? 0 : $userStorageLimit - $storageUsed;
 		</header>
 
 		<?php
-		if ($perm->validatePermissionsLevelAny(1, 99) && $usersFoldersStats['TOTAL']['publicCount'] > 0) :
+		if ($perm->validatePermissionsLevelAny(1, 10, 99) && $usersFoldersStats['TOTAL']['publicCount'] > 0) :
 		?>
 			<section class="subheader p-2 text-center">
 				<!--
@@ -593,7 +600,7 @@ $userStorageRemaining = $userOverLimit ? 0 : $userStorageLimit - $storageUsed;
 								</button>
 
 								<?php
-								if ($perm->validatePermissionsLevelAny(1, 99)) :
+								if ($perm->validatePermissionsLevelAny(1, 10, 99)) :
 								?>
 									<button class="public_button">Creators page<label class="toggle-switch">
 											<label class="toggle-switch">

@@ -8,10 +8,17 @@ class Plan
   public string $name;
   public string $image;
   public string $imageAlt;
-  public string $price;
   public string $promo;
   public string $discountPercentage;
   public int $priceInt;
+  public string $price;
+  public int $priceInt2y;
+  public string $price2y;
+  public int $priceInt3y;
+  public string $price3y;
+  public int $fullPriceInt;
+  public int $full2yPriceInt;
+  public int $full3yPriceInt;
   public array $features;
   public string $currency;
   public bool $isCurrentPlan = false;
@@ -19,42 +26,67 @@ class Plan
   public function __construct(
     int $id,
     string $name,
-    string $image,
-    string $imageAlt,
     int $price,
     array $features,
     string $currency,
     ?int $remainingDays = null,
     ?int $fromPlanPrice = 0,
-    ?int $fromPlanLevel = null
+    ?int $fromPlanLevel = null,
+    string $image = '', // Default to an empty string
+    string $imageAlt = '', // Default to an empty string
+    string $period = '1y'
   ) {
     $this->id = $id;
     $this->name = $name;
-    $this->image = $image;
-    $this->imageAlt = $imageAlt;
     $this->features = $features;
     $this->currency = $currency;
     $this->promo = false;
     $this->discountPercentage = 0;
+    $this->image = $image;
+    $this->imageAlt = $imageAlt;
 
     if ($remainingDays === 0) {
       $proratedPrice = $price - $fromPlanPrice;
     } else {
-      $proratedPrice = ($price - $fromPlanPrice) / 365 * $remainingDays;
+      $proratedPrice = $price - (($fromPlanPrice / 365) * $remainingDays);
     }
-
-    // Ensure the prorated price is not negative
-    $this->priceInt = $remainingDays === null ? $price : max(0, round($proratedPrice));
-    $this->price = number_format($this->priceInt, 0, '.', ',');
 
     // If the current plan is the same as the plan we are creating, set isCurrentPlan to true
     $this->isCurrentPlan = $fromPlanLevel === $id;
+
+    // Ensure the prorated price is not negative
+    $this->fullPriceInt = $price;
+    $this->full2yPriceInt = $price * 1 * (1 - Plans::$twoYearDiscount);
+    $this->full3yPriceInt = $price * 2 * (1 - Plans::$threeYearDiscount);
+
+    $this->priceInt = $this->isCurrentPlan ? $price : ($remainingDays === null ? $price : max(0, round($proratedPrice)));
+
+    // Pre-calculating the 2 and 3 year prices
+    $this->priceInt2y = $this->priceInt + $this->full2yPriceInt;
+    $this->price2y = number_format($this->priceInt2y, 0, '.', ',');
+    $this->priceInt3y = $this->priceInt + $this->full3yPriceInt;
+    $this->price3y = number_format($this->priceInt3y, 0, '.', ',');
+
+    switch ($period) {
+      case '2y':
+        $this->priceInt = $this->priceInt2y;
+        $this->price = $this->price2y;
+        break;
+      case '3y':
+        $this->priceInt = $this->priceInt3y;
+        $this->price = $this->price3y;
+        break;
+      default:
+        $this->price = number_format($this->priceInt, 0, '.', ',');
+    }
   }
 }
 
 class Plans
 {
-  const CREATOR = 1;
+  // New account level numbering will increment from 10 in increments of 10.
+  const ADVANCED = 10; // Starting the account level renumbering from 10 to avoid conflicts with the old account levels.
+  const CREATOR = 1; // The highest previouse level
   const PROFESSIONAL = 2;
   const STARTER = 5;
   const VIEWER = 4;
@@ -64,19 +96,23 @@ class Plans
 
   public static array $PLANS = [];
   private static $instance = null;
+  // Discount applies only to the additional year(s)
+  static $twoYearDiscount = 0.1; // 10% discount for 2 years
+  static $threeYearDiscount = 0.20; // 20% discount for 2 years
 
   private function __construct()
   {
     // private constructor to prevent creating a new instance
   }
 
-  public static function init(?int $remainingDays = null, ?int $currentPlanLevel = null, ?array $promotions = null): void
+  private static function init(?int $remainingDays = null, ?int $currentPlanLevel = null, ?array $promotions = null, ?string $period = '1y'): void
   {
     $originalPrices = [
+      self::ADVANCED => 250_000,
       self::CREATOR => 120_000,
       self::PROFESSIONAL => 69_000,
-      self::STARTER => 69_000,
-      self::VIEWER => 69_000,
+      self::STARTER => 21_000,
+      self::VIEWER => 5_000,
       self::NEW => 0,
       self::MODERATOR => 0,
       self::ADMIN => 0
@@ -85,6 +121,7 @@ class Plans
 
     // Calculate the price based on the level and days remaining
     // Take into account special cases like NEW, MODERATOR, ADMIN
+    // TODO: need to account upgfrade from plans that are longer than 1 year
     switch ($currentPlanLevel) {
       case self::NEW:
       case self::MODERATOR:
@@ -127,43 +164,86 @@ class Plans
     and subtracted from the upgrade price. The remaining days are unchanged.
     */
 
-    self::$PLANS[self::PROFESSIONAL] = new Plan(
-      self::PROFESSIONAL,
-      'Professional',
-      'https://cdn.nostr.build/assets/signup/pro.png',
-      'pro plan image',
-      $originalPrices[self::PROFESSIONAL],
-      [
-        '<b>10GB of private storage</b>',
-        '<b>View All : 800k+ pics, GIFs & videos</b>',
-        'Add/Delete your media'
-      ],
-      'sats',
-      $remainingDays,
-      $fromPlanPrice,
-      $currentPlanLevel
-    );
+    // Create the plans
+    // Only create plans that are for the current user level or higher
+    // Do not show current plan for renew if it has more than 30 days remaining
+    if (
+      ($currentPlanLevel === null || $currentPlanLevel === 0) ||
+      ($currentPlanLevel === self::PROFESSIONAL && $remainingDays <= 30) ||
+      ($currentPlanLevel > self::PROFESSIONAL && $currentPlanLevel < self::ADVANCED)
+    ) {
+      self::$PLANS[self::PROFESSIONAL] = new Plan(
+        id: self::PROFESSIONAL,
+        name: 'Professional',
+        image: 'https://cdn.nostr.build/assets/signup/pro.png',
+        imageAlt: 'pro plan image',
+        price: $originalPrices[self::PROFESSIONAL],
+        features: [
+          '<b>10GB of private storage</b>',
+          '<b>View All 1M+ free media</b>',
+          'Add/Delete your media',
+          'Global CDN',
+          '❤️ Support nostr.build ❤️',
+        ],
+        currency: 'sats',
+        remainingDays: $remainingDays,
+        fromPlanPrice: $fromPlanPrice,
+        fromPlanLevel: $currentPlanLevel
+      );
+    };
 
-    self::$PLANS[self::CREATOR] = new Plan(
-      self::CREATOR,
-      'Creator',
-      'https://cdn.nostr.build/assets/signup/creator.png',
-      'creator plan image',
-      $originalPrices[self::CREATOR],
-      [
-        '<b><a class="ref_link" target="_blank" href="https://nostr.build/creators/">Host on nostr.build Creators page</a></b>',
-        '<b>20GB of private storage</b>',
-        'View All : 800k+ pics, GIFs & videos',
-        'Add/Delete your media'
-      ],
-      'sats',
-      $remainingDays,
-      $fromPlanPrice,
-      $currentPlanLevel
-    );
+    if (
+      ($currentPlanLevel === null || $currentPlanLevel === 0) ||
+      ($currentPlanLevel === self::CREATOR && $remainingDays <= 30) ||
+      ($currentPlanLevel > self::CREATOR && $currentPlanLevel < self::ADVANCED)
+    ) {
+      self::$PLANS[self::CREATOR] = new Plan(
+        id: self::CREATOR,
+        name: 'Creator',
+        price: $originalPrices[self::CREATOR],
+        features: [
+          '<b>20GB of private storage</b>',
+          '<b><a class="ref_link" target="_blank" href="https://nostr.build/creators/">Host on nostr.build page</a></b>',
+          '<b>Global CDN for all media</b>',
+          '<b>All the Professional Features</b>',
+          '❤️ Support nostr.build ❤️',
+        ],
+        currency: 'sats',
+        remainingDays: $remainingDays,
+        fromPlanPrice: $fromPlanPrice,
+        fromPlanLevel: $currentPlanLevel
+      );
+    };
+
+    // New numbering for the advanced plan, hence the less than or equal
+    if (
+      ($currentPlanLevel === null || $currentPlanLevel === 0) ||
+      ($currentPlanLevel === self::ADVANCED && $remainingDays <= 30) ||
+      ($currentPlanLevel < self::ADVANCED)
+    ) {
+      self::$PLANS[self::ADVANCED] = new Plan(
+        id: self::ADVANCED,
+        name: 'Advanced',
+        price: $originalPrices[self::ADVANCED],
+        features: [
+          '<b>50GB of private storage</b>',
+          '<b>Early access to new features</b>',
+          '<b>Media backed-up to S3</b>',
+          '<b>@nostr.build NIP-05 *</b>',
+          '<b>Expandable storage *</b>',
+          '<b>All the Creator features</b>',
+          '❤️ Support nostr.build ❤️',
+        ],
+        currency: 'sats',
+        remainingDays: $remainingDays,
+        fromPlanPrice: $fromPlanPrice,
+        fromPlanLevel: $currentPlanLevel
+      );
+    };
 
 
-    if (is_array($promotions) && !empty($promotions)) {
+    // TODO: Make promotion applicable to upgrades as well
+    if (is_array($promotions) && !empty($promotions) && ($remainingDays !== null || $currentPlanLevel !== null)) {
       // Loop over all plans and check if there is a promotion for them
       // Apply the promotion if there is one
       foreach (self::$PLANS as $plan) {
@@ -204,11 +284,11 @@ class Plans
     return array_key_exists($plan, self::$PLANS);
   }
 
-  public static function getInstance(?int $remainingDays = null, ?int $currentPlanLevel = null, ?array $promotions = null): Plans
+  public static function getInstance(?int $remainingDays = null, ?int $currentPlanLevel = null, ?array $promotions = null, ?string $period = '1y'): Plans
   {
     if (self::$instance === null) {
       self::$instance = new Plans();
-      self::$instance::init($remainingDays, $currentPlanLevel, $promotions);
+      self::$instance::init($remainingDays, $currentPlanLevel, $promotions, $period);
     }
     return self::$instance;
   }

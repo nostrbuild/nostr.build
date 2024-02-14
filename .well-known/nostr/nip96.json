@@ -24,7 +24,7 @@
     "professional": {
       "name": "Professional",
       "is_nip98_required": true,
-      "url": "https://nostr.build/signup/new/",
+      "url": "https://nostr.build/plans/",
       "max_byte_size": 10737418240,
       "file_expiration": [0, 0],
       "media_transformations": {
@@ -40,8 +40,24 @@
     "creator": {
       "name": "Creator",
       "is_nip98_required": true,
-      "url": "https://nostr.build/signup/new/",
+      "url": "https://nostr.build/plans/",
       "max_byte_size": 26843545600,
+      "file_expiration": [0, 0],
+      "media_transformations": {
+        "image": [
+          "resizing",
+          "format_conversion",
+          "compression",
+          "metadata_stripping"
+        ],
+        "video": ["resizing", "format_conversion", "compression"]
+      }
+    },
+    "advanced": {
+      "name": "Advanced",
+      "is_nip98_required": true,
+      "url": "https://nostr.build/plans/",
+      "max_byte_size": 53687091200,
       "file_expiration": [0, 0],
       "media_transformations": {
         "image": [
