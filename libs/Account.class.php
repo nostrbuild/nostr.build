@@ -756,14 +756,16 @@ class Account
     }
 
     try {
-      $planStartDate = $new ? date('Y-m-d') : $this->account['plan_until_date']; // Current all continue from the last plan end date
+      $planStartDate = $new ? date('Y-m-d') : $this->account['plan_start_date'];
       $periodDuration = match ($period) {
           '1y' => '+1 year',
           '2y' => '+2 years', // Fixed pluralization
           '3y' => '+3 years', // Fixed pluralization
           default => '+1 year',
       };
-      $planEndDate = date('Y-m-d', strtotime($planStartDate . ' ' . $periodDuration));
+
+      $planEndDate = date('Y-m-d', strtotime(date('Y-m-d') . ' ' . $periodDuration)); // End date is from now, always      
+
       error_log("Plan start date: $planStartDate, Plan end date: $planEndDate");
 
       if (!$stmt->bind_param('issss', $planLevel, $planStartDate, $planEndDate, $period, $this->npub)) {
