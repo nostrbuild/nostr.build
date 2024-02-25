@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 require_once $_SERVER['DOCUMENT_ROOT'] . '/config.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/functions/session.php';
@@ -121,7 +122,7 @@ class BTCPayWebhook
           'upgrade' => true,
           default => true,
         };
-        $account->setPlan($accountPlan, $orderPeriod, $new);
+        $account->setPlan((int)$accountPlan, (string)$orderPeriod, (bool)$new);
         error_log("[INFO] Account " . $account->getNpub() . ' updated to a new plan: ' . $accountPlan . PHP_EOL);
       } catch (Exception $e) {
         error_log("Failed to update account: " . $e . PHP_EOL);
