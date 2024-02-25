@@ -116,9 +116,14 @@ class Purchase
   private function checkInvoiceSettled(): bool
   {
     $invoiceId = $_SESSION['purchase_invoiceId'];
-    $invoice = $this->btcpayClient->getInvoice($invoiceId);
-    if ($invoice->getStatus() === 'Settled') {
-      return true;
+    try {
+      $invoice = $this->btcpayClient->getInvoice($invoiceId);
+      if ($invoice->isSettled()) {
+        return true;
+      }
+    } catch (Exception $e) {
+      // Log the error
+      error_log($e->getMessage());
     }
     return false;
   }
