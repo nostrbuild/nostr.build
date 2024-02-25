@@ -13,9 +13,9 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/functions/session.php';
   <meta name="description" content="Image, video and media uploader for nostr, damus, astral.ninja, snort.social, and most all nostr clients. Upload any kind of media and get a link to post, or use our iOS app to automatically uppload images straight from your keyboard." />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-  <link rel="stylesheet" href="/styles/index.css?v=6" />
-  <link rel="stylesheet" href="/styles/header.css?v=7" />
-  <link rel="stylesheet" href="/styles/tos.css?v=6" />
+  <link rel="stylesheet" href="/styles/index.css?v=7" />
+  <link rel="stylesheet" href="/styles/header.css?v=8" />
+  <link rel="stylesheet" href="/styles/tos.css?v=7" />
   <link rel="icon" href="https://cdn.nostr.build/assets/01.png" />
 
   <title>nostr.build - edu</title>
@@ -65,7 +65,7 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/functions/session.php';
   </main>
 
   <?php include $_SERVER['DOCUMENT_ROOT'] . '/components/footer.php'; ?>
-  <script src="/scripts/index.js?v=5"></script>
+  <script src="/scripts/index.js?v=6"></script>
 </body>
 
 </html>
