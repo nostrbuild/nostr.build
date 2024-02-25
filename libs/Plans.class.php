@@ -2,6 +2,20 @@
 // This file containes the plans and their features
 // Although we could use DB for this, it is wasteful to query the DB for this information each time
 
+/*
+We have three cases: new, upgrade, renewal.
+New: No alteration of the price is needed, only adjustment for promotions.
+Renewal: No alteration of the price is needed, only potential adjustment for promotions. TODO
+Upgrade:
+1) We need to know what plan the user is on now.
+2) Only display plans that are higher than the current plan.
+3) We need to account for the remaining days of the current plan.
+4) Calculate the prorated price for the remaining days.
+5) We need to account for the period of the current plan.
+6) We need to account for the period of the new plan.
+7) We need to account for promotions. TODO
+*/
+
 class Plan
 {
   public int $id;
@@ -19,9 +33,13 @@ class Plan
   public int $fullPriceInt;
   public int $full2yPriceInt;
   public int $full3yPriceInt;
+  public string $fullPrice;
+  public string $full2yPrice;
+  public string $full3yPrice;
   public array $features;
   public string $currency;
   public bool $isCurrentPlan = false;
+  public bool $isRenewable = false;
 
   public function __construct(
     int $id,
@@ -29,12 +47,12 @@ class Plan
     int $price,
     array $features,
     string $currency,
-    ?int $remainingDays = null,
-    ?int $fromPlanPrice = 0,
+    ?int $remainingDays = 0,
+    ?int $credit = 0,
     ?int $fromPlanLevel = null,
     string $image = '', // Default to an empty string
     string $imageAlt = '', // Default to an empty string
-    string $period = '1y'
+    string $currentPeriod = '1y',
   ) {
     $this->id = $id;
     $this->name = $name;
@@ -45,40 +63,49 @@ class Plan
     $this->image = $image;
     $this->imageAlt = $imageAlt;
 
-    if ($remainingDays === 0) {
-      $proratedPrice = $price - $fromPlanPrice;
-    } else {
-      $proratedPrice = $price - (($fromPlanPrice / 365) * $remainingDays);
-    }
-
     // If the current plan is the same as the plan we are creating, set isCurrentPlan to true
     $this->isCurrentPlan = $fromPlanLevel === $id;
+    $this->isRenewable = $remainingDays <= 30;
 
     // Ensure the prorated price is not negative
     $this->fullPriceInt = $price;
-    $this->full2yPriceInt = $price * 1 * (1 - Plans::$twoYearDiscount);
-    $this->full3yPriceInt = $price * 2 * (1 - Plans::$threeYearDiscount);
+    $this->full2yPriceInt = $price + ($price * 1 * (1 - Plans::$twoYearDiscount));
+    $this->full3yPriceInt = $price + ($price * 2 * (1 - Plans::$threeYearDiscount));
 
-    $this->priceInt = $this->isCurrentPlan ? $price : ($remainingDays === null ? $price : max(0, round($proratedPrice)));
+    // Prepopulate the price with the full price
+    $this->priceInt = $price;
+    $this->priceInt2y = $this->full2yPriceInt;
+    $this->priceInt3y = $this->full3yPriceInt;
 
-    // Pre-calculating the 2 and 3 year prices
-    $this->priceInt2y = $this->priceInt + $this->full2yPriceInt;
-    $this->price2y = number_format($this->priceInt2y, 0, '.', ',');
-    $this->priceInt3y = $this->priceInt + $this->full3yPriceInt;
-    $this->price3y = number_format($this->priceInt3y, 0, '.', ',');
-
-    switch ($period) {
-      case '2y':
-        $this->priceInt = $this->priceInt2y;
-        $this->price = $this->price2y;
-        break;
-      case '3y':
-        $this->priceInt = $this->priceInt3y;
-        $this->price = $this->price3y;
-        break;
-      default:
-        $this->price = number_format($this->priceInt, 0, '.', ',');
+    // Calculate prorated pricing based on remaining credit, period, and remaining days 
+    // With period being 1y, simple negation of the credit from the price is enough
+    // With period being 2y or 3y, we need to calculate the full price for the period and then negate the credit
+    // This will cause issues if low level plan has 2y or 3y period, so we need to apply the credit so the final price is not 0
+    if ($fromPlanLevel !== null) {
+      // Prorated pricing applies
+      $this->priceInt = match (true) {
+        $this->priceInt <= $credit => -1, // If we are dealing with price that is lower than the credit
+        default => $this->priceInt - $credit
+      };
+      // Multi-year price/proration calculations
+      $this->priceInt2y = match (true) {
+        $this->priceInt2y <= $credit => -1, // Un-upgradeable
+        default => $this->priceInt2y - $credit
+      };
+      $this->priceInt3y = match (true) {
+        $this->priceInt3y <= $credit => -1, // Un-upgradeable
+        default => $this->priceInt3y - $credit
+      };
     }
+
+    // Populate textual representations
+    $this->price = number_format($this->priceInt, 0, '.', ',');
+    $this->price2y = number_format($this->priceInt2y, 0, '.', ',');
+    $this->price3y = number_format($this->priceInt3y, 0, '.', ',');
+    $this->fullPrice = number_format($this->fullPriceInt, 0, '.', ',');
+    $this->full2yPrice = number_format($this->full2yPriceInt, 0, '.', ',');
+    $this->full3yPrice = number_format($this->full3yPriceInt, 0, '.', ',');
+    // This code is shit but it will do for now.
   }
 }
 
@@ -100,48 +127,70 @@ class Plans
   static $twoYearDiscount = 0.1; // 10% discount for 2 years
   static $threeYearDiscount = 0.20; // 20% discount for 2 years
 
+  static $originalPrices = [
+    self::ADVANCED => 250_000,
+    self::CREATOR => 120_000,
+    self::PROFESSIONAL => 69_000,
+    self::STARTER => 21_000,
+    self::VIEWER => 5_000,
+    self::NEW => 0,
+    self::MODERATOR => 0,
+    self::ADMIN => 0
+  ];
+
   private function __construct()
   {
     // private constructor to prevent creating a new instance
   }
 
-  private static function init(?int $remainingDays = null, ?int $currentPlanLevel = null, ?array $promotions = null, ?string $period = '1y'): void
+  private static function getMultiyearFullPrice(int $price, string $period): int
   {
-    $originalPrices = [
-      self::ADVANCED => 250_000,
-      self::CREATOR => 120_000,
-      self::PROFESSIONAL => 69_000,
-      self::STARTER => 21_000,
-      self::VIEWER => 5_000,
-      self::NEW => 0,
-      self::MODERATOR => 0,
-      self::ADMIN => 0
-    ];
+    switch ($period) {
+      case '2y':
+        return $price + ($price * 1 * (1 - self::$twoYearDiscount));
+      case '3y':
+        return $price + ($price * 2 * (1 - self::$threeYearDiscount));
+      default:
+        return $price;
+    }
+  }
 
+  private static function getMultiyearDailyRate(int $price, string $period): int
+  {
+    $days = match ($period) {
+      '2y' => 730,
+      '3y' => 1095,
+      default => 365,
+    };
+    return self::getMultiyearFullPrice($price, $period) / $days;
+  }
 
+  public static function getPriceForPeriod(int $plan, string $period): int
+  {
+    $planPrice = self::$originalPrices[$plan];
+    return self::getMultiyearFullPrice($planPrice, $period);
+  }
+
+  private static function init(?int $remainingDays = null, ?int $currentPlanLevel = null, ?array $promotions = null, ?string $currentPeriod = '1y'): void
+  {
     // Calculate the price based on the level and days remaining
     // Take into account special cases like NEW, MODERATOR, ADMIN
-    // TODO: need to account upgfrade from plans that are longer than 1 year
     switch ($currentPlanLevel) {
       case self::NEW:
       case self::MODERATOR:
       case self::ADMIN:
       case null:
-        $fromPlanPrice = 0;
-        $remainingDays = 365;
+        $credit = 0;
+        $remainingDays = 0;
         break;
       default:
-        $fromPlanPrice = $originalPrices[$currentPlanLevel];
-        if ((365 - $remainingDays) <= 30) { // Only 30 days used so far 
-          $fromPlanPrice = $originalPrices[$currentPlanLevel]; // 30 days grace period, so we negate the full current plan price
-          $remainingDays = 365; // Reset the remaining days to 365
-        } elseif ($remainingDays <= 30) { // Only 30 days remain
-          $fromPlanPrice = 0; // Negate the full current plan price
+        $credit = self::getPriceForPeriod($currentPlanLevel, $currentPeriod);
+        if ($remainingDays <= 30) { // Only 30 days remain
+          $credit = 0; // Negate the full current plan price
           $remainingDays = 0;
         } else {
-          $dailyRate = $originalPrices[$currentPlanLevel] / 365;
-          $amountUsedSoFar = $dailyRate * (365 - $remainingDays);
-          $fromPlanPrice -= $amountUsedSoFar; // Negate the amount used so far
+          $dailyRate = self::getMultiyearDailyRate(self::$originalPrices[$currentPlanLevel], $currentPeriod);
+          $credit = $dailyRate * $remainingDays;
         }
         break;
     }
@@ -169,15 +218,14 @@ class Plans
     // Do not show current plan for renew if it has more than 30 days remaining
     if (
       ($currentPlanLevel === null || $currentPlanLevel === 0) ||
-      ($currentPlanLevel === self::PROFESSIONAL && $remainingDays <= 30) ||
-      ($currentPlanLevel > self::PROFESSIONAL && $currentPlanLevel < self::ADVANCED)
+      ($currentPlanLevel >= self::PROFESSIONAL && $currentPlanLevel < self::ADVANCED)
     ) {
       self::$PLANS[self::PROFESSIONAL] = new Plan(
         id: self::PROFESSIONAL,
         name: 'Professional',
         image: 'https://cdn.nostr.build/assets/signup/pro.png',
         imageAlt: 'pro plan image',
-        price: $originalPrices[self::PROFESSIONAL],
+        price: self::$originalPrices[self::PROFESSIONAL],
         features: [
           '<b>10GB of private storage</b>',
           '<b>View All 1M+ free media</b>',
@@ -187,20 +235,20 @@ class Plans
         ],
         currency: 'sats',
         remainingDays: $remainingDays,
-        fromPlanPrice: $fromPlanPrice,
-        fromPlanLevel: $currentPlanLevel
+        fromPlanLevel: $currentPlanLevel,
+        credit: $credit,
+        currentPeriod: $currentPeriod,
       );
     };
 
     if (
       ($currentPlanLevel === null || $currentPlanLevel === 0) ||
-      ($currentPlanLevel === self::CREATOR && $remainingDays <= 30) ||
-      ($currentPlanLevel > self::CREATOR && $currentPlanLevel < self::ADVANCED)
+      ($currentPlanLevel >= self::CREATOR && $currentPlanLevel < self::ADVANCED)
     ) {
       self::$PLANS[self::CREATOR] = new Plan(
         id: self::CREATOR,
         name: 'Creator',
-        price: $originalPrices[self::CREATOR],
+        price: self::$originalPrices[self::CREATOR],
         features: [
           '<b>20GB of private storage</b>',
           '<b><a class="ref_link" target="_blank" href="https://nostr.build/creators/">Host on nostr.build page</a></b>',
@@ -210,21 +258,21 @@ class Plans
         ],
         currency: 'sats',
         remainingDays: $remainingDays,
-        fromPlanPrice: $fromPlanPrice,
-        fromPlanLevel: $currentPlanLevel
+        fromPlanLevel: $currentPlanLevel,
+        credit: $credit,
+        currentPeriod: $currentPeriod,
       );
     };
 
     // New numbering for the advanced plan, hence the less than or equal
     if (
       ($currentPlanLevel === null || $currentPlanLevel === 0) ||
-      ($currentPlanLevel === self::ADVANCED && $remainingDays <= 30) ||
-      ($currentPlanLevel < self::ADVANCED)
+      ($currentPlanLevel <= self::ADVANCED)
     ) {
       self::$PLANS[self::ADVANCED] = new Plan(
         id: self::ADVANCED,
         name: 'Advanced',
-        price: $originalPrices[self::ADVANCED],
+        price: self::$originalPrices[self::ADVANCED],
         features: [
           '<b>50GB of private storage</b>',
           '<b>Early access to new features</b>',
@@ -236,14 +284,19 @@ class Plans
         ],
         currency: 'sats',
         remainingDays: $remainingDays,
-        fromPlanPrice: $fromPlanPrice,
-        fromPlanLevel: $currentPlanLevel
+        fromPlanLevel: $currentPlanLevel,
+        credit: $credit,
+        currentPeriod: $currentPeriod,
       );
     };
 
 
     // TODO: Make promotion applicable to upgrades as well
-    if (is_array($promotions) && !empty($promotions) && ($remainingDays !== null || $currentPlanLevel !== null)) {
+    if (
+      is_array($promotions) &&
+      !empty($promotions) &&
+      ($remainingDays === null || $remainingDays === 0 || $currentPlanLevel === null)
+    ) {
       // Loop over all plans and check if there is a promotion for them
       // Apply the promotion if there is one
       foreach (self::$PLANS as $plan) {
@@ -284,11 +337,11 @@ class Plans
     return array_key_exists($plan, self::$PLANS);
   }
 
-  public static function getInstance(?int $remainingDays = null, ?int $currentPlanLevel = null, ?array $promotions = null, ?string $period = '1y'): Plans
+  public static function getInstance(?int $remainingDays = null, ?int $currentPlanLevel = null, ?array $promotions = null, ?string $period = '1y', ?string $currentPeriod = '1y'): Plans
   {
     if (self::$instance === null) {
       self::$instance = new Plans();
-      self::$instance::init($remainingDays, $currentPlanLevel, $promotions, $period);
+      self::$instance::init($remainingDays, $currentPlanLevel, $promotions, $currentPeriod);
     }
     return self::$instance;
   }
