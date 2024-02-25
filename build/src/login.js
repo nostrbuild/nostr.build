@@ -34,7 +34,7 @@ import { nip98 } from 'nostr-tools'
       enableNostrLoginCheckbox.querySelector('input[type="checkbox"]').checked = true;
     } else if (response.status === 404) {
       triggerButton.value = 'Redirecting to signup...';
-      window.location.href = window.location.origin + '/signup/new';
+      window.location.href = window.location.origin + '/plans/';
     } else {
       triggerButton.value = triggerButtonValue;
       alert('Error logging in');
@@ -116,7 +116,7 @@ import { nip98 } from 'nostr-tools'
           case 404:
             // No account found with the given npub, redirect to signup
             triggerButton.value = 'Redirecting to signup...';
-            window.location.href = window.location.origin + '/signup/new';
+            window.location.href = window.location.origin + '/plans/';
             break;
           case 401:
             // Invalid dmCode, show error and reset the button

@@ -122,6 +122,7 @@ class SiteConfig
     '3' => ['limit' => 5 * 1024 * 1024 * 1024, 'message' => '5GiB'],
     '2' => ['limit' => 10 * 1024 * 1024 * 1024, 'message' => '10GiB'],
     '1' => ['limit' => 20 * 1024 * 1024 * 1024, 'message' => '20GiB'],
+    '10' => ['limit' => 50 * 1024 * 1024 * 1024, 'message' => '50GiB'],
     '0' => ['limit' => 0, 'message' => 'No Storage, consider upgrading'],
   ];
 
@@ -223,14 +224,14 @@ class SiteConfig
     return self::ACCOUNT_TYPES[$acctLevel];
   }
 
-  public static function getStorageLimit($acctLevel)
+  public static function getStorageLimit($acctLevel, $additionalStorage = 0)
   {
     if (!array_key_exists($acctLevel, self::STORAGE_LIMITS)) {
       return 0; // return 0 if account level doesn't exist
     }
     $limit = self::STORAGE_LIMITS[$acctLevel]['limit'];
     // Handle unlimited storage
-    return $limit === -1 ? PHP_INT_MAX : $limit;
+    return $limit === -1 ? PHP_INT_MAX : $limit + $additionalStorage;
   }
 
   public static function getStorageLimitMessage($acctLevel)

@@ -7,25 +7,27 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/utils.funcs.php';
 Main class to work with accounts
 For reference:
 desc users;
-+------------------+--------------+------+-----+-------------------+-------------------+
-| Field            | Type         | Null | Key | Default           | Extra             |
-+------------------+--------------+------+-----+-------------------+-------------------+
-| id               | int          | NO   | PRI | NULL              | auto_increment    |
-| usernpub         | varchar(70)  | NO   | UNI | NULL              |                   |
-| password         | varchar(255) | NO   |     | NULL              |                   |
-| pbkdf2_password  | varchar(255) | NO   |     | NULL              |                   |
-| nym              | varchar(64)  | NO   |     | NULL              |                   |
-| wallet           | varchar(255) | NO   |     | NULL              |                   |
-| ppic             | varchar(255) | NO   |     | NULL              |                   |
-| paid             | varchar(255) | NO   |     | NULL              |                   |
-| acctlevel        | int          | NO   |     | NULL              |                   |
-| flag             | varchar(10)  | NO   |     | NULL              |                   |
-| created_at       | datetime     | YES  |     | CURRENT_TIMESTAMP | DEFAULT_GENERATED |
-| accflags         | json         | YES  |     | NULL              |                   |
-| plan_start_date  | datetime     | YES  |     | NULL              |                   |
-| npub_verified    | tinyint(1)   | NO   |     | 0                 |                   |
-| allow_npub_login | tinyint(1)   | NO   |     | 0                 |                   |
-+------------------+--------------+------+-----+-------------------+-------------------+
++---------------------+--------------+------+-----+-------------------+-------------------+
+| Field               | Type         | Null | Key | Default           | Extra             |
++---------------------+--------------+------+-----+-------------------+-------------------+
+| id                  | int          | NO   | PRI | NULL              | auto_increment    |
+| usernpub            | varchar(70)  | NO   | UNI | NULL              |                   |
+| password            | varchar(255) | NO   |     | NULL              |                   |
+| nym                 | varchar(64)  | NO   |     | NULL              |                   |
+| wallet              | varchar(255) | NO   |     | NULL              |                   |
+| ppic                | varchar(255) | NO   |     | NULL              |                   |
+| paid                | varchar(255) | NO   |     | NULL              |                   |
+| acctlevel           | int          | NO   |     | NULL              |                   |
+| flag                | varchar(10)  | NO   |     | NULL              |                   |
+| created_at          | datetime     | YES  |     | CURRENT_TIMESTAMP | DEFAULT_GENERATED |
+| accflags            | json         | YES  |     | NULL              |                   |
+| plan_start_date     | datetime     | YES  |     | NULL              |                   |
+| npub_verified       | tinyint(1)   | NO   |     | 0                 |                   |
+| allow_npub_login    | tinyint(1)   | NO   |     | 0                 |                   |
+| pbkdf2_password     | varchar(255) | YES  |     | NULL              |                   |
+| plan_until_date     | datetime     | YES  |     | NULL              |                   |
+| subscription_period | varchar(10)  | YES  |     | 1y                |                   |
++---------------------+--------------+------+-----+-------------------+-------------------+
 
  desc users_images;
 +--------------+--------------+------+-----+------------------------------+-------------------+
@@ -58,6 +60,7 @@ enum AccountLevel: int
 {
   case Invalid = -1;
   case Unverified = 0;
+  case Advanced = 10;
   case Creator = 1;
   case Professional = 2;
   case Viewer = 4;
@@ -234,9 +237,9 @@ class Account
       (!empty($responseData->name) || !empty($responseData->lud16) || !empty($responseData->picture));
 
     if ($shouldUpdate) {
-      $this->account['nym'] = $force ? ($responseData->name ?? $this->account['nym']) : (empty($this->account['nym']) ? $responseData->name ?? '' : $this->account['nym']);
-      $this->account['wallet'] = $force ? ($responseData->lud16 ?? $this->account['wallet']) : (empty($this->account['wallet']) ? $responseData->lud16 ?? '' : $this->account['wallet']);
-      $this->account['ppic'] = $force ? ($responseData->picture ?? $this->account['ppic']) : (empty($this->account['ppic']) ? $responseData->picture ?? '' : $this->account['ppic']);
+      $this->account['nym'] = $force ? ($responseData->name ?? $this->account['nym']) : (empty($this->account['nym']) ? $responseData->name ?? '' : $this->account['nym'] ?? '');
+      $this->account['wallet'] = $force ? ($responseData->lud16 ?? $this->account['wallet']) : (empty($this->account['wallet']) ? $responseData->lud16 ?? '' : $this->account['wallet'] ?? '');
+      $this->account['ppic'] = $force ? ($responseData->picture ?? $this->account['ppic']) : (empty($this->account['ppic']) ? $responseData->picture ?? '' : $this->account['ppic'] ?? '');
 
       if ($update_db) {
         $this->updateAccount(
@@ -314,6 +317,16 @@ class Account
   {
     $accountLevel = isset($this->account['acctlevel']) ? $this->account['acctlevel'] : -1;
     return AccountLevel::from($accountLevel);
+  }
+
+  /**
+   * Summary of getAccountLevel
+   * @return integer
+   */
+  public function getAccountLevelInt(): int
+  {
+    $accountLevel = isset($this->account['acctlevel']) ? $this->account['acctlevel'] : -1;
+    return (int) $accountLevel;
   }
 
   /*
@@ -410,15 +423,21 @@ class Account
   public function getRemainingSubscriptionDays(): int
   {
     $planStartDate = $this->account['plan_start_date'];
-    if ($planStartDate === null) {
-      throw new Exception("Plan start date is not set for this account");
+    $planEndDate = $this->account['plan_until_date'];
+    if ($planStartDate === null || $planEndDate === null) {
+      error_log("Plan start date is not set for this account");
+      return 0;
     }
 
     $startDate = new DateTime($planStartDate);
-    $endDate = clone $startDate;
-    $endDate->add(new DateInterval('P1Y')); // Add one year to the start date
+    $endDate = new DateTime($planEndDate);
 
     $currentDate = new DateTime();
+
+    // Account for special account levels Admin, Moderator and return 9,999 days
+    if ($this->getAccountLevel() === AccountLevel::Admin || $this->getAccountLevel() === AccountLevel::Moderator) {
+      return 9999;
+    }
 
     if ($currentDate < $startDate) {
       // Subscription has not started yet
@@ -430,6 +449,27 @@ class Account
       $remainingDays = $currentDate->diff($endDate)->days;
       return $remainingDays;
     }
+  }
+
+  public function getRemainingSubscriptionPeriod(): string
+  {
+    $remainingDays = $this->getRemainingSubscriptionDays();
+    return match (true) {
+      $remainingDays <= 365 && $remainingDays > 0 => '1y',
+      $remainingDays <= 730 && $remainingDays > 365 => '2y',
+      $remainingDays <= 1095 && $remainingDays > 730 => '3y',
+      default => '1y',
+    };
+  }
+
+  public function getSubscriptionPeriod(): string
+  {
+    return $this->account['subscription_period'] ?? '1y';
+  }
+
+  public function isExpired(): bool
+  {
+    return $this->getRemainingSubscriptionDays() === 0;
   }
 
   /*
@@ -451,6 +491,7 @@ class Account
    * @param string $flag
    * @param array $accflags
    * @param string $plan_start_date
+   * @param string $plan_until_date
    * @throws \Exception
    * @return void
    */
@@ -465,8 +506,10 @@ class Account
     string $flag = null,
     array $accflags = null,
     string $plan_start_date = null,
+    string $plan_until_date = null,
     int $npub_verified = null,
-    int $allow_npub_login = null
+    int $allow_npub_login = null,
+    string $subscription_period = null
   ) {
     $updates = [
       'password' => $password,
@@ -479,8 +522,10 @@ class Account
       'flag' => $flag,
       'accflags' => $accflags ? json_encode($accflags) : null,
       'plan_start_date' => $plan_start_date,
+      'plan_until_date' => $plan_until_date,
       'npub_verified' => $npub_verified,
       'allow_npub_login' => $allow_npub_login,
+      'subscription_period' => $subscription_period,
     ];
 
     $sql = "UPDATE users SET ";
@@ -661,6 +706,11 @@ class Account
     return $this->account['allow_npub_login'] === 1;
   }
 
+  public function getAccountAdditionStorage(): int
+  {
+    return $this->account['acctAddonStorage'] ?? 0 * 1024 * 1024 * 1024; // Convert GB to bytes
+  }
+
   /**
    * Summary of getRemainingStorageSpace
    * @return int
@@ -668,7 +718,8 @@ class Account
   public function getRemainingStorageSpace(): int
   {
     $accountLevel = $this->account['acctlevel'];
-    $limit = SiteConfig::getStorageLimit($accountLevel) ?? 0; // Default to 0 if level not found
+    $accountAddonStorage = $this->getAccountAdditionStorage();
+    $limit = SiteConfig::getStorageLimit($accountLevel, $accountAddonStorage) ?? 0; // Default to 0 if level not found
 
     $usedSpace = $this->fetchAccountSpaceConsumption();
 
@@ -695,9 +746,9 @@ class Account
    * @throws \Exception
    * @return void
    */
-  public function setPlan(int $planLevel, bool $new = true): void
+  public function setPlan(int $planLevel, string $period = '1y', bool $new = true): void
   {
-    $sql = "UPDATE users SET acctlevel = ?, plan_start_date = ? WHERE usernpub = ?";
+    $sql = "UPDATE users SET acctlevel = ?, plan_start_date = ?, plan_until_date = ?, subscription_period = ? WHERE usernpub = ?";
     $stmt = $this->db->prepare($sql);
 
     if (!$stmt) {
@@ -706,7 +757,13 @@ class Account
 
     try {
       $planStartDate = $new ? date('Y-m-d') : $this->account['plan_start_date'] ?? date('Y-m-d');
-      if (!$stmt->bind_param('iss', $planLevel, $planStartDate, $this->npub)) {
+      $planEndDate = match ($period) {
+        '1y' => date('Y-m-d', strtotime($planStartDate . ' +1 year')),
+        '2y' => date('Y-m-d', strtotime($planStartDate . ' +2 year')),
+        '3y' => date('Y-m-d', strtotime($planStartDate . ' +3 year')),
+        default => date('Y-m-d', strtotime($planStartDate . ' +1 year')),
+      };
+      if (!$stmt->bind_param('issss', $planLevel, $planStartDate, $planEndDate, $period, $this->npub)) {
         throw new Exception("Error binding parameters: " . $stmt->error);
       }
 
@@ -756,6 +813,7 @@ class Account
       AccountLevel::Starter, // 5
       AccountLevel::Professional, // 2
       AccountLevel::Creator, // 1
+      AccountLevel::Advanced, // 10
       AccountLevel::Admin, // 99
     ];
 

@@ -23,6 +23,7 @@ class Permission
   private $userLevel;
   private $isLoggedIn;
   private $accFlags;
+  private $planExpired;
 
 
   function __construct()
@@ -32,6 +33,7 @@ class Permission
     $this->isLoggedIn = isset($_SESSION["loggedin"]) && $_SESSION["loggedin"] === true;
     $this->userLevel = $this->isLoggedIn ? $_SESSION["acctlevel"] : null;
     $this->accFlags = $this->isLoggedIn && isset($_SESSION["accflags"]) ? $_SESSION["accflags"] : null;
+    $this->planExpired = $this->isLoggedIn && isset($_SESSION["planexpired"]) ? $_SESSION["planexpired"] : null;
   }
 
   function validateLoggedin()

@@ -71,7 +71,7 @@ $total_size_gb = round($stats['total_size'] / (1024 * 1024 * 1024), 2); // Conve
 	if ($result === false) :
 	?>
 		&emsp;<span style="color:#F0F0F0">Sorry, your file was not uploaded! Make sure it is supported media or purchase an account for large files.</span>
-		&nbsp;<a style="color:#F0F0F0" href="https://nostr.build/signup">Purchase a nostr.build account HERE</a>
+		&nbsp;<a style="color:#F0F0F0" href="https://nostr.build/plans/">Purchase a nostr.build account HERE</a>
 		<div style="color:#F0F0F0"><?= $m ?></div>
 	<?php
 	// if everything is ok, try to upload file
@@ -132,7 +132,7 @@ $total_size_gb = round($stats['total_size'] / (1024 * 1024 * 1024), 2); // Conve
 					}
 
 					function myCreateAccount() {
-						window.location.href = "https://nostr.build/signup/new";
+						window.location.href = "https://nostr.build/plans/";
 					}
 				</script>
 

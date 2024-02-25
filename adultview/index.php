@@ -14,7 +14,7 @@ global $link;
 $perm = new Permission();
 
 // Check if the user is not logged in, if not then redirect him to login page
-if (!$perm->validatePermissionsLevelAny(1, 2, 3, 4) && !$perm->hasPrivilege('canModerate') && !$perm->isAdmin()) {
+if (!$perm->validatePermissionsLevelAny(1, 2, 3, 4, 10) && !$perm->hasPrivilege('canModerate') && !$perm->isAdmin()) {
 	header("location: /login");
 	$link->close();
 	exit;

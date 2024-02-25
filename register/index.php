@@ -1,5 +1,5 @@
 <?php
 // Redirect to a new signup page
-header("Location: /signup");
+header("Location: /plans/");
 exit;
 // Path: register/index.php

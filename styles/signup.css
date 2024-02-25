@@ -158,19 +158,19 @@ h1 {
 }
 
 .card_creator {
-	background-image: url(../assets/signup/cards/creator_bg.png);
+	background-image: url(/assets/signup/cards/creator_bg.png);
 }
 
 .card_pro {
-	background-image: url(../assets/signup/cards/pro_bg.png);
+	background-image: url(/assets/signup/cards/pro_bg.png);
 }
 
 .card_5gb {
-	background-image: url(../assets/signup/cards/5gb_img.png);
+	background-image: url(/assets/signup/cards/5gb_img.png);
 }
 
 .card_all {
-	background-image: url(../assets/signup/cards/view_all.png);
+	background-image: url(/assets/signup/cards/view_all.png);
 }
 
 .card h2 {

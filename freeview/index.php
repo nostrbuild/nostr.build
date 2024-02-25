@@ -253,7 +253,7 @@ $sql = match ($view_type) {
 		$link->close();
 		?>
 	</main>
-	<a class="ref_link pb-4" style="font-size: x-large;" href="https://nostr.build/signup/new"> Get access to all 500k+ Videos, Gifs and images HERE!</a>
+	<a class="ref_link pb-4" style="font-size: x-large;" href="https://nostr.build/plans/"> Get access to all 500k+ Videos, Gifs and images HERE!</a>
 	<?php include $_SERVER['DOCUMENT_ROOT'] . '/components/footer.php'; ?>
 </body>
 

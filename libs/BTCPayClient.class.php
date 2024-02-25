@@ -34,7 +34,7 @@ class BTCPayClient
     return $this->invoice->getInvoice($this->storeId, $invoiceId);
   }
 
-  public function createInvoice(string $amount, string $redirectUrl = '', array $metadata = []): string
+  public function createInvoice(string $amount, string $redirectUrl = '', array $metadata = [], string $orderIdPrefix = 'nb_signup_order'): string
   {
     $invoiceAmount = PreciseNumber::parseString($amount);
     $checkoutOptions = new InvoiceCheckoutOptions();
@@ -47,7 +47,7 @@ class BTCPayClient
       ->setRedirectAutomatically(empty($redirectUrl) ? false : true)
       ->setRedirectURL($redirectUrl);
     try {
-      $order_id = uniqid('nb_signup_order-', true);
+      $order_id = uniqid($orderIdPrefix . '-', true);
       $invoice = $this->invoice->createInvoice(
         $this->storeId,
         $this->currency,
