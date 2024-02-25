@@ -9,8 +9,6 @@ The new user sign-up will be a 4-step process:
 */
 // Include config, session, and Permission class files
 
-use Respect\Validation\Rules\Number;
-
 require_once $_SERVER['DOCUMENT_ROOT'] . '/config.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/functions/session.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/permissions.class.php';
@@ -18,7 +16,7 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/BTCPayClient.class.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/Plans.class.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/Account.class.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/Bech32.class.php';
-require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/Signup.class.php';
+require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/Purchase.class.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/db/Promotions.class.php';
 
 // Create new Permission object
@@ -33,6 +31,7 @@ if (
   // If the user is logged in but has an unverified account, set signup_npub in session
   $_SESSION['purchase_npub'] = $_SESSION['usernpub'];
 }
+
 // When purchase_npub is set, be it new user or logged in, we instantiate Account class
 if (isset($_SESSION['purchase_npub'])) {
   $account = new Account($_SESSION['purchase_npub'], $link);
@@ -41,16 +40,11 @@ if (isset($_SESSION['purchase_npub'])) {
 // If we are working with logged in users, set their current level and get remaining days of the subscription
 $remainingDays = null;
 $currentAccountLevel = null;
+$existingSubscriptionPeriod = null;
 if ($account !== null && $account->isAccountValid() && !$perm->isGuest()) {
   $remainingDays = $account->getRemainingSubscriptionDays();
+  $existingSubscriptionPeriod = $account->getSubscriptionPeriod();
   $currentAccountLevel = $account->getAccountLevelInt();
-}
-
-// Allow DEBUG settings by admin
-if ($perm->isAdmin() && (isset($_GET['level']) && isset($_GET['days']))) {
-  $remainingDays = (int) $_GET['days'];
-  $currentAccountLevel = (int) $_GET['level'];
-  error_log("DEBUG: Remaining days: $remainingDays, Current level: $currentAccountLevel");
 }
 
 if (isset($_GET['reset'])) {
@@ -80,8 +74,8 @@ try {
   // Do nothing
 }
 
-// Create new Signup instance
-$signup = new Purchase(
+// Create new Purchase instance
+$purchase = new Purchase(
   new BTCPayClient(
     $btcpayConfig['apiKey'],
     $btcpayConfig['host'],
@@ -91,16 +85,17 @@ $signup = new Purchase(
     promotions: $promotions,
     remainingDays: $remainingDays,
     currentPlanLevel: $currentAccountLevel,
-    period: $_SESSION['purchase_period']
+    period: $_SESSION['purchase_period'],
+    currentPeriod: $existingSubscriptionPeriod ?? '1y'
   )
 );
 
 // Get selected plan
-$selectedPlan = $signup->getSelectedPlanId();
+$selectedPlan = $purchase->getSelectedPlanId();
 // Get current step
-$step = $signup->getValidatedStep();
+$step = $purchase->getValidatedStep();
 // Get all steps
-$steps = $signup->getSteps();
+$steps = $purchase->getSteps();
 
 // Processing form data when form is submitted to create an account
 // Not applicable to renew and upgrade
@@ -154,7 +149,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $account_create_error = 'This npub1 public key is already in use. Please enter a different public key.';
       }
       $npubVerifiedFlag = $_SESSION['npub_verified'] === $usernpub ? 1 : 0;
-      $enableNostrLoginFlag = isset($_POST['enable-nostr-login']) && $npubVerified ? 1 : 0;
+      //$enableNostrLoginFlag = isset($_POST['enable-nostr-login']) && $npubVerified ? 1 : 0;
+      $enableNostrLoginFlag = $npubVerified ? 1 : 0; // Always enable Nostr login for new signups
       if (!$npubVerifiedFlag) {
         $account_create_error = "The npub1 public key you entered does not match the one you verified. Please enter the correct public key.";
       }
@@ -308,7 +304,7 @@ SVG;
               <!-- Plans -->
               <?php foreach (Plans::$PLANS as $plan) : ?>
                 <div class="relative rounded-3xl p-8 ring-1 ring-gray-200 <?= $plan->id == $selectedPlan ? 'ring-2 ring-purple-600' : '' ?>">
-                  <h3 id="tier-<?= $plan->id ?>" class="text-center text-lg font-semibold leading-8 <?= $plan->id == $selectedPlan ? 'text-purple-300' : 'text-gray-100' ?>"><?= $plan->name ?></h3>
+                  <h3 id="tier-<?= $plan->id ?>" class="text-center text-lg font-semibold leading-8 <?= $plan->id == $selectedPlan ? 'text-purple-300' : 'text-gray-100' ?>" x-text="(period === '1y' ? '<?= $plan->name ?> (1 year)' : (period === '2y' ? '<?= $plan->name ?> (2 years)' : '<?= $plan->name ?> (3 years)'))"></h3>
                   <!-- "Popular" Badge -->
                   <?php if ($plan->id === 1) : ?>
                     <div class="absolute top-0 right-0 transform -translate-y-1/2 -translate-x-1/3">
@@ -323,15 +319,29 @@ SVG;
                   <?php endif; ?>
                   <p class="mt-6 flex items-baseline gap-x-1 relative">
                     <!-- Display Adjusted Price -->
-                    <span class="text-4xl font-bold tracking-tight text-purple-200" x-text="(period === '1y' ? '<?= $plan->price ?>' : (period === '2y' ? '<?= $plan->price2y ?>' : '<?= $plan->price3y ?>'))"></span>
-                    <span class="text-sm font-semibold leading-6 text-purple-300"><?= $plan->currency ?></span>
+                    <?php if ($plan->isCurrentPlan) : ?>
+                      <span class="self-center text-4xl font-bold tracking-tight text-purple-200" x-text="(period === '1y' ? '<?= $plan->fullPrice ?>' : (period === '2y' ? '<?= $plan->full2yPrice ?>' : '<?= $plan->full3yPrice ?>'))"></span>
+                      <span class="text-sm font-semibold leading-6 text-purple-300"><?= $plan->currency ?></span>
+                    <?php else : ?>
+                      <span class="text-4xl font-bold tracking-tight text-purple-200" x-text="(period === '1y' ? '<?= $plan->price != -1 ? $plan->price : 'Ineligible' ?>' : (period === '2y' ? '<?= $plan->price2y != -1 ? $plan->price2y : 'Ineligible' ?>' : '<?= $plan->price3y != -1 ? $plan->price3y : 'Ineligible' ?>'))"></span>
+                      <span class="text-sm font-semibold leading-6 text-purple-300" x-text="(period === '1y' ? '<?= $plan->price != -1 ? $plan->currency : 'plan' ?>' : (period === '2y' ? '<?= $plan->price2y != -1 ? $plan->currency : 'plan' ?>' : '<?= $plan->price3y != -1 ? $plan->currency : 'plan' ?>'))"><?= $plan->currency ?></span>
+                    <?php endif; ?>
                     <?php if ($plan->promo) : ?>
                       <span class="absolute top-0 right-0 bg-red-500 text-white text-xs font-bold py-1 px-2 rounded-full transform -translate-y-1/3">
                         <?= $plan->discountPercentage ?>% off
                       </span>
                     <?php endif; ?>
                   </p>
-                  <a :href="'?step=2&plan=<?= $plan->id ?>&period=' + period" aria-describedby="tier-<?= $plan->id ?>" class="mt-6 block rounded-md py-2 px-3 text-center text-sm font-semibold leading-6 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-purple-600 <?= $plan->id == $selectedPlan ? 'bg-purple-600 text-white shadow-sm hover:bg-purple-500' : 'text-purple-300 ring-1 ring-inset ring-purple-200 hover:ring-purple-300' ?>"><?= $plan->isCurrentPlan ? 'Renew' : ($currentAccountLevel === null ? 'Buy' : 'Upgrade to') ?> <?= htmlentities($plan->name) ?> plan</a>
+                  <?php if ($plan->isCurrentPlan && !$plan->isRenewable) : ?>
+                    <span aria-describedby="tier-<?= $plan->id ?>" class="mt-6 block rounded-md py-2 px-3 text-center text-sm font-semibold leading-6 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-purple-600 text-purple-300 ring-1 ring-inset ring-purple-200 hover:ring-purple-300">Your current plan</span>
+                  <?php else : ?>
+                    <?php /*
+                    <a :href="'?step=2&plan=<?= $plan->id ?>&period=' + period" aria-describedby="tier-<?= $plan->id ?>" class="mt-6 block rounded-md py-2 px-3 text-center text-sm font-semibold leading-6 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-purple-600 <?= $plan->id == $selectedPlan ? 'bg-purple-600 text-white shadow-sm hover:bg-purple-500' : 'text-purple-300 ring-1 ring-inset ring-purple-200 hover:ring-purple-300' ?>"><?= $plan->isCurrentPlan && $plan->isRenewable ? 'Renew' : ($currentAccountLevel === null ? 'Buy' : 'Upgrade to') ?> <?= htmlentities($plan->name) ?> plan</a>
+                    */ ?>
+                    <a :href="((<?= $plan->price ?> != -1 && period === '1y') || (<?= $plan->price2y ?> != -1 && period === '2y') || (<?= $plan->price3y ?> != -1 && period === '3y')) ? '?step=2&plan=<?= $plan->id ?>&period=' + period : null" aria-describedby="tier-<?= $plan->id ?>" class="mt-6 block rounded-md py-2 px-3 text-center text-sm font-semibold leading-6 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-purple-600 <?= $plan->id == $selectedPlan ? 'bg-purple-600 text-white shadow-sm hover:bg-purple-500' : 'text-purple-300 ring-1 ring-inset ring-purple-200 hover:ring-purple-300' ?>" :class="{ 'pointer-events-none opacity-50': ((<?= $plan->price ?> == -1 && period === '1y') || (<?= $plan->price2y ?> == -1 && period === '2y') || (<?= $plan->price3y ?> == -1 && period === '3y')) }">
+                      <?= $plan->isCurrentPlan && $plan->isRenewable ? 'Renew' : ($currentAccountLevel === null ? 'Buy' : 'Upgrade to') ?> <?= htmlentities($plan->name) ?> plan
+                    </a>
+                  <?php endif; ?>
                   <ul role="list" class="mt-8 space-y-3 text-sm leading-6 text-gray-300">
                     <?php foreach ($plan->features as $feature) : ?>
                       <li class="flex gap-x-3">
@@ -447,7 +457,7 @@ SVG;
                 <?php endif; ?>
                 <div class="flex w-full justify-center">
                   <label for="enable-nostr-login" class="mt-2 text-sm font-medium leading-6 text-gray-300 text-center">Enable Login with Nostr Identity</label>
-                  <input type="checkbox" id="enable-nostr-login" name="enable-nostr-login" class="mt-2 m-2 p-2" checked>
+                  <input type="checkbox" id="enable-nostr-login" name="enable-nostr-login" class="mt-2 m-2 p-2" checked readonly>
                 </div>
                 <div>
                   <button type="submit" class="flex w-full justify-center rounded-md bg-purple-600 px-3 py-1.5 text-sm font-semibold leading-6 text-white shadow-sm hover:bg-purple-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-purple-600">Create Account</button>
@@ -516,32 +526,40 @@ SVG;
           <!-- Pay the Fee -->
           <?php
           // Helper function to create the invoice
-          // TODO: Relocate this function to a more appropriate location
+          // TODO: Relocate this function to a more appropriate file
           function createInvoice(BTCPayClient $btcpayClient, Plan $plan, string $npub, string $period, string $orderType, string $orderIdPrefix = 'nb_signup_order', string $redirectUrl)
           {
+            $period = $_SESSION['purchase_period'];
             $price = match ($period) {
               '1y' => $plan->priceInt,
               '2y' => $plan->priceInt2y,
               '3y' => $plan->priceInt3y,
               default => $plan->priceInt,
             };
-            // Store the final price to ensure consistency across invoice validations
-            $_SESSION['purchase_price'] = $price;
+            // Check if price is set to -1, which means the plan is not available for the selected period
+            if ($price !== -1) {
+              // Store the final price to ensure consistency across invoice validations
+              $_SESSION['purchase_price'] = $price;
 
-            return $btcpayClient->createInvoice(
-              amount: $price,
-              redirectUrl: $redirectUrl,
-              orderIdPrefix: $orderIdPrefix,
-              metadata: [
-                'plan' => $plan->name, // Assuming $plan object has a name property
-                'userNpub' => $npub,
-                'orderPeriod' => $period,
-                'orderType' => $orderType,
-              ]
-            );
+              return $btcpayClient->createInvoice(
+                amount: $price,
+                redirectUrl: $redirectUrl,
+                orderIdPrefix: $orderIdPrefix,
+                metadata: [
+                  'plan' => $plan->id,
+                  'planName' => $plan->name,
+                  'planStart' => date('Y-m-d'),
+                  'userNpub' => $npub,
+                  'orderPeriod' => $period,
+                  'orderType' => $orderType,
+                ]
+              );
+            } else {
+              return null;
+            }
           }
 
-          $btcpayClient = $signup->getBTCPayClient();
+          $btcpayClient = $purchase->getBTCPayClient();
           // Check if invoiceId is already set in session, and if invoice is not yet expired.
           // If expired, create a new invoice, otherwise use the existing one.
           $redirectUrl = 'https://' . $_SERVER['HTTP_HOST'] . '/plans/?step=4';
@@ -593,6 +611,9 @@ SVG;
 
           ?>
           <div class="flex flex-col justify-center mx-auto max-w-7xl sm:px-6 lg:px-8 py-16 space-y-4">
+            <?php if (!isset($_SESSION['purchase_invoiceId']) && $_SESSION['purchase_invoiceId'] === null) : ?>
+              <p class="text-2xl font-semibold text-center text-gray-300">An error occurred while creating the invoice. Please try again later or choose eligible plan.</p>
+            <?php endif; ?>
             <button onclick="window.btcpay.showInvoice('<?= $invoiceId ?>');" type="button" class="self-center inline-flex items-center gap-x-2 rounded-md bg-purple-600 px-3.5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-purple-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-purple-600">
               Show Invoice
               <svg class="-mr-0.5 h-5 w-5" aria-hidden="true" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
@@ -614,6 +635,7 @@ SVG;
           // We can now set the account level accordingly.
           // We will independently fetch the session invoice and set plan for the npub specified in invoice metadata.
           try {
+            $btcpayClient = $purchase->getBTCPayClient();
             $invoice = $btcpayClient->getInvoice($_SESSION['purchase_invoiceId']);
             $invoiceNpub = $invoice->getData()['metadata']['userNpub'];
             $invoicePlan = $invoice->getData()['metadata']['plan'];
@@ -627,13 +649,13 @@ SVG;
 
             // Update account level and expiration date
             $finalizeAccount = new Account($invoiceNpub, $link);
-            $new = match ($invoiceOrderType) {
+            $new = (bool) match ($invoiceOrderType) {
               'signup' => true,
               'renewal' => false,
               'upgrade' => true,
               default => true,
             };
-            $finalizeAccount->setPlan($invoicePlan, $invoicePeriod, $new);
+            $finalizeAccount->setPlan((int)$invoicePlan, (string) $invoicePeriod, $new);
             // Destroy account object
             unset($finalizeAccount);
             // Unset session login information
@@ -649,7 +671,18 @@ SVG;
                 $_SESSION["flag"],
                 $_SESSION["accflags"]
               );
+            } else {
+              // Renewal, update session account level
+              $_SESSION["acctlevel"] = $invoicePlan;
             }
+            // Unset all purchase_* session variables
+            unset(
+              $_SESSION['purchase_npub'],
+              $_SESSION['purchase_period'],
+              $_SESSION['purchase_price'],
+              $_SESSION['purchase_invoiceId'],
+              $_SESSION['purchase_finished']
+            );
           } catch (Exception $e) {
             // Something went wrong, display error
             $account_final_error = "An error occurred: " . $e->getMessage();
