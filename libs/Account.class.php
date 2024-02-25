@@ -756,13 +756,16 @@ class Account
     }
 
     try {
-      $planStartDate = $new ? date('Y-m-d') : $this->account['plan_start_date'] ?? date('Y-m-d');
-      $planEndDate = match ($period) {
-        '1y' => date('Y-m-d', strtotime($planStartDate . ' +1 year')),
-        '2y' => date('Y-m-d', strtotime($planStartDate . ' +2 year')),
-        '3y' => date('Y-m-d', strtotime($planStartDate . ' +3 year')),
-        default => date('Y-m-d', strtotime($planStartDate . ' +1 year')),
+      $planStartDate = $new ? date('Y-m-d') : $this->account['plan_until_date']; // Current all continue from the last plan end date
+      $periodDuration = match ($period) {
+          '1y' => '+1 year',
+          '2y' => '+2 years', // Fixed pluralization
+          '3y' => '+3 years', // Fixed pluralization
+          default => '+1 year',
       };
+      $planEndDate = date('Y-m-d', strtotime($planStartDate . ' ' . $periodDuration));
+      error_log("Plan start date: $planStartDate, Plan end date: $planEndDate");
+
       if (!$stmt->bind_param('issss', $planLevel, $planStartDate, $planEndDate, $period, $this->npub)) {
         throw new Exception("Error binding parameters: " . $stmt->error);
       }
