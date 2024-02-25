@@ -614,7 +614,7 @@ SVG;
             <?php if (!isset($_SESSION['purchase_invoiceId']) && $_SESSION['purchase_invoiceId'] === null) : ?>
               <p class="text-2xl font-semibold text-center text-gray-300">An error occurred while creating the invoice. Please try again later or choose eligible plan.</p>
             <?php endif; ?>
-            <button onclick="window.btcpay.showInvoice('<?= $invoiceId ?>');" type="button" class="self-center inline-flex items-center gap-x-2 rounded-md bg-purple-600 px-3.5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-purple-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-purple-600">
+            <button onclick="window.btcpay.showInvoice('<?= $_SESSION['purchase_invoiceId'] ?>');" type="button" class="self-center inline-flex items-center gap-x-2 rounded-md bg-purple-600 px-3.5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-purple-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-purple-600">
               Show Invoice
               <svg class="-mr-0.5 h-5 w-5" aria-hidden="true" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z" />
@@ -655,6 +655,7 @@ SVG;
               'upgrade' => true,
               default => true,
             };
+            error_log("Setting plan for $invoiceNpub to $invoicePlan, $invoicePeriod, $new");
             $finalizeAccount->setPlan((int)$invoicePlan, (string) $invoicePeriod, $new);
             // Destroy account object
             unset($finalizeAccount);
