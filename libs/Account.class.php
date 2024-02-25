@@ -7,26 +7,27 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/utils.funcs.php';
 Main class to work with accounts
 For reference:
 desc users;
-+------------------+--------------+------+-----+-------------------+-------------------+
-| Field            | Type         | Null | Key | Default           | Extra             |
-+------------------+--------------+------+-----+-------------------+-------------------+
-| id               | int          | NO   | PRI | NULL              | auto_increment    |
-| usernpub         | varchar(70)  | NO   | UNI | NULL              |                   |
-| password         | varchar(255) | NO   |     | NULL              |                   |
-| nym              | varchar(64)  | NO   |     | NULL              |                   |
-| wallet           | varchar(255) | NO   |     | NULL              |                   |
-| ppic             | varchar(255) | NO   |     | NULL              |                   |
-| paid             | varchar(255) | NO   |     | NULL              |                   |
-| acctlevel        | int          | NO   |     | NULL              |                   |
-| flag             | varchar(10)  | NO   |     | NULL              |                   |
-| created_at       | datetime     | YES  |     | CURRENT_TIMESTAMP | DEFAULT_GENERATED |
-| accflags         | json         | YES  |     | NULL              |                   |
-| plan_start_date  | datetime     | YES  |     | NULL              |                   |
-| npub_verified    | tinyint(1)   | NO   |     | 0                 |                   |
-| allow_npub_login | tinyint(1)   | NO   |     | 0                 |                   |
-| pbkdf2_password  | varchar(255) | YES  |     | NULL              |                   |
-| plan_until_date  | datetime     | YES  |     | NULL              |                   |
-+------------------+--------------+------+-----+-------------------+-------------------+
++---------------------+--------------+------+-----+-------------------+-------------------+
+| Field               | Type         | Null | Key | Default           | Extra             |
++---------------------+--------------+------+-----+-------------------+-------------------+
+| id                  | int          | NO   | PRI | NULL              | auto_increment    |
+| usernpub            | varchar(70)  | NO   | UNI | NULL              |                   |
+| password            | varchar(255) | NO   |     | NULL              |                   |
+| nym                 | varchar(64)  | NO   |     | NULL              |                   |
+| wallet              | varchar(255) | NO   |     | NULL              |                   |
+| ppic                | varchar(255) | NO   |     | NULL              |                   |
+| paid                | varchar(255) | NO   |     | NULL              |                   |
+| acctlevel           | int          | NO   |     | NULL              |                   |
+| flag                | varchar(10)  | NO   |     | NULL              |                   |
+| created_at          | datetime     | YES  |     | CURRENT_TIMESTAMP | DEFAULT_GENERATED |
+| accflags            | json         | YES  |     | NULL              |                   |
+| plan_start_date     | datetime     | YES  |     | NULL              |                   |
+| npub_verified       | tinyint(1)   | NO   |     | 0                 |                   |
+| allow_npub_login    | tinyint(1)   | NO   |     | 0                 |                   |
+| pbkdf2_password     | varchar(255) | YES  |     | NULL              |                   |
+| plan_until_date     | datetime     | YES  |     | NULL              |                   |
+| subscription_period | varchar(10)  | YES  |     | 1y                |                   |
++---------------------+--------------+------+-----+-------------------+-------------------+
 
  desc users_images;
 +--------------+--------------+------+-----+------------------------------+-------------------+
@@ -236,9 +237,9 @@ class Account
       (!empty($responseData->name) || !empty($responseData->lud16) || !empty($responseData->picture));
 
     if ($shouldUpdate) {
-      $this->account['nym'] = $force ? ($responseData->name ?? $this->account['nym']) : (empty($this->account['nym']) ? $responseData->name ?? '' : $this->account['nym']);
-      $this->account['wallet'] = $force ? ($responseData->lud16 ?? $this->account['wallet']) : (empty($this->account['wallet']) ? $responseData->lud16 ?? '' : $this->account['wallet']);
-      $this->account['ppic'] = $force ? ($responseData->picture ?? $this->account['ppic']) : (empty($this->account['ppic']) ? $responseData->picture ?? '' : $this->account['ppic']);
+      $this->account['nym'] = $force ? ($responseData->name ?? $this->account['nym']) : (empty($this->account['nym']) ? $responseData->name ?? '' : $this->account['nym'] ?? '');
+      $this->account['wallet'] = $force ? ($responseData->lud16 ?? $this->account['wallet']) : (empty($this->account['wallet']) ? $responseData->lud16 ?? '' : $this->account['wallet'] ?? '');
+      $this->account['ppic'] = $force ? ($responseData->picture ?? $this->account['ppic']) : (empty($this->account['ppic']) ? $responseData->picture ?? '' : $this->account['ppic'] ?? '');
 
       if ($update_db) {
         $this->updateAccount(
@@ -423,12 +424,13 @@ class Account
   {
     $planStartDate = $this->account['plan_start_date'];
     $planEndDate = $this->account['plan_until_date'];
-    if ($planStartDate === null) {
-      throw new Exception("Plan start date is not set for this account");
+    if ($planStartDate === null || $planEndDate === null) {
+      error_log("Plan start date is not set for this account");
+      return 0;
     }
 
     $startDate = new DateTime($planStartDate);
-    $endDate = new DateTime($planEndDate ?? 'now');
+    $endDate = new DateTime($planEndDate);
 
     $currentDate = new DateTime();
 
@@ -447,6 +449,22 @@ class Account
       $remainingDays = $currentDate->diff($endDate)->days;
       return $remainingDays;
     }
+  }
+
+  public function getRemainingSubscriptionPeriod(): string
+  {
+    $remainingDays = $this->getRemainingSubscriptionDays();
+    return match (true) {
+      $remainingDays <= 365 && $remainingDays > 0 => '1y',
+      $remainingDays <= 730 && $remainingDays > 365 => '2y',
+      $remainingDays <= 1095 && $remainingDays > 730 => '3y',
+      default => '1y',
+    };
+  }
+
+  public function getSubscriptionPeriod(): string
+  {
+    return $this->account['subscription_period'] ?? '1y';
   }
 
   public function isExpired(): bool
@@ -490,7 +508,8 @@ class Account
     string $plan_start_date = null,
     string $plan_until_date = null,
     int $npub_verified = null,
-    int $allow_npub_login = null
+    int $allow_npub_login = null,
+    string $subscription_period = null
   ) {
     $updates = [
       'password' => $password,
@@ -506,6 +525,7 @@ class Account
       'plan_until_date' => $plan_until_date,
       'npub_verified' => $npub_verified,
       'allow_npub_login' => $allow_npub_login,
+      'subscription_period' => $subscription_period,
     ];
 
     $sql = "UPDATE users SET ";
@@ -728,7 +748,7 @@ class Account
    */
   public function setPlan(int $planLevel, string $period = '1y', bool $new = true): void
   {
-    $sql = "UPDATE users SET acctlevel = ?, plan_start_date = ?, plan_until_date = ? WHERE usernpub = ?";
+    $sql = "UPDATE users SET acctlevel = ?, plan_start_date = ?, plan_until_date = ?, subscription_period = ? WHERE usernpub = ?";
     $stmt = $this->db->prepare($sql);
 
     if (!$stmt) {
@@ -743,7 +763,7 @@ class Account
         '3y' => date('Y-m-d', strtotime($planStartDate . ' +3 year')),
         default => date('Y-m-d', strtotime($planStartDate . ' +1 year')),
       };
-      if (!$stmt->bind_param('isss', $planLevel, $planStartDate, $planEndDate, $this->npub)) {
+      if (!$stmt->bind_param('issss', $planLevel, $planStartDate, $planEndDate, $period, $this->npub)) {
         throw new Exception("Error binding parameters: " . $stmt->error);
       }
 
