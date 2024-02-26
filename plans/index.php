@@ -194,7 +194,7 @@ SVG;
   <meta charSet="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Nostr.build account signup</title>
-  <link rel="stylesheet" href="/styles/twbuild.css?v=35" />
+  <link rel="stylesheet" href="/styles/twbuild.css?v=36" />
   <link rel="stylesheet" href="/styles/index.css?v=6" />
   <link rel="stylesheet" href="/styles/signup.css?v=7" />
   <link rel="icon" href="/assets/primo_nostr.png" />
@@ -317,10 +317,10 @@ SVG;
                       <p class="rounded-full bg-purple-300 text-purple-800 px-2.5 py-1 text-xs font-semibold leading-5">Your plan</p>
                     </div>
                   <?php endif; ?>
-                  <p class="mt-6 flex items-baseline gap-x-1 relative">
+                  <p class="mt-6 flex items-baseline gap-x-1 relative md:justify-start justify-center">
                     <!-- Display Adjusted Price -->
                     <?php if ($plan->isCurrentPlan) : ?>
-                      <span class="self-center text-4xl font-bold tracking-tight text-purple-200" x-text="(period === '1y' ? '<?= $plan->fullPrice ?>' : (period === '2y' ? '<?= $plan->full2yPrice ?>' : '<?= $plan->full3yPrice ?>'))"></span>
+                      <span class="text-4xl font-bold tracking-tight text-purple-200" x-text="(period === '1y' ? '<?= $plan->fullPrice ?>' : (period === '2y' ? '<?= $plan->full2yPrice ?>' : '<?= $plan->full3yPrice ?>'))"></span>
                       <span class="text-sm font-semibold leading-6 text-purple-300"><?= $plan->currency ?></span>
                     <?php else : ?>
                       <span class="text-4xl font-bold tracking-tight text-purple-200" x-text="(period === '1y' ? '<?= $plan->price != -1 ? $plan->price : 'Ineligible' ?>' : (period === '2y' ? '<?= $plan->price2y != -1 ? $plan->price2y : 'Ineligible' ?>' : '<?= $plan->price3y != -1 ? $plan->price3y : 'Ineligible' ?>'))"></span>
