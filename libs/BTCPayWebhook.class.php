@@ -3,6 +3,7 @@
 declare(strict_types=1);
 require_once $_SERVER['DOCUMENT_ROOT'] . '/config.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/functions/session.php';
+require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/BTCPayClient.class.php';
 require_once __DIR__ . '/Account.class.php';
 
 require $_SERVER['DOCUMENT_ROOT'] . '/vendor/autoload.php';
@@ -106,6 +107,14 @@ class BTCPayWebhook
         $orderType = $invoice->getData()['metadata']['orderType'];
         // Get the order period from the invoice metadata
         $orderPeriod = $invoice->getData()['metadata']['orderPeriod'];
+        // Get purchasePrice from the invoice
+        $purchasePrice = $invoice->getData()['metadata']['purchasePrice'];
+
+        // Compare the actual amount paid with the purchase price
+        if(!BTCPayClient::amountEquealOrMoreString($purchasePrice, $invoice->getAmount())){
+          error_log("The actual amount paid is less than the purchase price." . PHP_EOL);
+          return false;
+        }
 
         error_log(PHP_EOL . "Order ID: " . $orderId . PHP_EOL);
         error_log("User npub: " . $userNpub . PHP_EOL);

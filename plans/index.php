@@ -457,7 +457,8 @@ SVG;
                 <?php endif; ?>
                 <div class="flex w-full justify-center">
                   <label for="enable-nostr-login" class="mt-2 text-sm font-medium leading-6 text-gray-300 text-center">Enable Login with Nostr Identity</label>
-                  <input type="checkbox" id="enable-nostr-login" name="enable-nostr-login" class="mt-2 m-2 p-2" checked readonly>
+                  <input type="checkbox" id="enable-nostr-login-view" name="enable-nostr-login" class="mt-2 m-2 p-2" checked disabled>
+                  <input type="hidden" name="enable-nostr-login" id="enable-nostr-login" value="on">
                 </div>
                 <div>
                   <button type="submit" class="flex w-full justify-center rounded-md bg-purple-600 px-3 py-1.5 text-sm font-semibold leading-6 text-white shadow-sm hover:bg-purple-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-purple-600">Create Account</button>
@@ -552,6 +553,7 @@ SVG;
                   'userNpub' => $npub,
                   'orderPeriod' => $period,
                   'orderType' => $orderType,
+                  'purchasePrice' => $price, // Can be used to verify that the full amount was paid.
                 ]
               );
             } else {
@@ -576,10 +578,9 @@ SVG;
             $orderIdPrefix = 'nb_renewal_order';
           }
 
-          if (!isset($_SESSION['purchase_invoiceId'])) {
+          if (!isset($_SESSION['purchase_invoiceId']) || $_SESSION['purchase_invoiceId'] === null) {
             // If no invoice exists, create a new one
-            $invoiceId = createInvoice($btcpayClient, $_selectedPlan, $_SESSION['purchase_npub'], $_SESSION['purchase_period'], $orderType, $orderIdPrefix, $redirectUrl);
-            $_SESSION['purchase_invoiceId'] = $invoiceId;
+            $_SESSION['purchase_invoiceId'] = createInvoice($btcpayClient, $_selectedPlan, $_SESSION['purchase_npub'], $_SESSION['purchase_period'], $orderType, $orderIdPrefix, $redirectUrl);
           } else {
             try {
               $invoice = $btcpayClient->getInvoice($_SESSION['purchase_invoiceId']);
@@ -588,7 +589,8 @@ SVG;
               $invoicePlan = $invoice->getData()['metadata']['plan'];
               $invoicePeriod = $invoice->getData()['metadata']['orderPeriod'];
               $invoiceOrderType = $invoice->getData()['metadata']['orderType'];
-              $priceEqual = BTCPayClient::amountEqual((int)$_SESSION['purchase_price'], $invoice->getAmount());
+              $purchasePrice = $invoice->getData()['metadata']['purchasePrice'];
+              $priceEqual = BTCPayClient::amountEqualString($purchasePrice, $invoice->getAmount());
 
               if (
                 $invoiceStatus == 'Expired' ||
@@ -599,13 +601,11 @@ SVG;
                 !$priceEqual
               ) {
                 // Conditions met for a new invoice creation
-                $invoiceId = createInvoice($btcpayClient, $_selectedPlan, $_SESSION['purchase_npub'], $_SESSION['purchase_period'], $orderType, $orderIdPrefix, $redirectUrl);
-                $_SESSION['purchase_invoiceId'] = $invoiceId;
+                $_SESSION['purchase_invoiceId'] = createInvoice($btcpayClient, $_selectedPlan, $_SESSION['purchase_npub'], $_SESSION['purchase_period'], $orderType, $orderIdPrefix, $redirectUrl);
               }
             } catch (Exception $e) {
               // Handle exception by creating a new invoice if the existing one is not found or any other error occurs
-              $invoiceId = createInvoice($btcpayClient, $_selectedPlan, $_SESSION['purchase_npub'], $_SESSION['purchase_period'], $orderType, $orderIdPrefix, $redirectUrl);
-              $_SESSION['purchase_invoiceId'] = $invoiceId;
+              $_SESSION['purchase_invoiceId'] = createInvoice($btcpayClient, $_selectedPlan, $_SESSION['purchase_npub'], $_SESSION['purchase_period'], $orderType, $orderIdPrefix, $redirectUrl);
             }
           }
 
@@ -641,7 +641,8 @@ SVG;
             $invoicePlan = $invoice->getData()['metadata']['plan'];
             $invoicePeriod = $invoice->getData()['metadata']['orderPeriod'];
             $invoiceOrderType = $invoice->getData()['metadata']['orderType'];
-            $priceEqual = BTCPayClient::amountEqual((int)$_SESSION['purchase_price'], $invoice->getAmount());
+            $purchasePrice = $invoice->getData()['metadata']['purchasePrice'];
+            $priceEqual = BTCPayClient::amountEqualString($purchasePrice, $invoice->getAmount());
 
             if ($invoiceNpub != $_SESSION['purchase_npub'] || !$priceEqual || !$_SESSION['purchase_finished']) {
               throw new Exception('Invoice did not match the expected npub or price, or was not settled.');
@@ -682,6 +683,7 @@ SVG;
               $_SESSION['purchase_period'],
               $_SESSION['purchase_price'],
               $_SESSION['purchase_invoiceId'],
+              $_SESSION['purchase_plan'],
               $_SESSION['purchase_finished']
             );
           } catch (Exception $e) {
@@ -733,8 +735,8 @@ SVG;
 
   <script src="https://btcpay.nostr.build/modal/btcpay.js"></script>
   <script>
-    <?php if ($step == 3 && isset($invoiceId)) : ?>
-      window.btcpay.showInvoice('<?= $invoiceId ?>');
+    <?php if ($step == 3 && isset($_SESSION['purchase_invoiceId'])) : ?>
+      window.btcpay.showInvoice('<?= $_SESSION['purchase_invoiceId'] ?>');
     <?php endif; ?>
   </script>
 </body>
