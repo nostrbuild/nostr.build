@@ -147,18 +147,14 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
       $account = new Account($usernpub, $link);
       if ($account->accountExists()) {
         $account_create_error = 'This npub1 public key is already in use. Please enter a different public key.';
-      }
-      $npubVerifiedFlag = $_SESSION['npub_verified'] === $usernpub ? 1 : 0;
-      //$enableNostrLoginFlag = isset($_POST['enable-nostr-login']) && $npubVerified ? 1 : 0;
-      $enableNostrLoginFlag = $npubVerified ? 1 : 0; // Always enable Nostr login for new signups
-      if (!$npubVerifiedFlag) {
-        $account_create_error = "The npub1 public key you entered does not match the one you verified. Please enter the correct public key.";
-      }
-      $account->createAccount($password, 0 /* level, default to 0 */, $npubVerifiedFlag, $enableNostrLoginFlag);
-      if ($npubVerifiedFlag && $enableNostrLoginFlag) {
-        // If the npub is verified, set the session variable
-        $account->verifyNpub();
-        $account->allowNpubLogin();
+      } else {
+        $npubVerifiedFlag = $_SESSION['npub_verified'] === $usernpub ? 1 : 0;
+        $enableNostrLoginFlag = 1; // Always enable Nostr login for new signups
+        if (!$npubVerifiedFlag) {
+          $account_create_error = "The npub1 public key you entered does not match the one you verified. Please enter the correct public key.";
+        } else {
+          $account->createAccount($password, 0 /* level, default to 0 */, $npubVerifiedFlag, $enableNostrLoginFlag);
+        }
       }
     } catch (DuplicateUserException $e) {
       $account_create_error = 'This npub1 public key is already in use. Please enter a different public key.';

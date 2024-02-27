@@ -359,7 +359,7 @@ class Account
    * @throws \Exception
    * @return void
    */
-  public function createAccount(string $password, int $level = 0, int $npub_verified = 0, int $allow_npub_login = 0): void
+  public function createAccount(string $password, int $level = 0, int $npub_verified = 0, int $allow_npub_login = 1): void
   {
     // Preemptive check if the account already exists
     if ($this->accountExists()) {
