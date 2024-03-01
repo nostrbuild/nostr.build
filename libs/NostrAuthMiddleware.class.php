@@ -86,7 +86,7 @@ class NostrAuthMiddleware implements MiddlewareInterface
           error_log('Days since expiration: ' . $daysSinceExpiration);
           error_log('Days past last notification: ' . $account->getDaysPastLastNotification());
           error_log('Notify: ' . (string)$notify);
-          if (false && $notify) { // Disable notifications for now
+          if ($notify) { // Disable notifications for now
             try {
               $dmMsg = 'Your account has expired ' . (string)$daysSinceExpiration . ' days ago. Please renew your subscription at https://nostr.build/account/';
               $nc = new NostrClient($_SERVER['NB_API_NOSTR_CLIENT_SECRET'], $_SERVER['NB_API_NOSTR_CLIENT_URL']);
@@ -112,7 +112,7 @@ class NostrAuthMiddleware implements MiddlewareInterface
           error_log('Days until expiration: ' . $daysUntilExpiration);
           error_log('Days past last notification: ' . $account->getDaysPastLastNotification());
           error_log('Notify: ' . (string)$notify);
-          if (false && $notify) { // Disable notifications for now
+          if ($notify) { // Disable notifications for now
             try {
               $dmMsg = 'Your account will expire in ' . (string)$daysUntilExpiration . ' days. Please renew your subscription at https://nostr.build/account/';
               $nc = new NostrClient($_SERVER['NB_API_NOSTR_CLIENT_SECRET'], $_SERVER['NB_API_NOSTR_CLIENT_URL']);
