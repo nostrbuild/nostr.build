@@ -119,6 +119,9 @@ class NostrAuthMiddleware implements MiddlewareInterface
             }
           }
         }
+      } else {
+        error_log('User ' . $npub . ' account is not valid');
+        $accountUploadEligible = false;
       }
     } catch (\Exception $e) {
       error_log('NostrAuthHandler error: ' . $e->getMessage());
