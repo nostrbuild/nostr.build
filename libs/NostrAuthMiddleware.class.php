@@ -82,6 +82,10 @@ class NostrAuthMiddleware implements MiddlewareInterface
             $account->getDaysPastLastNotification() > 7 || // More than 7 days since last notification
             $account->getDaysPastLastNotification() === 0) && // No notification sent yet
             $daysSinceExpiration < 70; // Less than 10 weeks past expiration
+          // LOG all vars for DEBUG
+          error_log('Days since expiration: ' . $daysSinceExpiration);
+          error_log('Days past last notification: ' . $account->getDaysPastLastNotification());
+          error_log('Notify: ' . (string)$notify);
           if ($notify) {
             try {
               $dmMsg = 'Your account has expired ' . (string)$daysSinceExpiration . ' days ago. Please renew your subscription at https://nostr.build/account/';
@@ -104,6 +108,10 @@ class NostrAuthMiddleware implements MiddlewareInterface
           $notify =
             $account->getDaysPastLastNotification() > 7 || // More than 7 days since last notification
             $account->getDaysPastLastNotification() === 0; // No notification sent yet
+          // LOG all vars for DEBUG
+          error_log('Days until expiration: ' . $daysUntilExpiration);
+          error_log('Days past last notification: ' . $account->getDaysPastLastNotification());
+          error_log('Notify: ' . (string)$notify);
           if ($notify) {
             try {
               $dmMsg = 'Your account will expire in ' . (string)$daysUntilExpiration . ' days. Please renew your subscription at https://nostr.build/account/';
