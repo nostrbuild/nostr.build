@@ -80,7 +80,7 @@ class NostrAuthMiddleware implements MiddlewareInterface
           $daysSinceExpiration = $account->getDaysPastSubscriptionExpiration();
           $notify = (
             $account->getDaysPastLastNotification() > 7 || // More than 7 days since last notification
-            $account->getDaysPastLastNotification() === 0) && // No notification sent yet
+            $account->getDaysPastLastNotification() === -1) && // No notification sent yet
             $daysSinceExpiration < 70; // Less than 10 weeks past expiration
           // LOG all vars for DEBUG
           error_log('Days since expiration: ' . $daysSinceExpiration);
@@ -107,7 +107,7 @@ class NostrAuthMiddleware implements MiddlewareInterface
           $daysUntilExpiration = $account->getDaysUntilSubscriptionExpiration();
           $notify =
             $account->getDaysPastLastNotification() > 7 || // More than 7 days since last notification
-            $account->getDaysPastLastNotification() === 0; // No notification sent yet
+            $account->getDaysPastLastNotification() === -1; // No notification sent yet
           // LOG all vars for DEBUG
           error_log('Days until expiration: ' . $daysUntilExpiration);
           error_log('Days past last notification: ' . $account->getDaysPastLastNotification());

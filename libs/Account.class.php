@@ -507,7 +507,7 @@ class Account
     $lastNotificationDate = $this->account['last_notification_date'];
     if ($lastNotificationDate === null) {
       error_log("Last notification date is not set for this account");
-      return 0;
+      return -1;
     }
 
     $notificationDate = new DateTime($lastNotificationDate);
