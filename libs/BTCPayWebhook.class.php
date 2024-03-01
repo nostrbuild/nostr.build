@@ -111,7 +111,7 @@ class BTCPayWebhook
         $purchasePrice = $invoice->getData()['metadata']['purchasePrice'];
 
         // Compare the actual amount paid with the purchase price
-        if(!BTCPayClient::amountEquealOrMoreString($purchasePrice, $invoice->getAmount())){
+        if(!BTCPayClient::amountEquealOrMore($purchasePrice, $invoice->getAmount())){
           error_log("The actual amount paid is less than the purchase price." . PHP_EOL);
           return false;
         }
