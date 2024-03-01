@@ -3,7 +3,6 @@
 require_once __DIR__ . '/../config.php';
 require_once __DIR__ . '/NostrAuthHandler.class.php';
 require_once __DIR__ . '/Account.class.php';
-require_once __DIR__ . '/NostrClient.class.php';
 
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
@@ -74,51 +73,9 @@ class NostrAuthMiddleware implements MiddlewareInterface
         if ($account->isExpired()) {
           error_log('User ' . $npub . ' account has expired');
           $accountUploadEligible = false;
-          // Notify npub via DM that their account has expired
-          // Check if we already sent a notification in the last 7 days
-          // Do not send more than one per week, and stop sending after 10 weeks from expiration
-          $daysSinceExpiration = $account->getDaysPastSubscriptionExpiration();
-          $notify = (
-            $account->getDaysPastLastNotification() > 7 || // More than 7 days since last notification
-            $account->getDaysPastLastNotification() === 0) && // No notification sent yet
-            $daysSinceExpiration < 70; // Less than 10 weeks past expiration
-          if ($notify) {
-            try {
-              $dmMsg = 'Your account has expired ' . (string)$daysSinceExpiration . ' days ago. Please renew your subscription at https://nostr.build/account/';
-              $nc = new NostrClient($_SERVER['NB_API_NOSTR_CLIENT_SECRET'], $_SERVER['NB_API_NOSTR_CLIENT_URL']);
-              if (!$nc->sendDm($npub, [$dmMsg])) {
-                throw new Exception('Error sending DM');
-              } else {
-                // Update last notification date
-                $account->updateLastNotificationDate();
-              }
-            } catch (\Exception $e) {
-              error_log('Error sending DM: ' . $e->getMessage());
-            }
-          }
-        } elseif ($account->getDaysUntilSubscriptionExpiration() <= 30) {
-          // Notify npub via DM that their account is about to expire
-          // Check if we already sent a notification in the last 7 days
-          // Do not send more than one per week, and stop sending after 10 weeks from expiration
-          $daysUntilExpiration = $account->getDaysUntilSubscriptionExpiration();
-          $notify =
-            $account->getDaysPastLastNotification() > 7 || // More than 7 days since last notification
-            $account->getDaysPastLastNotification() === 0; // No notification sent yet
-          if ($notify) {
-            try {
-              $dmMsg = 'Your account will expire in ' . (string)$daysUntilExpiration . ' days. Please renew your subscription at https://nostr.build/account/';
-              $nc = new NostrClient($_SERVER['NB_API_NOSTR_CLIENT_SECRET'], $_SERVER['NB_API_NOSTR_CLIENT_URL']);
-              if (!$nc->sendDm($npub, [$dmMsg])) {
-                throw new Exception('Error sending DM');
-              } else {
-                // Update last notification date
-                $account->updateLastNotificationDate();
-              }
-            } catch (\Exception $e) {
-              error_log('Error sending DM: ' . $e->getMessage());
-            }
-          }
         }
+      } else {
+        $accountUploadEligible = false;
       }
     } catch (\Exception $e) {
       error_log('NostrAuthHandler error: ' . $e->getMessage());

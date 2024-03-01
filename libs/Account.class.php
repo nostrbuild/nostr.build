@@ -7,28 +7,27 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/utils.funcs.php';
 Main class to work with accounts
 For reference:
 desc users;
-+------------------------+--------------+------+-----+-------------------+-------------------+
-| Field                  | Type         | Null | Key | Default           | Extra             |
-+------------------------+--------------+------+-----+-------------------+-------------------+
-| id                     | int          | NO   | PRI | NULL              | auto_increment    |
-| usernpub               | varchar(70)  | NO   | UNI | NULL              |                   |
-| password               | varchar(255) | NO   |     | NULL              |                   |
-| nym                    | varchar(64)  | NO   |     | NULL              |                   |
-| wallet                 | varchar(255) | NO   |     | NULL              |                   |
-| ppic                   | varchar(255) | NO   |     | NULL              |                   |
-| paid                   | varchar(255) | NO   |     | NULL              |                   |
-| acctlevel              | int          | NO   |     | NULL              |                   |
-| flag                   | varchar(10)  | NO   |     | NULL              |                   |
-| created_at             | datetime     | YES  |     | CURRENT_TIMESTAMP | DEFAULT_GENERATED |
-| accflags               | json         | YES  |     | NULL              |                   |
-| plan_start_date        | datetime     | YES  |     | NULL              |                   |
-| npub_verified          | tinyint(1)   | NO   |     | 0                 |                   |
-| allow_npub_login       | tinyint(1)   | NO   |     | 0                 |                   |
-| pbkdf2_password        | varchar(255) | YES  |     | NULL              |                   |
-| plan_until_date        | datetime     | YES  |     | NULL              |                   |
-| last_notification_date | datetime     | YES  |     | NULL              |                   |
-| subscription_period    | varchar(10)  | YES  |     | 1y                |                   |
-+------------------------+--------------+------+-----+-------------------+-------------------+
++---------------------+--------------+------+-----+-------------------+-------------------+
+| Field               | Type         | Null | Key | Default           | Extra             |
++---------------------+--------------+------+-----+-------------------+-------------------+
+| id                  | int          | NO   | PRI | NULL              | auto_increment    |
+| usernpub            | varchar(70)  | NO   | UNI | NULL              |                   |
+| password            | varchar(255) | NO   |     | NULL              |                   |
+| nym                 | varchar(64)  | NO   |     | NULL              |                   |
+| wallet              | varchar(255) | NO   |     | NULL              |                   |
+| ppic                | varchar(255) | NO   |     | NULL              |                   |
+| paid                | varchar(255) | NO   |     | NULL              |                   |
+| acctlevel           | int          | NO   |     | NULL              |                   |
+| flag                | varchar(10)  | NO   |     | NULL              |                   |
+| created_at          | datetime     | YES  |     | CURRENT_TIMESTAMP | DEFAULT_GENERATED |
+| accflags            | json         | YES  |     | NULL              |                   |
+| plan_start_date     | datetime     | YES  |     | NULL              |                   |
+| npub_verified       | tinyint(1)   | NO   |     | 0                 |                   |
+| allow_npub_login    | tinyint(1)   | NO   |     | 0                 |                   |
+| pbkdf2_password     | varchar(255) | YES  |     | NULL              |                   |
+| plan_until_date     | datetime     | YES  |     | NULL              |                   |
+| subscription_period | varchar(10)  | YES  |     | 1y                |                   |
++---------------------+--------------+------+-----+-------------------+-------------------+
 
  desc users_images;
 +--------------+--------------+------+-----+------------------------------+-------------------+
@@ -452,76 +451,6 @@ class Account
     }
   }
 
-  public function getDaysPastSubscriptionExpiration(): int
-  {
-    $planEndDate = $this->account['plan_until_date'];
-    if ($planEndDate === null) {
-      error_log("Plan end date is not set for this account");
-      return 0;
-    }
-
-    $endDate = new DateTime($planEndDate);
-    $currentDate = new DateTime();
-
-    // Account for special account levels Admin, Moderator and return 0 days
-    if ($this->getAccountLevel() === AccountLevel::Admin || $this->getAccountLevel() === AccountLevel::Moderator) {
-      return 0;
-    }
-
-    if ($currentDate < $endDate) {
-      // Subscription has not ended yet
-      return 0;
-    } else {
-      $daysPastExpiration = $endDate->diff($currentDate)->days;
-      return $daysPastExpiration;
-    }
-  }
-
-  public function getDaysUntilSubscriptionExpiration(): int
-  {
-    $planEndDate = $this->account['plan_until_date'];
-    if ($planEndDate === null) {
-      error_log("Plan end date is not set for this account");
-      return 0;
-    }
-
-    $endDate = new DateTime($planEndDate);
-    $currentDate = new DateTime();
-
-    // Account for special account levels Admin, Moderator and return 9,999 days
-    if ($this->getAccountLevel() === AccountLevel::Admin || $this->getAccountLevel() === AccountLevel::Moderator) {
-      return 9999;
-    }
-
-    if ($currentDate > $endDate) {
-      // Subscription has already ended
-      return 0;
-    } else {
-      $daysUntilExpiration = $currentDate->diff($endDate)->days;
-      return $daysUntilExpiration;
-    }
-  }
-
-  public function getDaysPastLastNotification(): int
-  {
-    $lastNotificationDate = $this->account['last_notification_date'];
-    if ($lastNotificationDate === null) {
-      error_log("Last notification date is not set for this account");
-      return 0;
-    }
-
-    $notificationDate = new DateTime($lastNotificationDate);
-    $currentDate = new DateTime();
-
-    $daysPastNotification = $notificationDate->diff($currentDate)->days;
-    return $daysPastNotification;
-  }
-
-  public function updateLastNotificationDate(): void
-  {
-    $this->updateAccount(last_notification_date: date('Y-m-d'));
-  }
-
   public function getRemainingSubscriptionPeriod(): string
   {
     $remainingDays = $this->getRemainingSubscriptionDays();
@@ -578,7 +507,6 @@ class Account
     array $accflags = null,
     string $plan_start_date = null,
     string $plan_until_date = null,
-    string $last_notification_date = null,
     int $npub_verified = null,
     int $allow_npub_login = null,
     string $subscription_period = null
@@ -595,7 +523,6 @@ class Account
       'accflags' => $accflags ? json_encode($accflags) : null,
       'plan_start_date' => $plan_start_date,
       'plan_until_date' => $plan_until_date,
-      'last_notification_date' => $last_notification_date,
       'npub_verified' => $npub_verified,
       'allow_npub_login' => $allow_npub_login,
       'subscription_period' => $subscription_period,
@@ -831,10 +758,10 @@ class Account
     try {
       $planStartDate = $new ? date('Y-m-d') : $this->account['plan_start_date'];
       $periodDuration = match ($period) {
-        '1y' => '+1 year',
-        '2y' => '+2 years', // Fixed pluralization
-        '3y' => '+3 years', // Fixed pluralization
-        default => '+1 year',
+          '1y' => '+1 year',
+          '2y' => '+2 years', // Fixed pluralization
+          '3y' => '+3 years', // Fixed pluralization
+          default => '+1 year',
       };
 
       $planEndDate = date('Y-m-d', strtotime(date('Y-m-d') . ' ' . $periodDuration)); // End date is from now, always      
