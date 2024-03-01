@@ -85,7 +85,7 @@ class BTCPayClient
     // Parse integer to PreciseNumber
     $preciseFirstNumber = PreciseNumber::parseInt($intAmount);
     // Conver both to string to integer and compare
-    return (int)$preciseFirstNumber >= (int)$pnAmount;
+    return intval($preciseFirstNumber) >= intval($pnAmount);
   }
 
   static public function amountEquealOrMoreString(string $strAmount, PreciseNumber $pnAmount): bool
@@ -93,6 +93,6 @@ class BTCPayClient
     // Parse string to PreciseNumber
     $preciseFirstNumber = PreciseNumber::parseString($strAmount);
     // Conver both to string to integer and compare
-    return (int)$preciseFirstNumber >= (int)$pnAmount;
+    return intval($preciseFirstNumber) >= intval($pnAmount);
   }
 }
