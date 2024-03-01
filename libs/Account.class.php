@@ -463,6 +463,11 @@ class Account
     $endDate = new DateTime($planEndDate);
     $currentDate = new DateTime();
 
+    // Account for special account levels Admin, Moderator and return 0 days
+    if ($this->getAccountLevel() === AccountLevel::Admin || $this->getAccountLevel() === AccountLevel::Moderator) {
+      return 0;
+    }
+
     if ($currentDate < $endDate) {
       // Subscription has not ended yet
       return 0;
@@ -482,6 +487,11 @@ class Account
 
     $endDate = new DateTime($planEndDate);
     $currentDate = new DateTime();
+
+    // Account for special account levels Admin, Moderator and return 9,999 days
+    if ($this->getAccountLevel() === AccountLevel::Admin || $this->getAccountLevel() === AccountLevel::Moderator) {
+      return 9999;
+    }
 
     if ($currentDate > $endDate) {
       // Subscription has already ended
