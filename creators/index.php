@@ -40,7 +40,10 @@ global $link;
 				OVER(PARTITION BY usernpub ORDER BY RAND()) as rn,
 				COUNT(*) OVER(PARTITION BY usernpub) as total_images
 				FROM users_images WHERE flag=1
-				) AS i ON u.usernpub = i.usernpub WHERE i.rn = 1 ORDER BY RAND()
+				) AS i ON u.usernpub = i.usernpub WHERE i.rn = 1
+				AND u.plan_until_date > NOW()
+				AND u.acctlevel IN (1, 10, 99)
+				ORDER BY RAND()
 			");
 			$stmt->execute();
 			$result = $stmt->get_result();
