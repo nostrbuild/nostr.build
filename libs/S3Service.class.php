@@ -227,7 +227,7 @@ class S3Service
     return $result;
   }
 
-  public function getObjectMetadataFromR2(string $objectKey, string $mime): bool | Aws\Result
+  public function getObjectMetadataFromR2(string $objectKey, string | null $mime): bool | Aws\Result
   {
     $r2Params = $this->getR2BucketAndObjectNames($objectKey, $mime);
     try {
@@ -343,7 +343,7 @@ class S3Service
    *
    * @return array The bucket and object name as an associative array.
    */
-  private function getR2BucketAndObjectNames(string $objectKey, string $mimeType = 'application/octet-stream'): array
+  private function getR2BucketAndObjectNames(string $objectKey, string | null $mimeType = 'application/octet-stream'): array
   {
     // Validate the objectKey to ensure it contains a '/'
     if (strpos($objectKey, '/') === false) {
