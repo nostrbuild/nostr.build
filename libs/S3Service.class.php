@@ -59,7 +59,7 @@ class S3Service
   }
 
   // Upload a file to S3
-  public function uploadToS3($sourcePath, $destinationPath, $sha256 = '')
+  public function uploadToS3($sourcePath, $destinationPath, $sha256 = '', $s3backup = false): bool
   {
     // Number of retries for the upload
     $maxRetries = 3;
@@ -126,9 +126,15 @@ class S3Service
     $s3Promise = $attemptUpload($this->s3, $s3Options, $maxRetries);
     $r2Promise = $attemptUpload($this->r2, $r2Options, $maxRetries);
 
+    $uploadPromises = [];
+    // Append promises to the array and only add s3 if $s3backup is true
+    $uploadPromises[] = $r2Promise;
+    if ($s3backup) {
+      $uploadPromises[] = $s3Promise;
+    }
+
     try {
-      $results = Promise\Utils::unwrap([$s3Promise, $r2Promise]);
-      // If you get here, both uploads were successful
+      $results = Promise\Utils::unwrap($uploadPromises);
       return true;
     } catch (\Throwable $e) {
       error_log("Upload Error: " . $e->getMessage());
@@ -221,13 +227,14 @@ class S3Service
     return $result;
   }
 
-  public function getObjectMetadataFromR2($objectKey): bool | Aws\Result
+  public function getObjectMetadataFromR2(string $objectKey, string $mime): bool | Aws\Result
   {
+    $r2Params = $this->getR2BucketAndObjectNames($objectKey, $mime);
     try {
       // Get the object metadata from the specified bucket
       $result = $this->r2->headObject([
-        'Bucket' => $this->bucket,
-        'Key'    => $objectKey,
+        'Bucket' => $r2Params['bucket'],
+        'Key'    => $r2Params['objectName'],
       ]);
 
       if (!isset($result['Metadata'])) {
@@ -253,7 +260,7 @@ class S3Service
    *   // process $object
    * }
    */
-  public function listObjectsInBucket($prefix = '', $maxKeys = 1000)
+  public function listObjectsInBucketS3($prefix = '', $maxKeys = 1000)
   {
     try {
       $isTruncated = true;
@@ -284,7 +291,7 @@ class S3Service
   }
 
   // Copy an object from one location to another
-  public function copyObject($sourceKey, $destinationKey)
+  public function copyObjectS3($sourceKey, $destinationKey)
   {
     try {
       $result = $this->s3->copyObject([
@@ -301,7 +308,7 @@ class S3Service
   }
 
   // Download a file from S3 to your local system
-  public function downloadObject($key, $saveAs)
+  public function downloadObjectS3($key, $saveAs)
   {
     try {
       $result = $this->s3->getObject([
@@ -318,7 +325,7 @@ class S3Service
   }
 
   // Get a URL for the object
-  public function getObjectUrl($key)
+  public function getObjectUrlS3($key)
   {
     try {
       $url = $this->s3->getObjectUrl($this->bucket, $key);
@@ -361,9 +368,11 @@ class S3Service
     };
 
     // Further augment bucket suffix for paid accounts to split img and av
-    $mimePrefix = explode('/', $mimeType)[0];
-    if ($bucketSuffix === '-pro' && in_array($mimePrefix, ['video', 'audio'])) {
-      $bucketSuffix .= '-av';
+    if (!empty($mimeType) && substr_count($mimeType, '/') === 1) {
+      $mimePrefix = explode('/', $mimeType)[0];
+      if ($bucketSuffix === '-pro' && in_array($mimePrefix, ['video', 'audio'])) {
+        $bucketSuffix .= '-av';
+      }
     }
 
     return [

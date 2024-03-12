@@ -42,7 +42,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
             // Delete requests are free, so we don't bother checking if the object exists
             try {
-                $s3->deleteFromS3($objectName);
+                $s3->deleteFromS3($objectName); // TODO: Remove when S3 purge is done
                 $purger = new CloudflarePurger($_SERVER['NB_API_SECRET'], $_SERVER['NB_API_PURGE_URL']);
                 $result = $purger->purgeFiles([$filename]);
                 if ($result !== false) {
