@@ -57,7 +57,7 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/functions/session.php';
 			We mean it. Stuff to do, please Please have tons of fun! That's what nostr.build is all about. If something isn't
 			fun -- if you see anything on our site that shouldn't be there
 			because it violates our policies, is illegal (e.g. revenge porn or child porn), or for some other reason, please
-			let us know by emailing us at admin@nostr.build pr @nostr.build on nostr.
+			let us know by emailing us at admin@nostr.build, or directly on nostr.
 		</p>
 		<h4>About Media you upload</h4>
 		<p>
@@ -65,6 +65,10 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/functions/session.php';
 			upload using nostr's free service, they may be featured in the gallery or View All section. If you share an image
 			publicly with nostr, Facebook, Twitter, Digg, Reddit, etc.,
 			then it may also end up in the View All or Gallery section.
+			* You can not upload any type of illegal media, it will be taken down, reported and investigated
+			* You can not upload images of someone without their permission or use others in a derogatory way 
+			* Do not abuse this service in any way. We are offering a free service dedicated to improving the freedom of speech. 
+			If there are any questions or issues please reach out to us
 		</p>
 		<h4>Details</h4>
 		<p>
