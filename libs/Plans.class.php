@@ -252,6 +252,7 @@ class Plans
         features: [
           '<b>20GB of private storage</b>',
           '<b><a class="ref_link" target="_blank" href="https://nostr.build/creators/">Host on nostr.build page</a></b>',
+          '<b>S3 backup for all media</b>',
           '<b>Global CDN for all media</b>',
           '<b>All the Professional Features</b>',
           '❤️ Support nostr.build ❤️',
@@ -274,7 +275,7 @@ class Plans
         name: 'Advanced',
         price: self::$originalPrices[self::ADVANCED],
         features: [
-          '<b>50GB of private storage</b>',
+          '<b>100GB of private storage</b>',
           '<b>Early access to new features</b>',
           '<b>Media backed-up to S3</b>',
           '<b>@nostr.build NIP-05 *</b>',
