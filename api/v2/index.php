@@ -6,6 +6,8 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/db/UsersImages.class.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/db/UsersImagesFolders.class.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/BTCPayWebhook.class.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/Account.class.php';
+// Add GifBrowser class
+require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/GifBrowser.class.php';
 
 use DI\Container;
 use Slim\Factory\AppFactory;
@@ -61,6 +63,12 @@ $container->set('accountClass', function () {
     global $link;
     return new Account($npub, $link);
   };
+});
+
+// Setup GifBrowser
+$container->set('gifBrowser', function () {
+  global $link;
+  return new GifBrowser($link);
 });
 
 
@@ -152,6 +160,7 @@ require_once __DIR__ . '/routes_nip96.php'; // Include nip96 upload routes
 require_once __DIR__ . '/routes_uppy.php'; // Include uppy upload routes
 require_once __DIR__ . '/routes_account.php'; // Include pro account routes
 require_once __DIR__ . '/routes_btcpay.php'; // Include btcpay routes
+require_once __DIR__ . '/routes_gifs.php'; // Include gif routes
 
 $contentLengthMiddleware = new ContentLengthMiddleware();
 $app->add($contentLengthMiddleware);
