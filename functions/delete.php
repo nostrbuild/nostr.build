@@ -43,9 +43,10 @@ foreach ($idList as $index => $id) {
 
         if ($prefix == 'ide_') { // if it's an image
             $s3_file_path = ltrim($file_path, '/'); // remove the leading slash
-            if ($s3->getObjectMetadataFromS3($s3_file_path) !== false) {
+            $delete_from_s3 = $s3->getObjectMetadataFromS3($s3_file_path) !== false;
+            if ($s3->getObjectMetadataFromR2($s3_file_path) !== false) {
                 error_log("Deleting file from S3: " . $s3_file_path . PHP_EOL);
-                if (!$s3->deleteFromS3($s3_file_path)) {
+                if ($delete_from_s3 && !$s3->deleteFromS3($s3_file_path)) {
                     echo "Error: File deletion failed";
                     print($s3_file_path);
                     mysqli_stmt_close($stmt);
