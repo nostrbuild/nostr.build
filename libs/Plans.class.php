@@ -273,7 +273,7 @@ class Plans
         price: self::$originalPrices[self::ADVANCED],
         features: [
           '<b>100GB of private storage</b>',
-          '<b>Early access to AI features</b>',
+          '<b>Early AI feature Access</b>',
           '<b>@nostr.build NIP-05 *</b>',
           '<b>Expandable storage *</b>',
           '<b>All Creator features</b>',
