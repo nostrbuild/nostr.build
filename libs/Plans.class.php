@@ -252,7 +252,7 @@ class Plans
           '<b>20GB of private storage</b>',
           '<b><a class="ref_link" target="_blank" href="https://nostr.build/creators/">Host on nostr.build page</a></b>',
           '<b>S3 backup for all media</b>',
-          '<b>All Professional Features</b>',
+          '<b>All Professional features</b>',
         ],
         currency: 'sats',
         remainingDays: $remainingDays,
@@ -273,7 +273,7 @@ class Plans
         price: self::$originalPrices[self::ADVANCED],
         features: [
           '<b>100GB of private storage</b>',
-          '<b>Early AI feature Access</b>',
+          '<b>Early AI feature access</b>',
           '<b>@nostr.build NIP-05 *</b>',
           '<b>Expandable storage *</b>',
           '<b>All Creator features</b>',
