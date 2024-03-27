@@ -284,7 +284,7 @@ SVG;
                 *Discounts apply to the additional time only.
               </p>
               <p class="mt-2 text-xs text-purple-300" x-cloak x-show="period === '1y'">
-                Get discount when you buy additional time upfront.
+                ❤️ Support nostr.build ❤️
               </p>
             </div>
           <?php endif; ?>
