@@ -125,7 +125,7 @@ $app->add(function (Request $request, RequestHandler $handler): Response {
   $allowedOriginsAndPaths = [
     'https://nostr\.build' => ['/api/v2/.*'],
     'https://.*\.nostr\.build' => ['/api/v2/.*'],
-    'http(s)?://localhost(:[0-9]+)?' => ['/api/v2/upload/.*', '/api/v2/nip96/.*'],
+    '([a-z]+)?://localhost(:[0-9]+)?' => ['/api/v2/upload/.*', '/api/v2/nip96/.*'],
     'https://.*' => ['/api/v2/upload/.*', '/api/v2/nip96/.*'],
     // add more origin and path patterns as needed
   ];
