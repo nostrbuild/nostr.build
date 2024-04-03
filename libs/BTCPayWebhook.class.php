@@ -91,7 +91,7 @@ class BTCPayWebhook
     error_log("Invoice data: " . print_r($invoice->getData(), true) . PHP_EOL);
 
     // Check if the invoice is paid
-    if ($invoice->getStatus() !== 'Settled') {
+    if (!$invoice->isSettled()) {
       error_log("Invoice is not paid." . PHP_EOL);
       error_log("Invoice status: " . print_r($invoice, true) . PHP_EOL);
     } else {
@@ -125,13 +125,8 @@ class BTCPayWebhook
         // Create a new account instance
         $account = new Account($userNpub, $link);
         // Update the account plan and end date
-        $new = match ($orderType) {
-          'signup' => true,
-          'renewal' => false,
-          'upgrade' => true,
-          default => true,
-        };
-        $account->setPlan((int)$accountPlan, (string)$orderPeriod, (bool)$new);
+        $new = $orderType !== 'renewal'; // If the order type is not renewal, then it is a new order
+        $account->setPlan((int)$accountPlan, (string)$orderPeriod, $new);
         error_log("[INFO] Account " . $account->getNpub() . ' updated to a new plan: ' . $accountPlan . PHP_EOL);
       } catch (Exception $e) {
         error_log("Failed to update account: " . $e . PHP_EOL);

@@ -646,12 +646,7 @@ SVG;
 
             // Update account level and expiration date
             $finalizeAccount = new Account($invoiceNpub, $link);
-            $new = (bool) match ($invoiceOrderType) {
-              'signup' => true,
-              'renewal' => false,
-              'upgrade' => true,
-              default => true,
-            };
+            $new = $invoiceOrderType !== 'renewal'; // If not renewal, set boolean to true
             error_log("Setting plan for $invoiceNpub to $invoicePlan, $invoicePeriod, $new");
             $finalizeAccount->setPlan((int)$invoicePlan, (string) $invoicePeriod, $new);
             // Destroy account object

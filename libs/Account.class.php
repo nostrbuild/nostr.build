@@ -821,6 +821,12 @@ class Account
    */
   public function setPlan(int $planLevel, string $period = '1y', bool $new = true): void
   {
+    // Check if $new is false and plan_until_date is more than 31 days in the future, and return without updating
+    if ($new === false && $this->getRemainingSubscriptionDays() > 31) {
+      error_log("Cannot renew plan when remaining subscription days is more than 31 days, current remaining days: " . $this->getRemainingSubscriptionDays() . " days for npub: " . $this->npub);
+      return;
+    }
+
     $sql = "UPDATE users SET acctlevel = ?, plan_start_date = ?, plan_until_date = ?, subscription_period = ? WHERE usernpub = ?";
     $stmt = $this->db->prepare($sql);
 
@@ -829,15 +835,23 @@ class Account
     }
 
     try {
-      $planStartDate = $new ? date('Y-m-d') : $this->account['plan_start_date'];
+      // When user is upgrading, set plan start date to current date
+      // When user is renewing, keep the existing plan start date
+      // When user is new, set plan start date to current date
+      // When user account plan has expired, set plan start date to current date
+      if ($new || $this->isExpired()) {
+        $planStartDate = date('Y-m-d');
+      } else {
+        $planStartDate = $this->account['plan_until_date'];
+      }
       $periodDuration = match ($period) {
         '1y' => '+1 year',
-        '2y' => '+2 years', // Fixed pluralization
-        '3y' => '+3 years', // Fixed pluralization
+        '2y' => '+2 years',
+        '3y' => '+3 years',
         default => '+1 year',
       };
 
-      $planEndDate = date('Y-m-d', strtotime(date('Y-m-d') . ' ' . $periodDuration)); // End date is from now, always      
+      $planEndDate = date('Y-m-d', strtotime($planStartDate . ' ' . $periodDuration)); // Plan end date is based on start date and period
 
       error_log("Plan start date: $planStartDate, Plan end date: $planEndDate");
 
@@ -851,28 +865,6 @@ class Account
     } finally {
       $stmt->close();
     }
-  }
-
-  /**
-   * Summary of upgradePlan
-   * @param int $newPlanLevel
-   * @param bool $resetDate
-   * @throws \Exception
-   * @return void
-   */
-  public function upgradePlan(int $newPlanLevel, bool $resetDate = false): void
-  {
-    // Fetch existing account data to get the current plan level
-    $currentPlanLevel = AccountLevel::from($this->account['acctlevel']);
-    $targetPlanLevel = AccountLevel::from($newPlanLevel);
-
-    // Perform checks to ensure the upgrade is valid (e.g., new plan is higher than current plan)
-    if ($this->isValidUpgrade($currentPlanLevel, $targetPlanLevel) === false) {
-      throw new Exception("New plan level must be greater than the current plan level");
-    }
-
-    // Set the new plan and specify whether to reset the plan start date
-    $this->setPlan($newPlanLevel, $resetDate);
   }
 
   /**
