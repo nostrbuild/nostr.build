@@ -830,7 +830,11 @@ class Account
     }
 
     // Avoid race condition with the webhook by checking if the account has already been updated
-    $sql = "UPDATE users SET acctlevel = ?, plan_start_date = ?, plan_until_date = ?, subscription_period = ? WHERE usernpub = ? AND plan_until_date < DATE_ADD(CURDATE(), INTERVAL 30 DAY)";
+    if ($new) {
+      $sql = "UPDATE users SET acctlevel = ?, plan_start_date = ?, plan_until_date = ?, subscription_period = ? WHERE usernpub = ?";
+    } else {
+      $sql = "UPDATE users SET acctlevel = ?, plan_start_date = ?, plan_until_date = ?, subscription_period = ? WHERE usernpub = ? AND plan_until_date < DATE_ADD(CURDATE(), INTERVAL 30 DAY)";
+    }
     $stmt = $this->db->prepare($sql);
 
     if (!$stmt) {
