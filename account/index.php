@@ -787,7 +787,12 @@ $userStorageRemaining = $userOverLimit ? 0 : $userStorageLimit - $storageUsed;
 
 			if (window.isSecureContext && navigator.clipboard) {
 				navigator.clipboard.writeText(imageUrl);
+				const copyButtonTextContent = document.getElementById('bt' + element).textContent;
 				document.getElementById('bt' + element).textContent = 'Copied';
+				// Revert back to 'Copy' after 2 seconds
+				setTimeout(() => {
+					document.getElementById('bt' + element).textContent = copyButtonTextContent;
+				}, 2000);
 				if (document.getElementById('bt' + previousBtId) != null && previousBtId != element) {
 					document.getElementById('bt' + previousBtId).textContent = 'Copy';
 				}
