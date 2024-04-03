@@ -821,13 +821,16 @@ class Account
    */
   public function setPlan(int $planLevel, string $period = '1y', bool $new = true): void
   {
+    // DEBUG: Dump $planLevel, $period, $new into error log
+    error_log("Setting plan level: $planLevel, period: $period, new: " . ($new ? 'true' : 'false') . PHP_EOL);
     // Check if $new is false and plan_until_date is more than 31 days in the future, and return without updating
-    if ($new === false && $this->getRemainingSubscriptionDays() > 31) {
-      error_log("Cannot renew plan when remaining subscription days is more than 31 days, current remaining days: " . $this->getRemainingSubscriptionDays() . " days for npub: " . $this->npub);
+    if ($new === false && $this->getRemainingSubscriptionDays() > 30) {
+      error_log("Cannot renew plan when remaining subscription days is more than 30 days, current remaining days: " . $this->getRemainingSubscriptionDays() . " days for npub: " . $this->npub);
       return;
     }
 
-    $sql = "UPDATE users SET acctlevel = ?, plan_start_date = ?, plan_until_date = ?, subscription_period = ? WHERE usernpub = ?";
+    // Avoid race condition with the webhook by checking if the account has already been updated
+    $sql = "UPDATE users SET acctlevel = ?, plan_start_date = ?, plan_until_date = ?, subscription_period = ? WHERE usernpub = ? AND plan_until_date < DATE_ADD(CURDATE(), INTERVAL 30 DAY)";
     $stmt = $this->db->prepare($sql);
 
     if (!$stmt) {
@@ -840,10 +843,17 @@ class Account
       // When user is new, set plan start date to current date
       // When user account plan has expired, set plan start date to current date
       if ($new || $this->isExpired()) {
+        // New or Upgrade
         $planStartDate = date('Y-m-d');
+        error_log("Setting plan start date to current date: $planStartDate" . PHP_EOL);
       } else {
-        $planStartDate = $this->account['plan_until_date'];
+        // Renewal
+        $planStartDate = $this->account['plan_start_date']; // Preserve existing plan start date
+        error_log("Setting plan start date to existing plan end date: $planStartDate" . PHP_EOL);
       }
+      // DEBUG: Dump $this->account into error log
+      error_log("Account data: " . print_r($this->account, true));
+
       $periodDuration = match ($period) {
         '1y' => '+1 year',
         '2y' => '+2 years',
@@ -851,7 +861,9 @@ class Account
         default => '+1 year',
       };
 
-      $planEndDate = date('Y-m-d', strtotime($planStartDate . ' ' . $periodDuration)); // Plan end date is based on start date and period
+      // End date should ne calculate from either now for the $new === true, or from the existing plan end date
+      $_planStartDate = $new ? date('Y-m-d') : $this->account['plan_until_date'];
+      $planEndDate = date('Y-m-d', strtotime($_planStartDate . ' ' . $periodDuration)); // Plan end date is based on start date and period
 
       error_log("Plan start date: $planStartDate, Plan end date: $planEndDate");
 
