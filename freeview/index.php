@@ -30,10 +30,10 @@ $sql = match ($view_type) {
 	<meta name="description" content="nostr.build" />
 	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-	<link rel="stylesheet" href="/styles/index.css?v=7" />
-	<link rel="stylesheet" href="/styles/profile.css?v=7" />
-	<link rel="stylesheet" href="/styles/header.css?v=8" />
-	<link rel="stylesheet" href="/styles/twbuild.css?v=52" />
+	<link rel="stylesheet" href="/styles/index.css?v=8" />
+	<link rel="stylesheet" href="/styles/profile.css?v=8" />
+	<link rel="stylesheet" href="/styles/header.css?v=9" />
+	<link rel="stylesheet" href="/styles/twbuild.css?v=53" />
 	<link rel="icon" href="/assets/0.png">
 
 	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/lightgallery/2.7.2/css/lightgallery-bundle.min.css" integrity="sha512-nUqPe0+ak577sKSMThGcKJauRI7ENhKC2FQAOOmdyCYSrUh0GnwLsZNYqwilpMmplN+3nO3zso8CWUgu33BDag==" crossorigin="anonymous" referrerpolicy="no-referrer" />

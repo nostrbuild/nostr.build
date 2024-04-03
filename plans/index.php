@@ -190,13 +190,13 @@ SVG;
   <meta charSet="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Nostr.build account signup</title>
-  <link rel="stylesheet" href="/styles/twbuild.css?v=36" />
-  <link rel="stylesheet" href="/styles/index.css?v=6" />
-  <link rel="stylesheet" href="/styles/signup.css?v=7" />
+  <link rel="stylesheet" href="/styles/twbuild.css?v=37" />
+  <link rel="stylesheet" href="/styles/index.css?v=7" />
+  <link rel="stylesheet" href="/styles/signup.css?v=8" />
   <link rel="icon" href="/assets/primo_nostr.png" />
-  <script defer src="/scripts/fw/alpinejs.min.js?v=9"></script>
+  <script defer src="/scripts/fw/alpinejs.min.js?v=10"></script>
   <!--
-  <script defer src="/scripts/fw/htmx.min.js?v=9"></script>
+  <script defer src="/scripts/fw/htmx.min.js?v=10"></script>
   -->
   <style>
     [x-cloak] {
@@ -465,7 +465,7 @@ SVG;
               <?php endif; ?>
             </form>
           </div>
-          <script src="/scripts/dist/signup.js?v=8"></script>
+          <script src="/scripts/dist/signup.js?v=9"></script>
           <script>
             document.addEventListener('DOMContentLoaded', (event) => {
               // Check if NIP-07 extension is installed and enable NIP-07 login
@@ -647,7 +647,8 @@ SVG;
             // Update account level and expiration date
             $finalizeAccount = new Account($invoiceNpub, $link);
             $new = $invoiceOrderType !== 'renewal'; // If not renewal, set boolean to true
-            error_log("Setting plan for $invoiceNpub to $invoicePlan, $invoicePeriod, $new");
+            $isNewOrNotRenewal = $new ? 'new' : 'renewal';
+            error_log("Setting plan for $invoiceNpub to $invoicePlan, $invoicePeriod, $isNewOrNotRenewal.");
             $finalizeAccount->setPlan((int)$invoicePlan, (string) $invoicePeriod, $new);
             // Destroy account object
             unset($finalizeAccount);
