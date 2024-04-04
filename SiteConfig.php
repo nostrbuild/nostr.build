@@ -91,6 +91,14 @@ class SiteConfig
       'responsive_path' => '', // not possible or needed
       'use_cdn' => true,
     ],
+    'professional_account_application' => [
+      'cdn_host' => 'd.nostr.build',
+      'path' => 'data/',
+      's3_path' => 'data/',
+      'thumbnail_path' => '', // not possible or needed
+      'responsive_path' => '', // not possible or needed
+      'use_cdn' => true,
+    ],
     // The default is to handle everything else as an image without processing
     'unknown' => [
       'cdn_host' => 'image.nostr.build',
