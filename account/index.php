@@ -81,7 +81,7 @@ $userStorageRemaining = $userOverLimit ? 0 : $userStorageLimit - $storageUsed;
 
 	<link rel="stylesheet" href="/styles/account.css?v=7" />
 	<link href="/scripts/dist/index.css?v=21" rel="stylesheet">
-	<link href="/styles/twbuild.css?v=49" rel="stylesheet">
+	<link href="/styles/twbuild.css?v=52" rel="stylesheet">
 	<link rel="icon" href="/assets/primo_nostr.png" />
 
 	<script defer src="/scripts/dist/index.js?v=37"></script>
@@ -359,12 +359,6 @@ $userStorageRemaining = $userOverLimit ? 0 : $userStorageLimit - $storageUsed;
 				endforeach; // Flder list loop end
 				?>
 			</ul>
-			<div class="mt-2 mb-10 pb-6">
-				<a onclick="if (confirm('Are you sure?')) checkDelete()" style="height: 2.4rem; width: 5.2rem; margin-right: 1rem;">
-					<button class="folder" style="background-color: red;">Delete</button>
-				</a>
-			</div>
-			<span class="text-base text-red-600"><b>Note:</b> Deleting media won't immediately remove it from browser/client caches, other proxies, especially if it has been already publicly shared.</span>
 		</section>
 	</aside>
 	<main>
@@ -414,7 +408,7 @@ $userStorageRemaining = $userOverLimit ? 0 : $userStorageLimit - $storageUsed;
 							</svg>
 						</button>
 
-						<div x-show="open" x-transition:enter="transition ease-out duration-100" x-transition:enter-start="transform opacity-0 scale-95" x-transition:enter-end="transform opacity-100 scale-100" x-transition:leave="transition ease-in duration-75" x-transition:leave-start="transform opacity-100 scale-100" x-transition:leave-end="transform opacity-0 scale-95" @click.away="open = false" class="absolute right-0 z-10 -mr-1 mt-2 w-56 origin-top-right rounded-md bg-gradient-to-br from-[#399dfa] to-white hover:bg-[#399dfaec] shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none" role="menu" aria-orientation="vertical" aria-labelledby="option-menu-button" tabindex="-1">
+						<div x-show="open" x-transition:enter="transition ease-out duration-100" x-cloak x-transition:enter-start="transform opacity-0 scale-95" x-transition:enter-end="transform opacity-100 scale-100" x-transition:leave="transition ease-in duration-75" x-transition:leave-start="transform opacity-100 scale-100" x-transition:leave-end="transform opacity-0 scale-95" @click.away="open = false" class="absolute right-0 z-10 -mr-1 mt-2 w-56 origin-top-right rounded-md bg-gradient-to-br from-[#399dfa] to-white hover:bg-[#399dfaec] shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none" role="menu" aria-orientation="vertical" aria-labelledby="option-menu-button" tabindex="-1">
 							<div class="py-1" role="none">
 								<!-- Menu item to copy the link -->
 								<button @click="buttonText = 'Link Copied'; setTimeout(() => { buttonText = 'Copy Link' }, 2000); navigator.clipboard.writeText('https://<?= $_SERVER['HTTP_HOST'] ?>/creators/creator/?user=<?= $userId ?>')" x-text="buttonText" class="text-gray-700 block px-4 py-2 text-sm" role="menuitem" tabindex="-1" id="option-menu-item-0" x-data="{ buttonText: 'Copy Link' }">Copy Link</button>
@@ -438,19 +432,19 @@ $userStorageRemaining = $userOverLimit ? 0 : $userStorageLimit - $storageUsed;
 				*/
 				?>
 				<?php if ($showRenewalButton) : ?>
-				<button @click="window.location.href='/plans/'" type="button" class="inline-flex items-center gap-x-1.5 rounded-md bg-indigo-600 px-2.5 py-1.5 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600">
-					<svg class="-ml-0.5 h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-						<path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z" clip-rule="evenodd" />
-					</svg>
-					Renew
-				</button>
+					<button @click="window.location.href='/plans/'" type="button" class="inline-flex items-center gap-x-1.5 rounded-md bg-indigo-600 px-2.5 py-1.5 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600">
+						<svg class="-ml-0.5 h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+							<path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z" clip-rule="evenodd" />
+						</svg>
+						Renew
+					</button>
 				<?php elseif ($showUpgradeButton) : ?>
-				<button @click="window.location.href='/plans/'" type="button" class="inline-flex items-center gap-x-1.5 rounded-md bg-indigo-600 px-2.5 py-1.5 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600">
-					<svg class="-ml-0.5 h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-						<path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z" clip-rule="evenodd" />
-					</svg>
-					Upgrade
-				</button>
+					<button @click="window.location.href='/plans/'" type="button" class="inline-flex items-center gap-x-1.5 rounded-md bg-indigo-600 px-2.5 py-1.5 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600">
+						<svg class="-ml-0.5 h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+							<path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z" clip-rule="evenodd" />
+						</svg>
+						Upgrade
+					</button>
 				<?php endif; ?>
 			</h3>
 			<div class="dashboard_info">
@@ -547,7 +541,7 @@ $userStorageRemaining = $userOverLimit ? 0 : $userStorageLimit - $storageUsed;
 							</a>
 							<div style="display: flex; justify-content: space-between; margin: 0 0.75rem 0 0.75rem">
 								<label><?= htmlentities($folder) ?></label>
-								<input data-folder-id="<?= $folderStats['id'] ?>" type="checkbox" id="cb<?= $folderStats['id'] ?>" style="width: 2rem; margin-left: 1rem;" onclick="checkboxClicked('<?= $folderStats['id'] ?>' , 0)" />
+								<input class="folder_select_checkbox" data-folder-id="<?= $folderStats['id'] ?>" type="checkbox" id="cb<?= $folderStats['id'] ?>" style="width: 2rem; margin-left: 1rem;" onclick="checkboxClicked('<?= $folderStats['id'] ?>' , 0)" />
 							</div>
 						</div>
 					<?php
@@ -608,7 +602,7 @@ $userStorageRemaining = $userOverLimit ? 0 : $userStorageLimit - $storageUsed;
 
 
 								<button class="delete_button">
-									<input type="checkbox" id="cb<?= $images_row['id'] ?>" onclick="checkboxClicked('<?= $images_row['id'] ?>' , 1)" />
+									<input class="media_select_checkbox" type="checkbox" id="cb<?= $images_row['id'] ?>" onclick="checkboxClicked('<?= $images_row['id'] ?>' , 1)" />
 								</button>
 
 								<button class="copy_link" id="bt<?= $element ?>" onclick="copyToClipboard('<?= $element ?>')">
@@ -661,6 +655,174 @@ $userStorageRemaining = $userOverLimit ? 0 : $userStorageLimit - $storageUsed;
 					<p>Link of your media copied to clipboard</p>
 				</div>
 			</div>
+
+			<!-- Edit bar -->
+			<div x-data class="fixed inset-x-0 bottom-0 z-50" x-cloak>
+				<div class="relative w-screen" x-show="$store.mediaEditBar.show" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 transform translate-y-full" x-transition:enter-end="opacity-100 transform translate-y-0" x-transition:leave="transition ease-in duration-300" x-transition:leave-start="opacity-100 transform translate-y-0" x-transition:leave-end="opacity-0 transform translate-y-full">
+
+					<div class="h-1/4 bg-purple-500/80 shadow-xl overflow-y-auto relative">
+						<button @click="$store.mediaEditBar.toggle()" type="button" class="inset-auto absolute top-1 right-1 flex items-center justify-center h-8 w-8 rounded-full focus:outline-none focus:ring-1 focus:ring-inset focus:ring-white">
+							<span class="sr-only">Close panel</span>
+							<svg class="h-6 w-6 text-purple-100" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+							</svg>
+						</button>
+						<div class="px-4 py-3 sm:p-5">
+							<div class="mt-0">
+								<!-- Your content goes here -->
+								<button x-data="{
+									getSelectedCount() {
+										return $store.checkedCheckboxesMedia.count + $store.checkedCheckboxesFolders.count;
+									},
+									getSelectedType() {
+										if ($store.checkedCheckboxesMedia.count > 0 && $store.checkedCheckboxesFolders.count > 0) {
+											return 'item(s)';
+										} else if ($store.checkedCheckboxesMedia.count > 0) {
+											return 'file(s)';
+										} else if ($store.checkedCheckboxesFolders.count > 0) {
+											return 'folder(s)';
+										} else {
+											return 'item(s)';
+										}
+									}
+								}" @click="$store.deleteConfirmation.open()" type="button" class="rounded-md bg-red-500 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-red-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-500">
+									Delete <span x-text="getSelectedCount()"></span> <span x-text="getSelectedType()"></span>
+								</button>
+								<?php if (!isset($_GET['editfolder'])) : ?>
+									<button x-data="{
+										getSelectedCount() {
+											return $store.checkedCheckboxesMedia.count;
+										},
+									}" @click="$store.moveToFolder.open()" type="button" class="rounded-md bg-purple-500 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-purple-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-purple-500">
+										Move to <span x-text="getSelectedCount()"></span> file(s) to folder
+									</button>
+								<?php endif; ?>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+
+			<!-- Delete confirmation window -->
+			<div x-cloak x-data class="relative z-50" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+				<div x-show="$store.deleteConfirmation.isOpen" x-transition:enter="ease-out duration-300" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" x-transition:leave="ease-in duration-200" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0" class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity"></div>
+
+				<div x-show="$store.deleteConfirmation.isOpen" x-transition:enter="ease-out duration-300" x-transition:enter-start="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95" x-transition:enter-end="opacity-100 translate-y-0 sm:scale-100" x-transition:leave="ease-in duration-200" x-transition:leave-start="opacity-100 translate-y-0 sm:scale-100" x-transition:leave-end="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95" class="fixed inset-0 z-50 overflow-y-auto">
+					<div class="flex min-h-screen items-end justify-center p-4 text-center sm:items-center sm:p-0">
+						<div class="relative transform overflow-hidden rounded-lg bg-purple-50 text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg">
+							<div class="bg-purple-50 px-4 pb-4 pt-5 sm:p-6 sm:pb-4">
+								<div class="sm:flex sm:items-start">
+									<div class="mx-auto flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-red-100 sm:mx-0 sm:h-10 sm:w-10">
+										<svg class="h-6 w-6 text-red-600" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
+											<path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
+										</svg>
+									</div>
+									<div class="mt-3 text-center sm:ml-4 sm:mt-0 sm:text-left">
+										<h3 class="text-base font-semibold leading-6 text-gray-900" id="modal-title">Confirm Delete</h3>
+										<div class="mt-2">
+											<p class="text-sm text-gray-500" x-data="{
+													getSelectedCount() {
+														return $store.checkedCheckboxesMedia.count + $store.checkedCheckboxesFolders.count;
+													},
+													getSelectedType() {
+														if ($store.checkedCheckboxesMedia.count > 0 && $store.checkedCheckboxesFolders.count > 0) {
+															return 'item(s)';
+														} else if ($store.checkedCheckboxesMedia.count > 0) {
+															return 'file(s)';
+														} else if ($store.checkedCheckboxesFolders.count > 0) {
+															return 'folder(s)';
+														} else {
+															return 'item(s)';
+														}
+													}
+												}">
+												Are you sure you want to delete <span x-text="getSelectedCount()"></span> <span x-text="getSelectedType()"></span>? This action cannot be undone.
+											</p>
+											<!-- Notice about deletion -->
+											<div class="mt-3">
+												<p class="text-sm text-red-500">Note: Deleting media won't immediately remove it from browser/client caches, other proxies, especially if it has been already publicly shared.</p>
+											</div>
+										</div>
+									</div>
+								</div>
+							</div>
+							<div class="bg-purple-50 px-4 py-3 gap-3 flex flex-row-reverse sm:px-6">
+								<button @click="$store.deleteConfirmation.confirm()" type="button" class="mt-3 inline-flex w-full justify-center rounded-md bg-red-600 px-4 py-2 text-base font-medium text-white shadow-sm hover:bg-red-500 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">
+									<svg x-show="$store.deleteConfirmation.isLoading" class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+										<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+										<path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+									</svg>
+									Delete
+								</button>
+								<button @click="$store.deleteConfirmation.close()" type="button" class="mt-3 inline-flex w-full justify-center rounded-md bg-white px-4 py-2 text-base font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">Cancel</button>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+
+
+			<!-- Move to folder modal -->
+			<div x-cloak x-data="{ searchTerm: '' }" class="relative z-50" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+				<!-- Background overlay -->
+				<div x-show="$store.moveToFolder.isOpen" x-transition:enter="ease-out duration-300" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" x-transition:leave="ease-in duration-200" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0" class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity"></div>
+				<!-- Modal content -->
+				<div x-show="$store.moveToFolder.isOpen" x-transition:enter="ease-out duration-300" x-transition:enter-start="opacity-0 translate-y-0 sm:-translate-y-4" x-transition:enter-end="opacity-100 translate-y-0 sm:translate-y-0 sm:scale-100" x-transition:leave="ease-in duration-200" x-transition:leave-start="opacity-100 translate-y-0 sm:translate-y-0 sm:scale-100" x-transition:leave-end="opacity-0 translate-y-0 sm:-translate-y-4 sm:scale-95" class="fixed inset-0 z-50 overflow-y-auto">
+					<div class="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
+						<div class="relative transform overflow-hidden rounded-lg bg-white text-left shadow-xl transition-all h-52 max-h-72 my-8 w-full sm:max-w-lg overflow-y-auto">
+							<div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+								<div class="sm:flex sm:items-start">
+									<div class="mt-3 text-center sm:mt-0 sm:text-left w-full">
+										<div class="mt-2 flex items-center">
+											<label for="combobox" class="block text-sm font-medium leading-6 text-gray-900 mr-2">Select Folder</label>
+											<div class="relative w-full z-auto">
+												<input id="combobox" type="text" x-model="$store.moveToFolder.selectedFolder" @input="searchTerm = $store.moveToFolder.selectedFolder" @click="$store.moveToFolder.toggleDropdown()" @click.away="searchTerm = ''; $store.moveToFolder.isDropdownOpen = false" class="w-full rounded-md border-0 bg-white py-1.5 pl-3 pr-12 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6" role="combobox" aria-controls="options" :aria-expanded="$store.moveToFolder.isDropdownOpen.toString()">
+												<button type="button" @click="$store.moveToFolder.toggleDropdown()" class="absolute inset-y-0 right-0 flex items-center rounded-r-md px-2 focus:outline-none">
+													<svg class="h-5 w-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+														<path fill-rule="evenodd" d="M10 3a.75.75 0 01.55.24l3.25 3.5a.75.75 0 11-1.1 1.02L10 4.852 7.3 7.76a.75.75 0 01-1.1-1.02l3.25-3.5A.75.75 0 0110 3zm-3.76 9.2a.75.75 0 011.06.04l2.7 2.908 2.7-2.908a.75.75 0 111.1 1.02l-3.25 3.5a.75.75 0 01-1.1 0l-3.25-3.5a.75.75 0 01.04-1.06z" clip-rule="evenodd" />
+													</svg>
+												</button>
+												<ul x-show="$store.moveToFolder.isDropdownOpen" @click.away="$store.moveToFolder.isDropdownOpen = false" class="absolute z-10 mt-1 h-32 max-h-60 w-full overflow-auto rounded-md bg-white py-1 text-base shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none sm:text-sm" id="options" role="listbox">
+													<template x-for="folder in $store.moveToFolder.folders.filter(f => f.name.toLowerCase().includes(searchTerm.toLowerCase()))">
+														<li class="relative cursor-default select-none py-2 pl-3 pr-9 text-gray-900" :id="'option-' + folder.id" role="option" @click="$store.moveToFolder.selectFolder(folder.name); $store.moveToFolder.isDropdownOpen = false" @mouseenter="$store.moveToFolder.hoveredFolder = folder.id" @mouseleave="$store.moveToFolder.hoveredFolder = null" :class="{ 'bg-indigo-600 text-white': folder.id === $store.moveToFolder.hoveredFolder, 'text-gray-900': folder.id !== $store.moveToFolder.hoveredFolder }">
+															<div class="flex">
+																<span x-text="folder.name" class="truncate" :class="{ 'font-semibold': folder.name === $store.moveToFolder.selectedFolder }"></span>
+															</div>
+															<span x-show="folder.name === $store.moveToFolder.selectedFolder" class="absolute inset-y-0 right-0 flex items-center pr-4" :class="{ 'text-white': folder.id === $store.moveToFolder.hoveredFolder, 'text-indigo-600': folder.id !== $store.moveToFolder.hoveredFolder }">
+																<svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+																	<path fill-rule="evenodd" d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.05-.143z" clip-rule="evenodd" />
+																</svg>
+															</span>
+														</li>
+													</template>
+												</ul>
+											</div>
+										</div>
+									</div>
+								</div>
+							</div>
+							<div class="bg-white px-4 py-3 sm:px-6 sm:flex sm:flex-wrap sm:justify-end">
+								<button x-data="{
+													getSelectedCount() { return $store.checkedCheckboxesMedia.count; }
+												}" x-show="!$store.moveToFolder.isLoading" @click="$store.moveToFolder.moveToSelectedFolder()" type="button" class="inline-flex justify-center rounded-md bg-indigo-600 px-4 py-2 text-base font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 sm:order-1 sm:ml-3 sm:w-auto sm:text-sm">
+									Move&nbsp;<span x-text="getSelectedCount()"></span>&nbsp;file(s) to folder
+								</button>
+								<button x-show="$store.moveToFolder.isLoading" type="button" class="inline-flex justify-center rounded-md bg-indigo-600 px-4 py-2 text-base font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 sm:order-1 sm:ml-3 sm:w-auto sm:text-sm" disabled>
+									<svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+										<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+										<path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+									</svg>
+									Moving...
+								</button>
+								<button @click="$store.moveToFolder.close()" type="button" class="mt-3 inline-flex justify-center rounded-md bg-white px-4 py-2 text-base font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 sm:order-0 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">
+									Cancel
+								</button>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+
 
 	</main>
 	<script src="/scripts/account.js?v=8"></script>
@@ -754,7 +916,91 @@ $userStorageRemaining = $userOverLimit ? 0 : $userStorageLimit - $storageUsed;
 			}
 		}
 
+		document.addEventListener('alpine:init', () => {
+			console.log('Alpine initialized');
+			Alpine.store('mediaEditBar', {
+				show: false,
 
+				toggle() {
+					this.show = !this.show
+					// Uncheck all checkboxes
+					const checkboxes = document.querySelectorAll('input[type="checkbox"].media_select_checkbox');
+					checkboxes.forEach(checkbox => {
+						checkbox.checked = false;
+					});
+				}
+			})
+			Alpine.store('deleteConfirmation', {
+				isOpen: false,
+				isLoading: false,
+				open() {
+					this.isOpen = true;
+					this.isLoading = false;
+				},
+				close() {
+					this.isOpen = false;
+					this.isLoading = false;
+				},
+				confirm() {
+					// Perform the delete action here
+					console.log('Delete action confirmed');
+					this.isLoading = true;
+					checkDelete();
+					//this.close();
+				}
+			})
+			// Store number of checked checkboxes for media
+			Alpine.store('checkedCheckboxesMedia', {
+				count: 0
+			})
+			// Store number of checked checkboxes for folders
+			Alpine.store('checkedCheckboxesFolders', {
+				count: 0
+			})
+
+			Alpine.store('moveToFolder', {
+				isOpen: false,
+				isLoading: false,
+				selectedFolder: '',
+				folders: [
+					<?php foreach ($usersFoldersStats['FOLDERS'] as $folder => $folderStats) : ?>
+						<?php if ($folder == '/') continue; ?> {
+							id: <?= $folderStats['id'] ?>,
+							name: '<?= htmlspecialchars(addslashes($folder)) ?>'
+						},
+					<?php endforeach; ?>
+				],
+				isDropdownOpen: false,
+				hoveredFolder: null,
+				open() {
+					this.isOpen = true;
+					this.isLoading = false;
+					this.selectedFolder = '';
+					this.isDropdownOpen = false;
+					this.hoveredFolder = null;
+				},
+				close() {
+					this.isOpen = false;
+					this.isLoading = false;
+					this.selectedFolder = '';
+					this.isDropdownOpen = false;
+					this.hoveredFolder = null;
+				},
+				toggleDropdown() {
+					this.isDropdownOpen = !this.isDropdownOpen;
+				},
+				selectFolder(folderName) {
+					this.selectedFolder = folderName;
+					this.isDropdownOpen = false;
+				},
+				moveToSelectedFolder() {
+					this.isLoading = true;
+					// Perform the move to folder action here
+					console.log('Moving to folder:', this.selectedFolder);
+					folderDoubleClicked(this.selectedFolder);
+				},
+			});
+		})
 
 		function checkboxClicked(element, type) {
 			if (type == 0) {
@@ -773,6 +1019,21 @@ $userStorageRemaining = $userOverLimit ? 0 : $userStorageLimit - $storageUsed;
 				}
 				// console.log("checkedFileList : " , checkedFileList);
 			}
+			// Check if any checkbox is checked
+			const checkboxesMedia = document.querySelectorAll('input[type="checkbox"].media_select_checkbox');
+			const checkboxesFolders = document.querySelectorAll('input[type="checkbox"].folder_select_checkbox');
+			const checkedCountMedia = Array.from(checkboxesMedia).filter(checkbox => checkbox.checked).length;
+			const checkedCountFolders = Array.from(checkboxesFolders).filter(checkbox => checkbox.checked).length;
+			// Update number of checked checkboxes
+			Alpine.store('checkedCheckboxesMedia').count = checkedCountMedia;
+			Alpine.store('checkedCheckboxesFolders').count = checkedCountFolders;
+			const isAnyCheckboxChecked = checkedCountMedia > 0 || checkedCountFolders > 0;
+			console.log('isAnyCheckboxChecked:', isAnyCheckboxChecked);
+			console.log('checkedCountMedia:', Alpine.store('checkedCheckboxesMedia').count);
+			console.log('checkedCountFolders:', Alpine.store('checkedCheckboxesFolders').count);
+
+			// Update the isOpen state based on checkbox status
+			Alpine.store('mediaEditBar').show = isAnyCheckboxChecked;
 		}
 
 		function copyToClipboard(element) {
