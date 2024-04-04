@@ -20,7 +20,9 @@ if (!isset($_GET['folder_name'])) {
 
 $folder_name = $_GET['folder_name'];
 
-$image = 'https://' . $_SERVER['SERVER_NAME'] . "/p/Folder.png";
+//$image = 'https://' . $_SERVER['SERVER_NAME'] . "/p/Folder.png";
+// TODO: This approach is shit and it must die soon!
+$image = 'https://nostr.build/p/Folder.png';
 
 $stmt = $link->prepare("INSERT INTO users_images (usernpub, image, folder) VALUES (?, ?, ?)");
 
@@ -36,7 +38,7 @@ try {
     $stmt->execute();
     echo "Added folder image<BR>";
 } catch (Exception $e) {
-    error_log('Caught exception: '.  $e->getMessage());
+    error_log('Caught exception: ' .  $e->getMessage());
     echo "An error occurred while adding the folder image.";
 }
 
