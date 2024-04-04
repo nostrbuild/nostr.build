@@ -228,8 +228,18 @@ class S3Service
     return $result;
   }
 
-  public function getObjectMetadataFromR2(string $objectKey, ?string $mime = 'application/octet-stream'): bool | Aws\Result
+  public function getObjectMetadataFromR2(string $objectKey, ?string $mime = null): bool | Aws\Result
   {
+    // If mime is not provided, determine from filename/objectKey
+    if (empty($mime)) {
+      // Get extension from objectKey
+      $extension = pathinfo($objectKey, PATHINFO_EXTENSION);
+      // Get mime type from extension
+      $fileType = getFileType($extension);
+      $fileType = $fileType === 'unknown' ? 'application/octet-stream' : $fileType;
+      $mime = "{$fileType}/{$extension}";
+    }
+
     $r2Params = $this->getR2BucketAndObjectNames($objectKey, $mime);
     try {
       // Get the object metadata from the specified bucket
