@@ -81,7 +81,7 @@ $userStorageRemaining = $userOverLimit ? 0 : $userStorageLimit - $storageUsed;
 
 	<link rel="stylesheet" href="/styles/account.css?v=7" />
 	<link href="/scripts/dist/index.css?v=21" rel="stylesheet">
-	<link href="/styles/twbuild.css?v=52" rel="stylesheet">
+	<link href="/styles/twbuild.css?v=53" rel="stylesheet">
 	<link rel="icon" href="/assets/primo_nostr.png" />
 
 	<script defer src="/scripts/dist/index.js?v=37"></script>
@@ -359,6 +359,8 @@ $userStorageRemaining = $userOverLimit ? 0 : $userStorageLimit - $storageUsed;
 				endforeach; // Flder list loop end
 				?>
 			</ul>
+			<!-- Empty buffer to unbreak mobile display -->
+			<div class="block h-24 w-auto"></div>
 		</section>
 	</aside>
 	<main>
