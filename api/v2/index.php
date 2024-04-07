@@ -128,6 +128,8 @@ $app->add(function (Request $request, RequestHandler $handler): Response {
     '([a-z]+)?://localhost(:[0-9]+)?' => ['/api/v2/upload/.*', '/api/v2/nip96/.*'],
     'https://.*' => ['/api/v2/upload/.*', '/api/v2/nip96/.*'],
     // add more origin and path patterns as needed
+    // allow CORS from app://obsidian.md - requested by npub10a8kw2hsevhfycl4yhtg7vzrcpwpu7s6med27juf4lzqpsvy270qrh8zkw
+    'app://obsidian\.md' => ['/api/v2/upload/.*', '/api/v2/nip96/.*'],
   ];
 
   $currentPath = $request->getUri()->getPath();
