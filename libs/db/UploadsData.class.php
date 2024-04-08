@@ -131,20 +131,20 @@ class UploadsData extends DatabaseTable
 
   public function checkBlacklisted(string $npub = null): bool
   {
-    $sql = "SELECT id FROM blacklist WHERE (npub = ? OR ip = ?) LIMIT 1";
+    $sql = "SELECT id FROM blacklist WHERE npub = ? LIMIT 1";
     $blacklisted = false;
     if (empty($npub)) {
       return $blacklisted;
     }
     try {
       $stmt = $this->db->prepare($sql);
-      $stmt->bind_param('ss', $npub, $ip);
+      $stmt->bind_param('s', $npub);
       $stmt->execute();
       $stmt->store_result(); // This is required before you can call mysqli_stmt_num_rows()
 
       if ($stmt->num_rows > 0) {
         $blacklisted = true;
-        error_log("Blacklisted: " . $npub . " " . $ip);
+        error_log("Blacklisted: " . $npub);
       }
     } catch (Exception $e) {
       error_log("Exception: " . $e->getMessage());
