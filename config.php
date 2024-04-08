@@ -63,6 +63,14 @@ $btcpayConfig = [
     'secret'  => $_SERVER['BTCPAY_SECRET'],
 ];
 
+$csamReportingConfig = [
+    'r2AccessKey' => $_SERVER['CSAM_REPORTING_R2_AK'],
+    'r2SecretKey' => $_SERVER['CSAM_REPORTING_R2_SK'],
+    'r2EndPoint' => $_SERVER['CSAM_REPORTING_R2_ENDPOINT'],
+    'r2EvidenceBucket' => $_SERVER['CSAM_REPORTING_R2_EVIDENCE_BUCKET'],
+    'r2LogsBucket' => $_SERVER['CSAM_REPORTING_R2_LOGS_BUCKET'],
+];
+
 // Maybe we should move it to a separate place and do not open a link to the database every time?
 /* Attempt to connect to MySQL database */
 $link = mysqli_connect(DB_SERVER, DB_USERNAME, DB_PASSWORD, DB_NAME);
