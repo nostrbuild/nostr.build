@@ -1050,9 +1050,16 @@ class MultimediaUpload
     }
 
     // Check if file has been rejected for free users
-    if (!$this->pro && $this->uploadsData->checkRejected($this->file['sha256'])) {
+    if (
+      !$this->pro && ($this->uploadsData->checkRejected($this->file['sha256']) ||
+        $this->uploadsData->checkBlacklisted(
+          npub: $this->userNpub ?? null,
+          ip: null // No need but in the future we may want to check IP
+        )
+      )
+    ) {
       error_log('File has been flagged as rejected');
-      return [false, 403, "File has been flagged as rejected"];
+      return [false, 403, "File or User has been flagged as rejected"];
     }
 
     // Calculate remaining space and check if file size exceeds the remaining space for pro users

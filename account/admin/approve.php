@@ -89,7 +89,9 @@ if (isset($_POST['searchFile'])) {
           // Customize confirmation text based on the button value
           var confirmText = (status === 'adult') ?
             'Are you sure you want to set this media as Adult?' :
-            'Are you sure you want to set this media as Rejected and premanently delete it with no ability to re-upload?';
+            (status === 'rejected') ?
+            'Are you sure you want to set this media as Rejected and premanently delete it with no ability to re-upload?' :
+            'Are you sure you want to set this media as CSAM and premanently delete it with no ability to re-upload?';
 
           // Show the confirmation dialog
           var userConfirmed = window.confirm(confirmText);
@@ -117,6 +119,11 @@ if (isset($_POST['searchFile'])) {
                     badge.className = 'badge bg-danger position-absolute top-0 end-0 p-1 fs-6 status-badge';
                     badge.closest('.image-div').setAttribute('data-status', 'rejected');
                     imgDiv.remove(); // remove the card since it's irreversibly deleted 
+                  } else if (status === 'csam') {
+                    badge.textContent = 'CSAM';
+                    badge.className = 'badge bg-danger position-absolute top-0 end-0 p-1 fs-6 status-badge';
+                    badge.closest('.image-div').setAttribute('data-status', 'csam');
+                    imgDiv.remove(); // remove the card since it's irreversibly deleted
                   }
                 } else {
                   alert('Error: ' + data.error);
@@ -134,9 +141,9 @@ if (isset($_POST['searchFile'])) {
         button.addEventListener('click', function(e) {
           e.preventDefault();
 
-          // Collect all image IDs from data-id attribute but exclude 'adult' or 'rejected'
+          // Collect all image IDs from data-id attribute but exclude 'adult' or 'rejected' or 'csam' status
           const imageIds = Array.from(document.querySelectorAll('[data-id]'))
-            .filter(el => el.getAttribute('data-status') !== 'adult' && el.getAttribute('data-status') !== 'rejected')
+            .filter(el => el.getAttribute('data-status') !== 'adult' && el.getAttribute('data-status') !== 'rejected' && el.getAttribute('data-status') !== 'csam')
             .map(el => el.getAttribute('data-id'));
 
           // If no valid IDs left after filtering, show an alert and return
@@ -326,6 +333,9 @@ if (isset($_POST['searchFile'])) {
       echo '        <div class="btn-group mx-auto" role="group" >';
       echo '          <button type="button" name="status" value="adult" class="btn btn-warning mb-1 btn-xsm status-btn">Adult</button>';
       echo '          <button type="button" name="status" value="rejected" class="btn btn-danger mb-1 btn-xsm status-btn">Flag</button>';
+      if ($perm->isAdmin()) : // Only show CSAM button to admins
+        echo '          <button type="button" name="status" value="csam" class="btn btn-warning mb-1 btn-xsm status-btn">CSAM</button>';
+      endif;
       echo '        </div>';
       echo '        </div>';
       echo '      </form>';

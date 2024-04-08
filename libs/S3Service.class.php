@@ -335,6 +335,45 @@ class S3Service
     }
   }
 
+  public function downloadObjectR2(string $key, ?string $saveAs = null, ?string $mime = null): string
+  {
+    // If mime is not provided, determine from filename/objectKey
+    if (empty($mime)) {
+      // Get extension from objectKey
+      $extension = pathinfo($key, PATHINFO_EXTENSION);
+      // Get mime type from extension
+      $fileType = getFileType($extension);
+      $fileType = $fileType === 'unknown' ? 'application/octet-stream' : $fileType;
+      $mime = "{$fileType}/{$extension}";
+    }
+    $r2Params = $this->getR2BucketAndObjectNames($key, $mime);
+    // If saveAs not provided, use unique random temp file
+    if (empty($saveAs)) {
+      $saveAs = tempnam(sys_get_temp_dir(), 'r2download');
+    }
+    try {
+      $result = $this->r2->getObject([
+        'Bucket' => $r2Params['bucket'],
+        'Key'    => $r2Params['objectName'],
+        'SaveAs' => $saveAs
+      ]);
+
+      if ($result instanceof Aws\Result) {
+        // Check is status code is 200
+        if ($result['@metadata']['statusCode'] === 200) {
+          return $saveAs;
+        } else {
+          return '';
+        }
+      } else {
+        return '';
+      }
+    } catch (AwsException $e) {
+      error_log("r2 Download Object Error: " . $e->getMessage());
+      return '';
+    }
+  }
+
   // Get a URL for the object
   public function getObjectUrlS3($key)
   {
@@ -391,4 +430,193 @@ class S3Service
       'objectName' => $objectName
     ];
   }
+}
+
+
+// Set of function to specifiically handle CSAM related operations.
+function copyFromR2ToR2Bucket(
+  string $sourceBucket,
+  string $sourceKey,
+  string $destinationBucket,
+  string $destinationKey,
+  string $endPoint,
+  string $accessKey,
+  string $secretKey
+): bool {
+  $r2Config = [
+    'region'  => 'auto',
+    'version' => 'latest',
+    'endpoint' => $endPoint,
+    'credentials' => [
+      'key'    => $accessKey,
+      'secret' => $secretKey,
+    ],
+    'bucket' => $sourceBucket,
+    'use_aws_shared_config_files' => false,
+  ];
+
+  $r2 = new S3Client($r2Config);
+
+  $r2Params = [
+    'Bucket'     => $destinationBucket,
+    'CopySource' => "{$sourceBucket}/{$sourceKey}",
+    'Key'        => $destinationKey
+  ];
+
+  try {
+    $result = $r2->copyObject($r2Params);
+    if ($result['@metadata']['statusCode'] !== 200) {
+      error_log("The object was not copied. Status Code: " . $result['@metadata']['statusCode'] . "\n");
+      return false;
+    }
+    return true;
+  } catch (AwsException $e) {
+    error_log("r2 Copy Object Error: " . $e->getMessage());
+    return false;
+  }
+}
+
+function storeToR2Bucket(
+  string $sourceFilePath,
+  string $destinationKey,
+  string $destinationBucket,
+  string $endPoint,
+  string $accessKey,
+  string $secretKey,
+): bool {
+  $r2Config = [
+    'region'  => 'auto',
+    'version' => 'latest',
+    'endpoint' => $endPoint,
+    'credentials' => [
+      'key'    => $accessKey,
+      'secret' => $secretKey,
+    ],
+    'bucket' => $destinationBucket,
+    'use_aws_shared_config_files' => false,
+  ];
+
+  $r2 = new S3Client($r2Config);
+
+  $r2Params = [
+    'Bucket'     => $destinationBucket,
+    'Key'        => $destinationKey,
+    'SourceFile' => $sourceFilePath,
+    'ACL'        => 'private',
+    'retries'    => 6,
+    'StorageClass' => 'STANDARD',
+    'CacheControl' => 'max-age=2592000',
+    'ContentType' => mime_content_type($sourceFilePath),
+  ];
+
+  try {
+    $result = $r2->putObject($r2Params);
+    if ($result['@metadata']['statusCode'] !== 200) {
+      error_log("The object was not stored. Status Code: " . $result['@metadata']['statusCode'] . "\n");
+      return false;
+    }
+    return true;
+  } catch (AwsException $e) {
+    error_log("r2 Store Object Error: " . $e->getMessage());
+    return false;
+  }
+}
+
+function storeJSONObjectToR2Bucket(
+  array $object,
+  string $destinationKey,
+  string $destinationBucket,
+  string $endPoint,
+  string $accessKey,
+  string $secretKey,
+): bool {
+  $r2Config = [
+    'region'  => 'auto',
+    'version' => 'latest',
+    'endpoint' => $endPoint,
+    'credentials' => [
+      'key'    => $accessKey,
+      'secret' => $secretKey,
+    ],
+    'bucket' => $destinationBucket,
+    'use_aws_shared_config_files' => false,
+  ];
+
+  $r2 = new S3Client($r2Config);
+
+  $r2Params = [
+    'Bucket'     => $destinationBucket,
+    'Key'        => $destinationKey,
+    'Body'       => json_encode($object),
+    'ACL'        => 'private',
+    'retries'    => 6,
+    'StorageClass' => 'STANDARD',
+    'CacheControl' => 'max-age=2592000',
+    'ContentType' => 'application/json',
+  ];
+
+  try {
+    $result = $r2->putObject($r2Params);
+    if ($result['@metadata']['statusCode'] !== 200) {
+      error_log("The object was not stored. Status Code: " . $result['@metadata']['statusCode'] . "\n");
+      return false;
+    }
+    return true;
+  } catch (AwsException $e) {
+    error_log("r2 Store Object Error: " . $e->getMessage());
+    return false;
+  }
+}
+
+// function to fetch the object from R2 bucket that is in JSON format
+// we only know part of the key, <prefix>/<prefix>_<timestamp>.json
+// we do not know <timestamp> part of the key and they can be multiple
+function fetchJsonFromR2Bucket(
+  string $prefix,
+  string $endPoint,
+  string $accessKey,
+  string $secretKey,
+  string $bucket
+): array {
+  $r2Config = [
+    'region'  => 'auto',
+    'version' => 'latest',
+    'endpoint' => $endPoint,
+    'credentials' => [
+      'key'    => $accessKey,
+      'secret' => $secretKey,
+    ],
+    'bucket' => $bucket,
+    'use_aws_shared_config_files' => false,
+  ];
+
+  $r2 = new S3Client($r2Config);
+
+  $r2Params = [
+    'Bucket' => $bucket,
+    'Prefix' => $prefix,
+  ];
+
+  $objects = [];
+  $keys = [];
+  try {
+    $result = $r2->listObjects($r2Params);
+    if (!isset($result['Contents'])) {
+      error_log("The object was not found.\n");
+      return [];
+    }
+    foreach ($result['Contents'] as $object) {
+      $keys[] = $object['Key'];
+    }
+    // Iterate over the keys and fetch the object(s)
+    foreach ($keys as $key) {
+      $r2Params['Key'] = $key;
+      $result = $r2->getObject($r2Params);
+      $objects[$key] = json_decode($result['Body'], true);
+    }
+  } catch (AwsException $e) {
+    error_log("r2 List Objects Error: " . $e->getMessage());
+  }
+
+  return $objects;
 }

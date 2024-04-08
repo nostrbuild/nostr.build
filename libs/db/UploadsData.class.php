@@ -129,6 +129,30 @@ class UploadsData extends DatabaseTable
     return $rejected;
   }
 
+  public function checkBlacklisted(?string $npub, ?string $ip): bool
+  {
+    $sql = "SELECT id FROM blacklist WHERE (npub = ? OR ip = ?) LIMIT 1";
+    $blacklisted = false;
+    try {
+      $stmt = $this->db->prepare($sql);
+      $npub = $npub ?? '';
+      $ip = $ip ?? '';
+      $stmt->bind_param('ss', $npub, $ip);
+      $stmt->execute();
+      $stmt->store_result(); // This is required before you can call mysqli_stmt_num_rows()
+
+      if ($stmt->num_rows > 0) {
+        $blacklisted = true;
+      }
+    } catch (Exception $e) {
+      error_log("Exception: " . $e->getMessage());
+    } finally {
+      $stmt->free_result();
+      $stmt->close();
+    }
+    return $blacklisted;
+  }
+
   public function getUploadData($filehash)
   {
     $sql = "SELECT * FROM {$this->tableName} WHERE filename LIKE ?";
