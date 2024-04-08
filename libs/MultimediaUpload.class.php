@@ -1049,9 +1049,10 @@ class MultimediaUpload
       return [false, 413, "File size exceeds the limit of " . formatSizeUnits(SiteConfig::FREE_UPLOAD_LIMIT)];
     }
 
-    // Check if file has been rejected for free users
+    // Check if file has been rejected for free users or if the user has been flagged as rejected
     if (
-      !$this->pro && ($this->uploadsData->checkRejected($this->file['sha256']))
+      (!$this->pro && $this->uploadsData->checkRejected($this->file['sha256'])) ||
+      (!empty($this->userNpub) && $this->uploadsData->checkBlacklisted($this->userNpub))
     ) {
       error_log('File has been flagged as rejected');
       return [false, 403, "File or User has been flagged as rejected"];
