@@ -199,7 +199,7 @@ HTML;
 	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 	<title>nostr.build account</title>
 
-	<link href="/styles/twbuild.css?v=69" rel="stylesheet">
+	<link href="/styles/twbuild.css?v=71" rel="stylesheet">
 	<script defer src="/scripts/fw/alpinejs-intersect.min.js?v=12"></script>
 	<script defer src="/scripts/fw/alpinejs.min.js?v=12"></script>
 	<style>
@@ -285,14 +285,14 @@ HTML;
 
 				<main x-data="{ GAI: $store.GAI }" class="lg:pr-[41rem]">
 					<!-- Main content -->
-					<?php if ($perm->validatePermissionsLevelAny(10, 99)) : ?>
+					<?php if ($perm->validatePermissionsLevelAny(1, 10, 99)) : ?>
 						<div class="p-4">
 							<form action="#" class="relative" x-data="{ assignOpen: false, labelOpen: false, dueDateOpen: false, title: '', prompt: '', selectedModel: '@cf/lykon/dreamshaper-8-lcm' }">
 								<div class="overflow-hidden rounded-lg border border-nbpurple-300 shadow-sm focus-within:border-nbpurple-500 focus-within:ring-1 focus-within:ring-nbpurple-500">
 									<label for="title" class="sr-only">Title</label>
 									<input x-model="title" type="text" name="title" id="title" class="block w-full border-0 pt-2.5 text-lg font-medium placeholder:text-nbpurple-400 focus:ring-0 bg-nbpurple-50" placeholder="Title (name your creation)">
 									<label for="prompt" class="sr-only">Prompt</label>
-									<textarea x-model="prompt" rows="4" name="prompt" id="prompt" class="block w-full resize-none border-0 py-0 text-nbpurple-900 placeholder:text-nbpurple-400 focus:ring-0 sm:text-sm sm:leading-6 bg-nbpurple-50" placeholder="(prompt) ex.: purple ostrich surfing a big wave ..."></textarea>
+									<textarea x-model="prompt" rows="2" name="prompt" id="prompt" class="block w-full resize-none border-0 py-0 text-nbpurple-900 placeholder:text-nbpurple-400 focus:ring-0 sm:text-sm sm:leading-6 bg-nbpurple-50" placeholder="(prompt) ex.: purple ostrich surfing a big wave ..."></textarea>
 
 									<!-- Spacer element to match the height of the toolbar -->
 									<div aria-hidden="true">
@@ -311,9 +311,9 @@ HTML;
 																		modelMenuOpen: false,
 																		selectedModelTitle: 'Dream Shaper',
 																		modelOptions: [
-																			{ value: '@cf/lykon/dreamshaper-8-lcm', title: 'Dream Shaper', description: 'Stable Diffusion model that has been fine-tuned to be better at photorealism without sacrificing range.' },
-																			{ value: '@cf/bytedance/stable-diffusion-xl-lightning', title: 'SDXL-Lightning', description: 'SDXL-Lightning is a lightning-fast text-to-image generation model. It can generate high-quality 1024px images in a few steps.' },
-																			{ value: '@cf/stabilityai/stable-diffusion-xl-base-1.0', title: 'Stable Diffusion', description: 'Diffusion-based text-to-image generative model by Stability AI. Generates and modify images based on text prompts.' },
+																			{ value: '@cf/lykon/dreamshaper-8-lcm', title: 'Dream Shaper', description: 'Stable Diffusion model that has been fine-tuned to be better at photorealism without sacrificing range.', disabled: false },
+																			{ value: '@cf/bytedance/stable-diffusion-xl-lightning', title: 'SDXL-Lightning', description: 'SDXL-Lightning is a lightning-fast text-to-image generation model. It can generate high-quality 1024px images in a few steps.', disabled: <?= $perm->validatePermissionsLevelAny(10, 99) ? 'false' : 'true' ?>},
+																			{ value: '@cf/stabilityai/stable-diffusion-xl-base-1.0', title: 'Stable Diffusion', description: 'Diffusion-based text-to-image generative model by Stability AI. Generates and modify images based on text prompts.', disabled: <?= $perm->validatePermissionsLevelAny(10, 99) ? 'false' : 'true' ?> },
 																		]
 																	}">
 												<label id="listbox-label" class="sr-only">Change generative model</label>
@@ -334,10 +334,19 @@ HTML;
 													</div>
 													<ul x-cloak @click.outside="modelMenuOpen = false" x-show="modelMenuOpen" x-transition:enter="" x-transition:enter-start="" x-transition:enter-end="" x-transition:leave="transition ease-in duration-100" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0" class="absolute left-0 z-10 mt-2 sm:w-96 w-80 origin-top-left divide-y divide-gray-200 overflow-hidden rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none" tabindex="-1" role="listbox" aria-labelledby="listbox-label" aria-activedescendant="listbox-option-0">
 														<template x-for="(option, index) in modelOptions" :key="option.value">
-															<li :class="{ 'bg-nbpurple-100' : selectedModel === option.value }" class="hover:bg-nbpurple-100 text-gray-900 cursor-default select-none p-4 text-sm" :id="'listbox-option-' + index" role="option" @click="selectedModel = option.value; selectedModelTitle = option.title; modelMenuOpen = false">
+															<li :class="{
+																						'bg-nbpurple-100': selectedModel === option.value,
+																						'text-gray-400 cursor-not-allowed': option.disabled,
+																						'hover:bg-nbpurple-100 text-gray-900 cursor-default': !option.disabled
+																					}" class="select-none p-4 text-sm" :id="'listbox-option-' + index" role="option" @click="if (!option.disabled) { selectedModel = option.value; selectedModelTitle = option.title; modelMenuOpen = false; }">
 																<div class="flex flex-col">
 																	<div class="flex justify-between">
-																		<p class="font-normal" x-text="option.title"></p>
+																		<div class="flex items-center">
+																			<p class="font-normal" x-text="option.title"></p>
+																			<a x-show="option.disabled" href="/plans/" class="ml-2 text-nbpurple-600 text-xs hover:underline">
+																				Upgrade to Advanced
+																			</a>
+																		</div>
 																		<span class="text-nbpurple-600" x-show="selectedModel === option.value">
 																			<svg class="size-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
 																				<path fill-rule="evenodd" d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.05-.143z" clip-rule="evenodd" />
@@ -378,9 +387,9 @@ HTML;
 								</p>
 								<img x-cloak x-show="GAI.ImageShow" @load="GAI.ImageShow = true; GAI.ImageLoading = false" :src="GAI.file.thumb" :srcset="GAI.file.srcset" :sizes="GAI.file.sizes" :alt="GAI.file.title || GAI.file.name" :width="GAI.file.width" :height="GAI.file.height" loading="eager" class="w-full" x-transition:enter="transition-opacity ease-in duration-750" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" />
 							</div>
-							<div class="bg-black/20 px-6 py-4 sm:flex sm:justify-between">
+							<div x-cloak x-show="GAI.ImageShow" class="bg-black/20 px-6 py-4 sm:flex sm:justify-between">
 								<div class="mb-4 sm:mb-0">
-									<p class="text-sm text-gray-300">Name: <span x-text="GAI.file.title"></span></p>
+									<p class="text-sm text-gray-300" x-text="GAI.file.title ? 'Title: ' + GAI.file.title : 'Name: ' + GAI.file.name"></p>
 									<p class="text-sm text-gray-300">Size: <span x-text="GAI.file.size"></span></p>
 								</div>
 								<div>
@@ -393,13 +402,14 @@ HTML;
 								</div>
 							</div>
 						</div>
+						<!-- /Generate image -->
 					<?php else : ?>
 						<div class="p-4">
 							<div class="bg-black/10 rounded-lg shadow-xl my-8 mx-auto w-11/12 max-w-2xl p-4 h-32 align-middle">
 								<p class="text-nbpurple-200 text-center text-lg">Your plan does not include Generative AI (AI Early Access).</p>
 								<!-- Upgrade button -->
 								<div class="flex justify-center mt-4">
-									<a href="/plans/" class="inline-flex items-center rounded-md bg-nbpurple-600 px-3 py-2 sm:text-sm text-xs h-9 font-semibold text-white shadow-sm hover:bg-nbpurple-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-nbpurple-600">Upgrade to Advanced Plan</a>
+									<a href="/plans/" class="inline-flex items-center rounded-md bg-nbpurple-600 px-3 py-2 sm:text-sm text-xs h-9 font-semibold text-white shadow-sm hover:bg-nbpurple-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-nbpurple-600">Upgrade to Creator or Advanced Plan</a>
 								</div>
 							</div>
 						</div>
