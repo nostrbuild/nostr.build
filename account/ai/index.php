@@ -986,6 +986,8 @@ HTML;
 					console.log('Title:', title);
 					console.log('Prompt:', prompt);
 					console.log('Selected Model:', selectedModel);
+					// Switch to AI: Generated Images folder
+					Alpine.store('menuStore').setActiveFolder('AI: Generated Images');
 					// Prepare form data to send to the server
 					const formData = new FormData();
 					formData.append('title', title);
