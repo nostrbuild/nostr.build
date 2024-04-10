@@ -22,8 +22,8 @@ $total_size_gb = round($stats['total_size'] / (1024 * 1024 * 1024), 2); // Conve
 	<meta name="description" content="nostr.build" />
 	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-	<link rel="stylesheet" href="/styles/index.css?v=8" />
-	<link rel="stylesheet" href="/styles/header.css?v=9" />
+	<link rel="stylesheet" href="/styles/index.css?v=9" />
+	<link rel="stylesheet" href="/styles/header.css?v=10" />
 	<link rel="icon" href="i/p/0.png">
 
 	<title>nostr.build - Uploaded!</title>
@@ -201,7 +201,7 @@ $total_size_gb = round($stats['total_size'] / (1024 * 1024 * 1024), 2); // Conve
 	?>
 
 	<?= include $_SERVER['DOCUMENT_ROOT'] . '/components/footer.php'; ?>
-	<script src="/scripts/upload.js?v=8"></script>
+	<script src="/scripts/upload.js?v=9"></script>
 </body>
 
 </html>

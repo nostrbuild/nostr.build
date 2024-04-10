@@ -190,13 +190,13 @@ SVG;
   <meta charSet="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Nostr.build account signup</title>
-  <link rel="stylesheet" href="/styles/twbuild.css?v=37" />
-  <link rel="stylesheet" href="/styles/index.css?v=7" />
-  <link rel="stylesheet" href="/styles/signup.css?v=8" />
+  <link rel="stylesheet" href="/styles/twbuild.css?v=38" />
+  <link rel="stylesheet" href="/styles/index.css?v=8" />
+  <link rel="stylesheet" href="/styles/signup.css?v=9" />
   <link rel="icon" href="/assets/primo_nostr.png" />
-  <script defer src="/scripts/fw/alpinejs.min.js?v=10"></script>
+  <script defer src="/scripts/fw/alpinejs.min.js?v=11"></script>
   <!--
-  <script defer src="/scripts/fw/htmx.min.js?v=10"></script>
+  <script defer src="/scripts/fw/htmx.min.js?v=11"></script>
   -->
   <style>
     [x-cloak] {
@@ -465,7 +465,7 @@ SVG;
               <?php endif; ?>
             </form>
           </div>
-          <script src="/scripts/dist/signup.js?v=9"></script>
+          <script src="/scripts/dist/signup.js?v=10"></script>
           <script>
             document.addEventListener('DOMContentLoaded', (event) => {
               // Check if NIP-07 extension is installed and enable NIP-07 login

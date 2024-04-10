@@ -199,16 +199,9 @@ HTML;
 	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 	<title>nostr.build account</title>
 
-	<!--
-	<link href="/scripts/dist/index.css?v=21" rel="stylesheet">
--->
-	<link href="/styles/twbuild.css?v=68k" rel="stylesheet">
-
-	<!--
-	<script defer src="/scripts/dist/index.js?v=37"></script>
--->
-	<script defer src="/scripts/fw/alpinejs-intersect.min.js?v=11"></script>
-	<script defer src="/scripts/fw/alpinejs.min.js?v=11"></script>
+	<link href="/styles/twbuild.css?v=69" rel="stylesheet">
+	<script defer src="/scripts/fw/alpinejs-intersect.min.js?v=12"></script>
+	<script defer src="/scripts/fw/alpinejs.min.js?v=12"></script>
 	<style>
 		[x-cloak] {
 			display: none !important;
