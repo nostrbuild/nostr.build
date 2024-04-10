@@ -172,6 +172,12 @@ class MultimediaUpload
   protected $uppyMetadata;
 
   /**
+   * Summary of defaultFolderName
+   * @var
+   */
+  protected $defaultFolderName;
+
+  /**
    * Summary of __construct
    * @param mysqli $db
    * @param S3Service $s3Service
@@ -569,7 +575,7 @@ class MultimediaUpload
       //error_log('Processing file: ' . print_r($file, true) . PHP_EOL);
       try {
         // Begin a database transaction, so that we can rollback if anything fails
-        $this->db->begin_transaction();
+        $this->db->begin_transaction(MYSQLI_TRANS_START_WITH_CONSISTENT_SNAPSHOT);
 
         // We set the file property to the current file in the loop
         // so that we can access it in other methods without passing it around
@@ -699,6 +705,8 @@ class MultimediaUpload
             $fileData['dimensions']['height'] ?? 0,
             $fileData['blurhash'] ?? null,
             $fileType['mime'],
+            !empty($file['title']) ? $file['title'] : '',
+            !empty($file['ai_prompt']) ? $file['ai_prompt'] : '',
           )) {
             $returnError[] = [false, 500, 'Failed to update database'];
             throw new Exception('Failed to update database');
@@ -826,7 +834,7 @@ class MultimediaUpload
    * 4) Download the file to a temporary location
    * 5) Set the file property to the downloaded file
    */
-  public function uploadFileFromUrl(string $url, $pfp = false): array
+  public function uploadFileFromUrl(string $url, bool $pfp = false, ?string $title = '', ?string $ai_prompt = ''): array
   {
     $sizeLimit = $this->pro ?
       $this->userAccount->getRemainingStorageSpace() :
@@ -936,6 +944,8 @@ class MultimediaUpload
       'tmp_name' => realpath($tempFile),
       'error' => UPLOAD_ERR_OK, // No error
       'size' => filesize($tempFile),
+      'title' => $title ?? '',
+      'ai_prompt' => $ai_prompt ?? '',
     ];
 
     // Lastly, trigger the uploadFiles method to process and store the file
@@ -1527,16 +1537,20 @@ class MultimediaUpload
     int $mediaHeight,
     ?string $blurhash,
     string $fileMimeType,
+    ?string $title = '',
+    ?string $ai_prompt = '',
   ): bool {
     // Update the database with the new file name and size
     $folder_id = null;
     $folder_name = !empty($this->uppyMetadata['folderName'])
       ? json_decode($this->uppyMetadata['folderName']) ?? ''
       : null;
+    $folder_name = $folder_name ?? $this->defaultFolderName;
     if (
-      !empty($this->uppyMetadata['folderHierarchy']) &&
+      (!empty($this->uppyMetadata['folderHierarchy']) &&
       is_array($this->uppyMetadata['folderHierarchy']) &&
-      count($this->uppyMetadata['folderHierarchy']) > 0
+      count($this->uppyMetadata['folderHierarchy']) > 0) ||
+      !empty($this->defaultFolderName)
     ) {
       // We have a folder hierarchy, so we need to find the folder ID
       try {
@@ -1556,6 +1570,8 @@ class MultimediaUpload
         'media_height' => $mediaHeight,
         'blurhash' => $blurhash,
         'mime_type' => $fileMimeType,
+        'title' => $title,
+        'ai_prompt' => $ai_prompt,
       ]);
     } catch (Exception $e) {
       error_log($e->getMessage());
@@ -1622,5 +1638,16 @@ class MultimediaUpload
     }
     $this->uppyMetadata = $uppyMetadata;
     return $this;
+  }
+
+  public function setDefaultFolderName(string $folderName): self
+  {
+    $this->defaultFolderName = $folderName;
+    return $this;
+  }
+
+  public function getDefaultFolderName(): string
+  {
+    return $this->defaultFolderName;
   }
 }

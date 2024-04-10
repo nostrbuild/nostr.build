@@ -85,8 +85,8 @@ $userStorageRemaining = $userOverLimit ? 0 : $userStorageLimit - $storageUsed;
 	<link rel="icon" href="/assets/primo_nostr.png" />
 
 	<script defer src="/scripts/dist/index.js?v=37"></script>
-	<script defer src="/scripts/fw/alpinejs-intersect.min.js?v=10"></script>
-	<script defer src="/scripts/fw/alpinejs.min.js?v=10"></script>
+	<script defer src="/scripts/fw/alpinejs-intersect.min.js?v=11"></script>
+	<script defer src="/scripts/fw/alpinejs.min.js?v=11"></script>
 	<script defer src="/scripts/fw/htmx.min.js?v=10"></script>
 	<script defer src="/scripts/fw/htmx/loading-states.js?v=10"></script>
 	<style>
@@ -139,6 +139,12 @@ $userStorageRemaining = $userOverLimit ? 0 : $userStorageLimit - $storageUsed;
 					<path d="M13.3337 10.0003L10.0003 6.66699M10.0003 6.66699L6.66699 10.0003M10.0003 6.66699V14.3337C10.0003 15.4926 10.0003 16.0721 10.4591 16.7208C10.7639 17.1519 11.6415 17.6839 12.1647 17.7548C12.9521 17.8615 13.2511 17.7055 13.8492 17.3936C16.5142 16.0033 18.3337 13.2143 18.3337 10.0003C18.3337 5.39795 14.6027 1.66699 10.0003 1.66699C5.39795 1.66699 1.66699 5.39795 1.66699 10.0003C1.66699 13.0848 3.34282 15.7779 5.83366 17.2188" stroke="#D0BED8" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round" />
 				</svg>
 				Free &amp; profile picture uploads
+			</button>
+			<button class="nav_item" onclick="window.location.href='/account/ai';">
+				<svg width="20" height="20" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 733.33 733.33">
+					<path d="M433.33 66.67c0 24.68-13.41 46.22-33.33 57.75v8.92h233.33c55.23 0 100 44.77 100 100v400c0 55.23-44.77 100-100 100H100c-55.23 0-100-44.77-100-100V233.33c0-55.23 44.77-100 100-100h233.33v-8.92C313.4 112.88 300 91.34 300 66.66c0-36.82 29.85-66.67 66.67-66.67s66.67 29.85 66.67 66.67ZM100 200h533.33c18.41 0 33.33 14.92 33.33 33.33v400c0 18.41-14.92 33.33-33.33 33.33H100c-18.41 0-33.33-14.92-33.33-33.33v-400C66.67 214.92 81.59 200 100 200Zm366.67 183.33c0-27.61 22.39-50 50-50s50 22.39 50 50-22.39 50-50 50-50-22.39-50-50Zm50-116.66C452.24 266.67 400 318.9 400 383.34s52.23 116.67 116.67 116.67 116.67-52.23 116.67-116.67-52.23-116.67-116.67-116.67Zm-300 66.66c-27.61 0-50 22.39-50 50s22.39 50 50 50 50-22.39 50-50-22.39-50-50-50Zm-116.67 50c0-64.43 52.23-116.67 116.67-116.67s116.67 52.23 116.67 116.67S281.11 500 216.67 500 100 447.77 100 383.33Zm229.81 168.43c-8.23-16.47-28.25-23.14-44.72-14.91s-23.14 28.25-14.91 44.72c19.17 38.33 62.55 51.76 96.48 51.76s77.32-13.43 96.48-51.76c8.23-16.47 1.56-36.49-14.91-44.72-16.47-8.23-36.49-1.56-44.72 14.91-3.06 6.11-15.23 14.91-36.85 14.91s-33.8-8.79-36.85-14.91Z" style="fill:#ffffff;fill-rule:evenodd;stroke-width:0" />
+				</svg>
+				AI Studio
 			</button>
 
 			<?php

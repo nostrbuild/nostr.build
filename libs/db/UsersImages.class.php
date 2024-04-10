@@ -27,6 +27,8 @@ class UsersImages extends DatabaseTable
       'blurhash' => v::optional(v::stringType()->length(1, 255)),
       'mime_type' => v::optional(v::stringType()->length(1, 255)),
       'sha256_hash' => v::optional(v::stringType()->length(1, 255)),
+      'title' => v::optional(v::stringType()->length(1, 255)),
+      'ai_prompt' => v::optional(v::stringType()->length(1, 4096)),
     ];
   }
 
@@ -87,7 +89,9 @@ class UsersImages extends DatabaseTable
       ui.media_height,
       ui.blurhash,
       ui.mime_type,
-      ui.sha256_hash
+      ui.sha256_hash,
+      ui.title,
+      ui.ai_prompt
     FROM {$this->tableName} ui
     WHERE ((? IS NULL AND ui.folder_id IS NULL) OR ui.folder_id = ?)
     AND ui.usernpub = ?
