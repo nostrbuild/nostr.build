@@ -830,6 +830,10 @@ HTML;
 					if (!this.foldersFetched || !folderName) {
 						return;
 					}
+					// If already same folder, do nothing
+					if (this.activeFolder === folderName) {
+						return;
+					}
 					this.activeFolder = folderName;
 					updateHashURL(folderName);
 					console.log('Active folder set:', folderName);
