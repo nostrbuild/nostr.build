@@ -987,7 +987,13 @@ HTML;
 					console.log('Prompt:', prompt);
 					console.log('Selected Model:', selectedModel);
 					// Switch to AI: Generated Images folder
-					Alpine.store('menuStore').setActiveFolder('AI: Generated Images');
+					menuStore = Alpine.store('menuStore');
+					targetFolder = 'AI: Generated Images';
+					if (menuStore.activeFolder !== targetFolder) {
+						console.log('Switching to folder:', targetFolder);
+						console.log('Current folder:', menuStore.activeFolder);
+						menuStore.setActiveFolder(targetFolder);
+					}
 					// Prepare form data to send to the server
 					const formData = new FormData();
 					formData.append('title', title);
