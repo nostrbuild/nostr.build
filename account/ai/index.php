@@ -164,7 +164,7 @@ $pageMenuContent = <<<HTML
 							<path stroke-linecap="round" stroke-linejoin="round" d="M10.5 6a7.5 7.5 0 1 0 7.5 7.5h-7.5V6Z" />
 							<path stroke-linecap="round" stroke-linejoin="round" d="M13.5 10.5H21A7.5 7.5 0 0 0 13.5 3v7.5Z" />
 						</svg>
-						<span class="ml-2 text-sm font-medium text-nbpurple-300">Media</span>
+						<span class="ml-2 text-sm font-medium text-nbpurple-300" x-text="'Media(' + menuStore.formatNumberInThousands(menuStore.fileStats.totalFiles) + ')'"></span>
 					</div>
 					<div class="flex items-center space-x-2">
 						<div class="flex items-center">
@@ -1132,6 +1132,7 @@ HTML;
 								Alpine.store('fileStore').injectFile(data);
 								// Update file stats
 								menuStore.fileStats.totalImages++;
+								menuStore.fileStats.totalFiles++;
 								menuStore.updateTotalUsed(data.size);
 								this.file = data;
 							})
