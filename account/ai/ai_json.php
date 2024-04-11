@@ -97,7 +97,7 @@ function listImagesByFolderName($folderName, $link)
 		$new_url = $base_url . $filename;
 		$image_url = $new_url;
 		$thumb_url = SiteConfig::getThumbnailUrl($professional_type) . $filename;
-		$size = formatSizeUnits($images_row['file_size']);
+		$size = $images_row['file_size'];
 		// Responsive image sizes
 		$resolutionToWidth = [
 			"240p"  => "426",
@@ -235,7 +235,7 @@ function getAndStoreAIGeneratedImage(string $model, string $prompt, string $titl
 		"name" => $fileData[0]['name'],
 		"url" => $fileData[0]['url'],
 		"thumb" => $fileData[0]['thumbnail'],
-		"size" => formatSizeUnits($fileData[0]['size']),
+		"size" => $fileData[0]['size'],
 		"sizes" => '(max-width: 426px) 100vw, (max-width: 640px) 100vw, (max-width: 854px) 100vw, (max-width: 1280px) 50vw, 33vw',
 		"srcset" => implode(", ", array_map(function ($resolution) use ($fileData, $resolutionToWidth) {
 			return htmlspecialchars($fileData[0]['responsive'][$resolution] . " {$resolutionToWidth[$resolution]}w");
