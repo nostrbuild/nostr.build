@@ -131,22 +131,23 @@ $pageMenuContent = <<<HTML
 			<li>
 				<div class="flex items-center justify-between">
 					<div class="flex items-center">
-						<svg class="size-6 text-nbpurple-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+						<svg class="size-5 text-nbpurple-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
 							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
 						</svg>
 						<span class="ml-2 text-sm font-medium text-nbpurple-300">Usage</span>
 					</div>
-					<div class="text-sm font-medium text-nbpurple-300" x-text="menuStore.storageUsage.totalUsed + ' / ' + menuStore.storageUsage.totalAvailable"></div>
+					<div class="text-sm font-medium text-nbpurple-300" x-text="formatBytes(menuStore.storageUsage.totalUsed) + ' / ' + menuStore.storageUsage.totalAvailable"></div>
 				</div>
 				<div class="mt-2 w-full bg-nbpurple-200 rounded-full h-2">
-					<div class="bg-nbpurple-600 h-2 rounded-full" :style="'width: ' + (menuStore.storageUsage.ratio * 100) + '%'"></div>
+					<div class="bg-nbpurple-600 h-2 rounded-full" :style="'width: ' + (menuStore.storageUsage.getRatio().toFixed(2) * 100) + '%'"></div>
 				</div>
 			</li>
+			<!-- /Storage Usage Widget -->
 			<!-- Remaining Days Widget -->
 			<li>
 				<div class="flex items-center justify-between">
 					<div class="flex items-center">
-						<svg class="size-6 text-nbpurple-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+						<svg class="size-5 text-nbpurple-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
 							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
 						</svg>
 						<span class="ml-2 text-sm font-medium text-nbpurple-300">Remaining Days</span>
@@ -154,6 +155,37 @@ $pageMenuContent = <<<HTML
 					<div class="text-sm font-medium text-nbpurple-300" x-text="menuStore.remainingDays"></div>
 				</div>
 			</li>
+			<!-- /Remaining Days Widget -->
+			<!-- File statistics -->
+			<li>
+				<div class="flex items-center justify-between">
+					<div class="flex items-center">
+						<svg class="size-5 text-nbpurple-300" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+							<path stroke-linecap="round" stroke-linejoin="round" d="M10.5 6a7.5 7.5 0 1 0 7.5 7.5h-7.5V6Z" />
+							<path stroke-linecap="round" stroke-linejoin="round" d="M13.5 10.5H21A7.5 7.5 0 0 0 13.5 3v7.5Z" />
+						</svg>
+						<span class="ml-2 text-sm font-medium text-nbpurple-300">Media</span>
+					</div>
+					<div class="flex items-center space-x-2">
+						<div class="flex items-center">
+							<svg class="size-4 text-nbpurple-300" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+								<path stroke-linecap="round" stroke-linejoin="round" d="M12.75 8.25v7.5m6-7.5h-3V12m0 0v3.75m0-3.75H18M9.75 9.348c-1.03-1.464-2.698-1.464-3.728 0-1.03 1.465-1.03 3.84 0 5.304 1.03 1.464 2.699 1.464 3.728 0V12h-1.5M4.5 19.5h15a2.25 2.25 0 0 0 2.25-2.25V6.75A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25v10.5A2.25 2.25 0 0 0 4.5 19.5Z" />
+							</svg>
+							<span class="ml-1 text-sm font-medium text-nbpurple-300" x-text="menuStore.formatNumberInThousands(menuStore.fileStats.totalGifs)"></span> </div>
+						<div class="flex items-center">
+							<svg class="size-4 text-nbpurple-300" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+							</svg>
+							<span class="ml-1 text-sm font-medium text-nbpurple-300" x-text="menuStore.formatNumberInThousands(menuStore.fileStats.totalImages)"></span> </div>
+						<div class="flex items-center">
+							<svg class="size-4 text-nbpurple-300" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+							</svg>
+							<span class="ml-1 text-sm font-medium text-nbpurple-300" x-text="menuStore.formatNumberInThousands(menuStore.fileStats.totalVideos)"></span> </div>
+					</div>
+				</div>
+			</li>
+			<!-- /File statistics -->
 		</ul>
 	</li>
 	<!-- /Sidebar widgets -->
@@ -173,7 +205,7 @@ $pageMenuContent = <<<HTML
 	<!-- /Menu items -->
 	<!-- Folders -->
 	<li>
-		<div class="text-xs font-semibold leading-6 text-nbpurple-300">Folders</div>
+		<div class="text-xs font-semibold leading-6 text-nbpurple-300">Folders (<span class="font-bold" x-text="menuStore.fileStats.totalFolders"></span>)</div>
 		<ul role="list" class="-mx-2 mt-2 space-y-1">
 			<template x-for="folder in menuStore.folders" :key="folder.name">
 				<li>
@@ -200,7 +232,7 @@ HTML;
 	<title>nostr.build account</title>
 
 	<link rel="icon" href="/assets/primo_nostr.png" />
-	<link href="/styles/twbuild.css?v=73" rel="stylesheet">
+	<link href="/styles/twbuild.css?v=74" rel="stylesheet">
 	<script defer src="/scripts/fw/alpinejs-intersect.min.js?v=12"></script>
 	<script defer src="/scripts/fw/alpinejs.min.js?v=12"></script>
 	<style>
@@ -291,9 +323,9 @@ HTML;
 							<form action="#" class="relative" x-data="{ assignOpen: false, labelOpen: false, dueDateOpen: false, title: '', prompt: '', selectedModel: '@cf/lykon/dreamshaper-8-lcm' }">
 								<!-- Clear button -->
 								<div x-cloak x-show="title.length > 0 || prompt.length > 0" class="flex-shrink-0 absolute top-1 right-1 z-10">
-									<button type="button" class="inline-flex items-center rounded-full bg-nbpurple-600/50 px-3 py-2 sm:text-sm text-xs font-semibold text-nbpurple-50 shadow-sm hover:bg-nbpurple-500/50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-nbpurple-600" @click="title = ''; prompt = ''">
+									<button type="button" class="inline-flex items-center rounded-full bg-nbpurple-600/50 p-1 sm:text-sm text-xs font-semibold text-nbpurple-50 shadow-sm hover:bg-nbpurple-500/50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-nbpurple-600" @click="title = ''; prompt = ''">
 										<span class="sr-only">Clear fields</span>
-										<svg class="size-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-rotate-ccw">
+										<svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-rotate-ccw">
 											<path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
 											<path d="M3 3v5h5" />
 										</svg>
@@ -402,7 +434,7 @@ HTML;
 							<div x-cloak x-show="GAI.ImageShow" class="bg-black/20 px-6 py-4 sm:flex sm:justify-between">
 								<div class="mb-4 sm:mb-0">
 									<p class="text-sm text-gray-300" x-text="GAI.file.title ? 'Title: ' + GAI.file.title : 'Name: ' + GAI.file.name"></p>
-									<p class="text-sm text-gray-300">Size: <span x-text="GAI.file.size"></span></p>
+									<p class="text-sm text-gray-300">Size: <span x-text="formatBytes(GAI.file.size)"></span></p>
 								</div>
 								<div>
 									<p class="text-sm text-gray-300">Dimensions: <span x-text="GAI.ImageDimensions"></span></p>
@@ -473,7 +505,7 @@ HTML;
 									<div class="flex justify-between items-center">
 										<div>
 											<p class="pointer-events-none mt-2 block truncate text-sm font-medium text-nbpurple-300" x-text="file.name"></p>
-											<p class="pointer-events-none block text-sm font-medium text-nbpurple-500" x-text="file.size"></p>
+											<p class="pointer-events-none block text-sm font-medium text-nbpurple-500" x-text="formatBytes(file.size)"></p>
 										</div>
 										<div x-data="{copyClick: false}">
 											<button @click="copyUrlToClipboard(file.url); copyClick = true; setTimeout(() => copyClick = false, 2000); showToast = true" class="mt-2 px-2 py-1 bg-nbpurple-600 text-white rounded-md hover:bg-nbpurple-700 focus:outline-none focus:ring-2 focus:ring-nbpurple-500" aria-label="Copy image URL to clipboard">
@@ -688,7 +720,7 @@ HTML;
 					<div class="bg-black/20 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse justify-between">
 						<div class="flex flex-col items-start">
 							<p class="text-sm text-gray-300">Name: <span x-text="$store.fileStore.modalImageAlt"></span></p>
-							<p class="text-sm text-gray-300">Size: <span x-text="$store.fileStore.modalImageFilesize"></span></p>
+							<p class="text-sm text-gray-300">Size: <span x-text="formatBytes($store.fileStore.modalImageFilesize)"></span></p>
 						</div>
 						<div class="flex flex-col items-start">
 							<p class="text-sm text-gray-300">Dimensions: <span x-text="$store.fileStore.modalImageDimensions"></span></p>
@@ -722,6 +754,16 @@ HTML;
 	</main>
 
 	<script>
+		function formatBytes(bytes) {
+			if (bytes === 0) return '0 Bytes';
+
+			const k = 1024;
+			const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB'];
+			const i = Math.floor(Math.log(bytes) / Math.log(k));
+
+			return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+		}
+
 		document.addEventListener('alpine:init', () => {
 			console.log('Alpine initialized');
 			Alpine.store('mediaEditBar', {
@@ -853,11 +895,11 @@ HTML;
 					if (this.activeFolder === folderName) {
 						return;
 					}
+					// Clear the files list
+					Alpine.store('fileStore').files = [];
 					this.activeFolder = folderName;
 					updateHashURL(folderName);
 					console.log('Active folder set:', folderName);
-					// Clear the files list
-					Alpine.store('fileStore').files = [];
 				},
 				foldersFetched: false,
 				fetchFolders() {
@@ -924,10 +966,35 @@ HTML;
 				activeFolder: '',
 				storageUsage: {
 					totalAvailable: '<?= $userStorageLimit === PHP_INT_MAX ? 'Unlimited' : formatSizeUnits($userStorageLimit) ?>',
-					totalUsed: '<?= formatSizeUnits($storageUsed) ?>',
-					ratio: <?= $userOverLimit ? 1 : min(1, max(0, round($storageUsed / $userStorageLimit, 2))) ?>
+					userStorageLimit: <?= $userStorageLimit ?>,
+					totalUsed: <?= $storageUsed ?>,
+
+					get ratio() {
+						return Math.min(1, Math.max(0, this.totalUsed / this.userStorageLimit));
+					},
+
+					getRatio() {
+						const userOverLimit = <?= $userOverLimit ? 'true' : 'false' ?>;
+						return userOverLimit ? 1 : this.ratio;
+					},
 				},
-				remainingDays: <?= $daysRemaining ?>
+				updateTotalUsed(addUsed) {
+					this.storageUsage.totalUsed += addUsed;
+					console.log('Total used updated:', this.storageUsage.totalUsed);
+					console.log('Total used ratio:', this.storageUsage.getRatio());
+					console.log('Total used added:', addUsed);
+				},
+				remainingDays: <?= $daysRemaining ?>,
+				fileStats: {
+					totalFiles: <?= $usersFoldersStats['TOTAL']['fileCount'] ?>,
+					totalFolders: <?= $usersFoldersStats['TOTAL']['folderCount'] ?>,
+					totalGifs: <?= $usersFoldersStats['TOTAL']['gifCount'] ?>,
+					totalImages: <?= $usersFoldersStats['TOTAL']['imageCount'] ?>,
+					totalVideos: <?= $usersFoldersStats['TOTAL']['avCount'] ?>,
+				},
+				formatNumberInThousands(number) {
+					return number > 999 ? `${(number / 1000).toFixed(1)}k` : number;
+				}
 			});
 			Alpine.store('fileStore', {
 				files: [],
@@ -1061,7 +1128,11 @@ HTML;
 
 								data.title = title;
 								data.ai_prompt = prompt;
+								// Add file to the grid
 								Alpine.store('fileStore').injectFile(data);
+								// Update file stats
+								menuStore.fileStats.totalImages++;
+								menuStore.updateTotalUsed(data.size);
 								this.file = data;
 							})
 							.catch(error => {
@@ -1077,15 +1148,6 @@ HTML;
 						this.ImageLoading = false;
 					}
 				},
-				formatBytes(bytes) {
-					if (bytes === 0) return '0 Bytes';
-
-					const k = 1024;
-					const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB'];
-					const i = Math.floor(Math.log(bytes) / Math.log(k));
-
-					return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-				}
 			});
 		})
 	</script>
