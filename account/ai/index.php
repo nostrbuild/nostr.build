@@ -199,7 +199,8 @@ HTML;
 	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 	<title>nostr.build account</title>
 
-	<link href="/styles/twbuild.css?v=71" rel="stylesheet">
+	<link rel="icon" href="/assets/primo_nostr.png" />
+	<link href="/styles/twbuild.css?v=72" rel="stylesheet">
 	<script defer src="/scripts/fw/alpinejs-intersect.min.js?v=12"></script>
 	<script defer src="/scripts/fw/alpinejs.min.js?v=12"></script>
 	<style>
@@ -288,11 +289,22 @@ HTML;
 					<?php if ($perm->validatePermissionsLevelAny(1, 10, 99)) : ?>
 						<div class="p-4">
 							<form action="#" class="relative" x-data="{ assignOpen: false, labelOpen: false, dueDateOpen: false, title: '', prompt: '', selectedModel: '@cf/lykon/dreamshaper-8-lcm' }">
+								<!-- Clear button -->
+								<div x-cloak x-show="title.length > 0 || prompt.length > 0" class="flex-shrink-0 absolute top-1 right-1 z-10">
+									<button type="button" class="inline-flex items-center rounded-full bg-nbpurple-600/50 px-3 py-2 sm:text-sm text-xs font-semibold text-nbpurple-50 shadow-sm hover:bg-nbpurple-500/50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-nbpurple-600" @click="title = ''; prompt = ''">
+										<span class="sr-only">Clear fields</span>
+										<svg class="size-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-rotate-ccw">
+											<path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+											<path d="M3 3v5h5" />
+										</svg>
+									</button>
+								</div>
+								<!-- Form fields -->
 								<div class="overflow-hidden rounded-lg border border-nbpurple-300 shadow-sm focus-within:border-nbpurple-500 focus-within:ring-1 focus-within:ring-nbpurple-500">
 									<label for="title" class="sr-only">Title</label>
-									<input x-model="title" type="text" name="title" id="title" class="block w-full border-0 pt-2.5 text-lg font-medium placeholder:text-nbpurple-400 focus:ring-0 bg-nbpurple-50" placeholder="Title (name your creation)">
+									<input x-model="title" type="text" name="title" id="title" class="block w-full border-0 pt-2.5 text-sm font-medium placeholder:text-nbpurple-400 focus:ring-0 bg-nbpurple-50" placeholder="Title (name your creation)">
 									<label for="prompt" class="sr-only">Prompt</label>
-									<textarea x-model="prompt" rows="2" name="prompt" id="prompt" class="block w-full resize-none border-0 py-0 text-nbpurple-900 placeholder:text-nbpurple-400 focus:ring-0 sm:text-sm sm:leading-6 bg-nbpurple-50" placeholder="(prompt) ex.: purple ostrich surfing a big wave ..."></textarea>
+									<textarea x-model="prompt" rows="3" name="prompt" id="prompt" class="block w-full resize-none border-0 py-0 text-nbpurple-900 placeholder:text-nbpurple-400 focus:ring-0 sm:text-sm sm:leading-6 bg-nbpurple-50" placeholder="(prompt) ex.: purple ostrich surfing a big wave ..."></textarea>
 
 									<!-- Spacer element to match the height of the toolbar -->
 									<div aria-hidden="true">
@@ -495,7 +507,7 @@ HTML;
 
 
 		<!-- Edit bar -->
-		<div x-data class="fixed inset-x-0 bottom-0 z-50" x-cloak>
+		<div x-cloak x-data class="fixed inset-x-0 bottom-0 z-50" x-cloak>
 			<div class="relative w-screen" x-show="$store.mediaEditBar.show" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 transform translate-y-full" x-transition:enter-end="opacity-100 transform translate-y-0" x-transition:leave="transition ease-in duration-300" x-transition:leave-start="opacity-100 transform translate-y-0" x-transition:leave-end="opacity-0 transform translate-y-full">
 
 				<div class="h-1/4 bg-nbpurple-500/80 shadow-xl overflow-y-auto relative">
@@ -685,6 +697,13 @@ HTML;
 									<path stroke-linecap="round" stroke-linejoin="round" d="M13.19 8.688a4.5 4.5 0 0 1 1.242 7.244l-4.5 4.5a4.5 4.5 0 0 1-6.364-6.364l1.757-1.757m13.35-.622 1.757-1.757a4.5 4.5 0 0 0-6.364-6.364l-4.5 4.5a4.5 4.5 0 0 0 1.242 7.244" />
 								</svg>
 							</p>
+						</div>
+					</div>
+					<!-- Prompt and title with copy button -->
+					<div x-show="$store.fileStore.modalImageTitle.length > 0 || $store.fileStore.modalImagePrompt.length > 0" class="bg-black/20 px-4 py-3 sm:px-6 justify-start">
+						<div class="flex flex-col items-start">
+							<p x-show="$store.fileStore.modalImageTitle.length > 0" class="text-sm text-gray-300 font-medium">Title: <span class="font-normal" x-text="$store.fileStore.modalImageTitle"></span></p>
+							<p x-show="$store.fileStore.modalImagePrompt.length > 0" class="text-sm text-gray-300 font-medium">Prompt: <span class="font-normal" x-text="$store.fileStore.modalImagePrompt"></span></p>
 						</div>
 					</div>
 				</div>
@@ -964,6 +983,8 @@ HTML;
 				modalImageAlt: '',
 				modalImageDimensions: '',
 				modalImageFilesize: '',
+				modalImageTitle: '',
+				modalImagePrompt: '',
 				openModal(file) {
 					this.modalImageUrl = file.url;
 					this.modalImageSrcset = file.srcset;
@@ -971,6 +992,8 @@ HTML;
 					this.modalImageAlt = file.name;
 					this.modalImageDimensions = `${file.width}x${file.height}`;
 					this.modalImageFilesize = file.size;
+					this.modalImageTitle = file.title;
+					this.modalImagePrompt = file.ai_prompt;
 					this.modalOpen = true;
 				},
 				closeModal() {
