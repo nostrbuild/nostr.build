@@ -200,7 +200,7 @@ HTML;
 	<title>nostr.build account</title>
 
 	<link rel="icon" href="/assets/primo_nostr.png" />
-	<link href="/styles/twbuild.css?v=72" rel="stylesheet">
+	<link href="/styles/twbuild.css?v=73" rel="stylesheet">
 	<script defer src="/scripts/fw/alpinejs-intersect.min.js?v=12"></script>
 	<script defer src="/scripts/fw/alpinejs.min.js?v=12"></script>
 	<style>
@@ -302,7 +302,7 @@ HTML;
 								<!-- Form fields -->
 								<div class="overflow-hidden rounded-lg border border-nbpurple-300 shadow-sm focus-within:border-nbpurple-500 focus-within:ring-1 focus-within:ring-nbpurple-500">
 									<label for="title" class="sr-only">Title</label>
-									<input x-model="title" type="text" name="title" id="title" class="block w-full border-0 pt-2.5 text-sm font-medium placeholder:text-nbpurple-400 focus:ring-0 bg-nbpurple-50" placeholder="Title (name your creation)">
+									<input x-model="title" type="text" name="title" id="title" class="block w-full border-0 pt-2.5 text-sm text-nbpurple-800 font-medium placeholder:text-nbpurple-400 focus:ring-0 bg-nbpurple-50" placeholder="Title (name your creation)">
 									<label for="prompt" class="sr-only">Prompt</label>
 									<textarea x-model="prompt" rows="3" name="prompt" id="prompt" class="block w-full resize-none border-0 py-0 text-nbpurple-900 placeholder:text-nbpurple-400 focus:ring-0 sm:text-sm sm:leading-6 bg-nbpurple-50" placeholder="(prompt) ex.: purple ostrich surfing a big wave ..."></textarea>
 
