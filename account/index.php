@@ -45,11 +45,14 @@ try {
 }
 
 // If user has no subscription, redirect to plans page
+$userAccountExpired = $account->isExpired();
+/*
 if ($daysRemaining <= 0) {
 	header("Location: /plans/");
 	$link->close();
 	exit;
 }
+*/
 
 $showRenewalButton = $daysRemaining <= 30;
 $showUpgradeButton = $acctlevel < 10 && !$showRenewalButton;
@@ -383,7 +386,7 @@ $userStorageRemaining = $userOverLimit ? 0 : $userStorageLimit - $storageUsed;
 
 			<?php
 			// doesn't print upload button if user is over their limit
-			if (!$userOverLimit) :
+			if (!$userOverLimit && !$userAccountExpired) :
 			?>
 				<button id="open-account-url-upload-button" type="button" class="inline-flex items-center gap-x-2 rounded-md bg-indigo-600 px-3.5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600" @click="url_up_open = true">
 					<span class="hidden sm:inline">Import URL</span>
@@ -437,7 +440,7 @@ $userStorageRemaining = $userOverLimit ? 0 : $userStorageLimit - $storageUsed;
 
 
 		<section class="dashboard_section">
-			<h3 class="dashboard_title">Welcome <b><?= $nym ?? 'anon' ?></b>!
+			<h3 class="dashboard_title">Welcome <b><?= $nym ?? 'anon' ?><?= $userAccountExpired ? '(EXPIRED)' : '' ?></b>!
 				<?php
 				/*
 				echo SiteConfig::getAccountType($acctlevel) . ', ';

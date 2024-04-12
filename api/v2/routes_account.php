@@ -393,6 +393,13 @@ $app->group('/account', function (RouteCollectorProxy $group) {
     $response = new Slim\Psr7\Response(); // Create a new response object
     return jsonResponse($response, 'error', 'User not authenticated or authorized', new stdClass(), 401);
   }
+  // Check if the user account has expired
+  $account = $this->get('accountClass')($_SESSION['usernpub']);
+  if($account->isExpired()) {
+    error_log('User account expired: ' . $_SESSION['usernpub']);
+    $response = new Slim\Psr7\Response(); // Create a new response object
+    return jsonResponse($response, 'error', 'User account expired', new stdClass(), 401);
+  }
   error_log('User authenticated and authorized: ' . $_SESSION['usernpub'] . PHP_EOL);
   // If the user is logged in and has the necessary permissions, continue to the route
   return $handler->handle($request);
