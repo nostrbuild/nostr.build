@@ -190,7 +190,7 @@ SVG;
   <meta charSet="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Nostr.build account signup</title>
-  <link rel="stylesheet" href="/styles/twbuild.css?v=38" />
+  <link rel="stylesheet" href="/styles/twbuild.css?v=78" />
   <link rel="stylesheet" href="/styles/index.css?v=8" />
   <link rel="stylesheet" href="/styles/signup.css?v=9" />
   <link rel="icon" href="/assets/primo_nostr.png" />
@@ -221,6 +221,16 @@ SVG;
           </span>
         </li>
       </ul>
+    </div>
+    <div class="rounded-md bg-nbpurple-800 p-4 mb-2">
+      <div class="flex">
+        <div class="ml-3">
+          <div class="mt-2 text-sm text-nbpurple-100 text-center">
+            <p>Downgrading your account is available upon request. Please contact support.</p>
+            <p>Money Back guarantee if not satisfied within 21 days.</p>
+          </div>
+        </div>
+      </div>
     </div>
   </header>
   <main>
