@@ -84,7 +84,7 @@ $userStorageRemaining = $userOverLimit ? 0 : $userStorageLimit - $storageUsed;
 
 	<link rel="stylesheet" href="/styles/account.css?v=8" />
 	<link href="/scripts/dist/index.css?v=22" rel="stylesheet">
-	<link href="/styles/twbuild.css?v=54" rel="stylesheet">
+	<link href="/styles/twbuild.css?v=60" rel="stylesheet">
 	<link rel="icon" href="/assets/primo_nostr.png" />
 
 	<script defer src="/scripts/dist/index.js?v=38"></script>
