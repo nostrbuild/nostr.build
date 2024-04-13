@@ -183,7 +183,7 @@ $morePages = $result->num_rows > $perpage ? true : false;
 			<a href='?k=gif'><button class="donate_button">GIFs</button></a>
 			<a href='?k=img'><button class="donate_button">Images</button></a>
 			<a href='?k=vid'><button class="donate_button">Videos</button></a>
-			<a href='https://test.nostr.build/adultview/'><button class="adult_button" style=" color: white;" onclick="return confirm('For Adults Only! This website contains age-restricted materials including nudity and explicit depictions of sexual activity. By clicking OK and entering, you affirm that you are at least 18 years of age or the age of majority in the jurisdiction you are accessing the website from and you consent to viewing sexually explicit content.')">
+			<a href='https://nostr.build/adultview/'><button class="adult_button" style=" color: white;" onclick="return confirm('For Adults Only! This website contains age-restricted materials including nudity and explicit depictions of sexual activity. By clicking OK and entering, you affirm that you are at least 18 years of age or the age of majority in the jurisdiction you are accessing the website from and you consent to viewing sexually explicit content.')">
 				<svg width="20px" height="20px" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" stroke="#000" stroke-width="0.24000000000000005">
 					<g stroke-width="0"></g>
 					<g stroke-linecap="round" stroke-linejoin="round"></g>
