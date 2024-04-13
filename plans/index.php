@@ -222,16 +222,6 @@ SVG;
         </li>
       </ul>
     </div>
-    <div class="rounded-md bg-nbpurple-800 p-4 mb-2">
-      <div class="flex">
-        <div class="ml-3">
-          <div class="mt-2 text-sm text-nbpurple-100 text-center">
-            <p>Downgrading your account is available upon request. Please contact support.</p>
-            <p>Money Back guarantee if not satisfied within 21 days.</p>
-          </div>
-        </div>
-      </div>
-    </div>
   </header>
   <main>
     <?php if (count(Plans::$PLANS) > 0) : ?>
@@ -371,6 +361,13 @@ SVG;
           <?php if (count(Plans::$PLANS) > 0) : ?>
             <div class="text-pretty text-right text-sm font-semibold leading-8 text-purple-200">* Coming soon</div>
           <?php endif; ?>
+          </div>
+
+          <div class="rounded-md bg-nbpurple-800 p-4 mb-2">
+            <div class="text-sm text-nbpurple-100 text-center">
+              <p>- Downgrading your account is available upon request. Please contact us! -</p>
+              <p>- Money Back guarantee if not satisfied within 21 days -</p>
+            </div>
           </div>
 
           </div>
