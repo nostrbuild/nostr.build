@@ -144,7 +144,7 @@ $userStorageRemaining = $userOverLimit ? 0 : $userStorageLimit - $storageUsed;
 				Free &amp; profile picture uploads
 			</button>
 			<button class="nav_item" onclick="window.location.href='/account/ai';">
-				<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-bot">
+				<svg class="text-[#f79413]" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-bot">
 					<path d="M12 8V4H8" />
 					<rect width="16" height="12" x="4" y="8" rx="2" />
 					<path d="M2 14h2" />
@@ -153,6 +153,7 @@ $userStorageRemaining = $userOverLimit ? 0 : $userStorageLimit - $storageUsed;
 					<path d="M9 13v2" />
 				</svg>
 				AI Studio
+				<span class="inline-flex items-center rounded-full bg-nbpurple-200 px-1.5 py-0.5 text-xs font-medium text-nbpurple-800 ring-1 ring-inset ring-nbpurple-700/10">New</span>
 			</button>
 
 			<?php
