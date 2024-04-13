@@ -98,9 +98,9 @@ $perm = new Permission();
       <a href="https://opensats.org/blog/nostr-grants-july-2023" target="_blank"><img class="about_img img_horizontal" src="https://cdn.nostr.build/assets/about/opensats.png" alt="opensats grant" height="80" /></a>
       <a href="https://github.com/nostrbuild/nostr.build" target="_blank"><img class="about_img img_horizontal" src="https://cdn.nostr.build/assets/about/githublogo.png" alt="GitHub" height="80" /></a>
     </figure>
-    <h3>Paid accounts</h3>
+    <h3 id="accounts">Accounts</h3>
     <section class="paragraph para_square">
-      <a href="https://nostr.build/plans/"><img class="about_img img_square" src="https://cdn.nostr.build/assets/primo_nostr.png" alt="nostr.build account logo" width="80" /></a>
+      <a href="/plans/"><img class="about_img img_square" src="https://cdn.nostr.build/assets/primo_nostr.png" alt="nostr.build account logo" width="80" /></a>
       <p>
         nostr.build offers accounts with premium features charged annually.
         Accounts can be purchased with a lighting wallet or Bitcoin. Proceeds
@@ -110,57 +110,32 @@ $perm = new Permission();
     </section>
 
     <p>
-      ** Purchasing an account not only gives you premium features, you are
-      also supporting a free, no ads, open source service for all of nostr!<br />
+      ** Purchasing an account not only gives you premium features, you're also supporting a free, no ads, open source service for nostr!<br />
+      ** Purchase an account <a class="ref_link" href="/plans/">HERE!</a><br /><br />
 
-      Account features include:<br />
-      - Cloudflare CDN network for all media including videos<br />
-      - No max on file size upload - account sizes 10/20/50GB<br />
-      - Post you media to the Creators page on nostr.build<br />
-      - Ability to easily ‘Delete’ media after posted<br />
-      - Private folders not seen in the View All gallery<br />
-      - Access to View All free media ever uploaded to nostr.build, over 500k images, GIFs and videos!<br />
-      ** See all <a class="ref_link" href="https://nostr.build/plans/">nostr.build Accounts</a> and features<br />
+      <b>Account features include:</b><br />
+      - <font color="#D3D3D3"> Global CDN network:</font>  super fast access for all media including videos<br />
+      - <font color="#D3D3D3">AI Studio:</font> Image Generation and more for Creator and Advanced accounts<br />
+      - <font color="#D3D3D3">Large Video Support:</font> upload videos up to account sizes 10/20/100GB<br />
+      - <font color="#D3D3D3">Delete:</font> your media after posted by clicking the checkbox<br />
+      - <font color="#D3D3D3">Private Folders:</font> Click on ‘New Folder’ in the left menu bar, name your folder and click Create<br />
+      - <font color="#D3D3D3">Backup on S3:</font> Content is backed up on seperate providers, AWS S3 amnd Cloudflare<br />
+      - <font color="#D3D3D3">View All:</font> over 1.5million images, GIFs and videos can be seen from all free media ever uploaded<br />
+      - <font color="#D3D3D3">Creators Page:</font> lets you make your media publically available on the popular <a class="ref_link" href="https://nostr.build/creators/" target="_blank">nostr.build Creators page</a><br />
+      - <font color="#D3D3D3">TOR Links (coming soon):</font> add another layer of privacy to Creator and Advanced accounts<br />
+      - <font color="#D3D3D3">AI Enhanced Search (coming soon):</font> search any free media ever uploaded to nostr.build with AI enhanced labels and keywords<br />
+      - <font color="#D3D3D3">All media must align to nostr.build's</font> <a class="ref_link" href="https://nostr.build/tos/" target="_blank">Terms of Service</a> <br />
+      ** See all <a class="ref_link" href="/plans/">nostr.build Plans</a> and features<br />
     </p>
+
     <figure class="img_container double_img">
       <img class="about_img img_horizontal" src="https://cdn.nostr.build/assets/about/awss3.png" alt="aws logo" width="180" />
       <img class="about_img img_horizontal" src="https://cdn.nostr.build/assets/about/cf.png" alt="cloudflare logo" width="180" />
     </figure>
-
-    <h4>How to use Account related features:</h4>
-    <section class="paragraph">
-      <p>
-        - First, purchase an account <a class="ref_link" href="https://nostr.build/plans/">HERE!</a><br />
-        - Folders: Click on ‘New Folder’ in the left menu bar, name your folder and click Create.<br />
-        - Move media to a folder: ‘checkbox’ the media you want to move, and
-        ‘Double Click’ the folder to move it there.<br />
-        - Delete a file or folder: ‘checkbox’ what you want to
-        delete, click the red Delete button in the bottom left menu bar.<br />
-        - ** If you delete a folder with files in it, those files just move to
-        the ‘no folder’ section, they are NOT deleted.<br />
-        - ‘View All’ allows you to see all free uploads ever on
-        nostr.build, excluding paid accounts and profile pictures. All media
-        must align to nostr.build's <a class="ref_link" href="https://nostr.build/tos/" target="_blank">Terms of Service</a> <br />
-        - If you purchased a Creators account, you can make your media
-        publically available on the <a class="ref_link" href="https://nostr.build/creators/" target="_blank">nostr.build Creators page</a><br />
-      </p>
-
-      <figure class="img_container double_img">
-        <img src="https://cdn.nostr.build/assets/about/createfolder.png" alt="create a folder" class="about_img" />
-        <img src="https://cdn.nostr.build/assets/about/movedelete.png" alt="move and delete" class="about_img" />
-      </figure>
-    </section>
-
-    <h3>Contacts</h3>
-    <figure class="img_container double_img">
-      <a href="https://snort.social/p/npub1nxy4qpqnld6kmpphjykvx2lqwvxmuxluddwjamm4nc29ds3elyzsm5avr7"><img src="https://cdn.nostr.build/assets/about/nostrbuild.png" alt="nostr.build" class="about_img img_square" /></a>
-      <img src="/assets/about/community.png" alt="community" class="about_img img_square" />
-      <a href="https://snort.social/p/npub137c5pd8gmhhe0njtsgwjgunc5xjr2vmzvglkgqs5sjeh972gqqxqjak37w"><img src="https://cdn.nostr.build/assets/about/fishcake.png" alt="fishcake" class="about_img img_square" /></a>
-    </figure>
   </main>
 
   <?php include $_SERVER['DOCUMENT_ROOT'] . '/components/footer.php'; ?>
-  <script src="/scripts/index.js?v=8"></script>
+  <script src="/scripts/index.js?v=4"></script>
 </body>
 
 </html>
