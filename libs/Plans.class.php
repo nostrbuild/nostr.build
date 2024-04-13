@@ -227,10 +227,10 @@ class Plans
         imageAlt: 'pro plan image',
         price: self::$originalPrices[self::PROFESSIONAL],
         features: [
-          '<b>10GB of private storage</b>',
-          '<b>View All 1M+ free media</b>',
-          '<b>Add/Delete your media</b>',
-          '<b>Global CDN</b>',
+          '10GB of private storage',
+          'View All 1.5M+ free media',
+          'Add/Delete your media',
+          'Global CDN',
         ],
         currency: 'sats',
         remainingDays: $remainingDays,
@@ -249,11 +249,11 @@ class Plans
         name: 'Creator',
         price: self::$originalPrices[self::CREATOR],
         features: [
-          '<b>20GB of private storage</b>',
-          '<b>Limitted AI Studio Access</b>',
-          '<b><a class="ref_link" target="_blank" href="https://nostr.build/creators/">Host on nostr.build page</a></b>',
-          '<b>S3 backup for all media</b>',
-          '<b>All Professional features</b>',
+          '20GB of private storage',
+          'AI Studio Access',
+          '<a class="ref_link" target="_blank" href="https://nostr.build/creators/">Host on nostr.build page</a></b>',
+          'S3 backup for all media',
+          'All Professional features',
         ],
         currency: 'sats',
         remainingDays: $remainingDays,
@@ -273,11 +273,12 @@ class Plans
         name: 'Advanced',
         price: self::$originalPrices[self::ADVANCED],
         features: [
-          '<b>100GB of private storage</b>',
-          '<b>Full AI Studio Access</b>',
-          '<b>@nostr.build NIP-05 *</b>',
-          '<b>Expandable storage *</b>',
-          '<b>All Creator features</b>',
+          '100GB of private storage',
+          'AI Studio Extended Access',
+          'NIP-05 @nostr.build',
+          'Expandable storage *',
+          'TOR Private Links *',
+          'All Creator features',
         ],
         currency: 'sats',
         remainingDays: $remainingDays,
@@ -286,7 +287,6 @@ class Plans
         currentPeriod: $currentPeriod,
       );
     };
-
 
     // TODO: Make promotion applicable to upgrades as well
     if (
