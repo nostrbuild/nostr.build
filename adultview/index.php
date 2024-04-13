@@ -167,7 +167,7 @@ $morePages = $result->num_rows > $perpage ? true : false;
 			<a href='?k=gif'><button class="donate_button">GIFs</button></a>
 			<a href='?k=img'><button class="donate_button">Images</button></a>
 			<a href='?k=vid'><button class="donate_button">Videos</button></a>
-			<a href='https://test.nostr.build/viewall/'><button class="donate_button">Back Home</button></a><BR>
+			<a href='https://nostr.build/viewall/'><button class="donate_button">Back Home</button></a><BR>
 		</section>
 
 		<?= handle_pagination($morePages, (int)$page, $perpage, '?k=' . $view_type . '&p=', false) ?>
