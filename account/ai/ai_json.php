@@ -12,6 +12,7 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/utils.funcs.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/Account.class.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/MultimediaUpload.class.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/S3Service.class.php';
+require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/ImageCatalogManager.class.php';
 
 global $link;
 global $awsConfig;
@@ -116,6 +117,7 @@ function listImagesByFolderName($folderName, $link)
 
 		array_push($jsonArray, array(
 			"id" => $images_row['id'],
+			"flag" => ($images_row['flag'] === '1') ? 1 : 0,
 			"name" => $filename,
 			"url" => $image_url,
 			"thumb" => $thumb_url,
@@ -229,9 +231,9 @@ function getAndStoreAIGeneratedImage(string $model, string $prompt, string $titl
 		"720p"  => "1280",
 		"1080p" => "1920",
 	];
-	$fileNameWithoutExtension = pathinfo($fileData[0]['name'], PATHINFO_FILENAME);
 	$aiImage = [
-		"id" => $fileNameWithoutExtension,
+		"id" => $fileData[0]['id'],
+		"flag" => 0, // Not shared by default
 		"name" => $fileData[0]['name'],
 		"url" => $fileData[0]['url'],
 		"thumb" => $fileData[0]['thumbnail'],
@@ -273,7 +275,7 @@ if (isset($_GET["action"])) {
 			$folderId = $folder['id'];
 			$folderRoute = "#f=" . urlencode($folderName);
 			$folderIcon = strtoupper(substr($folderName, 0, 1));
-			return array("name" => $folderName, "icon" => $folderIcon, "route" => $folderRoute, "id" => $folderId);
+			return array("name" => $folderName, "icon" => $folderIcon, "route" => $folderRoute, "id" => $folderId, "allowDelete" => true);
 		}, $folderList);
 		echo json_encode($folderList);
 	} else {
@@ -324,6 +326,47 @@ if (isset($_GET["action"])) {
 			error_log($e->getMessage());
 			echo json_encode(array("error" => "Failed to generate AI image"));
 		}
+	} elseif ($_POST['action'] === 'delete') {
+		// Get the lists of folders and images to delete
+		$foldersToDelete = !empty($_POST['foldersToDelete']) ? json_decode($_POST['foldersToDelete']) : [];
+		$imagesToDelete = !empty($_POST['imagesToDelete']) ? json_decode($_POST['imagesToDelete']) : [];
+		error_log("Folders to delete: " . json_encode($foldersToDelete));
+		error_log("Images to delete: " . json_encode($imagesToDelete));
+		// instantiate ImageCatalogManager class
+		$icm = new ImageCatalogManager($link, $s3, $_SESSION['usernpub']);
+		$deletedFolders = $icm->deleteFolders($foldersToDelete);
+		$deletedImages = $icm->deleteImages($imagesToDelete);
+		// Return the list of deleted folders and images
+		echo json_encode(array("action" => "delete", "deletedFolders" => $deletedFolders, "deletedImages" => $deletedImages));
+	} elseif ($_POST['action'] === 'share_creator_page') {
+		// Check permissions
+		if (!$perm->validatePermissionsLevelAny(1, 10, 99)) {
+			echo json_encode(array("error" => "You do not have permission to share images"));
+			exit;
+		}
+		$imagesToShare = !empty($_POST['imagesToShare']) ? (array)json_decode($_POST['imagesToShare']) : [];
+		$shareFlag = !empty($_POST['shareFlag']) ? $_POST['shareFlag'] === 'true' : true;
+		if (empty($imagesToShare)) {
+			echo json_encode(array("error" => "No images to share"));
+			exit;
+		}
+		// Instantiate ImageCatalogManager class
+		$icm = new ImageCatalogManager($link, $s3, $_SESSION['usernpub']);
+		$sharedImages = $icm->shareImage($imagesToShare, (bool)$shareFlag);
+		echo json_encode(array("action" => "share_creator_page", "sharedImages" => $sharedImages));
+	} elseif ($_POST['action'] === 'move_to_folder') {
+		$imagesToMove = !empty($_POST['imagesToMove']) ? json_decode($_POST['imagesToMove']) : [];
+		$destinationFolderId = !empty($_POST['destinationFolderId']) ? $_POST['destinationFolderId'] : null;
+		if (empty($imagesToMove) || $destinationFolderId === null) {
+			echo json_encode(array("error" => "Missing required parameters"));
+			exit;
+		}
+		// Convert destinationFolderId to integer
+		$destinationFolderId = (int)$destinationFolderId;
+		// Instantiate ImageCatalogManager class
+		$icm = new ImageCatalogManager($link, $s3, $_SESSION['usernpub']);
+		$movedImages = $icm->moveImages($imagesToMove, $destinationFolderId);
+		echo json_encode(array("action" => "move_to_folder", "movedImages" => $movedImages));
 	} else {
 		echo json_encode(array("error" => "Invalid action"));
 	}

@@ -171,21 +171,47 @@ $pageMenuContent = <<<HTML
 							<svg class="size-4 text-nbpurple-300" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
 								<path stroke-linecap="round" stroke-linejoin="round" d="M12.75 8.25v7.5m6-7.5h-3V12m0 0v3.75m0-3.75H18M9.75 9.348c-1.03-1.464-2.698-1.464-3.728 0-1.03 1.465-1.03 3.84 0 5.304 1.03 1.464 2.699 1.464 3.728 0V12h-1.5M4.5 19.5h15a2.25 2.25 0 0 0 2.25-2.25V6.75A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25v10.5A2.25 2.25 0 0 0 4.5 19.5Z" />
 							</svg>
-							<span class="ml-1 text-sm font-medium text-nbpurple-300" x-text="menuStore.formatNumberInThousands(menuStore.fileStats.totalGifs)"></span> </div>
+							<span class="ml-1 text-sm font-medium text-nbpurple-300" x-text="menuStore.formatNumberInThousands(menuStore.fileStats.totalGifs)"></span>
+						</div>
 						<div class="flex items-center">
 							<svg class="size-4 text-nbpurple-300" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
 								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
 							</svg>
-							<span class="ml-1 text-sm font-medium text-nbpurple-300" x-text="menuStore.formatNumberInThousands(menuStore.fileStats.totalImages)"></span> </div>
+							<span class="ml-1 text-sm font-medium text-nbpurple-300" x-text="menuStore.formatNumberInThousands(menuStore.fileStats.totalImages)"></span>
+						</div>
 						<div class="flex items-center">
 							<svg class="size-4 text-nbpurple-300" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
 								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
 							</svg>
-							<span class="ml-1 text-sm font-medium text-nbpurple-300" x-text="menuStore.formatNumberInThousands(menuStore.fileStats.totalVideos)"></span> </div>
+							<span class="ml-1 text-sm font-medium text-nbpurple-300" x-text="menuStore.formatNumberInThousands(menuStore.fileStats.totalVideos)"></span>
+						</div>
 					</div>
 				</div>
 			</li>
 			<!-- /File statistics -->
+			<!-- Creator Page Shares -->
+			<li x-clock x-show="menuStore.fileStats.creatorCount > 0">
+				<div class="flex items-center justify-between">
+					<div class="flex items-center cursor-copy" @click="navigator.clipboard.writeText(menuStore.fileStats.creatorPageLink); showToast = true">
+						<svg class="size-4 text-nbpurple-300" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+							<path stroke-linecap="round" stroke-linejoin="round" d="M9.53 16.122a3 3 0 0 0-5.78 1.128 2.25 2.25 0 0 1-2.4 2.245 4.5 4.5 0 0 0 8.4-2.245c0-.399-.078-.78-.22-1.128Zm0 0a15.998 15.998 0 0 0 3.388-1.62m-5.043-.025a15.994 15.994 0 0 1 1.622-3.395m3.42 3.42a15.995 15.995 0 0 0 4.764-4.648l3.876-5.814a1.151 1.151 0 0 0-1.597-1.597L14.146 6.32a15.996 15.996 0 0 0-4.649 4.763m3.42 3.42a6.776 6.776 0 0 0-3.42-3.42" />
+						</svg>
+						<span class="ml-2 text-sm font-medium text-nbpurple-300">Creator Page</span>
+						<svg class="ml-1 size-4 text-nbpurple-300" viewBox="0 0 20 20" fill="currentColor">
+							<path fill-rule="evenodd" d="M15.988 3.012A2.25 2.25 0 0 1 18 5.25v6.5A2.25 2.25 0 0 1 15.75 14H13.5v-3.379a3 3 0 0 0-.879-2.121l-3.12-3.121a3 3 0 0 0-1.402-.791 2.252 2.252 0 0 1 1.913-1.576A2.25 2.25 0 0 1 12.25 1h1.5a2.25 2.25 0 0 1 2.238 2.012ZM11.5 3.25a.75.75 0 0 1 .75-.75h1.5a.75.75 0 0 1 .75.75v.25h-3v-.25Z" clip-rule="evenodd" />
+							<path d="M3.5 6A1.5 1.5 0 0 0 2 7.5v9A1.5 1.5 0 0 0 3.5 18h7a1.5 1.5 0 0 0 1.5-1.5v-5.879a1.5 1.5 0 0 0-.44-1.06L8.44 6.439A1.5 1.5 0 0 0 7.378 6H3.5Z" />
+						</svg>
+					</div>
+					<a class="flex items-center cursor-pointer" :href="menuStore.fileStats.creatorPageLink">
+						<svg class="size-4 text-nbpurple-300" viewBox="0 0 20 20" fill="currentColor">
+							<path d="M12.232 4.232a2.5 2.5 0 0 1 3.536 3.536l-1.225 1.224a.75.75 0 0 0 1.061 1.06l1.224-1.224a4 4 0 0 0-5.656-5.656l-3 3a4 4 0 0 0 .225 5.865.75.75 0 0 0 .977-1.138 2.5 2.5 0 0 1-.142-3.667l3-3Z" />
+							<path d="M11.603 7.963a.75.75 0 0 0-.977 1.138 2.5 2.5 0 0 1 .142 3.667l-3 3a2.5 2.5 0 0 1-3.536-3.536l1.225-1.224a.75.75 0 0 0-1.061-1.06l-1.224 1.224a4 4 0 1 0 5.656 5.656l3-3a4 4 0 0 0-.225-5.865Z" />
+						</svg>
+						<span class="ml-1 text-sm font-medium text-nbpurple-300" x-text="menuStore.formatNumberInThousands(menuStore.fileStats.creatorCount)"></span>
+					</a>
+				</div>
+			</li>
+			<!-- /Creator Page Shares -->
 		</ul>
 	</li>
 	<!-- /Sidebar widgets -->
@@ -218,12 +244,15 @@ $pageMenuContent = <<<HTML
 		</ul>
 	</li>
 	<!-- /Folders -->
+	<!-- Bottom buffer -->
+	<li class="flex-1 min-h-12"></li>
+	<!-- /Bottom buffer -->
 </ul>
 HTML;
 ?>
 
 <!DOCTYPE html>
-<html lang="en" class="h-full">
+<html lang="en" class="h-full bg-gradient-to-tr from-nbpurple-950 to-nbpurple-800 bg-fixed bg-no-repeat bg-cover antialiased">
 
 <head>
 	<meta charset="UTF-8" />
@@ -232,7 +261,7 @@ HTML;
 	<title>nostr.build account</title>
 
 	<link rel="icon" href="/assets/primo_nostr.png" />
-	<link href="/styles/twbuild.css?v=74" rel="stylesheet">
+	<link href="/styles/twbuild.css?v=99" rel="stylesheet">
 	<script defer src="/scripts/fw/alpinejs-intersect.min.js?v=12"></script>
 	<script defer src="/scripts/fw/alpinejs.min.js?v=12"></script>
 	<style>
@@ -247,7 +276,7 @@ HTML;
 		if (value) {
 			setTimeout(() => showToast = false, 2000);
 		}
-	})" class="h-full bg-gradient-to-tr from-nbpurple-950 to-nbpurple-800 bg-fixed bg-no-repeat bg-cover">
+	})" class="h-full">
 	<main>
 		<div>
 			<!-- Off-canvas menu for mobile, show/hide based on off-canvas menu state. -->
@@ -316,14 +345,14 @@ HTML;
 					</div>
 				</div>
 
-				<main x-data="{ GAI: $store.GAI }" class="lg:pr-[41rem]">
+				<main x-data="{ GAI: $store.GAI }" class="h-full lg:pr-[41rem]">
 					<!-- Main content -->
 					<?php if ($perm->validatePermissionsLevelAny(1, 10, 99)) : ?>
 						<div class="p-4">
 							<form action="#" class="relative" x-data="{ assignOpen: false, labelOpen: false, dueDateOpen: false, title: '', prompt: '', selectedModel: '@cf/lykon/dreamshaper-8-lcm' }">
 								<!-- Clear button -->
 								<div x-cloak x-show="title.length > 0 || prompt.length > 0" class="flex-shrink-0 absolute top-1 right-1 z-10">
-									<button type="button" class="inline-flex items-center rounded-full bg-nbpurple-600/50 p-1 sm:text-sm text-xs font-semibold text-nbpurple-50 shadow-sm hover:bg-nbpurple-500/50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-nbpurple-600" @click="title = ''; prompt = ''">
+									<button type="button" class="inline-flex items-center rounded-full bg-nbpurple-600/50 p-1 sm:text-sm text-xs font-semibold text-nbpurple-50 shadow-sm hover:bg-nbpurple-500/50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-nbpurple-600" @click="title = ''; prompt = ''; $store.GAI.clearImage()">
 										<span class="sr-only">Clear fields</span>
 										<svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-rotate-ccw">
 											<path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
@@ -376,7 +405,7 @@ HTML;
 															</svg>
 														</button>
 													</div>
-													<ul x-cloak @click.outside="modelMenuOpen = false" x-show="modelMenuOpen" x-transition:enter="" x-transition:enter-start="" x-transition:enter-end="" x-transition:leave="transition ease-in duration-100" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0" class="absolute left-0 z-10 mt-2 sm:w-96 w-80 origin-top-left divide-y divide-gray-200 overflow-hidden rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none" tabindex="-1" role="listbox" aria-labelledby="listbox-label" aria-activedescendant="listbox-option-0">
+													<ul x-cloak @click.outside="modelMenuOpen = false" x-show="modelMenuOpen" x-transition:enter="" x-transition:enter-start="" x-transition:enter-end="" x-transition:leave="transition ease-in duration-100" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0" class="absolute left-0 z-10 mt-2 sm:w-96 xs:w-72 w-64 origin-top-left divide-y divide-gray-200 overflow-hidden rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none" tabindex="-1" role="listbox" aria-labelledby="listbox-label" aria-activedescendant="listbox-option-0">
 														<template x-for="(option, index) in modelOptions" :key="option.value">
 															<li :class="{
 																						'bg-nbpurple-100': selectedModel === option.value,
@@ -417,7 +446,7 @@ HTML;
 
 						<!-- Generate image -->
 						<div class="bg-black/10 rounded-lg shadow-xl my-8 mx-auto w-11/12 max-w-2xl overflow-hidden">
-							<div class="bg-black/50 p-4">
+							<div class="bg-black/50 p-4 relative">
 								<p x-cloak x-show="!GAI.ImageShow && !GAI.ImageLoading" class="flex items-center justify-center text-nbpurple-200 text-center text-lg h-72" x-transition:enter="transition-opacity duration-500" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100">
 									No image to display, generate a new one.
 								</p>
@@ -429,6 +458,17 @@ HTML;
 										<path stroke-linecap="round" stroke-linejoin="round" d="M15.59 14.37a6 6 0 0 1-5.84 7.38v-4.8m5.84-2.58a14.98 14.98 0 0 0 6.16-12.12A14.98 14.98 0 0 0 9.631 8.41m5.96 5.96a14.926 14.926 0 0 1-5.841 2.58m-.119-8.54a6 6 0 0 0-7.381 5.84h4.8m2.581-5.84a14.927 14.927 0 0 0-2.58 5.84m2.699 2.7c-.103.021-.207.041-.311.06a15.09 15.09 0 0 1-2.448-2.448 14.9 14.9 0 0 1 .06-.312m-2.24 2.39a4.493 4.493 0 0 0-1.757 4.306 4.493 4.493 0 0 0 4.306-1.758M16.5 9a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0Z" />
 									</svg>
 								</p>
+								<!-- Clear button -->
+								<div x-cloak x-show="GAI.ImageShow" class="flex-shrink-0 absolute top-2 right-2 z-10">
+									<button type="button" class="inline-flex items-center rounded-full bg-nbpurple-600/50 p-1 sm:text-sm text-xs font-semibold text-nbpurple-50 shadow-sm hover:bg-nbpurple-500/50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-nbpurple-600" @click="GAI.clearImage()">
+										<span class="sr-only">Clear image</span>
+										<svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-rotate-ccw">
+											<path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+											<path d="M3 3v5h5" />
+										</svg>
+									</button>
+								</div>
+								<!-- /Clear button -->
 								<img x-cloak x-show="GAI.ImageShow" @load="GAI.ImageShow = true; GAI.ImageLoading = false" :src="GAI.file.thumb" :srcset="GAI.file.srcset" :sizes="GAI.file.sizes" :alt="GAI.file.title || GAI.file.name" :width="GAI.file.width" :height="GAI.file.height" loading="eager" class="w-full" x-transition:enter="transition-opacity ease-in duration-750" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" />
 							</div>
 							<div x-cloak x-show="GAI.ImageShow" class="bg-black/20 px-6 py-4 sm:flex sm:justify-between">
@@ -462,7 +502,7 @@ HTML;
 				</main>
 
 				<!-- Activity feed -->
-				<aside x-data="{ showScrollButton: false }" x-ref="sidebar" @scroll.window.throttle="showScrollButton = window.pageYOffset > 500" @scroll.throttle="showScrollButton = $refs.sidebar.scrollTop > 500" class="bg-nbpurple-900/10 lg:fixed lg:bottom-0 lg:right-0 lg:top-16 lg:w-[40rem] lg:overflow-y-auto lg:border-l lg:border-nbpurple-950/5">
+				<aside x-data="{ showScrollButton: false, multiSelect: false }" x-ref="sidebar" @scroll.window.throttle="showScrollButton = window.pageYOffset > 500" @scroll.throttle="showScrollButton = $refs.sidebar.scrollTop > 500" class="bg-nbpurple-900/10 lg:fixed lg:bottom-0 lg:right-0 lg:top-16 lg:w-[40rem] lg:overflow-y-auto lg:border-l lg:border-nbpurple-950/5">
 					<!-- Activity feed content -->
 					<div class="p-4" x-data="Alpine.store('fileStore')" x-init="if (files.length === 0) fetchFiles($store.menuStore.activeFolder); $watch('$store.menuStore.activeFolder', folder => fetchFiles(folder))">
 						<ul role="list" class="grid grid-cols-2 gap-x-4 gap-y-8 md:grid-cols-2 md:gap-x-4 xl:gap-x-6">
@@ -487,13 +527,64 @@ HTML;
 								</li>
 							</template>
 							<template x-for="file in files" :key="file.id">
-								<li class="relative">
+								<li :id="file.id" class="relative" x-data="{ showMediaActions: false }">
+									<div x-cloak x-show="file.flag === 1" class="cursor-pointer absolute -top-[0.85rem] left-3 z-10">
+										<span class="inline-flex items-center rounded-md bg-black/85 px-2 py-1 text-xs font-medium text-yellow-300 ring-1 ring-inset ring-yellow-400/20">
+											Creator
+											<span class="hidden xs:inline ml-1">Page</span>
+										</span>
+									</div>
 									<div class="group aspect-h-7 aspect-w-10 block w-full overflow-hidden rounded-lg bg-black/50 focus-within:ring-2 focus-within:ring-indigo-500 focus-within:ring-offset-2 focus-within:ring-offset-gray-100">
 										<svg class="absolute inset-0 pointer-events-none object-cover group-hover:opacity-75 h-full w-full text-nbpurple-400 animate-pulse" x-show="!file.loaded" fill="none" viewBox="0 0 24 24" stroke="currentColor">
 											<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
 										</svg>
+
+										<!-- Media actions -->
+										<div x-cloak x-show="showMediaActions" @click.outside="showMediaActions = false" class="absolute inset-0 object-contain bg-black/80 py-1 px-3 sm:py-2 z-10 flex flex-col">
+											<div class="m-auto w-5/6 grid gap-1 grid-cols-3 place-items-center">
+												<!-- Buttons -->
+												<!-- Delete button -->
+												<button x-data="{deleteClick: false}" @click="deleteConfirmation.open(file.id)" class="p-1 bg-nbpurple-600/10 text-white rounded-md hover:bg-nbpurple-700/10 focus:outline-none focus:ring-2 focus:ring-nbpurple-500/10" aria-label="Delete media file">
+													<svg x-show="!deleteClick" class="max-h-11 w-full inline-block" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true" x-transition:enter="transition-opacity duration-500" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100">
+														<path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
+													</svg>
+													<svg x-cloak x-show="deleteClick" class="max-h-11 animate-[pulse_3s_ease-in-out_infinite] w-full inline-block" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true" x-transition:enter="transition-opacity duration-500" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100">
+														<path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" />
+													</svg>
+												</button>
+												<!-- Share button -->
+												<button x-data="{shareClick: false}" @click="shareMedia.open(file.id)" class="p-1 bg-nbpurple-600/10 text-white rounded-md hover:bg-nbpurple-700/10 focus:outline-none focus:ring-2 focus:ring-nbpurple-500/10" aria-label="Share media file">
+													<svg x-show="!shareClick" class="max-h-11 w-full inline-block" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true" x-transition:enter="transition-opacity duration-500" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100">
+														<path stroke-linecap="round" stroke-linejoin="round" d="M7.217 10.907a2.25 2.25 0 1 0 0 2.186m0-2.186c.18.324.283.696.283 1.093s-.103.77-.283 1.093m0-2.186 9.566-5.314m-9.566 7.5 9.566 5.314m0 0a2.25 2.25 0 1 0 3.935 2.186 2.25 2.25 0 0 0-3.935-2.186Zm0-12.814a2.25 2.25 0 1 0 3.933-2.185 2.25 2.25 0 0 0-3.933 2.185Z" />
+													</svg>
+													<svg x-cloak x-show="shareClick" class="max-h-11 animate-[pulse_3s_ease-in-out_infinite] w-full inline-block" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true" x-transition:enter="transition-opacity duration-500" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100">
+														<path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" />
+													</svg>
+												</button>
+												<!-- Move button -->
+												<button x-data="{moveClick: false}" @click="moveToFolder.open(file.id)" class="p-1 bg-nbpurple-600/10 text-white rounded-md hover:bg-nbpurple-700/10 focus:outline-none focus:ring-2 focus:ring-nbpurple-500/10" aria-label="Move media file to folder">
+													<svg x-show="!moveClick" class="max-h-11 w-full inline-block" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true" x-transition:enter="transition-opacity duration-500" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100">
+														<path stroke-linecap="round" stroke-linejoin="round" d="M12 10.5v6m3-3H9m4.06-7.19-2.12-2.12a1.5 1.5 0 0 0-1.061-.44H4.5A2.25 2.25 0 0 0 2.25 6v12a2.25 2.25 0 0 0 2.25 2.25h15A2.25 2.25 0 0 0 21.75 18V9a2.25 2.25 0 0 0-2.25-2.25h-5.379a1.5 1.5 0 0 1-1.06-.44Z" />
+													</svg>
+													<svg x-cloak x-show="moveClick" class="max-h-11 animate-[pulse_3s_ease-in-out_infinite] w-full inline-block" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true" x-transition:enter="transition-opacity duration-500" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100">
+														<path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" />
+													</svg>
+												</button>
+												<!-- Copy link -->
+												<button x-data="{copyClick: false}" @click="copyUrlToClipboard(file.url); copyClick = true; setTimeout(() => copyClick = false, 2000); showToast = true" class="p-1 xs:hidden bg-nbpurple-600/10 text-white rounded-md hover:bg-nbpurple-700/10 focus:outline-none focus:ring-2 focus:ring-nbpurple-500/10" aria-label="Copy image URL to clipboard">
+													<svg x-show="!copyClick" class="max-h-11 w-full inline-block" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true" x-transition:enter="transition-opacity duration-500" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100">
+														<path stroke-linecap="round" stroke-linejoin="round" d="M11.35 3.836c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 0 0 .75-.75 2.25 2.25 0 0 0-.1-.664m-5.8 0A2.251 2.251 0 0 1 13.5 2.25H15c1.012 0 1.867.668 2.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m8.9-4.414c.376.023.75.05 1.124.08 1.131.094 1.976 1.057 1.976 2.192V16.5A2.25 2.25 0 0 1 18 18.75h-2.25m-7.5-10.5H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V18.75m-7.5-10.5h6.375c.621 0 1.125.504 1.125 1.125v9.375m-8.25-3 1.5 1.5 3-3.75" />
+													</svg>
+													<svg x-cloak x-show="copyClick" class="max-h-11 animate-[pulse_3s_ease-in-out_infinite] w-full inline-block" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true" x-transition:enter="transition-opacity duration-500" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100">
+														<path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" />
+													</svg>
+												</button>
+											</div>
+										</div>
+										<!-- /Media actions -->
+
 										<img x-intersect.margin.100px="true" :src="file.thumb" :srcset="file.srcset" :sizes="file.sizes" :alt="file.name" :width="file.width" :height="file.height" loading="lazy" class="pointer-events-none object-contain group-hover:opacity-75" x-cloak @load="file.loaded = true" x-transition:enter="transition-opacity ease-in duration-1000" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" />
-										<button @click="openModal(file)" type="button" class="absolute inset-0 focus:outline-none">
+										<button @click="openModal(file)" type="button" :class="{'hidden pointer-events-none': showMediaActions}" class="absolute inset-0 focus:outline-none">
 											<span class="sr-only" x-text="'View details for ' + file.name"></span>
 											<div class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-80 transition-opacity duration-300">
 												<svg class="size-1/3 text-nbpurple-50" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -508,12 +599,17 @@ HTML;
 											<p class="pointer-events-none block text-sm font-medium text-nbpurple-500" x-text="formatBytes(file.size)"></p>
 										</div>
 										<div x-data="{copyClick: false}">
-											<button @click="copyUrlToClipboard(file.url); copyClick = true; setTimeout(() => copyClick = false, 2000); showToast = true" class="mt-2 px-2 py-1 bg-nbpurple-600 text-white rounded-md hover:bg-nbpurple-700 focus:outline-none focus:ring-2 focus:ring-nbpurple-500" aria-label="Copy image URL to clipboard">
+											<button @click="copyUrlToClipboard(file.url); copyClick = true; setTimeout(() => copyClick = false, 2000); showToast = true" class="hidden xs:inline-block mt-2 px-2 py-1 bg-nbpurple-600 text-white rounded-md hover:bg-nbpurple-700 focus:outline-none focus:ring-2 focus:ring-nbpurple-500" aria-label="Copy image URL to clipboard">
 												<svg x-show="!copyClick" class="size-6 inline-block" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true" x-transition:enter="transition-opacity duration-500" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100">
 													<path stroke-linecap="round" stroke-linejoin="round" d="M11.35 3.836c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 0 0 .75-.75 2.25 2.25 0 0 0-.1-.664m-5.8 0A2.251 2.251 0 0 1 13.5 2.25H15c1.012 0 1.867.668 2.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m8.9-4.414c.376.023.75.05 1.124.08 1.131.094 1.976 1.057 1.976 2.192V16.5A2.25 2.25 0 0 1 18 18.75h-2.25m-7.5-10.5H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V18.75m-7.5-10.5h6.375c.621 0 1.125.504 1.125 1.125v9.375m-8.25-3 1.5 1.5 3-3.75" />
 												</svg>
 												<svg x-cloak x-show="copyClick" class="animate-[pulse_3s_ease-in-out_infinite] size-6 inline-block" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true" x-transition:enter="transition-opacity duration-500" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100">
 													<path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" />
+												</svg>
+											</button>
+											<button @click="showMediaActions = !showMediaActions" class="mt-2 px-2 py-1 bg-nbpurple-600 text-white rounded-md hover:bg-nbpurple-700 focus:outline-none focus:ring-2 focus:ring-nbpurple-500" aria-label="Copy image URL to clipboard">
+												<svg class="size-6 inline-block text-nbpurple-50" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+													<path stroke-linecap="round" stroke-linejoin="round" d="M8.625 12a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0H8.25m4.125 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0H12m4.125 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0h-.375M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
 												</svg>
 											</button>
 										</div>
@@ -537,59 +633,13 @@ HTML;
 			</div>
 		</div>
 
-
-		<!-- Edit bar -->
-		<div x-cloak x-data class="fixed inset-x-0 bottom-0 z-50" x-cloak>
-			<div class="relative w-screen" x-show="$store.mediaEditBar.show" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 transform translate-y-full" x-transition:enter-end="opacity-100 transform translate-y-0" x-transition:leave="transition ease-in duration-300" x-transition:leave-start="opacity-100 transform translate-y-0" x-transition:leave-end="opacity-0 transform translate-y-full">
-
-				<div class="h-1/4 bg-nbpurple-500/80 shadow-xl overflow-y-auto relative">
-					<button @click="$store.mediaEditBar.toggle()" type="button" class="inset-auto absolute top-1 right-1 flex items-center justify-center h-8 w-8 rounded-full focus:outline-none focus:ring-1 focus:ring-inset focus:ring-white">
-						<span class="sr-only">Close panel</span>
-						<svg class="size-6 text-nbpurple-100" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-						</svg>
-					</button>
-					<div class="px-4 py-3 sm:p-5">
-						<div class="mt-0">
-							<!-- Your content goes here -->
-							<button x-data="{
-									getSelectedCount() {
-										return $store.checkedCheckboxesMedia.count + $store.checkedCheckboxesFolders.count;
-									},
-									getSelectedType() {
-										if ($store.checkedCheckboxesMedia.count > 0 && $store.checkedCheckboxesFolders.count > 0) {
-											return 'item(s)';
-										} else if ($store.checkedCheckboxesMedia.count > 0) {
-											return 'file(s)';
-										} else if ($store.checkedCheckboxesFolders.count > 0) {
-											return 'folder(s)';
-										} else {
-											return 'item(s)';
-										}
-									}
-								}" @click="$store.deleteConfirmation.open()" type="button" class="rounded-md bg-red-500 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-red-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-500">
-								Delete <span x-text="getSelectedCount()"></span> <span x-text="getSelectedType()"></span>
-							</button>
-							<button x-data="{
-										getSelectedCount() {
-											return $store.checkedCheckboxesMedia.count;
-										},
-									}" @click="$store.moveToFolder.open()" type="button" class="rounded-md bg-nbpurple-500 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-nbpurple-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-nbpurple-500">
-								Move to <span x-text="getSelectedCount()"></span> file(s) to folder
-							</button>
-						</div>
-					</div>
-				</div>
-			</div>
-		</div>
-
 		<!-- Delete confirmation window -->
-		<div x-cloak x-data class="relative z-50" aria-labelledby="modal-title" role="dialog" aria-modal="true">
-			<div x-show="$store.deleteConfirmation.isOpen" x-transition:enter="ease-out duration-300" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" x-transition:leave="ease-in duration-200" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0" class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity"></div>
+		<div x-cloak x-data="{FS: $store.fileStore}" class="relative z-50" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+			<div x-show="FS.deleteConfirmation.isOpen" x-transition:enter="ease-out duration-300" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" x-transition:leave="ease-in duration-200" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0" class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity"></div>
 
-			<div x-show="$store.deleteConfirmation.isOpen" x-transition:enter="ease-out duration-300" x-transition:enter-start="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95" x-transition:enter-end="opacity-100 translate-y-0 sm:scale-100" x-transition:leave="ease-in duration-200" x-transition:leave-start="opacity-100 translate-y-0 sm:scale-100" x-transition:leave-end="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95" class="fixed inset-0 z-50 overflow-y-auto">
+			<div x-show="FS.deleteConfirmation.isOpen" x-transition:enter="ease-out duration-300" x-transition:enter-start="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95" x-transition:enter-end="opacity-100 translate-y-0 sm:scale-100" x-transition:leave="ease-in duration-200" x-transition:leave-start="opacity-100 translate-y-0 sm:scale-100" x-transition:leave-end="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95" class="fixed inset-0 z-50 overflow-y-auto">
 				<div class="flex min-h-screen items-end justify-center p-4 text-center sm:items-center sm:p-0">
-					<div class="relative transform overflow-hidden rounded-lg bg-nbpurple-50 text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg">
+					<div @click.outside="FS.deleteConfirmation.close()" class="relative transform overflow-hidden rounded-lg bg-nbpurple-50 text-left shadow-xl transition-all mb-16 sm:my-8 sm:w-full sm:max-w-lg">
 						<div class="bg-nbpurple-50 px-4 pb-4 pt-5 sm:p-6 sm:pb-4">
 							<div class="sm:flex sm:items-start">
 								<div class="mx-auto flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-red-100 sm:mx-0 sm:h-10 sm:w-10">
@@ -600,75 +650,177 @@ HTML;
 								<div class="mt-3 text-center sm:ml-4 sm:mt-0 sm:text-left">
 									<h3 class="text-base font-semibold leading-6 text-gray-900" id="modal-title">Confirm Delete</h3>
 									<div class="mt-2">
-										<p class="text-sm text-gray-500" x-data="{
-													getSelectedCount() {
-														return $store.checkedCheckboxesMedia.count + $store.checkedCheckboxesFolders.count;
-													},
-													getSelectedType() {
-														if ($store.checkedCheckboxesMedia.count > 0 && $store.checkedCheckboxesFolders.count > 0) {
-															return 'item(s)';
-														} else if ($store.checkedCheckboxesMedia.count > 0) {
-															return 'file(s)';
-														} else if ($store.checkedCheckboxesFolders.count > 0) {
-															return 'folder(s)';
-														} else {
-															return 'item(s)';
-														}
-													}
-												}">
-											Are you sure you want to delete <span x-text="getSelectedCount()"></span> <span x-text="getSelectedType()"></span>? This action cannot be undone.
+										<p class="text-sm text-gray-500">
+											Are you sure you want to delete the selected <span class="font-bold" x-text="FS.deleteConfirmation.selectedFiles.length"></span> file(s)? This action cannot be undone.
 										</p>
+										<!-- List of selected media -->
+										<div class="flex items-center justify-center">
+											<div class="isolate flex -space-x-2 overflow-hidden pl-3 py-2">
+												<template x-for="(file, index) in (FS.deleteConfirmation.selectedFiles.length > 5 ? FS.deleteConfirmation.selectedFiles.slice(0, 5) : FS.deleteConfirmation.selectedFiles)" :key="file.id">
+													<img :class="'relative z-' + (50 - index * 10)" class="inline-block w-14 h-12 rounded-full ring-2 ring-white" :src="file.thumb" :alt="file.name">
+												</template>
+												<template x-if="FS.deleteConfirmation.selectedFiles.length > 5">
+													<div class="relative z-0 inline-flex items-center justify-center w-14 h-12 rounded-full bg-nbpurple-600 text-white ring-2 ring-white">
+														<span class="text-xs xs:text-sm font-medium">+<span x-text="FS.deleteConfirmation.selectedFiles.length - 5"></span></span>
+													</div>
+												</template>
+											</div>
+										</div>
+										<!-- /List of selected media -->
 										<!-- Notice about deletion -->
 										<div class="mt-3">
 											<p class="text-sm text-red-500">Note: Deleting media won't immediately remove it from browser/client caches, other proxies, especially if it has been already publicly shared.</p>
+										</div>
+										<!-- Error message -->
+										<div x-cloak x-show="FS.deleteConfirmation.isError" class="mt-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
+											<strong class="font-bold">Error!</strong>
+											<span class="block sm:inline">An error occurred while deleting the files.</span>
 										</div>
 									</div>
 								</div>
 							</div>
 						</div>
 						<div class="bg-nbpurple-50 px-4 py-3 gap-3 flex flex-row-reverse sm:px-6">
-							<button @click="$store.deleteConfirmation.confirm()" type="button" class="mt-3 inline-flex w-full justify-center rounded-md bg-red-600 px-4 py-2 text-base font-medium text-white shadow-sm hover:bg-red-500 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">
-								<svg x-show="$store.deleteConfirmation.isLoading" class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+							<button @click="FS.confirmDelete()" type="button" class="mt-3 inline-flex w-full justify-center rounded-md bg-red-600 px-4 py-2 text-base font-medium text-white shadow-sm hover:bg-red-500 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">
+								<svg x-show="FS.deleteConfirmation.isLoading" class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
 									<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
 									<path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
 								</svg>
 								Delete
 							</button>
-							<button @click="$store.deleteConfirmation.close()" type="button" class="mt-3 inline-flex w-full justify-center rounded-md bg-white px-4 py-2 text-base font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-nbpurple-500 focus:ring-offset-2 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">Cancel</button>
+							<button @click="FS.deleteConfirmation.close()" type="button" class="mt-3 inline-flex w-full justify-center rounded-md bg-white px-4 py-2 text-base font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-nbpurple-500 focus:ring-offset-2 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">Cancel</button>
 						</div>
 					</div>
 				</div>
 			</div>
 		</div>
 
+		<!-- Share window -->
+		<div x-cloak x-data="{FS: $store.fileStore}" class="relative z-50" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+			<div x-show="FS.shareMedia.isOpen" x-transition:enter="ease-out duration-300" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" x-transition:leave="ease-in duration-200" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0" class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity"></div>
+
+			<div x-show="FS.shareMedia.isOpen" x-transition:enter="ease-out duration-300" x-transition:enter-start="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95" x-transition:enter-end="opacity-100 translate-y-0 sm:scale-100" x-transition:leave="ease-in duration-200" x-transition:leave-start="opacity-100 translate-y-0 sm:scale-100" x-transition:leave-end="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95" class="fixed inset-0 z-50 overflow-y-auto">
+				<div class="flex min-h-screen items-end justify-center p-4 text-center sm:items-center sm:p-0">
+					<div @click.outside="FS.shareMedia.close()" class="relative transform overflow-hidden rounded-lg bg-nbpurple-50 text-left shadow-xl transition-all mb-16 sm:my-8 w-full max-w-lg">
+						<div class="bg-nbpurple-50 px-4 pb-4 pt-5 sm:p-6 sm:pb-4">
+							<div class="sm:flex sm:items-start">
+								<div class="mx-auto flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-nbpurple-100 sm:mx-0 sm:h-10 sm:w-10">
+									<svg class="size-6 text-nbpurple-600" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+										<path stroke-linecap="round" stroke-linejoin="round" d="M7.217 10.907a2.25 2.25 0 1 0 0 2.186m0-2.186c.18.324.283.696.283 1.093s-.103.77-.283 1.093m0-2.186 9.566-5.314m-9.566 7.5 9.566 5.314m0 0a2.25 2.25 0 1 0 3.935 2.186 2.25 2.25 0 0 0-3.935-2.186Zm0-12.814a2.25 2.25 0 1 0 3.933-2.185 2.25 2.25 0 0 0-3.933 2.185Z" />
+									</svg>
+								</div>
+								<div class="mt-3 text-center sm:ml-4 sm:mt-0 sm:text-left">
+									<h3 class="text-base font-semibold leading-6 text-gray-900" id="modal-title">Share Media</h3>
+									<div class="mt-2">
+										<!-- List of selected media -->
+										<div class="flex items-center justify-center">
+											<div class="isolate flex -space-x-2 overflow-hidden pl-3 py-2">
+												<template x-for="(file, index) in (FS.shareMedia.selectedFiles.length > 5 ? FS.shareMedia.selectedFiles.slice(0, 5) : FS.shareMedia.selectedFiles)" :key="file.id">
+													<img :class="'relative z-' + (50 - index * 10)" class="inline-block w-14 h-12 rounded-full ring-2 ring-white" :src="file.thumb" :alt="file.name">
+												</template>
+												<template x-if="FS.shareMedia.selectedFiles.length > 5">
+													<div class="relative z-0 inline-flex items-center justify-center w-14 h-12 rounded-full bg-nbpurple-600 text-white ring-2 ring-white">
+														<span class="text-xs xs:text-sm font-medium">+<span x-text="FS.shareMedia.selectedFiles.length - 5"></span></span>
+													</div>
+												</template>
+											</div>
+										</div>
+										<!-- /List of selected media -->
+										<!-- Sharing options -->
+										<div class="flex justify-center">
+											<div x-cloak x-show="FS.shareMedia.selectedFiles.length === 1" x-data="{
+																																																enabled: false,
+																																																supported: <?= $perm->validatePermissionsLevelAny(1, 10, 99) ? 'true' : 'false' ?>,
+																																																init() {
+																																																	this.enabled = this.getFlag();
+																																																	this.$watch('FS.shareMedia.selectedFiles', () => {
+																																																		this.enabled = this.getFlag();
+																																																	});
+																																																},
+																																																getFlag() {
+																																																	return FS.shareMedia.selectedFiles.length === 1 ? FS.shareMedia.selectedFiles[0].flag === 1 : false;
+																																																}
+																																															}" class="flex mt-3">
+												<button :disabled="!supported" :class="{
+																																	'cursor-not-allowed': !supported,
+																																	'cursor-pointer': supported,
+																																	'bg-nbpurple-600': enabled,
+																																	'bg-nbpurple-300': !enabled
+																																}" type="button" class="relative inline-flex h-6 w-11 flex-shrink-0 rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-nbpurple-600 focus:ring-offset-2" role="switch" :aria-checked="enabled" aria-labelledby="creator-page-share-single" @click="FS.shareMediaCreatorConfirm(!enabled)">
+													<span aria-hidden="true" :class="enabled ? 'translate-x-5' : 'translate-x-0'" class="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-nbpurple-50 shadow ring-0 transition duration-200 ease-in-out"></span>
+												</button>
+												<span class="ml-3 text-sm" id="creator-page-share-single">
+													<span class="font-medium text-nbpurple-900">Share on Creator Page</span>
+													<a x-show="!supported" href="/plans/" class="ml-2 text-nbpurple-600 text-xs hover:underline">
+														Upgrade to Creator+
+													</a>
+												</span>
+											</div>
+										</div>
+										<!-- Error message -->
+										<div x-cloak x-show="FS.shareMedia.isError" class="mt-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
+											<strong class="font-bold">Error!</strong>
+											<span class="block sm:inline">An error occurred while sharing the files.</span>
+										</div>
+									</div>
+								</div>
+							</div>
+						</div>
+						<div class="bg-nbpurple-50 px-4 py-3 gap-3 justify-center sm:justify-normal flex flex-row-reverse sm:px-6">
+							<button @click="FS.shareMedia.close()" :disabled="FS.shareMedia.isLoading" type="button" class="mt-3 inline-flex w-1/2 justify-center rounded-md bg-nbpurple-500 px-4 py-2 text-base font-medium text-nbpurple-50 shadow-sm hover:bg-nbpurple-200 focus:outline-none focus:ring-2 focus:ring-nbpurple-500 focus:ring-offset-2 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">
+								<svg x-show="FS.shareMedia.isLoading" class="animate-spin -ml-1 mr-3 h-5 w-5 text-nbpurple-50" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+									<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+									<path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+								</svg>
+								Done
+							</button>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
 
 		<!-- Move to folder modal -->
-		<div x-cloak x-data="{ searchTerm: '' }" class="relative z-50" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+		<div x-cloak x-data="{ FS: $store.fileStore }" class="relative z-50" aria-labelledby="modal-title" role="dialog" aria-modal="true">
 			<!-- Background overlay -->
-			<div x-show="$store.moveToFolder.isOpen" x-transition:enter="ease-out duration-300" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" x-transition:leave="ease-in duration-200" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0" class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity"></div>
+			<div x-show="FS.moveToFolder.isOpen" x-transition:enter="ease-out duration-300" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" x-transition:leave="ease-in duration-200" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0" class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity"></div>
 			<!-- Modal content -->
-			<div x-show="$store.moveToFolder.isOpen" x-transition:enter="ease-out duration-300" x-transition:enter-start="opacity-0 translate-y-0 sm:-translate-y-4" x-transition:enter-end="opacity-100 translate-y-0 sm:translate-y-0 sm:scale-100" x-transition:leave="ease-in duration-200" x-transition:leave-start="opacity-100 translate-y-0 sm:translate-y-0 sm:scale-100" x-transition:leave-end="opacity-0 translate-y-0 sm:-translate-y-4 sm:scale-95" class="fixed inset-0 z-50 overflow-y-auto">
-				<div class="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
-					<div class="relative transform overflow-hidden rounded-lg bg-white text-left shadow-xl transition-all h-52 max-h-72 my-8 w-full sm:max-w-lg overflow-y-auto">
-						<div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+			<div x-show="FS.moveToFolder.isOpen" x-transition:enter="ease-out duration-300" x-transition:enter-start="opacity-0 translate-y-0 sm:-translate-y-4" x-transition:enter-end="opacity-100 translate-y-0 sm:translate-y-0 sm:scale-100" x-transition:leave="ease-in duration-200" x-transition:leave-start="opacity-100 translate-y-0 sm:translate-y-0 sm:scale-100" x-transition:leave-end="opacity-0 translate-y-0 sm:-translate-y-4 sm:scale-95" class="fixed inset-0 z-50 overflow-y-auto">
+				<div class="flex min-h-screen items-end justify-center p-4 text-center sm:items-center sm:p-0">
+					<div @click.outside="FS.moveToFolder.close()" class="relative transform overflow-hidden rounded-lg bg-nbpurple-50 text-left shadow-xl transition-all min-h-[50vh] max-h-[80vh] my-8 mb-24 w-full sm:max-w-lg flex flex-col">
+						<div class="bg-nbpurple-50 px-4 pt-5 pb-4 sm:p-6 sm:pb-4 overflow-y-auto flex-grow">
+							<!-- List of selected media -->
+							<div class="flex items-center justify-center">
+								<div class="isolate flex -space-x-2 overflow-hidden pl-3 py-2">
+									<template x-for="(file, index) in (FS.moveToFolder.selectedFiles.length > 5 ? FS.moveToFolder.selectedFiles.slice(0, 5) : FS.moveToFolder.selectedFiles)" :key="file.id">
+										<img :class="'relative z-' + (50 - index * 10)" class="inline-block w-14 h-12 rounded-full ring-2 ring-white" :src="file.thumb" :alt="file.name">
+									</template>
+									<template x-if="FS.moveToFolder.selectedFiles.length > 5">
+										<div class="relative z-0 inline-flex items-center justify-center w-14 h-12 rounded-full bg-nbpurple-600 text-white ring-2 ring-white">
+											<span class="text-xs xs:text-sm font-medium">+<span x-text="FS.moveToFolder.selectedFiles.length - 5"></span></span>
+										</div>
+									</template>
+								</div>
+							</div>
+							<!-- /List of selected media -->
 							<div class="sm:flex sm:items-start">
 								<div class="mt-3 text-center sm:mt-0 sm:text-left w-full">
 									<div class="mt-2 flex items-center">
 										<label for="combobox" class="block text-sm font-medium leading-6 text-gray-900 mr-2">Select Folder</label>
 										<div class="relative w-full z-auto">
-											<input id="combobox" type="text" x-model="$store.moveToFolder.selectedFolder" @input="searchTerm = $store.moveToFolder.selectedFolder" @click="$store.moveToFolder.toggleDropdown()" @click.away="searchTerm = ''; $store.moveToFolder.isDropdownOpen = false" class="w-full rounded-md border-0 bg-white py-1.5 pl-3 pr-12 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6" role="combobox" aria-controls="options" :aria-expanded="$store.moveToFolder.isDropdownOpen.toString()">
-											<button type="button" @click="$store.moveToFolder.toggleDropdown()" class="absolute inset-y-0 right-0 flex items-center rounded-r-md px-2 focus:outline-none">
-												<svg class="h-5 w-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+											<input id="combobox" type="text" x-model="FS.moveToFolder.selectedFolderName" @input="FS.moveToFolder.searchTerm = $event.target.value; FS.moveToFolder.isDropdownOpen = true" @click="FS.moveToFolder.toggleDropdown()" @click.away="FS.moveToFolder.isDropdownOpen = false" class="w-full rounded-md border-0 bg-nbpurple-50 py-1.5 pl-3 pr-12 text-nbpurple-900 shadow-sm ring-1 ring-inset ring-nbpurple-300 focus:ring-2 focus:ring-inset focus:ring-nbpurple-600 sm:text-sm sm:leading-6" role="combobox" aria-controls="options" :aria-expanded="FS.moveToFolder.isDropdownOpen.toString()">
+											<button type="button" @click.stop="FS.moveToFolder.toggleDropdown()" class="absolute inset-y-0 right-0 flex items-center rounded-r-md px-2 focus:outline-none">
+												<svg class="h-5 w-5 text-nbpurple-400" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
 													<path fill-rule="evenodd" d="M10 3a.75.75 0 01.55.24l3.25 3.5a.75.75 0 11-1.1 1.02L10 4.852 7.3 7.76a.75.75 0 01-1.1-1.02l3.25-3.5A.75.75 0 0110 3zm-3.76 9.2a.75.75 0 011.06.04l2.7 2.908 2.7-2.908a.75.75 0 111.1 1.02l-3.25 3.5a.75.75 0 01-1.1 0l-3.25-3.5a.75.75 0 01.04-1.06z" clip-rule="evenodd" />
 												</svg>
 											</button>
-											<ul x-show="$store.moveToFolder.isDropdownOpen" @click.away="$store.moveToFolder.isDropdownOpen = false" class="absolute z-10 mt-1 h-32 max-h-60 w-full overflow-auto rounded-md bg-white py-1 text-base shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none sm:text-sm" id="options" role="listbox">
-												<template x-for="folder in $store.moveToFolder.folders.filter(f => f.name.toLowerCase().includes(searchTerm.toLowerCase()))">
-													<li class="relative cursor-default select-none py-2 pl-3 pr-9 text-gray-900" :id="'option-' + folder.id" role="option" @click="$store.moveToFolder.selectFolder(folder.name); $store.moveToFolder.isDropdownOpen = false" @mouseenter="$store.moveToFolder.hoveredFolder = folder.id" @mouseleave="$store.moveToFolder.hoveredFolder = null" :class="{ 'bg-indigo-600 text-white': folder.id === $store.moveToFolder.hoveredFolder, 'text-gray-900': folder.id !== $store.moveToFolder.hoveredFolder }">
+											<ul x-show="FS.moveToFolder.isDropdownOpen" @click.away="FS.moveToFolder.isDropdownOpen = false" class="absolute z-10 mt-1 max-h-40 w-full overflow-auto rounded-md bg-nbpurple-50 py-1 text-base shadow-lg ring-1 ring-nbpurple-950 ring-opacity-5 focus:outline-none sm:text-sm" id="options" role="listbox">
+												<template x-for="folder in $store.menuStore.folders.filter(f => f.name.toLowerCase().includes(FS.moveToFolder.searchTerm.toLowerCase()))">
+													<li class="relative cursor-default select-none py-2 pl-3 pr-9 text-gray-900" :id="'option-' + folder.id" role="option" @click="FS.moveToFolder.destinationFolderId = folder.id; FS.moveToFolder.selectedFolderName = folder.name; FS.moveToFolder.isDropdownOpen = false; FS.moveToFolder.searchTerm = ''" @mouseenter="FS.moveToFolder.hoveredFolder = folder.id" @mouseleave="FS.moveToFolder.hoveredFolder = null" :class="{ 'bg-nbpurple-600 text-nbpurple-50': folder.id === FS.moveToFolder.hoveredFolder, 'text-nbpurple-900': folder.id !== FS.moveToFolder.hoveredFolder }">
 														<div class="flex">
-															<span x-text="folder.name" class="truncate" :class="{ 'font-semibold': folder.name === $store.moveToFolder.selectedFolder }"></span>
+															<span x-text="folder.name" class="truncate" :class="{ 'font-semibold': folder.id === FS.moveToFolder.destinationFolderId }"></span>
 														</div>
-														<span x-show="folder.name === $store.moveToFolder.selectedFolder" class="absolute inset-y-0 right-0 flex items-center pr-4" :class="{ 'text-white': folder.id === $store.moveToFolder.hoveredFolder, 'text-indigo-600': folder.id !== $store.moveToFolder.hoveredFolder }">
+														<span x-show="folder.id === FS.moveToFolder.destinationFolderId" class="absolute inset-y-0 right-0 flex items-center pr-4" :class="{ 'text-nbpurple-50': folder.id === FS.moveToFolder.hoveredFolder, 'text-nbpurple-600': folder.id !== FS.moveToFolder.hoveredFolder }">
 															<svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
 																<path fill-rule="evenodd" d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.05-.143z" clip-rule="evenodd" />
 															</svg>
@@ -681,20 +833,27 @@ HTML;
 								</div>
 							</div>
 						</div>
-						<div class="bg-white px-4 py-3 sm:px-6 sm:flex sm:flex-wrap sm:justify-end">
+						<div class="bg-nbpurple-50 px-4 py-3 sm:px-6 sm:flex sm:flex-wrap sm:justify-end">
 							<button x-data="{
-													getSelectedCount() { return $store.checkedCheckboxesMedia.count; }
-												}" x-show="!$store.moveToFolder.isLoading" @click="$store.moveToFolder.moveToSelectedFolder()" type="button" class="inline-flex justify-center rounded-md bg-indigo-600 px-4 py-2 text-base font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 sm:order-1 sm:ml-3 sm:w-auto sm:text-sm">
+                    folderSelected: false,
+                    init() {
+                      this.$watch('FS.moveToFolder.destinationFolderId', () => {
+                        this.folderSelected = FS.moveToFolder.destinationFolderId !== null;
+                      });
+                    },
+                    getSelectedCount() { return FS.moveToFolder.selectedFiles.length; },
+                    isValidFolderSelected() { return FS.moveToFolder.destinationFolderId !== null; }
+                  }" x-show="!FS.moveToFolder.isLoading" @click="FS.moveToFolderConfirm()" type="button" :disabled="!folderSelected" :class="{ 'opacity-50 cursor-not-allowed': !folderSelected }" class="inline-flex justify-center rounded-md bg-nbpurple-600 px-4 py-2 text-base font-medium text-nbpurple-50 shadow-sm hover:bg-nbpurple-700 focus:outline-none focus:ring-2 focus:ring-nbpurple-500 focus:ring-offset-2 sm:order-1 sm:ml-3 sm:w-auto sm:text-sm">
 								Move&nbsp;<span x-text="getSelectedCount()"></span>&nbsp;file(s) to folder
 							</button>
-							<button x-show="$store.moveToFolder.isLoading" type="button" class="inline-flex justify-center rounded-md bg-indigo-600 px-4 py-2 text-base font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 sm:order-1 sm:ml-3 sm:w-auto sm:text-sm" disabled>
-								<svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+							<button x-show="FS.moveToFolder.isLoading" type="button" class="inline-flex justify-center rounded-md bg-nbpurple-600 px-4 py-2 text-base font-medium text-nbpurple-50 shadow-sm hover:bg-nbpurple-700 focus:outline-none focus:ring-2 focus:ring-nbpurple-500 focus:ring-offset-2 sm:order-1 sm:ml-3 sm:w-auto sm:text-sm" disabled>
+								<svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-nbpurple-50" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
 									<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
 									<path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
 								</svg>
 								Moving...
 							</button>
-							<button @click="$store.moveToFolder.close()" type="button" class="mt-3 inline-flex justify-center rounded-md bg-white px-4 py-2 text-base font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 sm:order-0 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">
+							<button @click="FS.moveToFolder.close()" type="button" class="mt-3 inline-flex justify-center rounded-md bg-nbpurple-200 px-4 py-2 text-base font-medium text-nbpurple-700 shadow-sm hover:bg-nbpurple-50 focus:outline-none focus:ring-2 focus:ring-nbpurple-500 focus:ring-offset-2 sm:order-0 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">
 								Cancel
 							</button>
 						</div>
@@ -766,88 +925,6 @@ HTML;
 
 		document.addEventListener('alpine:init', () => {
 			console.log('Alpine initialized');
-			Alpine.store('mediaEditBar', {
-				show: false,
-
-				toggle() {
-					this.show = !this.show
-					// Uncheck all checkboxes
-					const checkboxes = document.querySelectorAll('input[type="checkbox"].media_select_checkbox');
-					checkboxes.forEach(checkbox => {
-						checkbox.checked = false;
-					});
-				}
-			})
-			Alpine.store('deleteConfirmation', {
-				isOpen: false,
-				isLoading: false,
-				open() {
-					this.isOpen = true;
-					this.isLoading = false;
-				},
-				close() {
-					this.isOpen = false;
-					this.isLoading = false;
-				},
-				confirm() {
-					// Perform the delete action here
-					console.log('Delete action confirmed');
-					this.isLoading = true;
-					checkDelete();
-					//this.close();
-				}
-			})
-			// Store number of checked checkboxes for media
-			Alpine.store('checkedCheckboxesMedia', {
-				count: 0
-			})
-			// Store number of checked checkboxes for folders
-			Alpine.store('checkedCheckboxesFolders', {
-				count: 0
-			})
-
-			Alpine.store('moveToFolder', {
-				isOpen: false,
-				isLoading: false,
-				selectedFolder: '',
-				folders: [
-					<?php foreach ($usersFoldersStats['FOLDERS'] as $folder => $folderStats) : ?>
-						<?php if ($folder == '/') continue; ?> {
-							id: <?= $folderStats['id'] ?>,
-							name: '<?= htmlspecialchars(addslashes($folder)) ?>'
-						},
-					<?php endforeach; ?>
-				],
-				isDropdownOpen: false,
-				hoveredFolder: null,
-				open() {
-					this.isOpen = true;
-					this.isLoading = false;
-					this.selectedFolder = '';
-					this.isDropdownOpen = false;
-					this.hoveredFolder = null;
-				},
-				close() {
-					this.isOpen = false;
-					this.isLoading = false;
-					this.selectedFolder = '';
-					this.isDropdownOpen = false;
-					this.hoveredFolder = null;
-				},
-				toggleDropdown() {
-					this.isDropdownOpen = !this.isDropdownOpen;
-				},
-				selectFolder(folderName) {
-					this.selectedFolder = folderName;
-					this.isDropdownOpen = false;
-				},
-				moveToSelectedFolder() {
-					this.isLoading = true;
-					// Perform the move to folder action here
-					console.log('Moving to folder:', this.selectedFolder);
-					folderDoubleClicked(this.selectedFolder);
-				},
-			});
 
 			function updateHashURL(f, p) {
 				const params = new URLSearchParams(window.location.hash.slice(1));
@@ -856,7 +933,7 @@ HTML;
 				history.replaceState(null, null, `#${params.toString()}`);
 			}
 
-			function getUodatedHashLink(f, p) {
+			function getUpdatedHashLink(f, p) {
 				const params = new URLSearchParams(window.location.hash.slice(1));
 				if (f) params.set('f', encodeURIComponent(f));
 				if (p) params.set('p', encodeURIComponent(p));
@@ -868,7 +945,7 @@ HTML;
 				menuItems: [{
 						name: 'Generative AI',
 						icon: '<path stroke-linecap="round" stroke-linejoin="round" d="M9.53 16.122a3 3 0 0 0-5.78 1.128 2.25 2.25 0 0 1-2.4 2.245 4.5 4.5 0 0 0 8.4-2.245c0-.399-.078-.78-.22-1.128Zm0 0a15.998 15.998 0 0 0 3.388-1.62m-5.043-.025a15.994 15.994 0 0 1 1.622-3.395m3.42 3.42a15.995 15.995 0 0 0 4.764-4.648l3.876-5.814a1.151 1.151 0 0 0-1.597-1.597L14.146 6.32a15.996 15.996 0 0 0-4.649 4.763m3.42 3.42a6.776 6.776 0 0 0-3.42-3.42" />',
-						route: getUodatedHashLink('AI: Generated Images', 'gai')
+						route: getUpdatedHashLink('AI: Generated Images', 'gai')
 					},
 					{
 						name: 'Account Main Page',
@@ -879,12 +956,14 @@ HTML;
 				folders: [{
 						name: 'AI: Generated Images',
 						icon: 'A',
-						route: '#'
+						route: '#',
+						allowDelete: false
 					},
 					{
 						name: 'Home: Main Folder',
 						icon: 'H',
-						route: '#'
+						route: '#',
+						allowDelete: false
 					}
 				],
 				setActiveFolder(folderName) {
@@ -938,6 +1017,7 @@ HTML;
 								}, this.folders);
 								// Folders have been fetched
 								this.foldersFetched = true;
+								console.log('Folders fetched:', this.folders);
 								// Set this.activeFolder to the value of URL's # parameter
 								const url = new URL(window.location.href);
 								const params = new URLSearchParams(url.hash.slice(1));
@@ -960,7 +1040,7 @@ HTML;
 					name: '<?= strlen($nym) > 15 ? htmlspecialchars(substr($nym, 0, 15)) . "..." : htmlspecialchars($nym) ?>',
 					npub: '<?= strlen($user) > 15 ? htmlspecialchars(substr($user, 0, 15)) . "..." : htmlspecialchars($user) ?>',
 					imageUrl: '<?= htmlspecialchars($ppic) ?>',
-					profileUrl: getUodatedHashLink(null, 'profile')
+					profileUrl: getUpdatedHashLink(null, 'profile')
 				},
 				activeMenu: '',
 				activeFolder: '',
@@ -991,6 +1071,8 @@ HTML;
 					totalGifs: <?= $usersFoldersStats['TOTAL']['gifCount'] ?>,
 					totalImages: <?= $usersFoldersStats['TOTAL']['imageCount'] ?>,
 					totalVideos: <?= $usersFoldersStats['TOTAL']['avCount'] ?>,
+					creatorCount: <?= $usersFoldersStats['TOTAL']['publicCount'] ?>,
+					creatorPageLink: '<?= "https://{$_SERVER['SERVER_NAME']}/creators/creator/?user={$userId}" ?>',
 				},
 				formatNumberInThousands(number) {
 					return number > 999 ? `${(number / 1000).toFixed(1)}k` : number;
@@ -999,6 +1081,272 @@ HTML;
 			Alpine.store('fileStore', {
 				files: [],
 				loading: false,
+				moveToFolder: {
+					isOpen: false,
+					isLoading: false,
+					isError: false,
+					selectedIds: [],
+					selectedFiles: [],
+					destinationFolderId: null,
+					hoveredFolder: null,
+					isDropdownOpen: false,
+					searchTerm: '',
+					selectedFolderName: '',
+					open(ids) {
+						// Convert single ID to array
+						if (!Array.isArray(ids)) {
+							ids = [ids];
+						}
+						console.log('Opening move to folder modal:', ids);
+						this.selectedIds = ids;
+						this.selectedFiles = Alpine.store('fileStore').files.filter(file => ids.includes(file.id));
+						console.log('Selected files:', this.selectedFiles);
+						this.isOpen = true;
+					},
+					close() {
+						this.selectedIds = [];
+						this.selectedFiles = [];
+						this.destinationFolderId = null;
+						this.hoveredFolder = null;
+						this.isDropdownOpen = false;
+						this.searchTerm = '';
+						this.selectedFolderName = '';
+						this.isError = false;
+						this.isOpen = false;
+						this.isLoading = false;
+					},
+					toggleDropdown() {
+						this.isDropdownOpen = !this.isDropdownOpen;
+					},
+				},
+				moveToFolderConfirm() {
+					this.moveToFolder.isLoading = true;
+					// Check if destination folder is the same as the current folder
+					// Get the folder name from the folders list based on id and compare it with the active name
+					const destinationFolderName = Alpine.store('menuStore').folders.find(folder => folder.id === this.moveToFolder.destinationFolderId).name;
+					if (destinationFolderName === Alpine.store('menuStore').activeFolder) {
+						this.moveToFolder.close();
+						this.moveToFolder.isLoading = false;
+						return;
+					}
+					// Proceed otherwise
+					this.moveItemsToFolder(this.moveToFolder.selectedIds, this.moveToFolder.destinationFolderId)
+						.then(() => {
+							this.moveToFolder.close();
+							this.isError = false;
+						})
+						.catch(error => {
+							console.error('Error moving files:', error);
+							this.isError = true;
+						})
+						.finally(() => {
+							this.moveToFolder.isLoading = false;
+						});
+				},
+				moveItemsToFolder(itemIds, folderId) {
+					console.log('Moving items to folder:', itemIds, folderId);
+					// Construct form data
+					const formData = new FormData();
+					formData.append('action', 'move_to_folder');
+					// Convert itemIds into array if single entry
+					if (!Array.isArray(itemIds)) {
+						itemIds = [itemIds];
+					}
+					// Add JSON list of image IDs to form data
+					formData.append('imagesToMove', JSON.stringify(itemIds));
+					formData.append('destinationFolderId', folderId);
+					// Send the form data to the server
+					try {
+						const url = new URL('https://<?= $_SERVER['SERVER_NAME'] ?>/account/ai/ai_json.php');
+						const request = new Request(url, {
+							method: 'POST',
+							body: formData,
+						});
+
+						return fetch(request)
+							.then(response => response.json())
+							.then(data => {
+								console.log('Moved items to folder:', data);
+								// Get IDs of moved images from returned data
+								const movedImageIds = data.movedImages || [];
+								// Remove moved images from the files list
+								this.files = this.files.filter(file => !movedImageIds.includes(file.id));
+							})
+							.catch(error => {
+								console.error('Error moving items to folder:', error);
+							});
+					} catch (error) {
+						console.error('Error moving items to folder:', error);
+					}
+				},
+				shareMedia: {
+					isOpen: false,
+					isLoading: false,
+					isError: false,
+					selectedIds: [],
+					selectedFiles: [],
+					open(ids) {
+						// Convert single ID to array
+						if (!Array.isArray(ids)) {
+							ids = [ids];
+						}
+						console.log('Opening sharing modal:', ids);
+						this.selectedIds = ids;
+						this.selectedFiles = Alpine.store('fileStore').files.filter(file => ids.includes(file.id));
+						console.log('Selected files:', this.selectedFiles);
+						this.isOpen = true;
+					},
+					close() {
+						this.selectedIds = [];
+						this.selectedFiles = [];
+						this.isError = false;
+						this.isOpen = false;
+						this.isLoading = false;
+					},
+					getFlag() {
+						return this.selectedFiles.length > 0 && this.selectedFiles[0].flag === 1;
+					},
+				},
+				shareMediaCreatorConfirm(shareFlag) {
+					this.shareMedia.isLoading = true;
+					this.shareItemsCreatorPage(shareFlag)
+						.then(() => {
+							this.isError = false;
+						})
+						.catch(error => {
+							console.error('Error sharing files:', error);
+							this.isError = true;
+						})
+						.finally(() => {
+							this.shareMedia.isLoading = false;
+						});
+				},
+				shareItemsCreatorPage(shareFlag) {
+					console.log('Sharing media on creator page:', this.shareMedia.selectedIds);
+					const itemsToShare = !Array.isArray(this.shareMedia.selectedIds) ? [this.shareMedia.selectedIds] : this.shareMedia.selectedIds;
+					const formData = new FormData();
+					const flag = shareFlag ? 'true' : 'false';
+					formData.append('action', 'share_creator_page');
+					formData.append('shareFlag', flag);
+					formData.append('imagesToShare', JSON.stringify(itemsToShare));
+					// Do the fetch to the API
+					try {
+						const url = new URL('https://<?= $_SERVER['SERVER_NAME'] ?>/account/ai/ai_json.php');
+						const request = new Request(url, {
+							method: 'POST',
+							body: formData,
+						});
+
+						return fetch(request)
+							.then(response => response.json())
+							.then(data => {
+								console.log('Shared media on creator page:', data);
+								const sharedImageIds = data.sharedImages || [];
+								// Set the shared flag on the files
+								this.files.forEach(file => {
+									if (sharedImageIds.includes(file.id)) {
+										file.flag = shareFlag ? 1 : 0;
+										// Increment or reduce the count of shared images
+										Alpine.store('menuStore').fileStats.creatorCount += shareFlag ? 1 : -1;
+									}
+								});
+							})
+							.catch(error => {
+								console.error('Error sharing media on creator page:', error);
+							});
+					} catch (error) {
+						console.error('Error sharing media on creator page:', error);
+					}
+				},
+				deleteConfirmation: {
+					isOpen: false,
+					isLoading: false,
+					isError: false,
+					selectedIds: [],
+					selectedFiles: [],
+					open(ids) {
+						// Convert single ID to array
+						if (!Array.isArray(ids)) {
+							ids = [ids];
+						}
+						console.log('Opening delete confirmation:', ids);
+						this.selectedIds = ids;
+						this.selectedFiles = Alpine.store('fileStore').files.filter(file => ids.includes(file.id));
+						console.log('Selected files:', this.selectedFiles);
+						this.isOpen = true;
+					},
+					close() {
+						this.selectedIds = [];
+						this.selectedFiles = [];
+						this.isError = false;
+						this.isOpen = false;
+						this.isLoading = false;
+					}
+				},
+				confirmDelete() {
+					this.deleteConfirmation.isLoading = true;
+					this.deleteItem(this.deleteConfirmation.selectedIds)
+						.then(() => {
+							this.deleteConfirmation.close();
+							this.isError = false;
+						})
+						.catch(error => {
+							console.error('Error deleting files:', error);
+							this.isError = true;
+						})
+						.finally(() => {
+							this.deleteConfirmation.isLoading = false;
+						});
+				},
+				deleteItem(itemIds) {
+					console.log('Deleting image:', itemIds);
+					// Construct form data
+					const formData = new FormData();
+					formData.append('action', 'delete');
+					// Convert itemIds into array if single entry
+					if (!Array.isArray(itemIds)) {
+						itemIds = [itemIds];
+					}
+					// Add JSON list of image IDs to form data
+					formData.append('imagesToDelete', JSON.stringify(itemIds));
+					// Send the form data to the server
+					try {
+						const url = new URL('https://<?= $_SERVER['SERVER_NAME'] ?>/account/ai/ai_json.php');
+						const request = new Request(url, {
+							method: 'POST',
+							body: formData,
+						});
+
+						return fetch(request)
+							.then(response => response.json())
+							.then(data => {
+								console.log('Deleted image:', data);
+								// Get IDs of deleted images from returned data
+								const deletedImageIds = data.deletedImages || [];
+								// Collect sum of size of all images to be deleted
+								let totalCountToDelete = 0;
+								const totalSizeToDelete = deletedImageIds.reduce((acc, id) => {
+									const file = this.files.find(f => f.id === id);
+									if (file) {
+										acc += file.size;
+										totalCountToDelete++;
+									}
+									return acc;
+								}, 0);
+								// Remove deleted images from the grid
+								this.files = this.files.filter(f => !deletedImageIds.includes(f.id));
+								// Update file stats
+								Alpine.store('menuStore').fileStats.totalImages -= totalCountToDelete;
+								Alpine.store('menuStore').fileStats.totalFiles -= totalCountToDelete;
+								Alpine.store('menuStore').updateTotalUsed(-totalSizeToDelete);
+							})
+							.catch(error => {
+								console.error('Error deleting image:', error);
+							});
+					} catch (error) {
+						console.error('Error deleting image:', error);
+					}
+				},
 				fetchFiles(folder) {
 					// Retrun if folder is empty
 					if (folder === '' || !folder) {
@@ -1041,6 +1389,7 @@ HTML;
 					}
 				},
 				injectFile(file) {
+					console.log('Injecting file:', file);
 					this.files.unshift(file);
 				},
 				modalOpen: false,
@@ -1056,11 +1405,11 @@ HTML;
 					this.modalImageUrl = file.url;
 					this.modalImageSrcset = file.srcset;
 					this.modalImageSizes = file.sizes;
-					this.modalImageAlt = file.name;
+					this.modalImageAlt = file.title || file.name;
 					this.modalImageDimensions = `${file.width}x${file.height}`;
 					this.modalImageFilesize = file.size;
-					this.modalImageTitle = file.title;
-					this.modalImagePrompt = file.ai_prompt;
+					this.modalImageTitle = file.title || '';
+					this.modalImagePrompt = file.ai_prompt || '';
 					this.modalOpen = true;
 				},
 				closeModal() {
@@ -1085,6 +1434,14 @@ HTML;
 				ImageFilesize: '',
 				ImageDimensions: '0x0',
 				file: {},
+				clearImage() {
+					this.ImageShow = false;
+					this.ImageUrl = '';
+					this.ImageTitle = '';
+					this.ImagePrompt = '';
+					this.ImageFilesize = '';
+					this.ImageDimensions = '0x0';
+				},
 				generateImage(title, prompt, selectedModel) {
 					// Access the form inputs passed as arguments
 					console.log('Title:', title);

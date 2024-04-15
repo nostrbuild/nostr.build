@@ -1,5 +1,15 @@
 /** @type {import('tailwindcss').Config} */
+const defaultTheme = require('tailwindcss/defaultTheme')
+
 module.exports = {
+  safelist: [
+    'z-0',
+    'z-10',
+    'z-20',
+    'z-30',
+    'z-40',
+    'z-50',
+  ],
   content: [
     "../**/*.php",
     "../**/*.html",
@@ -9,6 +19,10 @@ module.exports = {
     "!./vendor/",
   ],
   theme: {
+    screens: {
+      'xs': '390px',
+      ...defaultTheme.screens,
+    },
     extend: {
       colors: {
         /* Luminance */

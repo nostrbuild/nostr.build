@@ -684,6 +684,8 @@ class MultimediaUpload
             $returnError[] = [false, 500, 'Failed to insert into database'];
             throw new Exception('Failed to insert into database');
           }
+          // Add $insert_id to the fileData array for later use
+          $fileData['insert_id'] = $insert_id;
 
           $newFileName = $this->generateFileName($insert_id) . '.' . $fileType['extension'];
           $newFilePrefix = $this->determinePrefix($fileType['type']);
@@ -725,6 +727,7 @@ class MultimediaUpload
         }
         // Populate the uploadedFiles array with the file data
         $this->addFileToUploadedFilesArray([
+          'id' => $fileData['insert_id'] ?? 0,
           'input_name' => $this->file['input_name'],
           'name' => $newFileName,
           'url' => $this->generateMediaURL($newFileName, $fileType['type']), // Construct URL
