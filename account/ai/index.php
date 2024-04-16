@@ -108,14 +108,14 @@ $pageMenuContent = <<<HTML
 				<div class="flex items-center">
 					<a href="#" class="text-sm font-semibold leading-6 text-nbpurple-50 hover:bg-nbpurple-800 p-2 rounded-md">
 						<svg class="size-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+							<path stroke-linecap="round" stroke-linejoin="round" d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.325.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 0 1 1.37.49l1.296 2.247a1.125 1.125 0 0 1-.26 1.431l-1.003.827c-.293.241-.438.613-.43.992a7.723 7.723 0 0 1 0 .255c-.008.378.137.75.43.991l1.004.827c.424.35.534.955.26 1.43l-1.298 2.247a1.125 1.125 0 0 1-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.47 6.47 0 0 1-.22.128c-.331.183-.581.495-.644.869l-.213 1.281c-.09.543-.56.94-1.11.94h-2.594c-.55 0-1.019-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 0 1-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 0 1-1.369-.49l-1.297-2.247a1.125 1.125 0 0 1 .26-1.431l1.004-.827c.292-.24.437-.613.43-.991a6.932 6.932 0 0 1 0-.255c.007-.38-.138-.751-.43-.992l-1.004-.827a1.125 1.125 0 0 1-.26-1.43l1.297-2.247a1.125 1.125 0 0 1 1.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.086.22-.128.332-.183.582-.495.644-.869l.214-1.28Z" />
+							<path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
 						</svg>
 						<span class="sr-only">Profile Settings</span>
 					</a>
 					<a href="#" class="text-sm font-semibold leading-6 text-nbpurple-50 hover:bg-nbpurple-800 p-2 rounded-md">
 						<svg class="size-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+							<path stroke-linecap="round" stroke-linejoin="round" d="M8.25 9V5.25A2.25 2.25 0 0 1 10.5 3h6a2.25 2.25 0 0 1 2.25 2.25v13.5A2.25 2.25 0 0 1 16.5 21h-6a2.25 2.25 0 0 1-2.25-2.25V15M12 9l3 3m0 0-3 3m3-3H2.25" />
 						</svg>
 						<span class="sr-only">Logout</span>
 					</a>
@@ -261,9 +261,9 @@ HTML;
 	<title>nostr.build account</title>
 
 	<link rel="icon" href="/assets/primo_nostr.png" />
-	<link href="/styles/twbuild.css?v=99" rel="stylesheet">
-	<script defer src="/scripts/fw/alpinejs-intersect.min.js?v=12"></script>
-	<script defer src="/scripts/fw/alpinejs.min.js?v=12"></script>
+	<link href="/styles/twbuild.css?v=e03e216e035dc35df0124e46b1c5fcc7" rel="stylesheet">
+	<script defer src="/scripts/fw/alpinejs-intersect.min.js?v=e6545f3f0a314d90d9a1442ff104eab9"></script>
+	<script defer src="/scripts/fw/alpinejs.min.js?v=34fbe266eb872c1a396b8bf9022b7105"></script>
 	<style>
 		[x-cloak] {
 			display: none !important;
@@ -405,7 +405,7 @@ HTML;
 															</svg>
 														</button>
 													</div>
-													<ul x-cloak @click.outside="modelMenuOpen = false" x-show="modelMenuOpen" x-transition:enter="" x-transition:enter-start="" x-transition:enter-end="" x-transition:leave="transition ease-in duration-100" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0" class="absolute left-0 z-10 mt-2 sm:w-96 xs:w-72 w-64 origin-top-left divide-y divide-gray-200 overflow-hidden rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none" tabindex="-1" role="listbox" aria-labelledby="listbox-label" aria-activedescendant="listbox-option-0">
+													<ul x-cloak @click.outside="modelMenuOpen = false" x-show="modelMenuOpen" x-transition:enter="" x-transition:enter-start="" x-transition:enter-end="" x-transition:leave="transition ease-in duration-100" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0" class="absolute left-0 z-20 mt-2 sm:w-96 xs:w-72 w-64 origin-top-left divide-y divide-gray-200 overflow-hidden rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none" tabindex="-1" role="listbox" aria-labelledby="listbox-label" aria-activedescendant="listbox-option-0">
 														<template x-for="(option, index) in modelOptions" :key="option.value">
 															<li :class="{
 																						'bg-nbpurple-100': selectedModel === option.value,
@@ -446,8 +446,8 @@ HTML;
 
 						<!-- Generate image -->
 						<div class="bg-black/10 rounded-lg shadow-xl my-8 mx-auto w-11/12 max-w-2xl overflow-hidden">
-							<div class="bg-black/50 p-4 relative">
-								<p x-cloak x-show="!GAI.ImageShow && !GAI.ImageLoading" class="flex items-center justify-center text-nbpurple-200 text-center text-lg h-72" x-transition:enter="transition-opacity duration-500" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100">
+							<div class="bg-black/50 p-4 relative transition-transform">
+								<p x-cloak x-show="!GAI.ImageShow && !GAI.ImageLoading" class="flex items-center justify-center text-nbpurple-200 text-center text-lg h-24 lg:h-72" x-transition:enter="transition-opacity duration-500" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100">
 									No image to display, generate a new one.
 								</p>
 								<p x-cloak x-show="!GAI.ImageShow && GAI.ImageLoading" class="animate-pulse flex flex-col items-center justify-center text-nbpurple-200 text-center text-lg h-72" x-transition:enter="transition-opacity duration-500" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100">
@@ -469,7 +469,7 @@ HTML;
 									</button>
 								</div>
 								<!-- /Clear button -->
-								<img x-cloak x-show="GAI.ImageShow" @load="GAI.ImageShow = true; GAI.ImageLoading = false" :src="GAI.file.thumb" :srcset="GAI.file.srcset" :sizes="GAI.file.sizes" :alt="GAI.file.title || GAI.file.name" :width="GAI.file.width" :height="GAI.file.height" loading="eager" class="w-full" x-transition:enter="transition-opacity ease-in duration-750" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" />
+								<img x-cloak x-show="GAI.ImageShow" @load="GAI.ImageShow = true; GAI.ImageLoading = false" :src="GAI.file.thumb" :srcset="GAI.file.srcset" :sizes="GAI.file.sizes" :alt="GAI.file.title || GAI.file.name" :width="GAI.file.width" :height="GAI.file.height" loading="eager" class="w-full transition-transform" x-transition:enter="transition-opacity ease-in duration-750" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" />
 							</div>
 							<div x-cloak x-show="GAI.ImageShow" class="bg-black/20 px-6 py-4 sm:flex sm:justify-between">
 								<div class="mb-4 sm:mb-0">
@@ -502,7 +502,44 @@ HTML;
 				</main>
 
 				<!-- Activity feed -->
-				<aside x-data="{ showScrollButton: false, multiSelect: false }" x-ref="sidebar" @scroll.window.throttle="showScrollButton = window.pageYOffset > 500" @scroll.throttle="showScrollButton = $refs.sidebar.scrollTop > 500" class="bg-nbpurple-900/10 lg:fixed lg:bottom-0 lg:right-0 lg:top-16 lg:w-[40rem] lg:overflow-y-auto lg:border-l lg:border-nbpurple-950/5">
+				<aside x-data="{
+					showScrollButton: false,
+					multiSelect: false,
+					selectedItems: [],
+					toggleSelected(id) {
+						const index = this.selectedItems.indexOf(id);
+						if (index === -1) {
+							this.selectedItems.push(id);
+						} else {
+							this.selectedItems.splice(index, 1);
+						}
+					},
+					isSelected(id) {
+						return this.selectedItems.includes(id);
+					},
+					toggleMultiSelect() {
+						this.multiSelect = !this.multiSelect;
+						if (!this.multiSelect) {
+							this.selectedItems = [];
+						}
+					},
+				}" x-ref="sidebar" @scroll.window.throttle="showScrollButton = window.pageYOffset > 500" @scroll.throttle="showScrollButton = $refs.sidebar.scrollTop > 500" class="bg-nbpurple-900/10 lg:fixed lg:bottom-0 lg:right-0 lg:top-16 lg:w-[40rem] lg:overflow-y-auto lg:border-l lg:border-nbpurple-950/5">
+					<!-- Floating bar -->
+					<div class="z-10 sticky top-16 lg:top-0 bg-nbpurple-900/75 py-2 px-2 align-middle flex items-center justify-between">
+						<h3 class="text-sm sm:text-base font-semibold leading-6 text-nbpurple-100" x-text="$store.menuStore.activeFolder"></h3>
+						<div class="flex ml-4 mt-0 transition-all">
+							<button @click="toggleMultiSelect()" type="button" class="ml-3 inline-flex items-center rounded-md bg-nbpurple-600 px-3 py-2 text-xs font-semibold text-nbpurple-50 shadow-sm hover:bg-nbpurple-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-nbpurple-600">
+								<svg x-show="!multiSelect" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-4 mr-1">
+									<path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+								</svg>
+								<svg x-cloak x-show="multiSelect" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-4 mr-1">
+									<path stroke-linecap="round" stroke-linejoin="round" d="m9.75 9.75 4.5 4.5m0-4.5-4.5 4.5M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+								</svg>
+								<span x-text="multiSelect ? 'Cancel' : 'Select'"></span>
+							</button>
+						</div>
+					</div>
+					<!-- /Floating bar -->
 					<!-- Activity feed content -->
 					<div class="p-4" x-data="Alpine.store('fileStore')" x-init="if (files.length === 0) fetchFiles($store.menuStore.activeFolder); $watch('$store.menuStore.activeFolder', folder => fetchFiles(folder))">
 						<ul role="list" class="grid grid-cols-2 gap-x-4 gap-y-8 md:grid-cols-2 md:gap-x-4 xl:gap-x-6">
@@ -540,7 +577,7 @@ HTML;
 										</svg>
 
 										<!-- Media actions -->
-										<div x-cloak x-show="showMediaActions" @click.outside="showMediaActions = false" class="absolute inset-0 object-contain bg-black/80 py-1 px-3 sm:py-2 z-10 flex flex-col">
+										<div x-cloak x-show="showMediaActions" @click.outside="showMediaActions = false || deleteConfirmation.isOpen || shareMedia.isOpen || moveToFolder.isOpen" class="absolute inset-0 object-contain bg-black/80 py-1 px-3 sm:py-2 z-10 flex flex-col">
 											<div class="m-auto w-5/6 grid gap-1 grid-cols-3 place-items-center">
 												<!-- Buttons -->
 												<!-- Delete button -->
@@ -555,7 +592,7 @@ HTML;
 												<!-- Share button -->
 												<button x-data="{shareClick: false}" @click="shareMedia.open(file.id)" class="p-1 bg-nbpurple-600/10 text-white rounded-md hover:bg-nbpurple-700/10 focus:outline-none focus:ring-2 focus:ring-nbpurple-500/10" aria-label="Share media file">
 													<svg x-show="!shareClick" class="max-h-11 w-full inline-block" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true" x-transition:enter="transition-opacity duration-500" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100">
-														<path stroke-linecap="round" stroke-linejoin="round" d="M7.217 10.907a2.25 2.25 0 1 0 0 2.186m0-2.186c.18.324.283.696.283 1.093s-.103.77-.283 1.093m0-2.186 9.566-5.314m-9.566 7.5 9.566 5.314m0 0a2.25 2.25 0 1 0 3.935 2.186 2.25 2.25 0 0 0-3.935-2.186Zm0-12.814a2.25 2.25 0 1 0 3.933-2.185 2.25 2.25 0 0 0-3.933 2.185Z" />
+														<path stroke-linecap="round" stroke-linejoin="round" d="M7.5 7.5h-.75A2.25 2.25 0 0 0 4.5 9.75v7.5a2.25 2.25 0 0 0 2.25 2.25h7.5a2.25 2.25 0 0 0 2.25-2.25v-7.5a2.25 2.25 0 0 0-2.25-2.25h-.75m0-3-3-3m0 0-3 3m3-3v11.25m6-2.25h.75a2.25 2.25 0 0 1 2.25 2.25v7.5a2.25 2.25 0 0 1-2.25 2.25h-7.5a2.25 2.25 0 0 1-2.25-2.25v-.75" />
 													</svg>
 													<svg x-cloak x-show="shareClick" class="max-h-11 animate-[pulse_3s_ease-in-out_infinite] w-full inline-block" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true" x-transition:enter="transition-opacity duration-500" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100">
 														<path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" />
@@ -564,7 +601,9 @@ HTML;
 												<!-- Move button -->
 												<button x-data="{moveClick: false}" @click="moveToFolder.open(file.id)" class="p-1 bg-nbpurple-600/10 text-white rounded-md hover:bg-nbpurple-700/10 focus:outline-none focus:ring-2 focus:ring-nbpurple-500/10" aria-label="Move media file to folder">
 													<svg x-show="!moveClick" class="max-h-11 w-full inline-block" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true" x-transition:enter="transition-opacity duration-500" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100">
-														<path stroke-linecap="round" stroke-linejoin="round" d="M12 10.5v6m3-3H9m4.06-7.19-2.12-2.12a1.5 1.5 0 0 0-1.061-.44H4.5A2.25 2.25 0 0 0 2.25 6v12a2.25 2.25 0 0 0 2.25 2.25h15A2.25 2.25 0 0 0 21.75 18V9a2.25 2.25 0 0 0-2.25-2.25h-5.379a1.5 1.5 0 0 1-1.06-.44Z" />
+														<path stroke-linecap="round" stroke-linejoin="round" d="M2 9V5a2 2 0 0 1 2-2h3.9a2 2 0 0 1 1.69.9l.81 1.2a2 2 0 0 0 1.67.9H20a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-1" />
+														<path stroke-linecap="round" stroke-linejoin="round" d="M2 13h10" />
+														<path stroke-linecap="round" stroke-linejoin="round" d="m9 16 3-3-3-3" />
 													</svg>
 													<svg x-cloak x-show="moveClick" class="max-h-11 animate-[pulse_3s_ease-in-out_infinite] w-full inline-block" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true" x-transition:enter="transition-opacity duration-500" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100">
 														<path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" />
@@ -598,8 +637,8 @@ HTML;
 											<p class="pointer-events-none mt-2 block truncate text-sm font-medium text-nbpurple-300" x-text="file.name"></p>
 											<p class="pointer-events-none block text-sm font-medium text-nbpurple-500" x-text="formatBytes(file.size)"></p>
 										</div>
-										<div x-data="{copyClick: false}">
-											<button @click="copyUrlToClipboard(file.url); copyClick = true; setTimeout(() => copyClick = false, 2000); showToast = true" class="hidden xs:inline-block mt-2 px-2 py-1 bg-nbpurple-600 text-white rounded-md hover:bg-nbpurple-700 focus:outline-none focus:ring-2 focus:ring-nbpurple-500" aria-label="Copy image URL to clipboard">
+										<div x-show="!multiSelect" x-data="{copyClick: false}">
+											<button @click="copyUrlToClipboard(file.url); copyClick = true; setTimeout(() => copyClick = false, 2000); showToast = true" class="hidden xs:inline-block mt-2 px-2 py-1 bg-nbpurple-600 text-nbpurple-50 rounded-md hover:bg-nbpurple-700 focus:outline-none focus:ring-2 focus:ring-nbpurple-500" aria-label="Copy image URL to clipboard">
 												<svg x-show="!copyClick" class="size-6 inline-block" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true" x-transition:enter="transition-opacity duration-500" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100">
 													<path stroke-linecap="round" stroke-linejoin="round" d="M11.35 3.836c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 0 0 .75-.75 2.25 2.25 0 0 0-.1-.664m-5.8 0A2.251 2.251 0 0 1 13.5 2.25H15c1.012 0 1.867.668 2.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m8.9-4.414c.376.023.75.05 1.124.08 1.131.094 1.976 1.057 1.976 2.192V16.5A2.25 2.25 0 0 1 18 18.75h-2.25m-7.5-10.5H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V18.75m-7.5-10.5h6.375c.621 0 1.125.504 1.125 1.125v9.375m-8.25-3 1.5 1.5 3-3.75" />
 												</svg>
@@ -607,9 +646,19 @@ HTML;
 													<path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" />
 												</svg>
 											</button>
-											<button @click="showMediaActions = !showMediaActions" class="mt-2 px-2 py-1 bg-nbpurple-600 text-white rounded-md hover:bg-nbpurple-700 focus:outline-none focus:ring-2 focus:ring-nbpurple-500" aria-label="Copy image URL to clipboard">
+											<button @click="showMediaActions = !showMediaActions" class="mt-2 px-2 py-1 bg-nbpurple-600 text-nbpurple-50 rounded-md hover:bg-nbpurple-700 focus:outline-none focus:ring-2 focus:ring-nbpurple-500" aria-label="Copy image URL to clipboard">
 												<svg class="size-6 inline-block text-nbpurple-50" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
 													<path stroke-linecap="round" stroke-linejoin="round" d="M8.625 12a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0H8.25m4.125 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0H12m4.125 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0h-.375M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+												</svg>
+											</button>
+										</div>
+										<div x-cloak x-show="multiSelect" class="hidden xs:inline-block">
+											<button @click="toggleSelected(file.id)" type="button" :class="{ 'bg-nbpurple-600 p-1.5 text-nbpurple-50 hover:bg-nbpurple-500': isSelected(file.id), 'text-nbpurple-600 p-1.5 bg-nbpurple-50 hover:bg-nbpurple-200': !isSelected(file.id) }" class="rounded-full p-1.5 shadow-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-nbpurple-600">
+												<svg x-show="!isSelected(file.id)" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+													<path d="M10.75 4.75a.75.75 0 00-1.5 0v4.5h-4.5a.75.75 0 000 1.5h4.5v4.5a.75.75 0 001.5 0v-4.5h4.5a.75.75 0 000-1.5h-4.5v-4.5z" />
+												</svg>
+												<svg x-show="isSelected(file.id)" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+													<path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" />
 												</svg>
 											</button>
 										</div>
@@ -620,7 +669,7 @@ HTML;
 					</div>
 
 					<!-- Scroll to top button -->
-					<div x-cloak x-show="showScrollButton" class="fixed bottom-6 right-6 z-50">
+					<div x-cloak x-show="showScrollButton" :class="{ 'bottom-6': !multiSelect, 'bottom-16': multiSelect }" class="sticky ml-6 z-10 transition-all">
 						<button @click="showScrollButton = false; window.scrollTo({ top: 0, behavior: 'smooth' }); $refs.sidebar.scrollTo({ top: 0, behavior: 'smooth' })" type="button" class="bg-nbpurple-500 text-nbpurple-50 rounded-full p-2 shadow-md hover:bg-nbpurple-600 focus:outline-none focus:ring-2 focus:ring-nbpurple-500">
 							<svg class="size-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
 								<path stroke-linecap="round" stroke-linejoin="round" d="m4.5 18.75 7.5-7.5 7.5 7.5" />
@@ -628,7 +677,34 @@ HTML;
 							</svg>
 						</button>
 					</div>
+					<!-- /Scroll to top button -->
 
+					<!-- Bottom bar -->
+					<div x-cloak x-show="multiSelect" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 transform translate-y-full" x-transition:enter-end="opacity-100 transform translate-y-0" x-transition:leave="transition ease-in duration-300" x-transition:leave-start="opacity-100 transform translate-y-0" x-transition:leave-end="opacity-0 transform translate-y-full" class="z-10 sticky bottom-0 bg-nbpurple-900/75 py-2 px-2 align-middle flex items-center justify-center sm:justify-end">
+						<div class="flex items-center">
+							<button @click="$store.fileStore.deleteConfirmation.open(selectedItems, () => { toggleMultiSelect() })" :disabled="!selectedItems.length" type="button" class="inline-flex items-center rounded-md bg-nbpurple-600 disabled:bg-nbpurple-400 px-3 py-2 text-xs font-semibold text-nbpurple-50 shadow-sm hover:bg-nbpurple-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-nbpurple-600">
+								<svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4 mr-1">
+									<path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
+								</svg>
+								<span class="hidden xs:inline">Delete </span>(<span x-text="selectedItems.length"></span>)
+							</button>
+							<button @click="$store.fileStore.shareMedia.open(selectedItems, () => { toggleMultiSelect() })" :disabled="!selectedItems.length" type="button" class="ml-3 inline-flex items-center rounded-md bg-nbpurple-600 disabled:bg-nbpurple-400 px-3 py-2 text-xs font-semibold text-nbpurple-50 shadow-sm hover:bg-nbpurple-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-nbpurple-600">
+								<svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4 mr-1">
+									<path stroke-linecap="round" stroke-linejoin="round" d="M7.5 7.5h-.75A2.25 2.25 0 0 0 4.5 9.75v7.5a2.25 2.25 0 0 0 2.25 2.25h7.5a2.25 2.25 0 0 0 2.25-2.25v-7.5a2.25 2.25 0 0 0-2.25-2.25h-.75m0-3-3-3m0 0-3 3m3-3v11.25m6-2.25h.75a2.25 2.25 0 0 1 2.25 2.25v7.5a2.25 2.25 0 0 1-2.25 2.25h-7.5a2.25 2.25 0 0 1-2.25-2.25v-.75" />
+								</svg>
+								<span class="hidden xs:inline">Share </span>(<span x-text="selectedItems.length"></span>)
+							</button>
+							<button @click="$store.fileStore.moveToFolder.open(selectedItems, () => { toggleMultiSelect() })" :disabled="!selectedItems.length" type="button" class="ml-3 inline-flex items-center rounded-md bg-nbpurple-600 disabled:bg-nbpurple-400 px-3 py-2 text-xs font-semibold text-nbpurple-50 shadow-sm hover:bg-nbpurple-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-nbpurple-600">
+								<svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4 mr-1">
+									<path stroke-linecap="round" stroke-linejoin="round" d="M2 9V5a2 2 0 0 1 2-2h3.9a2 2 0 0 1 1.69.9l.81 1.2a2 2 0 0 0 1.67.9H20a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-1" />
+									<path stroke-linecap="round" stroke-linejoin="round" d="M2 13h10" />
+									<path stroke-linecap="round" stroke-linejoin="round" d="m9 16 3-3-3-3" />
+								</svg>
+								<span class="hidden xs:inline">Move </span>(<span x-text="selectedItems.length"></span>)
+							</button>
+						</div>
+					</div>
+					<!-- /Bottom bar -->
 				</aside>
 			</div>
 		</div>
@@ -639,7 +715,7 @@ HTML;
 
 			<div x-show="FS.deleteConfirmation.isOpen" x-transition:enter="ease-out duration-300" x-transition:enter-start="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95" x-transition:enter-end="opacity-100 translate-y-0 sm:scale-100" x-transition:leave="ease-in duration-200" x-transition:leave-start="opacity-100 translate-y-0 sm:scale-100" x-transition:leave-end="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95" class="fixed inset-0 z-50 overflow-y-auto">
 				<div class="flex min-h-screen items-end justify-center p-4 text-center sm:items-center sm:p-0">
-					<div @click.outside="FS.deleteConfirmation.close()" class="relative transform overflow-hidden rounded-lg bg-nbpurple-50 text-left shadow-xl transition-all mb-16 sm:my-8 sm:w-full sm:max-w-lg">
+					<div @click.outside="!FS.deleteConfirmation.isLoading && FS.deleteConfirmation.close(true)" class="relative transform overflow-hidden rounded-lg bg-nbpurple-50 text-left shadow-xl transition-all mb-16 sm:my-8 sm:w-full sm:max-w-lg">
 						<div class="bg-nbpurple-50 px-4 pb-4 pt-5 sm:p-6 sm:pb-4">
 							<div class="sm:flex sm:items-start">
 								<div class="mx-auto flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-red-100 sm:mx-0 sm:h-10 sm:w-10">
@@ -656,11 +732,18 @@ HTML;
 										<!-- List of selected media -->
 										<div class="flex items-center justify-center">
 											<div class="isolate flex -space-x-2 overflow-hidden pl-3 py-2">
-												<template x-for="(file, index) in (FS.deleteConfirmation.selectedFiles.length > 5 ? FS.deleteConfirmation.selectedFiles.slice(0, 5) : FS.deleteConfirmation.selectedFiles)" :key="file.id">
-													<img :class="'relative z-' + (50 - index * 10)" class="inline-block w-14 h-12 rounded-full ring-2 ring-white" :src="file.thumb" :alt="file.name">
+												<template x-if="FS.deleteConfirmation.selectedFiles.length === 1">
+													<template x-for="(file, index) in (FS.deleteConfirmation.selectedFiles.length > 5 ? FS.deleteConfirmation.selectedFiles.slice(0, 5) : FS.deleteConfirmation.selectedFiles)" :key="file.id">
+														<img :class="'relative z-' + (50 - index * 10)" class="inline-block w-14 h-12 object-cover rounded-full ring-2 ring-white" :src="file.thumb" :alt="file.name">
+													</template>
+												</template>
+												<template x-if="FS.deleteConfirmation.selectedFiles.length > 1">
+													<template x-for="(file, index) in (FS.deleteConfirmation.selectedFiles.length > 5 ? FS.deleteConfirmation.selectedFiles.slice(0, 5) : FS.deleteConfirmation.selectedFiles)" :key="file.id">
+														<img :class="'relative z-' + (50 - index * 10)" class="inline-block w-12 h-12 object-cover rounded-full ring-2 ring-white" :src="file.thumb" :alt="file.name">
+													</template>
 												</template>
 												<template x-if="FS.deleteConfirmation.selectedFiles.length > 5">
-													<div class="relative z-0 inline-flex items-center justify-center w-14 h-12 rounded-full bg-nbpurple-600 text-white ring-2 ring-white">
+													<div class="relative z-0 inline-flex items-center justify-center w-12 h-12 rounded-full bg-nbpurple-600 text-white ring-2 ring-white">
 														<span class="text-xs xs:text-sm font-medium">+<span x-text="FS.deleteConfirmation.selectedFiles.length - 5"></span></span>
 													</div>
 												</template>
@@ -681,14 +764,14 @@ HTML;
 							</div>
 						</div>
 						<div class="bg-nbpurple-50 px-4 py-3 gap-3 flex flex-row-reverse sm:px-6">
-							<button @click="FS.confirmDelete()" type="button" class="mt-3 inline-flex w-full justify-center rounded-md bg-red-600 px-4 py-2 text-base font-medium text-white shadow-sm hover:bg-red-500 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">
+							<button :disabled="FS.deleteConfirmation.isLoading" @click="FS.confirmDelete()" type="button" class="mt-3 inline-flex w-full justify-center rounded-md bg-red-600 px-4 py-2 text-base font-medium text-white shadow-sm hover:bg-red-500 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">
 								<svg x-show="FS.deleteConfirmation.isLoading" class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
 									<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
 									<path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
 								</svg>
 								Delete
 							</button>
-							<button @click="FS.deleteConfirmation.close()" type="button" class="mt-3 inline-flex w-full justify-center rounded-md bg-white px-4 py-2 text-base font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-nbpurple-500 focus:ring-offset-2 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">Cancel</button>
+							<button :disabled="FS.deleteConfirmation.isLoading" @click="FS.deleteConfirmation.close(true)" type="button" class="mt-3 inline-flex w-full justify-center rounded-md bg-white px-4 py-2 text-base font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-nbpurple-500 focus:ring-offset-2 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">Cancel</button>
 						</div>
 					</div>
 				</div>
@@ -701,12 +784,12 @@ HTML;
 
 			<div x-show="FS.shareMedia.isOpen" x-transition:enter="ease-out duration-300" x-transition:enter-start="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95" x-transition:enter-end="opacity-100 translate-y-0 sm:scale-100" x-transition:leave="ease-in duration-200" x-transition:leave-start="opacity-100 translate-y-0 sm:scale-100" x-transition:leave-end="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95" class="fixed inset-0 z-50 overflow-y-auto">
 				<div class="flex min-h-screen items-end justify-center p-4 text-center sm:items-center sm:p-0">
-					<div @click.outside="FS.shareMedia.close()" class="relative transform overflow-hidden rounded-lg bg-nbpurple-50 text-left shadow-xl transition-all mb-16 sm:my-8 w-full max-w-lg">
+					<div @click.outside="!FS.shareMedia.isLoading && FS.shareMedia.close(true)" class="relative transform overflow-hidden rounded-lg bg-nbpurple-50 text-left shadow-xl transition-all mb-16 sm:my-8 w-full max-w-lg">
 						<div class="bg-nbpurple-50 px-4 pb-4 pt-5 sm:p-6 sm:pb-4">
 							<div class="sm:flex sm:items-start">
 								<div class="mx-auto flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-nbpurple-100 sm:mx-0 sm:h-10 sm:w-10">
 									<svg class="size-6 text-nbpurple-600" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-										<path stroke-linecap="round" stroke-linejoin="round" d="M7.217 10.907a2.25 2.25 0 1 0 0 2.186m0-2.186c.18.324.283.696.283 1.093s-.103.77-.283 1.093m0-2.186 9.566-5.314m-9.566 7.5 9.566 5.314m0 0a2.25 2.25 0 1 0 3.935 2.186 2.25 2.25 0 0 0-3.935-2.186Zm0-12.814a2.25 2.25 0 1 0 3.933-2.185 2.25 2.25 0 0 0-3.933 2.185Z" />
+										<path stroke-linecap="round" stroke-linejoin="round" d="M7.5 7.5h-.75A2.25 2.25 0 0 0 4.5 9.75v7.5a2.25 2.25 0 0 0 2.25 2.25h7.5a2.25 2.25 0 0 0 2.25-2.25v-7.5a2.25 2.25 0 0 0-2.25-2.25h-.75m0-3-3-3m0 0-3 3m3-3v11.25m6-2.25h.75a2.25 2.25 0 0 1 2.25 2.25v7.5a2.25 2.25 0 0 1-2.25 2.25h-7.5a2.25 2.25 0 0 1-2.25-2.25v-.75" />
 									</svg>
 								</div>
 								<div class="mt-3 text-center sm:ml-4 sm:mt-0 sm:text-left">
@@ -715,11 +798,18 @@ HTML;
 										<!-- List of selected media -->
 										<div class="flex items-center justify-center">
 											<div class="isolate flex -space-x-2 overflow-hidden pl-3 py-2">
-												<template x-for="(file, index) in (FS.shareMedia.selectedFiles.length > 5 ? FS.shareMedia.selectedFiles.slice(0, 5) : FS.shareMedia.selectedFiles)" :key="file.id">
-													<img :class="'relative z-' + (50 - index * 10)" class="inline-block w-14 h-12 rounded-full ring-2 ring-white" :src="file.thumb" :alt="file.name">
+												<template x-if="FS.shareMedia.selectedFiles.length === 1">
+													<template x-for="(file, index) in (FS.shareMedia.selectedFiles.length > 5 ? FS.shareMedia.selectedFiles.slice(0, 5) : FS.shareMedia.selectedFiles)" :key="file.id">
+														<img :class="'relative z-' + (50 - index * 10)" class="inline-block w-14 h-12 object-cover rounded-full ring-2 ring-white" :src="file.thumb" :alt="file.name">
+													</template>
+												</template>
+												<template x-if="FS.shareMedia.selectedFiles.length > 1">
+													<template x-for="(file, index) in (FS.shareMedia.selectedFiles.length > 5 ? FS.shareMedia.selectedFiles.slice(0, 5) : FS.shareMedia.selectedFiles)" :key="file.id">
+														<img :class="'relative z-' + (50 - index * 10)" class="inline-block w-12 h-12 object-cover rounded-full ring-2 ring-white" :src="file.thumb" :alt="file.name">
+													</template>
 												</template>
 												<template x-if="FS.shareMedia.selectedFiles.length > 5">
-													<div class="relative z-0 inline-flex items-center justify-center w-14 h-12 rounded-full bg-nbpurple-600 text-white ring-2 ring-white">
+													<div class="relative z-0 inline-flex items-center justify-center w-12 h-12 rounded-full bg-nbpurple-600 text-white ring-2 ring-white">
 														<span class="text-xs xs:text-sm font-medium">+<span x-text="FS.shareMedia.selectedFiles.length - 5"></span></span>
 													</div>
 												</template>
@@ -728,19 +818,21 @@ HTML;
 										<!-- /List of selected media -->
 										<!-- Sharing options -->
 										<div class="flex justify-center">
-											<div x-cloak x-show="FS.shareMedia.selectedFiles.length === 1" x-data="{
-																																																enabled: false,
-																																																supported: <?= $perm->validatePermissionsLevelAny(1, 10, 99) ? 'true' : 'false' ?>,
-																																																init() {
-																																																	this.enabled = this.getFlag();
-																																																	this.$watch('FS.shareMedia.selectedFiles', () => {
-																																																		this.enabled = this.getFlag();
-																																																	});
-																																																},
-																																																getFlag() {
-																																																	return FS.shareMedia.selectedFiles.length === 1 ? FS.shareMedia.selectedFiles[0].flag === 1 : false;
-																																																}
-																																															}" class="flex mt-3">
+											<div x-data="{
+																			enabled: false,
+																			supported: <?= $perm->validatePermissionsLevelAny(1, 10, 99) ? 'true' : 'false' ?>,
+																			init() {
+																				this.enabled = this.getFlag();
+																				this.$watch('FS.shareMedia.selectedFiles', () => {
+																					this.enabled = this.getFlag();
+																				});
+																			},
+																			getFlag() {
+																				// return FS.shareMedia.selectedFiles.length === 1 ? FS.shareMedia.selectedFiles[0].flag === 1 : false;
+																				// If even one file is flagged, enable the switch
+																				return FS.shareMedia.selectedFiles.some(file => file.flag === 1);
+																			}
+																		}" class="flex mt-3">
 												<button :disabled="!supported" :class="{
 																																	'cursor-not-allowed': !supported,
 																																	'cursor-pointer': supported,
@@ -774,6 +866,9 @@ HTML;
 								</svg>
 								Done
 							</button>
+							<button @click="FS.shareMedia.close(true)" type="button" class="mt-3 inline-flex justify-center rounded-md bg-nbpurple-200 px-4 py-2 text-base font-medium text-nbpurple-700 shadow-sm hover:bg-nbpurple-50 focus:outline-none focus:ring-2 focus:ring-nbpurple-500 focus:ring-offset-2 sm:order-0 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">
+								Cancel
+							</button>
 						</div>
 					</div>
 				</div>
@@ -787,16 +882,23 @@ HTML;
 			<!-- Modal content -->
 			<div x-show="FS.moveToFolder.isOpen" x-transition:enter="ease-out duration-300" x-transition:enter-start="opacity-0 translate-y-0 sm:-translate-y-4" x-transition:enter-end="opacity-100 translate-y-0 sm:translate-y-0 sm:scale-100" x-transition:leave="ease-in duration-200" x-transition:leave-start="opacity-100 translate-y-0 sm:translate-y-0 sm:scale-100" x-transition:leave-end="opacity-0 translate-y-0 sm:-translate-y-4 sm:scale-95" class="fixed inset-0 z-50 overflow-y-auto">
 				<div class="flex min-h-screen items-end justify-center p-4 text-center sm:items-center sm:p-0">
-					<div @click.outside="FS.moveToFolder.close()" class="relative transform overflow-hidden rounded-lg bg-nbpurple-50 text-left shadow-xl transition-all min-h-[50vh] max-h-[80vh] my-8 mb-24 w-full sm:max-w-lg flex flex-col">
+					<div @click.outside="!FS.moveToFolder.isLoading && FS.moveToFolder.close(true)" class="relative transform overflow-hidden rounded-lg bg-nbpurple-50 text-left shadow-xl transition-all min-h-[50vh] max-h-[80vh] my-8 mb-24 w-full sm:max-w-lg flex flex-col">
 						<div class="bg-nbpurple-50 px-4 pt-5 pb-4 sm:p-6 sm:pb-4 overflow-y-auto flex-grow">
 							<!-- List of selected media -->
 							<div class="flex items-center justify-center">
 								<div class="isolate flex -space-x-2 overflow-hidden pl-3 py-2">
-									<template x-for="(file, index) in (FS.moveToFolder.selectedFiles.length > 5 ? FS.moveToFolder.selectedFiles.slice(0, 5) : FS.moveToFolder.selectedFiles)" :key="file.id">
-										<img :class="'relative z-' + (50 - index * 10)" class="inline-block w-14 h-12 rounded-full ring-2 ring-white" :src="file.thumb" :alt="file.name">
+									<template x-if="FS.moveToFolder.selectedFiles.length === 1">
+										<template x-for="(file, index) in (FS.moveToFolder.selectedFiles.length > 5 ? FS.moveToFolder.selectedFiles.slice(0, 5) : FS.moveToFolder.selectedFiles)" :key="file.id">
+											<img :class="'relative z-' + (50 - index * 10)" class="inline-block w-14 h-12 object-cover rounded-full ring-2 ring-white" :src="file.thumb" :alt="file.name">
+										</template>
+									</template>
+									<template x-if="FS.moveToFolder.selectedFiles.length > 1">
+										<template x-for="(file, index) in (FS.moveToFolder.selectedFiles.length > 5 ? FS.moveToFolder.selectedFiles.slice(0, 5) : FS.moveToFolder.selectedFiles)" :key="file.id">
+											<img :class="'relative z-' + (50 - index * 10)" class="inline-block w-12 h-12 object-cover rounded-full ring-2 ring-white" :src="file.thumb" :alt="file.name">
+										</template>
 									</template>
 									<template x-if="FS.moveToFolder.selectedFiles.length > 5">
-										<div class="relative z-0 inline-flex items-center justify-center w-14 h-12 rounded-full bg-nbpurple-600 text-white ring-2 ring-white">
+										<div class="relative z-0 inline-flex items-center justify-center w-12 h-12 rounded-full bg-nbpurple-600 text-white ring-2 ring-white">
 											<span class="text-xs xs:text-sm font-medium">+<span x-text="FS.moveToFolder.selectedFiles.length - 5"></span></span>
 										</div>
 									</template>
@@ -843,7 +945,7 @@ HTML;
                     },
                     getSelectedCount() { return FS.moveToFolder.selectedFiles.length; },
                     isValidFolderSelected() { return FS.moveToFolder.destinationFolderId !== null; }
-                  }" x-show="!FS.moveToFolder.isLoading" @click="FS.moveToFolderConfirm()" type="button" :disabled="!folderSelected" :class="{ 'opacity-50 cursor-not-allowed': !folderSelected }" class="inline-flex justify-center rounded-md bg-nbpurple-600 px-4 py-2 text-base font-medium text-nbpurple-50 shadow-sm hover:bg-nbpurple-700 focus:outline-none focus:ring-2 focus:ring-nbpurple-500 focus:ring-offset-2 sm:order-1 sm:ml-3 sm:w-auto sm:text-sm">
+                  }" x-show="!FS.moveToFolder.isLoading" @click="FS.moveToFolderConfirm()" type="button" :disabled="!folderSelected || FS.moveToFolder.isLoading" :class="{ 'opacity-50 cursor-not-allowed': !folderSelected }" class="inline-flex justify-center rounded-md bg-nbpurple-600 px-4 py-2 text-base font-medium text-nbpurple-50 shadow-sm hover:bg-nbpurple-700 focus:outline-none focus:ring-2 focus:ring-nbpurple-500 focus:ring-offset-2 sm:order-1 sm:ml-3 sm:w-auto sm:text-sm">
 								Move&nbsp;<span x-text="getSelectedCount()"></span>&nbsp;file(s) to folder
 							</button>
 							<button x-show="FS.moveToFolder.isLoading" type="button" class="inline-flex justify-center rounded-md bg-nbpurple-600 px-4 py-2 text-base font-medium text-nbpurple-50 shadow-sm hover:bg-nbpurple-700 focus:outline-none focus:ring-2 focus:ring-nbpurple-500 focus:ring-offset-2 sm:order-1 sm:ml-3 sm:w-auto sm:text-sm" disabled>
@@ -853,7 +955,7 @@ HTML;
 								</svg>
 								Moving...
 							</button>
-							<button @click="FS.moveToFolder.close()" type="button" class="mt-3 inline-flex justify-center rounded-md bg-nbpurple-200 px-4 py-2 text-base font-medium text-nbpurple-700 shadow-sm hover:bg-nbpurple-50 focus:outline-none focus:ring-2 focus:ring-nbpurple-500 focus:ring-offset-2 sm:order-0 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">
+							<button @click="FS.moveToFolder.close(true)" type="button" class="mt-3 inline-flex justify-center rounded-md bg-nbpurple-200 px-4 py-2 text-base font-medium text-nbpurple-700 shadow-sm hover:bg-nbpurple-50 focus:outline-none focus:ring-2 focus:ring-nbpurple-500 focus:ring-offset-2 sm:order-0 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">
 								Cancel
 							</button>
 						</div>
@@ -901,6 +1003,13 @@ HTML;
 			</div>
 		</div>
 
+		<!-- Folder creation modal -->
+		<!-- Folder deletion confirmation modal -->
+		<!-- Image upload modal -->
+		<!-- URL import modal -->
+		<!-- Logout confirmation modal -->
+		<!-- Profile edit modal -->
+
 		<!-- Toast notification -->
 		<div x-cloak x-show="showToast" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 transform translate-x-8" x-transition:enter-end="opacity-100 transform translate-x-0" x-transition:leave="transition ease-in duration-300" x-transition:leave-start="opacity-100 transform translate-x-0" x-transition:leave-end="opacity-0 transform translate-x-8" class="z-50 fixed top-6 right-6 bg-orange-500 text-white px-4 py-2 rounded-md flex items-center">
 			<span class="mr-2 text-xs">Link Copied</span>
@@ -944,7 +1053,7 @@ HTML;
 
 				menuItems: [{
 						name: 'Generative AI',
-						icon: '<path stroke-linecap="round" stroke-linejoin="round" d="M9.53 16.122a3 3 0 0 0-5.78 1.128 2.25 2.25 0 0 1-2.4 2.245 4.5 4.5 0 0 0 8.4-2.245c0-.399-.078-.78-.22-1.128Zm0 0a15.998 15.998 0 0 0 3.388-1.62m-5.043-.025a15.994 15.994 0 0 1 1.622-3.395m3.42 3.42a15.995 15.995 0 0 0 4.764-4.648l3.876-5.814a1.151 1.151 0 0 0-1.597-1.597L14.146 6.32a15.996 15.996 0 0 0-4.649 4.763m3.42 3.42a6.776 6.776 0 0 0-3.42-3.42" />',
+						icon: '<path stroke-linecap="round" stroke-linejoin="round" d="M15.59 14.37a6 6 0 0 1-5.84 7.38v-4.8m5.84-2.58a14.98 14.98 0 0 0 6.16-12.12A14.98 14.98 0 0 0 9.631 8.41m5.96 5.96a14.926 14.926 0 0 1-5.841 2.58m-.119-8.54a6 6 0 0 0-7.381 5.84h4.8m2.581-5.84a14.927 14.927 0 0 0-2.58 5.84m2.699 2.7c-.103.021-.207.041-.311.06a15.09 15.09 0 0 1-2.448-2.448 14.9 14.9 0 0 1 .06-.312m-2.24 2.39a4.493 4.493 0 0 0-1.757 4.306 4.493 4.493 0 0 0 4.306-1.758M16.5 9a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0Z" />',
 						route: getUpdatedHashLink('AI: Generated Images', 'gai')
 					},
 					{
@@ -1092,7 +1201,8 @@ HTML;
 					isDropdownOpen: false,
 					searchTerm: '',
 					selectedFolderName: '',
-					open(ids) {
+					callback: null,
+					open(ids, callback) {
 						// Convert single ID to array
 						if (!Array.isArray(ids)) {
 							ids = [ids];
@@ -1102,8 +1212,9 @@ HTML;
 						this.selectedFiles = Alpine.store('fileStore').files.filter(file => ids.includes(file.id));
 						console.log('Selected files:', this.selectedFiles);
 						this.isOpen = true;
+						this.callback = callback;
 					},
-					close() {
+					close(dontCallback) {
 						this.selectedIds = [];
 						this.selectedFiles = [];
 						this.destinationFolderId = null;
@@ -1114,6 +1225,10 @@ HTML;
 						this.isError = false;
 						this.isOpen = false;
 						this.isLoading = false;
+						// Execute callback if provided
+						if (this.callback && !dontCallback) {
+							this.callback();
+						}
 					},
 					toggleDropdown() {
 						this.isDropdownOpen = !this.isDropdownOpen;
@@ -1185,7 +1300,8 @@ HTML;
 					isError: false,
 					selectedIds: [],
 					selectedFiles: [],
-					open(ids) {
+					callback: null,
+					open(ids, callback) {
 						// Convert single ID to array
 						if (!Array.isArray(ids)) {
 							ids = [ids];
@@ -1195,13 +1311,18 @@ HTML;
 						this.selectedFiles = Alpine.store('fileStore').files.filter(file => ids.includes(file.id));
 						console.log('Selected files:', this.selectedFiles);
 						this.isOpen = true;
+						this.callback = callback;
 					},
-					close() {
+					close(dontCallback) {
 						this.selectedIds = [];
 						this.selectedFiles = [];
 						this.isError = false;
 						this.isOpen = false;
 						this.isLoading = false;
+						// execute callback if provided
+						if (this.callback && !dontCallback) {
+							this.callback();
+						}
 					},
 					getFlag() {
 						return this.selectedFiles.length > 0 && this.selectedFiles[0].flag === 1;
@@ -1264,7 +1385,8 @@ HTML;
 					isError: false,
 					selectedIds: [],
 					selectedFiles: [],
-					open(ids) {
+					callback: null,
+					open(ids, callback) {
 						// Convert single ID to array
 						if (!Array.isArray(ids)) {
 							ids = [ids];
@@ -1274,13 +1396,17 @@ HTML;
 						this.selectedFiles = Alpine.store('fileStore').files.filter(file => ids.includes(file.id));
 						console.log('Selected files:', this.selectedFiles);
 						this.isOpen = true;
+						this.callback = callback;
 					},
-					close() {
+					close(dontCallback) {
 						this.selectedIds = [];
 						this.selectedFiles = [];
 						this.isError = false;
 						this.isOpen = false;
 						this.isLoading = false;
+						if (this.callback && !dontCallback) {
+							this.callback();
+						}
 					}
 				},
 				confirmDelete() {

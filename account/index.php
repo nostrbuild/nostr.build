@@ -82,16 +82,16 @@ $userStorageRemaining = $userOverLimit ? 0 : $userStorageLimit - $storageUsed;
 	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 	<title>nostr.build account</title>
 
-	<link rel="stylesheet" href="/styles/account.css?v=8" />
-	<link href="/scripts/dist/index.css?v=22" rel="stylesheet">
-	<link href="/styles/twbuild.css?v=60" rel="stylesheet">
+	<link rel="stylesheet" href="/styles/account.css?v=148e0a0e2392c20a08d769499e95b3ba" />
+	<link href="/scripts/dist/index.css?v=41124e3fc077d9db25d2c401ccdecbff" rel="stylesheet">
+	<link href="/styles/twbuild.css?v=e03e216e035dc35df0124e46b1c5fcc7" rel="stylesheet">
 	<link rel="icon" href="/assets/primo_nostr.png" />
 
-	<script defer src="/scripts/dist/index.js?v=38"></script>
-	<script defer src="/scripts/fw/alpinejs-intersect.min.js?v=12"></script>
-	<script defer src="/scripts/fw/alpinejs.min.js?v=12"></script>
-	<script defer src="/scripts/fw/htmx.min.js?v=11"></script>
-	<script defer src="/scripts/fw/htmx/loading-states.js?v=11"></script>
+	<script defer src="/scripts/dist/index.js?v=a057b2c5055ed99343fbf429e906665c"></script>
+	<script defer src="/scripts/fw/alpinejs-intersect.min.js?v=e6545f3f0a314d90d9a1442ff104eab9"></script>
+	<script defer src="/scripts/fw/alpinejs.min.js?v=34fbe266eb872c1a396b8bf9022b7105"></script>
+	<script defer src="/scripts/fw/htmx.min.js?v=0dc2b5da8a531cecfa8100af6cec8d61"></script>
+	<script defer src="/scripts/fw/htmx/loading-states.js?v=128bcf948f60619461c2d6f77b9b8da4"></script>
 	<style>
 		[x-cloak] {
 			display: none !important;
@@ -805,7 +805,7 @@ $userStorageRemaining = $userOverLimit ? 0 : $userStorageLimit - $storageUsed;
 
 
 	</main>
-	<script src="/scripts/account.js?v=9"></script>
+	<script src="/scripts/account.js?v=431039814f9c9bb55961ae9f04fd9c76"></script>
 
 	<script>
 		var previousBtId;
