@@ -715,7 +715,7 @@ HTML;
 
 			<div x-show="FS.deleteConfirmation.isOpen" x-transition:enter="ease-out duration-300" x-transition:enter-start="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95" x-transition:enter-end="opacity-100 translate-y-0 sm:scale-100" x-transition:leave="ease-in duration-200" x-transition:leave-start="opacity-100 translate-y-0 sm:scale-100" x-transition:leave-end="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95" class="fixed inset-0 z-50 overflow-y-auto">
 				<div class="flex min-h-screen items-end justify-center p-4 text-center sm:items-center sm:p-0">
-					<div @click.outside="FS.deleteConfirmation.close()" class="relative transform overflow-hidden rounded-lg bg-nbpurple-50 text-left shadow-xl transition-all mb-16 sm:my-8 sm:w-full sm:max-w-lg">
+					<div @click.outside="!FS.deleteConfirmation.isLoading && FS.deleteConfirmation.close(true)" class="relative transform overflow-hidden rounded-lg bg-nbpurple-50 text-left shadow-xl transition-all mb-16 sm:my-8 sm:w-full sm:max-w-lg">
 						<div class="bg-nbpurple-50 px-4 pb-4 pt-5 sm:p-6 sm:pb-4">
 							<div class="sm:flex sm:items-start">
 								<div class="mx-auto flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-red-100 sm:mx-0 sm:h-10 sm:w-10">
@@ -764,14 +764,14 @@ HTML;
 							</div>
 						</div>
 						<div class="bg-nbpurple-50 px-4 py-3 gap-3 flex flex-row-reverse sm:px-6">
-							<button @click="FS.confirmDelete()" type="button" class="mt-3 inline-flex w-full justify-center rounded-md bg-red-600 px-4 py-2 text-base font-medium text-white shadow-sm hover:bg-red-500 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">
+							<button :disabled="FS.deleteConfirmation.isLoading" @click="FS.confirmDelete()" type="button" class="mt-3 inline-flex w-full justify-center rounded-md bg-red-600 px-4 py-2 text-base font-medium text-white shadow-sm hover:bg-red-500 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">
 								<svg x-show="FS.deleteConfirmation.isLoading" class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
 									<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
 									<path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
 								</svg>
 								Delete
 							</button>
-							<button @click="FS.deleteConfirmation.close(true)" type="button" class="mt-3 inline-flex w-full justify-center rounded-md bg-white px-4 py-2 text-base font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-nbpurple-500 focus:ring-offset-2 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">Cancel</button>
+							<button :disabled="FS.deleteConfirmation.isLoading" @click="FS.deleteConfirmation.close(true)" type="button" class="mt-3 inline-flex w-full justify-center rounded-md bg-white px-4 py-2 text-base font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-nbpurple-500 focus:ring-offset-2 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">Cancel</button>
 						</div>
 					</div>
 				</div>
@@ -784,7 +784,7 @@ HTML;
 
 			<div x-show="FS.shareMedia.isOpen" x-transition:enter="ease-out duration-300" x-transition:enter-start="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95" x-transition:enter-end="opacity-100 translate-y-0 sm:scale-100" x-transition:leave="ease-in duration-200" x-transition:leave-start="opacity-100 translate-y-0 sm:scale-100" x-transition:leave-end="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95" class="fixed inset-0 z-50 overflow-y-auto">
 				<div class="flex min-h-screen items-end justify-center p-4 text-center sm:items-center sm:p-0">
-					<div @click.outside="FS.shareMedia.close()" class="relative transform overflow-hidden rounded-lg bg-nbpurple-50 text-left shadow-xl transition-all mb-16 sm:my-8 w-full max-w-lg">
+					<div @click.outside="!FS.shareMedia.isLoading && FS.shareMedia.close(true)" class="relative transform overflow-hidden rounded-lg bg-nbpurple-50 text-left shadow-xl transition-all mb-16 sm:my-8 w-full max-w-lg">
 						<div class="bg-nbpurple-50 px-4 pb-4 pt-5 sm:p-6 sm:pb-4">
 							<div class="sm:flex sm:items-start">
 								<div class="mx-auto flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-nbpurple-100 sm:mx-0 sm:h-10 sm:w-10">
@@ -882,7 +882,7 @@ HTML;
 			<!-- Modal content -->
 			<div x-show="FS.moveToFolder.isOpen" x-transition:enter="ease-out duration-300" x-transition:enter-start="opacity-0 translate-y-0 sm:-translate-y-4" x-transition:enter-end="opacity-100 translate-y-0 sm:translate-y-0 sm:scale-100" x-transition:leave="ease-in duration-200" x-transition:leave-start="opacity-100 translate-y-0 sm:translate-y-0 sm:scale-100" x-transition:leave-end="opacity-0 translate-y-0 sm:-translate-y-4 sm:scale-95" class="fixed inset-0 z-50 overflow-y-auto">
 				<div class="flex min-h-screen items-end justify-center p-4 text-center sm:items-center sm:p-0">
-					<div @click.outside="FS.moveToFolder.close()" class="relative transform overflow-hidden rounded-lg bg-nbpurple-50 text-left shadow-xl transition-all min-h-[50vh] max-h-[80vh] my-8 mb-24 w-full sm:max-w-lg flex flex-col">
+					<div @click.outside="!FS.moveToFolder.isLoading && FS.moveToFolder.close(true)" class="relative transform overflow-hidden rounded-lg bg-nbpurple-50 text-left shadow-xl transition-all min-h-[50vh] max-h-[80vh] my-8 mb-24 w-full sm:max-w-lg flex flex-col">
 						<div class="bg-nbpurple-50 px-4 pt-5 pb-4 sm:p-6 sm:pb-4 overflow-y-auto flex-grow">
 							<!-- List of selected media -->
 							<div class="flex items-center justify-center">
@@ -945,7 +945,7 @@ HTML;
                     },
                     getSelectedCount() { return FS.moveToFolder.selectedFiles.length; },
                     isValidFolderSelected() { return FS.moveToFolder.destinationFolderId !== null; }
-                  }" x-show="!FS.moveToFolder.isLoading" @click="FS.moveToFolderConfirm()" type="button" :disabled="!folderSelected" :class="{ 'opacity-50 cursor-not-allowed': !folderSelected }" class="inline-flex justify-center rounded-md bg-nbpurple-600 px-4 py-2 text-base font-medium text-nbpurple-50 shadow-sm hover:bg-nbpurple-700 focus:outline-none focus:ring-2 focus:ring-nbpurple-500 focus:ring-offset-2 sm:order-1 sm:ml-3 sm:w-auto sm:text-sm">
+                  }" x-show="!FS.moveToFolder.isLoading" @click="FS.moveToFolderConfirm()" type="button" :disabled="!folderSelected || FS.moveToFolder.isLoading" :class="{ 'opacity-50 cursor-not-allowed': !folderSelected }" class="inline-flex justify-center rounded-md bg-nbpurple-600 px-4 py-2 text-base font-medium text-nbpurple-50 shadow-sm hover:bg-nbpurple-700 focus:outline-none focus:ring-2 focus:ring-nbpurple-500 focus:ring-offset-2 sm:order-1 sm:ml-3 sm:w-auto sm:text-sm">
 								Move&nbsp;<span x-text="getSelectedCount()"></span>&nbsp;file(s) to folder
 							</button>
 							<button x-show="FS.moveToFolder.isLoading" type="button" class="inline-flex justify-center rounded-md bg-nbpurple-600 px-4 py-2 text-base font-medium text-nbpurple-50 shadow-sm hover:bg-nbpurple-700 focus:outline-none focus:ring-2 focus:ring-nbpurple-500 focus:ring-offset-2 sm:order-1 sm:ml-3 sm:w-auto sm:text-sm" disabled>
