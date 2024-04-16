@@ -261,7 +261,7 @@ HTML;
 	<title>nostr.build account</title>
 
 	<link rel="icon" href="/assets/primo_nostr.png" />
-	<link href="/styles/twbuild.css?v=9b6a096a7afb87905837cf3966940ba9" rel="stylesheet">
+	<link href="/styles/twbuild.css?v=5271d6a39cac137ee41b4dae385932b2" rel="stylesheet">
 	<script defer src="/scripts/fw/alpinejs-intersect.min.js?v=e6545f3f0a314d90d9a1442ff104eab9"></script>
 	<script defer src="/scripts/fw/alpinejs.min.js?v=34fbe266eb872c1a396b8bf9022b7105"></script>
 	<style>
@@ -447,7 +447,7 @@ HTML;
 						<!-- Generate image -->
 						<div class="bg-black/10 rounded-lg shadow-xl my-8 mx-auto w-11/12 max-w-2xl overflow-hidden">
 							<div class="bg-black/50 p-4 relative transition-transform">
-								<p x-cloak x-show="!GAI.ImageShow && !GAI.ImageLoading" class="flex items-center justify-center text-nbpurple-200 text-center text-lg h-24" x-transition:enter="transition-opacity duration-500" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100">
+								<p x-cloak x-show="!GAI.ImageShow && !GAI.ImageLoading" class="flex items-center justify-center text-nbpurple-200 text-center text-lg h-24 lg:h-72" x-transition:enter="transition-opacity duration-500" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100">
 									No image to display, generate a new one.
 								</p>
 								<p x-cloak x-show="!GAI.ImageShow && GAI.ImageLoading" class="animate-pulse flex flex-col items-center justify-center text-nbpurple-200 text-center text-lg h-72" x-transition:enter="transition-opacity duration-500" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100">
@@ -657,7 +657,7 @@ HTML;
 										<div class="flex items-center justify-center">
 											<div class="isolate flex -space-x-2 overflow-hidden pl-3 py-2">
 												<template x-for="(file, index) in (FS.deleteConfirmation.selectedFiles.length > 5 ? FS.deleteConfirmation.selectedFiles.slice(0, 5) : FS.deleteConfirmation.selectedFiles)" :key="file.id">
-													<img :class="'relative z-' + (50 - index * 10)" class="inline-block w-14 h-12 rounded-full ring-2 ring-white" :src="file.thumb" :alt="file.name">
+													<img :class="'relative z-' + (50 - index * 10)" class="inline-block w-14 h-12 object-cover rounded-full ring-2 ring-white" :src="file.thumb" :alt="file.name">
 												</template>
 												<template x-if="FS.deleteConfirmation.selectedFiles.length > 5">
 													<div class="relative z-0 inline-flex items-center justify-center w-14 h-12 rounded-full bg-nbpurple-600 text-white ring-2 ring-white">
@@ -716,7 +716,7 @@ HTML;
 										<div class="flex items-center justify-center">
 											<div class="isolate flex -space-x-2 overflow-hidden pl-3 py-2">
 												<template x-for="(file, index) in (FS.shareMedia.selectedFiles.length > 5 ? FS.shareMedia.selectedFiles.slice(0, 5) : FS.shareMedia.selectedFiles)" :key="file.id">
-													<img :class="'relative z-' + (50 - index * 10)" class="inline-block w-14 h-12 rounded-full ring-2 ring-white" :src="file.thumb" :alt="file.name">
+													<img :class="'relative z-' + (50 - index * 10)" class="inline-block w-14 h-12 object-cover rounded-full ring-2 ring-white" :src="file.thumb" :alt="file.name">
 												</template>
 												<template x-if="FS.shareMedia.selectedFiles.length > 5">
 													<div class="relative z-0 inline-flex items-center justify-center w-14 h-12 rounded-full bg-nbpurple-600 text-white ring-2 ring-white">
@@ -793,7 +793,7 @@ HTML;
 							<div class="flex items-center justify-center">
 								<div class="isolate flex -space-x-2 overflow-hidden pl-3 py-2">
 									<template x-for="(file, index) in (FS.moveToFolder.selectedFiles.length > 5 ? FS.moveToFolder.selectedFiles.slice(0, 5) : FS.moveToFolder.selectedFiles)" :key="file.id">
-										<img :class="'relative z-' + (50 - index * 10)" class="inline-block w-14 h-12 rounded-full ring-2 ring-white" :src="file.thumb" :alt="file.name">
+										<img :class="'relative z-' + (50 - index * 10)" class="inline-block w-14 h-12 object-cover rounded-full ring-2 ring-white" :src="file.thumb" :alt="file.name">
 									</template>
 									<template x-if="FS.moveToFolder.selectedFiles.length > 5">
 										<div class="relative z-0 inline-flex items-center justify-center w-14 h-12 rounded-full bg-nbpurple-600 text-white ring-2 ring-white">
