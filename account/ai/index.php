@@ -577,7 +577,7 @@ HTML;
 										</svg>
 
 										<!-- Media actions -->
-										<div x-cloak x-show="showMediaActions" @click.outside="showMediaActions = false" class="absolute inset-0 object-contain bg-black/80 py-1 px-3 sm:py-2 z-10 flex flex-col">
+										<div x-cloak x-show="showMediaActions" @click.outside="showMediaActions = false || deleteConfirmation.isOpen || shareMedia.isOpen || moveToFolder.isOpen" class="absolute inset-0 object-contain bg-black/80 py-1 px-3 sm:py-2 z-10 flex flex-col">
 											<div class="m-auto w-5/6 grid gap-1 grid-cols-3 place-items-center">
 												<!-- Buttons -->
 												<!-- Delete button -->
