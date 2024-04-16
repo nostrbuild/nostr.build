@@ -405,7 +405,7 @@ HTML;
 															</svg>
 														</button>
 													</div>
-													<ul x-cloak @click.outside="modelMenuOpen = false" x-show="modelMenuOpen" x-transition:enter="" x-transition:enter-start="" x-transition:enter-end="" x-transition:leave="transition ease-in duration-100" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0" class="absolute left-0 z-10 mt-2 sm:w-96 xs:w-72 w-64 origin-top-left divide-y divide-gray-200 overflow-hidden rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none" tabindex="-1" role="listbox" aria-labelledby="listbox-label" aria-activedescendant="listbox-option-0">
+													<ul x-cloak @click.outside="modelMenuOpen = false" x-show="modelMenuOpen" x-transition:enter="" x-transition:enter-start="" x-transition:enter-end="" x-transition:leave="transition ease-in duration-100" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0" class="absolute left-0 z-20 mt-2 sm:w-96 xs:w-72 w-64 origin-top-left divide-y divide-gray-200 overflow-hidden rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none" tabindex="-1" role="listbox" aria-labelledby="listbox-label" aria-activedescendant="listbox-option-0">
 														<template x-for="(option, index) in modelOptions" :key="option.value">
 															<li :class="{
 																						'bg-nbpurple-100': selectedModel === option.value,
@@ -525,7 +525,7 @@ HTML;
 					},
 				}" x-ref="sidebar" @scroll.window.throttle="showScrollButton = window.pageYOffset > 500" @scroll.throttle="showScrollButton = $refs.sidebar.scrollTop > 500" class="bg-nbpurple-900/10 lg:fixed lg:bottom-0 lg:right-0 lg:top-16 lg:w-[40rem] lg:overflow-y-auto lg:border-l lg:border-nbpurple-950/5">
 					<!-- Floating bar -->
-					<div class="z-40 sticky top-16 lg:top-0 bg-nbpurple-900/75 py-2 px-2 align-middle flex items-center justify-between">
+					<div class="z-10 sticky top-16 lg:top-0 bg-nbpurple-900/75 py-2 px-2 align-middle flex items-center justify-between">
 						<h3 class="text-sm sm:text-base font-semibold leading-6 text-nbpurple-100" x-text="$store.menuStore.activeFolder"></h3>
 						<div class="flex ml-4 mt-0 transition-all">
 							<button @click="toggleMultiSelect()" type="button" class="ml-3 inline-flex items-center rounded-md bg-nbpurple-600 px-3 py-2 text-xs font-semibold text-nbpurple-50 shadow-sm hover:bg-nbpurple-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-nbpurple-600">
@@ -669,7 +669,7 @@ HTML;
 					</div>
 
 					<!-- Scroll to top button -->
-					<div x-cloak x-show="showScrollButton" :class="{ 'bottom-6': !multiSelect, 'bottom-16': multiSelect }" class="sticky ml-6 z-40 transition-all">
+					<div x-cloak x-show="showScrollButton" :class="{ 'bottom-6': !multiSelect, 'bottom-16': multiSelect }" class="sticky ml-6 z-10 transition-all">
 						<button @click="showScrollButton = false; window.scrollTo({ top: 0, behavior: 'smooth' }); $refs.sidebar.scrollTo({ top: 0, behavior: 'smooth' })" type="button" class="bg-nbpurple-500 text-nbpurple-50 rounded-full p-2 shadow-md hover:bg-nbpurple-600 focus:outline-none focus:ring-2 focus:ring-nbpurple-500">
 							<svg class="size-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
 								<path stroke-linecap="round" stroke-linejoin="round" d="m4.5 18.75 7.5-7.5 7.5 7.5" />
@@ -680,7 +680,7 @@ HTML;
 					<!-- /Scroll to top button -->
 
 					<!-- Bottom bar -->
-					<div x-cloak x-show="multiSelect" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 transform translate-y-full" x-transition:enter-end="opacity-100 transform translate-y-0" x-transition:leave="transition ease-in duration-300" x-transition:leave-start="opacity-100 transform translate-y-0" x-transition:leave-end="opacity-0 transform translate-y-full" class="z-40 sticky bottom-0 bg-nbpurple-900/75 py-2 px-2 align-middle flex items-center justify-center sm:justify-end">
+					<div x-cloak x-show="multiSelect" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 transform translate-y-full" x-transition:enter-end="opacity-100 transform translate-y-0" x-transition:leave="transition ease-in duration-300" x-transition:leave-start="opacity-100 transform translate-y-0" x-transition:leave-end="opacity-0 transform translate-y-full" class="z-10 sticky bottom-0 bg-nbpurple-900/75 py-2 px-2 align-middle flex items-center justify-center sm:justify-end">
 						<div class="flex items-center">
 							<button @click="$store.fileStore.deleteConfirmation.open(selectedItems, () => { toggleMultiSelect() })" :disabled="!selectedItems.length" type="button" class="inline-flex items-center rounded-md bg-nbpurple-600 disabled:bg-nbpurple-400 px-3 py-2 text-xs font-semibold text-nbpurple-50 shadow-sm hover:bg-nbpurple-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-nbpurple-600">
 								<svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4 mr-1">
