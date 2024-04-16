@@ -767,7 +767,7 @@ HTML;
 								</svg>
 								Delete
 							</button>
-							<button @click="FS.deleteConfirmation.close()" type="button" class="mt-3 inline-flex w-full justify-center rounded-md bg-white px-4 py-2 text-base font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-nbpurple-500 focus:ring-offset-2 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">Cancel</button>
+							<button @click="FS.deleteConfirmation.close(true)" type="button" class="mt-3 inline-flex w-full justify-center rounded-md bg-white px-4 py-2 text-base font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-nbpurple-500 focus:ring-offset-2 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">Cancel</button>
 						</div>
 					</div>
 				</div>
@@ -862,6 +862,9 @@ HTML;
 								</svg>
 								Done
 							</button>
+							<button @click="FS.shareMedia.close(true)" type="button" class="mt-3 inline-flex justify-center rounded-md bg-nbpurple-200 px-4 py-2 text-base font-medium text-nbpurple-700 shadow-sm hover:bg-nbpurple-50 focus:outline-none focus:ring-2 focus:ring-nbpurple-500 focus:ring-offset-2 sm:order-0 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">
+								Cancel
+							</button>
 						</div>
 					</div>
 				</div>
@@ -948,7 +951,7 @@ HTML;
 								</svg>
 								Moving...
 							</button>
-							<button @click="FS.moveToFolder.close()" type="button" class="mt-3 inline-flex justify-center rounded-md bg-nbpurple-200 px-4 py-2 text-base font-medium text-nbpurple-700 shadow-sm hover:bg-nbpurple-50 focus:outline-none focus:ring-2 focus:ring-nbpurple-500 focus:ring-offset-2 sm:order-0 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">
+							<button @click="FS.moveToFolder.close(true)" type="button" class="mt-3 inline-flex justify-center rounded-md bg-nbpurple-200 px-4 py-2 text-base font-medium text-nbpurple-700 shadow-sm hover:bg-nbpurple-50 focus:outline-none focus:ring-2 focus:ring-nbpurple-500 focus:ring-offset-2 sm:order-0 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">
 								Cancel
 							</button>
 						</div>
@@ -1200,7 +1203,7 @@ HTML;
 						this.isOpen = true;
 						this.callback = callback;
 					},
-					close() {
+					close(dontCallback) {
 						this.selectedIds = [];
 						this.selectedFiles = [];
 						this.destinationFolderId = null;
@@ -1212,7 +1215,7 @@ HTML;
 						this.isOpen = false;
 						this.isLoading = false;
 						// Execute callback if provided
-						if (this.callback) {
+						if (this.callback && !dontCallback) {
 							this.callback();
 						}
 					},
@@ -1299,14 +1302,14 @@ HTML;
 						this.isOpen = true;
 						this.callback = callback;
 					},
-					close() {
+					close(dontCallback) {
 						this.selectedIds = [];
 						this.selectedFiles = [];
 						this.isError = false;
 						this.isOpen = false;
 						this.isLoading = false;
 						// execute callback if provided
-						if (this.callback) {
+						if (this.callback && !dontCallback) {
 							this.callback();
 						}
 					},
@@ -1384,13 +1387,13 @@ HTML;
 						this.isOpen = true;
 						this.callback = callback;
 					},
-					close() {
+					close(dontCallback) {
 						this.selectedIds = [];
 						this.selectedFiles = [];
 						this.isError = false;
 						this.isOpen = false;
 						this.isLoading = false;
-						if (this.callback) {
+						if (this.callback && !dontCallback) {
 							this.callback();
 						}
 					}
