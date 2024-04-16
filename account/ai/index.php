@@ -446,8 +446,8 @@ HTML;
 
 						<!-- Generate image -->
 						<div class="bg-black/10 rounded-lg shadow-xl my-8 mx-auto w-11/12 max-w-2xl overflow-hidden">
-							<div class="bg-black/50 p-4 relative">
-								<p x-cloak x-show="!GAI.ImageShow && !GAI.ImageLoading" class="flex items-center justify-center text-nbpurple-200 text-center text-lg h-72" x-transition:enter="transition-opacity duration-500" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100">
+							<div class="bg-black/50 p-4 relative transition-transform">
+								<p x-cloak x-show="!GAI.ImageShow && !GAI.ImageLoading" class="flex items-center justify-center text-nbpurple-200 text-center text-lg h-24" x-transition:enter="transition-opacity duration-500" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100">
 									No image to display, generate a new one.
 								</p>
 								<p x-cloak x-show="!GAI.ImageShow && GAI.ImageLoading" class="animate-pulse flex flex-col items-center justify-center text-nbpurple-200 text-center text-lg h-72" x-transition:enter="transition-opacity duration-500" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100">
@@ -469,7 +469,7 @@ HTML;
 									</button>
 								</div>
 								<!-- /Clear button -->
-								<img x-cloak x-show="GAI.ImageShow" @load="GAI.ImageShow = true; GAI.ImageLoading = false" :src="GAI.file.thumb" :srcset="GAI.file.srcset" :sizes="GAI.file.sizes" :alt="GAI.file.title || GAI.file.name" :width="GAI.file.width" :height="GAI.file.height" loading="eager" class="w-full" x-transition:enter="transition-opacity ease-in duration-750" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" />
+								<img x-cloak x-show="GAI.ImageShow" @load="GAI.ImageShow = true; GAI.ImageLoading = false" :src="GAI.file.thumb" :srcset="GAI.file.srcset" :sizes="GAI.file.sizes" :alt="GAI.file.title || GAI.file.name" :width="GAI.file.width" :height="GAI.file.height" loading="eager" class="w-full transition-transform" x-transition:enter="transition-opacity ease-in duration-750" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" />
 							</div>
 							<div x-cloak x-show="GAI.ImageShow" class="bg-black/20 px-6 py-4 sm:flex sm:justify-between">
 								<div class="mb-4 sm:mb-0">
