@@ -189,14 +189,14 @@ $pageMenuContent = <<<HTML
 				</div>
 			</li>
 			<!-- /File statistics -->
-			<!-- Creator Page Shares -->
+			<!-- Creators Page Shares -->
 			<li x-clock x-show="menuStore.fileStats.creatorCount > 0">
 				<div class="flex items-center justify-between">
 					<div class="flex items-center cursor-copy" @click="navigator.clipboard.writeText(menuStore.fileStats.creatorPageLink); showToast = true">
 						<svg class="size-4 text-nbpurple-300" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
 							<path stroke-linecap="round" stroke-linejoin="round" d="M9.53 16.122a3 3 0 0 0-5.78 1.128 2.25 2.25 0 0 1-2.4 2.245 4.5 4.5 0 0 0 8.4-2.245c0-.399-.078-.78-.22-1.128Zm0 0a15.998 15.998 0 0 0 3.388-1.62m-5.043-.025a15.994 15.994 0 0 1 1.622-3.395m3.42 3.42a15.995 15.995 0 0 0 4.764-4.648l3.876-5.814a1.151 1.151 0 0 0-1.597-1.597L14.146 6.32a15.996 15.996 0 0 0-4.649 4.763m3.42 3.42a6.776 6.776 0 0 0-3.42-3.42" />
 						</svg>
-						<span class="ml-2 text-sm font-medium text-nbpurple-300">Creator Page</span>
+						<span class="ml-2 text-sm font-medium text-nbpurple-300">Creators Page</span>
 						<svg class="ml-1 size-4 text-nbpurple-300" viewBox="0 0 20 20" fill="currentColor">
 							<path fill-rule="evenodd" d="M15.988 3.012A2.25 2.25 0 0 1 18 5.25v6.5A2.25 2.25 0 0 1 15.75 14H13.5v-3.379a3 3 0 0 0-.879-2.121l-3.12-3.121a3 3 0 0 0-1.402-.791 2.252 2.252 0 0 1 1.913-1.576A2.25 2.25 0 0 1 12.25 1h1.5a2.25 2.25 0 0 1 2.238 2.012ZM11.5 3.25a.75.75 0 0 1 .75-.75h1.5a.75.75 0 0 1 .75.75v.25h-3v-.25Z" clip-rule="evenodd" />
 							<path d="M3.5 6A1.5 1.5 0 0 0 2 7.5v9A1.5 1.5 0 0 0 3.5 18h7a1.5 1.5 0 0 0 1.5-1.5v-5.879a1.5 1.5 0 0 0-.44-1.06L8.44 6.439A1.5 1.5 0 0 0 7.378 6H3.5Z" />
@@ -211,7 +211,7 @@ $pageMenuContent = <<<HTML
 					</a>
 				</div>
 			</li>
-			<!-- /Creator Page Shares -->
+			<!-- /Creators Page Shares -->
 		</ul>
 	</li>
 	<!-- /Sidebar widgets -->
@@ -750,7 +750,7 @@ HTML;
 													<span aria-hidden="true" :class="enabled ? 'translate-x-5' : 'translate-x-0'" class="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-nbpurple-50 shadow ring-0 transition duration-200 ease-in-out"></span>
 												</button>
 												<span class="ml-3 text-sm" id="creator-page-share-single">
-													<span class="font-medium text-nbpurple-900">Share on Creator Page</span>
+													<span class="font-medium text-nbpurple-900">Share on Creators Page</span>
 													<a x-show="!supported" href="/plans/" class="ml-2 text-nbpurple-600 text-xs hover:underline">
 														Upgrade to Creator+
 													</a>
@@ -1222,7 +1222,7 @@ HTML;
 						});
 				},
 				shareItemsCreatorPage(shareFlag) {
-					console.log('Sharing media on creator page:', this.shareMedia.selectedIds);
+					console.log('Sharing media on Creators page:', this.shareMedia.selectedIds);
 					const itemsToShare = !Array.isArray(this.shareMedia.selectedIds) ? [this.shareMedia.selectedIds] : this.shareMedia.selectedIds;
 					const formData = new FormData();
 					const flag = shareFlag ? 'true' : 'false';
@@ -1240,7 +1240,7 @@ HTML;
 						return fetch(request)
 							.then(response => response.json())
 							.then(data => {
-								console.log('Shared media on creator page:', data);
+								console.log('Shared media on Creators page:', data);
 								const sharedImageIds = data.sharedImages || [];
 								// Set the shared flag on the files
 								this.files.forEach(file => {
@@ -1252,10 +1252,10 @@ HTML;
 								});
 							})
 							.catch(error => {
-								console.error('Error sharing media on creator page:', error);
+								console.error('Error sharing media on Creators page:', error);
 							});
 					} catch (error) {
-						console.error('Error sharing media on creator page:', error);
+						console.error('Error sharing media on Creators page:', error);
 					}
 				},
 				deleteConfirmation: {
