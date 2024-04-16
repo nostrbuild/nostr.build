@@ -1003,6 +1003,13 @@ HTML;
 			</div>
 		</div>
 
+		<!-- Folder creation modal -->
+		<!-- Folder deletion confirmation modal -->
+		<!-- Image upload modal -->
+		<!-- URL import modal -->
+		<!-- Logout confirmation modal -->
+		<!-- Profile edit modal -->
+
 		<!-- Toast notification -->
 		<div x-cloak x-show="showToast" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 transform translate-x-8" x-transition:enter-end="opacity-100 transform translate-x-0" x-transition:leave="transition ease-in duration-300" x-transition:leave-start="opacity-100 transform translate-x-0" x-transition:leave-end="opacity-0 transform translate-x-8" class="z-50 fixed top-6 right-6 bg-orange-500 text-white px-4 py-2 rounded-md flex items-center">
 			<span class="mr-2 text-xs">Link Copied</span>
