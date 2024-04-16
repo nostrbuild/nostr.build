@@ -15,9 +15,9 @@ global $link;
 	<meta name="description" content="nostr.build" />
 	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-	<link rel="stylesheet" href="/styles/index.css?v=9" />
-	<link rel="stylesheet" href="/styles/builders.css?v=9" />
-	<link rel="stylesheet" href="/styles/header.css?v=10" />
+	<link rel="stylesheet" href="/styles/index.css?v=7ff4472e93e9719e0eac60b75646b485" />
+	<link rel="stylesheet" href="/styles/builders.css?v=0dd633698255982f3df87df8e3e2697e" />
+	<link rel="stylesheet" href="/styles/header.css?v=19cde718a50bd676387bbe7e9e24c639" />
 	<link rel="icon" href="/assets/0.png">
 
 	<title>nostr.build - creators and artists</title>
@@ -96,7 +96,7 @@ global $link;
 	</main>
 
 	<?php include $_SERVER['DOCUMENT_ROOT'] . '/components/footer.php'; ?>
-	<script src="/scripts/index.js?v=8"></script>
+	<script src="/scripts/index.js?v=04d160e3f0cdd9cd006b26a57f0d727f"></script>
 
 </body>
 

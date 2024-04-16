@@ -261,9 +261,9 @@ HTML;
 	<title>nostr.build account</title>
 
 	<link rel="icon" href="/assets/primo_nostr.png" />
-	<link href="/styles/twbuild.css?v=99" rel="stylesheet">
-	<script defer src="/scripts/fw/alpinejs-intersect.min.js?v=12"></script>
-	<script defer src="/scripts/fw/alpinejs.min.js?v=12"></script>
+	<link href="/styles/twbuild.css?v=9b6a096a7afb87905837cf3966940ba9" rel="stylesheet">
+	<script defer src="/scripts/fw/alpinejs-intersect.min.js?v=e6545f3f0a314d90d9a1442ff104eab9"></script>
+	<script defer src="/scripts/fw/alpinejs.min.js?v=34fbe266eb872c1a396b8bf9022b7105"></script>
 	<style>
 		[x-cloak] {
 			display: none !important;
