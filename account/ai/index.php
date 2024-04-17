@@ -274,7 +274,7 @@ HTML;
 	<title>nostr.build account</title>
 
 	<link rel="icon" href="/assets/primo_nostr.png" />
-	<link href="/styles/twbuild.css?v=b197a62bf4faf6f8bf7b2c10dd7f9021" rel="stylesheet">
+	<link href="/styles/twbuild.css?v=91621ce255c9ee62d7aacdb258c305cf" rel="stylesheet">
 	<script defer src="/scripts/fw/alpinejs-intersect.min.js?v=e6545f3f0a314d90d9a1442ff104eab9"></script>
 	<script defer src="/scripts/fw/alpinejs.min.js?v=34fbe266eb872c1a396b8bf9022b7105"></script>
 	<style>
@@ -703,7 +703,7 @@ HTML;
 					</div>
 
 					<!-- Scroll to top button -->
-					<div x-cloak x-show="showScrollButton" :class="{ 'bottom-6': !multiSelect, 'bottom-16': multiSelect }" class="sticky ml-6 z-10 transition-all">
+					<div x-cloak x-show="showScrollButton" :class="{ 'bottom-6': !multiSelect, 'bottom-16': multiSelect }" class="sticky ml-6 z-10 transition-all w-fit">
 						<button @click="showScrollButton = false; window.scrollTo({ top: 0, behavior: 'smooth' }); $refs.sidebar.scrollTo({ top: 0, behavior: 'smooth' })" type="button" class="bg-nbpurple-500 text-nbpurple-50 rounded-full p-2 shadow-md hover:bg-nbpurple-600 focus:outline-none focus:ring-2 focus:ring-nbpurple-500">
 							<svg class="size-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
 								<path stroke-linecap="round" stroke-linejoin="round" d="m4.5 18.75 7.5-7.5 7.5 7.5" />
