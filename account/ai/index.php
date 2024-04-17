@@ -69,6 +69,19 @@ $userStorageLimit = SiteConfig::getStorageLimit($acctlevel, $account->getAccount
 $userOverLimit = $storageUsed >= $userStorageLimit || $userStorageLimit === 0;
 $userStorageRemaining = $userOverLimit ? 0 : $userStorageLimit - $storageUsed;
 
+// Get the name of the current user account based on their level, e.g., "Free", "Proffecional", "Basic", "Creator", "Advanced", "Admin"
+$accountLevelName = match ($acctlevel) {
+	0 => "Free",
+	1 => "Creator",
+	2 => "Professional",
+	3 => "Basic",
+	4 => "Basic",
+	5 => "Basic",
+	10 => "Advanced",
+	99 => "Admin",
+	default => "Unknown"
+};
+
 
 $NBLogoSVG = <<<SVG
 <svg class="h-8 w-auto" id="a" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 33.4 39">
@@ -261,7 +274,7 @@ HTML;
 	<title>nostr.build account</title>
 
 	<link rel="icon" href="/assets/primo_nostr.png" />
-	<link href="/styles/twbuild.css?v=e03e216e035dc35df0124e46b1c5fcc7" rel="stylesheet">
+	<link href="/styles/twbuild.css?v=b197a62bf4faf6f8bf7b2c10dd7f9021" rel="stylesheet">
 	<script defer src="/scripts/fw/alpinejs-intersect.min.js?v=e6545f3f0a314d90d9a1442ff104eab9"></script>
 	<script defer src="/scripts/fw/alpinejs.min.js?v=34fbe266eb872c1a396b8bf9022b7105"></script>
 	<style>
@@ -296,8 +309,11 @@ HTML;
 
 						<!-- Sidebar component -->
 						<div class="flex grow flex-col gap-y-5 overflow-y-auto bg-nbpurple-900 px-6 ring-1 ring-white/10" @click.outside="mobileMenuOpen = false">
-							<div class="flex h-16 shrink-0 items-center">
+							<div class="flex h-16 shrink-0 items-center -mb-5">
 								<?= $NBLogoSVG ?>
+								<span class="text-nbpurple-50 font-semibold ml-4">
+									<?= $accountLevelName ?> Account
+								</span>
 							</div>
 							<nav class="flex flex-1 flex-col">
 								<!-- Mobile menu content -->
@@ -312,8 +328,11 @@ HTML;
 			<div class="hidden xl:fixed xl:inset-y-0 xl:z-50 xl:flex xl:w-72 xl:flex-col">
 				<!-- Sidebar component, swap this element with another sidebar if you like -->
 				<div class="flex grow flex-col gap-y-5 overflow-y-auto bg-nbpurple-900/10 px-6 ring-1 ring-white/5">
-					<div class="flex h-16 shrink-0 items-center">
+					<div class="flex h-16 shrink-0 items-center -mb-5">
 						<?= $NBLogoSVG ?>
+						<span class="text-nbpurple-50 font-semibold ml-4">
+							<?= $accountLevelName ?> Account
+						</span>
 					</div>
 					<nav class="flex flex-1 flex-col">
 						<!-- Desktop menu content -->
@@ -342,6 +361,18 @@ HTML;
 								<input id="search-field" class="block h-full w-full border-0 bg-transparent py-0 pl-8 pr-0 text-nbpurple-50 focus:ring-0 sm:text-sm placeholder:text-nbpurple-300" placeholder="Search..." type="search" name="search" disabled>
 							</div>
 						</form>
+					</div>
+					<!-- notification bell -->
+					<div class="flex items-center gap-x-4 relative">
+						<button type="button" class="p-2.5 text-nbpurple-50">
+							<span class="sr-only">Notifications</span>
+							<svg :class="{ 'animate-[wiggle_1s_ease-in-out_infinite]': false }" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+								<path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 0 0 5.454-1.31A8.967 8.967 0 0 1 18 9.75V9A6 6 0 0 0 6 9v.75a8.967 8.967 0 0 1-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 0 1-5.714 0m5.714 0a3 3 0 1 1-5.714 0" />
+							</svg>
+							<!--
+							<span x-cloak class="animate-ping absolute top-2 right-2.5 block h-1 w-1 rounded-full ring-2 ring-nbpurple-400 bg-nbpurple-600"></span>
+							-->
+						</button>
 					</div>
 				</div>
 
@@ -540,8 +571,11 @@ HTML;
 						</div>
 					</div>
 					<!-- /Floating bar -->
+					<!-- File upload area -->
+					<!-- /File upload area -->
+					<!-- File actions -->
 					<!-- Activity feed content -->
-					<div class="p-4" x-data="Alpine.store('fileStore')" x-init="if (files.length === 0) fetchFiles($store.menuStore.activeFolder); $watch('$store.menuStore.activeFolder', folder => fetchFiles(folder))">
+					<div class=" p-4" x-data="Alpine.store('fileStore')" x-init="if (files.length === 0) fetchFiles($store.menuStore.activeFolder); $watch('$store.menuStore.activeFolder', folder => fetchFiles(folder))">
 						<ul role="list" class="grid grid-cols-2 gap-x-4 gap-y-8 md:grid-cols-2 md:gap-x-4 xl:gap-x-6">
 							<template x-if="loading">
 								<li class="relative">
@@ -652,7 +686,7 @@ HTML;
 												</svg>
 											</button>
 										</div>
-										<div x-cloak x-show="multiSelect" class="hidden xs:inline-block">
+										<div x-cloak x-show="multiSelect">
 											<button @click="toggleSelected(file.id)" type="button" :class="{ 'bg-nbpurple-600 p-1.5 text-nbpurple-50 hover:bg-nbpurple-500': isSelected(file.id), 'text-nbpurple-600 p-1.5 bg-nbpurple-50 hover:bg-nbpurple-200': !isSelected(file.id) }" class="rounded-full p-1.5 shadow-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-nbpurple-600">
 												<svg x-show="!isSelected(file.id)" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
 													<path d="M10.75 4.75a.75.75 0 00-1.5 0v4.5h-4.5a.75.75 0 000 1.5h4.5v4.5a.75.75 0 001.5 0v-4.5h4.5a.75.75 0 000-1.5h-4.5v-4.5z" />
