@@ -1394,6 +1394,7 @@ HTML;
 				closeDeleteFolderModal() {
 					this.foldersToDeleteIds = [];
 					this.showDeleteFolderModal = false;
+					this.showDeleteFolderButtons = false;
 				},
 				deleteFoldersConfirm() {
 					if (this.foldersToDeleteIds.length === 0) {
