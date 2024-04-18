@@ -1115,7 +1115,7 @@ HTML;
 
 			<div x-show="MS.showDeleteFolderModal" x-transition:enter="ease-out duration-300" x-transition:enter-start="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95" x-transition:enter-end="opacity-100 translate-y-0 sm:scale-100" x-transition:leave="ease-in duration-200" x-transition:leave-start="opacity-100 translate-y-0 sm:scale-100" x-transition:leave-end="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95" class="fixed inset-0 z-50 overflow-y-auto">
 				<div class="flex min-h-screen items-end justify-center p-4 text-center sm:items-center sm:p-0">
-					<div @click.outside="!MS.isDeletingFolders && MS.closeDeleteFolderModal()" class="relative transform overflow-hidden rounded-lg bg-nbpurple-50 text-left shadow-xl transition-all mb-16 sm:my-8 sm:w-full sm:max-w-lg">
+					<div @click.outside="!MS.isDeletingFolders && MS.closeDeleteFolderModal()" class="relative transform overflow-hidden rounded-lg bg-nbpurple-50 text-left shadow-xl transition-all mb-24 sm:my-8 sm:w-full sm:max-w-lg">
 						<div class="bg-nbpurple-50 px-4 pb-4 pt-5 sm:p-6 sm:pb-4">
 							<div class="sm:flex sm:items-start">
 								<div class="mx-auto flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-red-100 sm:mx-0 sm:h-10 sm:w-10">
