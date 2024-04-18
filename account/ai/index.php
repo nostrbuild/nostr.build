@@ -270,7 +270,7 @@ $pageMenuContent = <<<HTML
 			<template x-for="folder in menuStore.folders" :key="folder.name">
 				<li>
 					<div x-show="!folder.newForm" class="flex justify-between">
-						<a :href="folder.route" :class="{ 'bg-nbpurple-800 text-nbpurple-50': menuStore.activeFolder === folder.name, 'text-nbpurple-300 hover:text-nbpurple-50 hover:bg-nbpurple-800': menuStore.activeFolder !== folder.name }" class="w-full group flex gap-x-3 rounded-md p-2 text-sm leading-6 font-semibold" @click.prevent="menuStore.setActiveFolder(folder.name); mobileMenuOpen = false">
+						<a :href="folder.route" :class="{ 'bg-nbpurple-800 text-nbpurple-50': menuStore.activeFolder === folder.name, 'text-nbpurple-300 hover:text-nbpurple-50 hover:bg-nbpurple-800': menuStore.activeFolder !== folder.name }" class="w-full group flex gap-x-3 rounded-md p-2 text-sm leading-6 font-semibold" @click.prevent="menuStore.setActiveFolder(folder.name); mobileMenuOpen = false; menuStore.disableDeleteFolderButtons()">
 							<span class="flex size-6 shrink-0 items-center justify-center rounded-lg border border-nbpurple-700 bg-nbpurple-800 text-[0.625rem] font-medium text-nbpurple-300 group-hover:text-nbpurple-50" x-text="folder.icon"></span>
 							<span class="truncate" x-text="folder.name"></span>
 						</a>
@@ -1217,7 +1217,9 @@ HTML;
 						route: '/account'
 					},
 				],
-				folders: [{
+				folders: [],
+				// Top most folders
+				staticFolders: [{
 						name: 'AI: Generated Images',
 						icon: 'A',
 						route: '#',
@@ -1266,8 +1268,6 @@ HTML;
 							.then(response => response.json())
 							.then(data => {
 								const folders = data || [];
-								// Sort the fetched folders by name
-								folders.sort((a, b) => a.name.localeCompare(b.name));
 								// Deduplicate folders by name property
 								// Append fetched folders to this.folders
 								this.folders = folders.reduce((acc, folder) => {
@@ -1281,6 +1281,21 @@ HTML;
 									}
 									return acc;
 								}, this.folders);
+								// Sort the fetched folders by name
+								this.folders.sort((a, b) => a.name.localeCompare(b.name));
+
+								// Update the staticFolders with fetched data and remove existing entries from this.folders
+								this.staticFolders = this.staticFolders.map(staticFolder => {
+									const existingFolder = this.folders.find(f => f.name === staticFolder.name);
+									if (existingFolder) {
+										Object.assign(staticFolder, existingFolder);
+										this.folders = this.folders.filter(f => f.name !== staticFolder.name);
+									}
+									return staticFolder;
+								});
+
+								// Add the staticFolders to the beginning of the folders array
+								this.folders = [...this.staticFolders, ...this.folders];
 								// Folders have been fetched
 								this.foldersFetched = true;
 								console.log('Folders fetched:', this.folders);
