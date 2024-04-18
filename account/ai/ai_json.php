@@ -274,7 +274,8 @@ if (isset($_GET["action"])) {
 			$folderName = $folder['folder'];
 			$folderId = $folder['id'];
 			$folderRoute = "#f=" . urlencode($folderName);
-			$folderIcon = strtoupper(substr($folderName, 0, 1));
+			$firstChar = mb_substr($folderName, 0, 1, 'UTF-8');
+			$folderIcon = mb_strlen($firstChar, 'UTF-8') === 1 ? strtoupper($firstChar) : '#';
 			return array("name" => $folderName, "icon" => $folderIcon, "route" => $folderRoute, "id" => $folderId, "allowDelete" => true);
 		}, $folderList);
 		echo json_encode($folderList);
@@ -367,6 +368,21 @@ if (isset($_GET["action"])) {
 		$icm = new ImageCatalogManager($link, $s3, $_SESSION['usernpub']);
 		$movedImages = $icm->moveImages($imagesToMove, $destinationFolderId);
 		echo json_encode(array("action" => "move_to_folder", "movedImages" => $movedImages));
+	} elseif ($_POST['action'] === 'delete_folders') {
+		error_log("Deleting folders");
+		$foldersToDelete = !empty($_POST['foldersToDelete']) ? json_decode($_POST['foldersToDelete']) : [];
+		error_log("Folders to delete: " . json_encode($foldersToDelete));
+		if (empty($foldersToDelete)) {
+			echo json_encode(array("error" => "No folders to delete"));
+			exit;
+		}
+		// Convert folder IDs to integers
+		$foldersToDelete = array_map('intval', $foldersToDelete);
+		// Instantiate ImageCatalogManager class
+		$icm = new ImageCatalogManager($link, $s3, $_SESSION['usernpub']);
+		$deletedFolders = $icm->deleteFolders($foldersToDelete);
+		error_log("Deleted folders: " . json_encode($deletedFolders));
+		echo json_encode(array("action" => "delete_folders", "deletedFolders" => $deletedFolders));
 	} else {
 		echo json_encode(array("error" => "Invalid action"));
 	}
