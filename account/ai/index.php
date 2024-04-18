@@ -105,7 +105,7 @@ $NBLogoSVG = <<<SVG
 SVG;
 
 $pageMenuContent = <<<HTML
-<ul role="list" class="flex flex-1 flex-col gap-y-7" x-data="{ menuStore: \$store.menuStore, fileStore: \$store.fileStore }" x-init="menuStore.activeMenu = menuStore.menuItems[0].name">
+<ul role="list" class="flex flex-1 flex-col gap-y-7" x-data="{ menuStore: \$store.menuStore, fileStore: \$store.fileStore }" x-init="menuStore.activeMenu = menuStore.menuItems[0].name" @click.away="!menuStore.showDeleteFolderModal && menuStore.disableDeleteFolderButtons()">
 
 	<!-- Profile -->
 	<ul role="list" class="-mx-2 space-y-1">
@@ -120,14 +120,14 @@ $pageMenuContent = <<<HTML
 				</div>
 				<div class="flex items-center">
 					<a href="#" class="text-sm font-semibold leading-6 text-nbpurple-50 hover:bg-nbpurple-800 p-2 rounded-md">
-						<svg class="size-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+						<svg aria-hidden="true" class="size-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
 							<path stroke-linecap="round" stroke-linejoin="round" d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.325.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 0 1 1.37.49l1.296 2.247a1.125 1.125 0 0 1-.26 1.431l-1.003.827c-.293.241-.438.613-.43.992a7.723 7.723 0 0 1 0 .255c-.008.378.137.75.43.991l1.004.827c.424.35.534.955.26 1.43l-1.298 2.247a1.125 1.125 0 0 1-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.47 6.47 0 0 1-.22.128c-.331.183-.581.495-.644.869l-.213 1.281c-.09.543-.56.94-1.11.94h-2.594c-.55 0-1.019-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 0 1-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 0 1-1.369-.49l-1.297-2.247a1.125 1.125 0 0 1 .26-1.431l1.004-.827c.292-.24.437-.613.43-.991a6.932 6.932 0 0 1 0-.255c.007-.38-.138-.751-.43-.992l-1.004-.827a1.125 1.125 0 0 1-.26-1.43l1.297-2.247a1.125 1.125 0 0 1 1.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.086.22-.128.332-.183.582-.495.644-.869l.214-1.28Z" />
 							<path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
 						</svg>
 						<span class="sr-only">Profile Settings</span>
 					</a>
 					<a href="#" class="text-sm font-semibold leading-6 text-nbpurple-50 hover:bg-nbpurple-800 p-2 rounded-md">
-						<svg class="size-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+						<svg aria-hidden="true" class="size-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
 							<path stroke-linecap="round" stroke-linejoin="round" d="M8.25 9V5.25A2.25 2.25 0 0 1 10.5 3h6a2.25 2.25 0 0 1 2.25 2.25v13.5A2.25 2.25 0 0 1 16.5 21h-6a2.25 2.25 0 0 1-2.25-2.25V15M12 9l3 3m0 0-3 3m3-3H2.25" />
 						</svg>
 						<span class="sr-only">Logout</span>
@@ -144,7 +144,7 @@ $pageMenuContent = <<<HTML
 			<li>
 				<div class="flex items-center justify-between">
 					<div class="flex items-center">
-						<svg class="size-5 text-nbpurple-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+						<svg aria-hidden="true" class="size-5 text-nbpurple-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
 							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
 						</svg>
 						<span class="ml-2 text-sm font-medium text-nbpurple-300">Usage</span>
@@ -160,7 +160,7 @@ $pageMenuContent = <<<HTML
 			<li>
 				<div class="flex items-center justify-between">
 					<div class="flex items-center">
-						<svg class="size-5 text-nbpurple-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+						<svg aria-hidden="true" class="size-5 text-nbpurple-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
 							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
 						</svg>
 						<span class="ml-2 text-sm font-medium text-nbpurple-300">Remaining Days</span>
@@ -173,7 +173,7 @@ $pageMenuContent = <<<HTML
 			<li>
 				<div class="flex items-center justify-between">
 					<div class="flex items-center">
-						<svg class="size-5 text-nbpurple-300" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+						<svg aria-hidden="true" class="size-5 text-nbpurple-300" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
 							<path stroke-linecap="round" stroke-linejoin="round" d="M10.5 6a7.5 7.5 0 1 0 7.5 7.5h-7.5V6Z" />
 							<path stroke-linecap="round" stroke-linejoin="round" d="M13.5 10.5H21A7.5 7.5 0 0 0 13.5 3v7.5Z" />
 						</svg>
@@ -181,19 +181,19 @@ $pageMenuContent = <<<HTML
 					</div>
 					<div class="flex items-center space-x-2">
 						<div class="flex items-center">
-							<svg class="size-4 text-nbpurple-300" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+							<svg aria-hidden="true" class="size-4 text-nbpurple-300" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
 								<path stroke-linecap="round" stroke-linejoin="round" d="M12.75 8.25v7.5m6-7.5h-3V12m0 0v3.75m0-3.75H18M9.75 9.348c-1.03-1.464-2.698-1.464-3.728 0-1.03 1.465-1.03 3.84 0 5.304 1.03 1.464 2.699 1.464 3.728 0V12h-1.5M4.5 19.5h15a2.25 2.25 0 0 0 2.25-2.25V6.75A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25v10.5A2.25 2.25 0 0 0 4.5 19.5Z" />
 							</svg>
 							<span class="ml-1 text-sm font-medium text-nbpurple-300" x-text="menuStore.formatNumberInThousands(menuStore.fileStats.totalGifs)"></span>
 						</div>
 						<div class="flex items-center">
-							<svg class="size-4 text-nbpurple-300" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+							<svg aria-hidden="true" class="size-4 text-nbpurple-300" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
 								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
 							</svg>
 							<span class="ml-1 text-sm font-medium text-nbpurple-300" x-text="menuStore.formatNumberInThousands(menuStore.fileStats.totalImages)"></span>
 						</div>
 						<div class="flex items-center">
-							<svg class="size-4 text-nbpurple-300" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+							<svg aria-hidden="true" class="size-4 text-nbpurple-300" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
 								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
 							</svg>
 							<span class="ml-1 text-sm font-medium text-nbpurple-300" x-text="menuStore.formatNumberInThousands(menuStore.fileStats.totalVideos)"></span>
@@ -206,17 +206,17 @@ $pageMenuContent = <<<HTML
 			<li x-clock x-show="menuStore.fileStats.creatorCount > 0">
 				<div class="flex items-center justify-between">
 					<div class="flex items-center cursor-copy" @click="navigator.clipboard.writeText(menuStore.fileStats.creatorPageLink); showToast = true">
-						<svg class="size-4 text-nbpurple-300" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+						<svg aria-hidden="true" class="size-4 text-nbpurple-300" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
 							<path stroke-linecap="round" stroke-linejoin="round" d="M9.53 16.122a3 3 0 0 0-5.78 1.128 2.25 2.25 0 0 1-2.4 2.245 4.5 4.5 0 0 0 8.4-2.245c0-.399-.078-.78-.22-1.128Zm0 0a15.998 15.998 0 0 0 3.388-1.62m-5.043-.025a15.994 15.994 0 0 1 1.622-3.395m3.42 3.42a15.995 15.995 0 0 0 4.764-4.648l3.876-5.814a1.151 1.151 0 0 0-1.597-1.597L14.146 6.32a15.996 15.996 0 0 0-4.649 4.763m3.42 3.42a6.776 6.776 0 0 0-3.42-3.42" />
 						</svg>
 						<span class="ml-2 text-sm font-medium text-nbpurple-300">Creators Page</span>
-						<svg class="ml-1 size-4 text-nbpurple-300" viewBox="0 0 20 20" fill="currentColor">
+						<svg aria-hidden="true" class="ml-1 size-4 text-nbpurple-300" viewBox="0 0 20 20" fill="currentColor">
 							<path fill-rule="evenodd" d="M15.988 3.012A2.25 2.25 0 0 1 18 5.25v6.5A2.25 2.25 0 0 1 15.75 14H13.5v-3.379a3 3 0 0 0-.879-2.121l-3.12-3.121a3 3 0 0 0-1.402-.791 2.252 2.252 0 0 1 1.913-1.576A2.25 2.25 0 0 1 12.25 1h1.5a2.25 2.25 0 0 1 2.238 2.012ZM11.5 3.25a.75.75 0 0 1 .75-.75h1.5a.75.75 0 0 1 .75.75v.25h-3v-.25Z" clip-rule="evenodd" />
 							<path d="M3.5 6A1.5 1.5 0 0 0 2 7.5v9A1.5 1.5 0 0 0 3.5 18h7a1.5 1.5 0 0 0 1.5-1.5v-5.879a1.5 1.5 0 0 0-.44-1.06L8.44 6.439A1.5 1.5 0 0 0 7.378 6H3.5Z" />
 						</svg>
 					</div>
 					<a class="flex items-center cursor-pointer" :href="menuStore.fileStats.creatorPageLink">
-						<svg class="size-4 text-nbpurple-300" viewBox="0 0 20 20" fill="currentColor">
+						<svg aria-hidden="true" class="size-4 text-nbpurple-300" viewBox="0 0 20 20" fill="currentColor">
 							<path d="M12.232 4.232a2.5 2.5 0 0 1 3.536 3.536l-1.225 1.224a.75.75 0 0 0 1.061 1.06l1.224-1.224a4 4 0 0 0-5.656-5.656l-3 3a4 4 0 0 0 .225 5.865.75.75 0 0 0 .977-1.138 2.5 2.5 0 0 1-.142-3.667l3-3Z" />
 							<path d="M11.603 7.963a.75.75 0 0 0-.977 1.138 2.5 2.5 0 0 1 .142 3.667l-3 3a2.5 2.5 0 0 1-3.536-3.536l1.225-1.224a.75.75 0 0 0-1.061-1.06l-1.224 1.224a4 4 0 1 0 5.656 5.656l3-3a4 4 0 0 0-.225-5.865Z" />
 						</svg>
@@ -234,7 +234,7 @@ $pageMenuContent = <<<HTML
 			<template x-for="item in menuStore.menuItems" :key="item.name">
 				<li>
 					<a :href="item.route" :class="{ 'bg-nbpurple-800 text-nbpurple-50': menuStore.activeMenu === item.name, 'text-nbpurple-300 hover:text-nbpurple-50 hover:bg-nbpurple-800': menuStore.activeMenu !== item.name }" class="group flex gap-x-3 rounded-md p-2 text-sm leading-6 font-semibold" @click="menuStore.activeMenu = item.name; mobileMenuOpen = false">
-						<svg class="size-6 shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true" x-html="item.icon"></svg>
+						<svg aria-hidden="true" class="size-6 shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true" x-html="item.icon"></svg>
 						<span x-text="item.name"></span>
 					</a>
 				</li>
@@ -244,16 +244,88 @@ $pageMenuContent = <<<HTML
 	<!-- /Menu items -->
 	<!-- Folders -->
 	<li>
-		<div class="text-xs font-semibold leading-6 text-nbpurple-300">Folders (<span class="font-bold" x-text="menuStore.fileStats.totalFolders"></span>)</div>
+		<div class="flex items-center justify-between text-xs font-semibold leading-6 text-nbpurple-300">
+			<span class="font-bold" x-text="'Folders (' + menuStore.folders.length + ')'"></span>
+			<div>
+				<!-- Button to create a new folder -->
+				<button type="button" class="ml-2 p-1 text-xs font-semibold text-nbpurple-300 hover:text-nbpurple-50 hover:bg-nbpurple-800 rounded-md" @click="menuStore.addNewFolderForm(); menuStore.disableDeleteFolderButtons(); \$nextTick(() => { \$refs.newFolderNameInput.focus(); })" :disabled="menuStore.isNewFolderFormPresent()">
+					<svg aria-hidden="true" class="size-6" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+						<path stroke-linecap="round" stroke-linejoin="round" d="M12 10.5v6m3-3H9m4.06-7.19-2.12-2.12a1.5 1.5 0 0 0-1.061-.44H4.5A2.25 2.25 0 0 0 2.25 6v12a2.25 2.25 0 0 0 2.25 2.25h15A2.25 2.25 0 0 0 21.75 18V9a2.25 2.25 0 0 0-2.25-2.25h-5.379a1.5 1.5 0 0 1-1.06-.44Z" />
+					</svg>
+					<span class="sr-only">Create a new folder</span>
+				</button>
+				<!-- Button to delete folders -->
+				<button type="button" class="ml-2 p-1 text-xs font-semibold text-nbpurple-300 hover:text-nbpurple-50 hover:bg-nbpurple-800 rounded-md" @click="menuStore.toggleDeleteFolderButtons()" :disabled="menuStore.isNewFolderFormPresent()">
+					<svg x-show="!menuStore.showDeleteFolderButtons" aria-hidden="true" class="size-6" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+						<path stroke-linecap="round" stroke-linejoin="round" d="M15 13.5H9m4.06-7.19-2.12-2.12a1.5 1.5 0 0 0-1.061-.44H4.5A2.25 2.25 0 0 0 2.25 6v12a2.25 2.25 0 0 0 2.25 2.25h15A2.25 2.25 0 0 0 21.75 18V9a2.25 2.25 0 0 0-2.25-2.25h-5.379a1.5 1.5 0 0 1-1.06-.44Z" />
+					</svg>
+					<svg x-cloak x-show="menuStore.showDeleteFolderButtons" aria-hidden="true" class="size-6" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+						<path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12.75V12A2.25 2.25 0 0 1 4.5 9.75h15A2.25 2.25 0 0 1 21.75 12v.75m-8.69-6.44-2.12-2.12a1.5 1.5 0 0 0-1.061-.44H4.5A2.25 2.25 0 0 0 2.25 6v12a2.25 2.25 0 0 0 2.25 2.25h15A2.25 2.25 0 0 0 21.75 18V9a2.25 2.25 0 0 0-2.25-2.25h-5.379a1.5 1.5 0 0 1-1.06-.44Z" />
+					</svg>
+					<span class="sr-only">Delete folder(s)</span>
+				</button>
+			</div>
+		</div>
 		<ul role="list" class="-mx-2 mt-2 space-y-1">
 			<template x-for="folder in menuStore.folders" :key="folder.name">
 				<li>
-					<a :href="folder.route" :class="{ 'bg-nbpurple-800 text-nbpurple-50': menuStore.activeFolder === folder.name, 'text-nbpurple-300 hover:text-nbpurple-50 hover:bg-nbpurple-800': menuStore.activeFolder !== folder.name }" class="group flex gap-x-3 rounded-md p-2 text-sm leading-6 font-semibold" @click.prevent="menuStore.setActiveFolder(folder.name); mobileMenuOpen = false">
-						<span class="flex size-6 shrink-0 items-center justify-center rounded-lg border border-nbpurple-700 bg-nbpurple-800 text-[0.625rem] font-medium text-nbpurple-300 group-hover:text-nbpurple-50" x-text="folder.icon"></span>
-						<span class="truncate" x-text="folder.name"></span>
-					</a>
+					<div x-show="!folder.newForm" class="flex justify-between">
+						<a :href="folder.route" :class="{ 'bg-nbpurple-800 text-nbpurple-50': menuStore.activeFolder === folder.name, 'text-nbpurple-300 hover:text-nbpurple-50 hover:bg-nbpurple-800': menuStore.activeFolder !== folder.name }" class="w-full group flex gap-x-3 rounded-md p-2 text-sm leading-6 font-semibold" @click.prevent="menuStore.setActiveFolder(folder.name); mobileMenuOpen = false">
+							<span class="flex size-6 shrink-0 items-center justify-center rounded-lg border border-nbpurple-700 bg-nbpurple-800 text-[0.625rem] font-medium text-nbpurple-300 group-hover:text-nbpurple-50" x-text="folder.icon"></span>
+							<span class="truncate" x-text="folder.name"></span>
+						</a>
+						<!-- Delete folder Icon -->
+						<button x-cloak x-show="menuStore.showDeleteFolderButtons && folder.allowDelete && folder.name !== menuStore.activeFolder" type="button" class="text-nbpurple-300 hover:text-nbpurple-50 hover:bg-nbpurple-800 rounded-md p-2 text-sm leading-6 font-semibold" @click="menuStore.openDeleteFolderModal(folder.id)">
+							<svg aria-hidden="true" class="size-5 shrink-0 items-center justify-center rounded-lg border border-nbpurple-700 bg-nbpurple-800 text-[0.625rem] font-medium text-nbpurple-300 group-hover:text-nbpurple-50" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+								<path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
+							</svg>
+							<span class="sr-only">Delete folder</span>
+						</button>
+					</div>
+					<div x-cloak x-show="folder.newForm">
+						<div class="flex items-center gap-x-3 relative">
+							<!-- Error message -->
+							<div
+								id="new-folder-error-message"
+								x-show="menuStore.newFolderNameError"
+								class="absolute left-1/3 -translate-x-1/2 z-10 text-sm font-semibold text-orange-300 transition-opacity duration-300 bg-nbpurple-950/85 rounded-md p-2"
+								:class="{
+									'opacity-0': !menuStore.newFolderNameError,
+									'opacity-100': menuStore.newFolderNameError
+								}"
+								x-transition:enter="transition ease-out duration-300"
+								x-transition:leave="transition ease-in duration-300"
+								x-text="menuStore.newFolderNameError"
+								aria-live="assertive"
+								role="alert"
+							>
+							</div>
+							<label for="new-folder-name" class="sr-only">New folder name</label>
+							<input x-ref="newFolderNameInput" type="text" name="new-folder-name" :class="{'animate-shake': menuStore.newFolderNameError }" class="w-full text-sm font-semibold text-nbpurple-300 bg-nbpurple-800 rounded-md p-2" x-model="folder.newFolderName" @keydown.enter="menuStore.createFolder(folder.newFolderName)" @keydown.escape="menuStore.cancelNewFolderForm(folder)" aria-describedby="new-folder-error-message">
+							<button type="button" class="-ml-2 text-nbpurple-300 hover:text-nbpurple-50 hover:bg-nbpurple-800 rounded-md p-2 text-sm leading-6 font-semibold" @click="menuStore.createFolder(folder.newFolderName)">
+								<svg aria-hidden="true" class="size-5 shrink-0 items-center justify-center rounded-lg border border-nbpurple-700 bg-nbpurple-800 text-[0.625rem] font-medium text-nbpurple-300 group-hover:text-nbpurple-50" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+									<path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+								</svg>
+								<span class="sr-only">Create folder</span>
+							</button>
+							<button type="button" class="-mx-2 text-nbpurple-300 hover:text-nbpurple-50 hover:bg-nbpurple-800 rounded-md p-2 text-sm leading-6 font-semibold" @click="menuStore.cancelNewFolderForm(folder)">
+								<svg aria-hidden="true" class="size-5 shrink-0 items-center justify-center rounded-lg border border-nbpurple-700 bg-nbpurple-800 text-[0.625rem] font-medium text-nbpurple-300 group-hover:text-nbpurple-50" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+									<path stroke-linecap="round" stroke-linejoin="round" d="m9.75 9.75 4.5 4.5m0-4.5-4.5 4.5M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+								</svg>
+								<span class="sr-only">Cancel</span>
+							</button>
+						</div>
+					</div>
 				</li>
 			</template>
+			<li x-cloak x-show="!menuStore.isNewFolderFormPresent()">
+				<button type="button" class="w-full text-nbpurple-300 hover:text-nbpurple-50 hover:bg-nbpurple-800 group flex gap-x-3 rounded-md p-2 text-sm leading-6 font-semibold" @click="menuStore.addNewFolderForm(); \$nextTick(() => { \$refs.newFolderNameInput.focus(); })">
+					<svg aria-hidden="true" class="flex size-6 shrink-0 items-center justify-center rounded-lg border border-nbpurple-700 bg-nbpurple-800 text-[0.625rem] font-medium text-nbpurple-300 group-hover:text-nbpurple-50" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+						<path stroke-linecap="round" stroke-linejoin="round" d="M12 10.5v6m3-3H9m4.06-7.19-2.12-2.12a1.5 1.5 0 0 0-1.061-.44H4.5A2.25 2.25 0 0 0 2.25 6v12a2.25 2.25 0 0 0 2.25 2.25h15A2.25 2.25 0 0 0 21.75 18V9a2.25 2.25 0 0 0-2.25-2.25h-5.379a1.5 1.5 0 0 1-1.06-.44Z" />
+					</svg>
+					<span class="truncate">Create a new folder</span>
+				</button>
+			</li>
 		</ul>
 	</li>
 	<!-- /Folders -->
@@ -274,7 +346,7 @@ HTML;
 	<title>nostr.build account</title>
 
 	<link rel="icon" href="/assets/primo_nostr.png" />
-	<link href="/styles/twbuild.css?v=91621ce255c9ee62d7aacdb258c305cf" rel="stylesheet">
+	<link href="/styles/twbuild.css?v=f95e0de5bb8bee21a45d018b0f54aa4c" rel="stylesheet">
 	<script defer src="/scripts/fw/alpinejs-intersect.min.js?v=e6545f3f0a314d90d9a1442ff104eab9"></script>
 	<script defer src="/scripts/fw/alpinejs.min.js?v=34fbe266eb872c1a396b8bf9022b7105"></script>
 	<style>
@@ -1037,8 +1109,57 @@ HTML;
 			</div>
 		</div>
 
-		<!-- Folder creation modal -->
 		<!-- Folder deletion confirmation modal -->
+		<div x-cloak x-data="{ MS: $store.menuStore }" class="relative z-50" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+			<div x-show="MS.showDeleteFolderModal" x-transition:enter="ease-out duration-300" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" x-transition:leave="ease-in duration-200" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0" class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity"></div>
+
+			<div x-show="MS.showDeleteFolderModal" x-transition:enter="ease-out duration-300" x-transition:enter-start="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95" x-transition:enter-end="opacity-100 translate-y-0 sm:scale-100" x-transition:leave="ease-in duration-200" x-transition:leave-start="opacity-100 translate-y-0 sm:scale-100" x-transition:leave-end="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95" class="fixed inset-0 z-50 overflow-y-auto">
+				<div class="flex min-h-screen items-end justify-center p-4 text-center sm:items-center sm:p-0">
+					<div @click.outside="!MS.isDeletingFolders && MS.closeDeleteFolderModal()" class="relative transform overflow-hidden rounded-lg bg-nbpurple-50 text-left shadow-xl transition-all mb-16 sm:my-8 sm:w-full sm:max-w-lg">
+						<div class="bg-nbpurple-50 px-4 pb-4 pt-5 sm:p-6 sm:pb-4">
+							<div class="sm:flex sm:items-start">
+								<div class="mx-auto flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-red-100 sm:mx-0 sm:h-10 sm:w-10">
+									<svg class="size-6 text-red-600" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+										<path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
+									</svg>
+								</div>
+								<div class="mt-3 text-center sm:ml-4 sm:mt-0 sm:text-left">
+									<h3 class="text-base font-semibold leading-6 text-gray-900" id="modal-title">Confirm Delete</h3>
+									<div class="mt-2">
+										<p class="text-sm text-gray-500">
+											Are you sure you want to delete the selected <span class="font-bold" x-text="MS.foldersToDeleteIds.length"></span> folder(s)? This action cannot be undone. <span class="font-bold">Deleting a folder will NOT delete the media inside it, and will move them to the main folder instead.</span>
+										</p>
+										<!-- List of selected folders -->
+										<div class="mt-4">
+											<ul role="list" class="list-disc space-y-2 pl-5 text-sm">
+												<template x-for="folder in MS.foldersToDelete">
+													<li x-text="folder.name" class="truncate"></li>
+												</template>
+											</ul>
+										</div>
+										<!-- /List of selected folders -->
+									</div>
+								</div>
+							</div>
+						</div>
+						<div class="bg-nbpurple-50 px-4 py-3 gap-3 flex flex-row-reverse sm:px-6">
+							<button :disabled="MS.isDeletingFolders" @click="MS.deleteFoldersConfirm()" type="button" class="mt-3 inline-flex w-full justify-center rounded-md bg-red-600 px-4 py-2 text-base font-medium text-white shadow-sm hover:bg-red-500 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">
+								<svg x-show="MS.isDeletingFolders" class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+									<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+									<path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+								</svg>
+								Delete
+							</button>
+							<button :disabled="MS.isDeletingFolders" @click="MS.closeDeleteFolderModal()" type="button" class="mt-3 inline-flex w-full justify-center rounded-md bg-white px-4 py-2 text-base font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-nbpurple-500 focus:ring-offset-2 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">Cancel</button>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+
+
+
+
 		<!-- Image upload modal -->
 		<!-- URL import modal -->
 		<!-- Logout confirmation modal -->
@@ -1145,6 +1266,8 @@ HTML;
 							.then(response => response.json())
 							.then(data => {
 								const folders = data || [];
+								// Sort the fetched folders by name
+								folders.sort((a, b) => a.name.localeCompare(b.name));
 								// Deduplicate folders by name property
 								// Append fetched folders to this.folders
 								this.folders = folders.reduce((acc, folder) => {
@@ -1179,9 +1302,150 @@ HTML;
 						console.error('Error fetching folders:', error);
 					}
 				},
+				addNewFolderForm() {
+					// Check if the form already exists and return if it does
+					if (this.folders.some(folder => folder.newForm)) {
+						return;
+					}
+					this.folders.unshift({
+						newForm: true,
+						newFolderName: '',
+						name: '',
+					});
+					console.log('New folder form added');
+				},
+				newFolderNameError: '',
+				createFolder(folderName) {
+					// Empty?
+					if (!folderName.trim()) {
+						this.newFolderNameError = 'Empty folder name.';
+						setTimeout(() => {
+							this.newFolderNameError = '';
+						}, 1000);
+						return;
+					}
+					// Check if duplicate folder name
+					if (this.folders.some(folder => folder.name === folderName)) {
+						console.error('Folder already exists:', folderName);
+						this.newFolderNameError = 'Folder already exists.'
+						setTimeout(() => {
+							this.newFolderNameError = '';
+						}, 1000);
+						return;
+					}
+					// Create new folder structure
+					const folderNameNormalized = folderName.normalize('NFC'); // Normalize the string
+					const firstChar = [...folderNameNormalized][0]; // Extract the first character as a string
+					const newFolder = {
+						name: folderName,
+						icon: firstChar.toUpperCase(), // Uppercase the first character
+						route: getUpdatedHashLink(folderName),
+						allowDelete: true,
+					};
+					// Add new folder to the folders array
+					this.folders.push(newFolder);
+					// Delete the new folder form
+					this.folders = this.folders.filter(folder => !folder.newForm);
+					// Set new folder as active folder
+					this.setActiveFolder(folderName);
+					console.log('Folder created:', folderName);
+				},
+				cancelNewFolderForm(folder, callback) {
+					// Remove the new folder form from the folders array
+					this.folders = this.folders.filter(f => f !== folder);
+					// Execute callback if provided
+					if (callback) {
+						callback();
+					}
+				},
+				isNewFolderFormPresent() {
+					return this.folders.some(folder => folder.newForm);
+				},
+				showDeleteFolderButtons: false,
+				showDeleteFolderModal: false,
+				foldersToDeleteIds: [],
+				foldersToDelete: [],
+				isDeletingFolders: false,
+				toggleDeleteFolderButtons() {
+					this.showDeleteFolderButtons = !this.showDeleteFolderButtons;
+				},
+				disableDeleteFolderButtons() {
+					this.showDeleteFolderButtons = false;
+				},
+				openDeleteFolderModal(folderIds) {
+					// Check if array or not, and make it an array
+					if (!Array.isArray(folderIds)) {
+						folderIds = [folderIds];
+					}
+					// Check if array is empty and return if it is
+					if (folderIds.length === 0) {
+						return;
+					}
+					// Set folder IDs to delete while checking them agains this.folders
+					this.foldersToDeleteIds = folderIds.filter(id => this.folders.some(folder => folder.id === id));
+					this.foldersToDelete = this.folders.filter(folder => this.foldersToDeleteIds.includes(folder.id));
+					// Check if activeFolder name matches any of the folders to delete
+					if (this.foldersToDelete.some(folder => folder.name === this.activeFolder)) {
+						console.log('Cannot delete active folder:', this.activeFolder);
+						return;
+					}
+					this.showDeleteFolderModal = true;
+				},
+				closeDeleteFolderModal() {
+					this.foldersToDeleteIds = [];
+					this.showDeleteFolderModal = false;
+				},
+				deleteFoldersConfirm() {
+					if (this.foldersToDeleteIds.length === 0) {
+						return;
+					}
+
+					// Set folder IDs to delete while checking them agains this.folders
+					const folderIds = this.foldersToDeleteIds.filter(id => this.folders.some(folder => folder.id === id));
+
+					console.log('Deleting folders:', folderIds);
+
+					this.isDeletingFolders = true;
+
+					// Send request to delete folders
+					this.deleteFolders(folderIds)
+						.then(() => {
+							this.closeDeleteFolderModal();
+						})
+						.catch(error => {
+							console.error('Error deleting folders:', error);
+						})
+						.finally(() => {
+							this.isDeletingFolders = false; // Reset the flag after folder deletion is complete
+							this.fetchFolders(); // Refetch folders
+						});
+
+					console.log('Folders deleted:', folderIds);
+				},
+				deleteFolders(folderIds) {
+					const formData = new FormData();
+					formData.append('action', 'delete_folders');
+					formData.append('foldersToDelete', JSON.stringify(folderIds));
+
+					const url = new URL('https://<?= $_SERVER['SERVER_NAME'] ?>/account/ai/ai_json.php');
+
+					const request = new Request(url, {
+						method: 'POST',
+						body: formData,
+					});
+
+					return fetch(request)
+						.then(response => response.json())
+						.then(data => {
+							console.log('Folders deleted:', data);
+							const deletedFolders = data.deletedFolders || [];
+							// Remove the deleted folders from this.folders
+							this.folders = this.folders.filter(folder => !deletedFolders.includes(folder.id));
+						});
+				},
 				profile: {
-					name: '<?= strlen($nym) > 15 ? htmlspecialchars(substr($nym, 0, 15)) . "..." : htmlspecialchars($nym) ?>',
-					npub: '<?= strlen($user) > 15 ? htmlspecialchars(substr($user, 0, 15)) . "..." : htmlspecialchars($user) ?>',
+					name: '<?= strlen($nym) > 15 ? htmlspecialchars(mb_substr($nym, 0, 15)) . "..." : htmlspecialchars($nym) ?>',
+					npub: '<?= strlen($user) > 15 ? htmlspecialchars(mb_substr($user, 0, 15)) . "..." : htmlspecialchars($user) ?>',
 					imageUrl: '<?= htmlspecialchars($ppic) ?>',
 					profileUrl: getUpdatedHashLink(null, 'profile')
 				},
@@ -1543,6 +1807,8 @@ HTML;
 							.finally(() => {
 								this.loading = false;
 							});
+						// Refetch folders
+						Alpine.store('menuStore').fetchFolders();
 					} catch (error) {
 						console.error('Error fetching files:', error);
 						this.loading = false;

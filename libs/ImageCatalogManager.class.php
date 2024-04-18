@@ -135,7 +135,6 @@ class ImageCatalogManager
     }
 
     $folders = [];
-    $folderIds = [];
 
     try {
       $placeholders = implode(',', array_fill(0, count($folderIds), '?'));
@@ -174,6 +173,7 @@ class ImageCatalogManager
     }
 
     try {
+      $placeholders = implode(',', array_fill(0, count($folderIds), '?'));
       $stmt = $this->link->prepare("DELETE FROM users_images_folders WHERE usernpub = ? AND id IN ($placeholders)");
       $stmt->bind_param('s' . str_repeat('i', count($folderIds)), $this->usernpub, ...$folderIds);
       $stmt->execute();
