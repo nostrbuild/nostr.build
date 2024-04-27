@@ -365,8 +365,9 @@ SVG;
 
           <div class="rounded-md bg-nbpurple-800 p-4 mb-2">
             <div class="text-sm text-nbpurple-100 text-center">
-              <p>- Downgrading your account is available upon request. Please contact us! -</p>
-              <p>- Money Back guarantee if not satisfied within 21 days -</p>
+              <p>- Downgrading your account is available upon request</p>
+              <p>- Money Back guarantee if not satisfied within 21 days</p>
+              <p> Contact Us - <a href="mailto:admin@nostr.build">admin@nostr.build</a></p>
             </div>
           </div>
 
