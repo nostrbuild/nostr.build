@@ -276,7 +276,7 @@ if (isset($_POST['searchFile'])) {
       $result = $stmt->get_result();
     } else {
       // General display of images
-      $perpage = 200;
+      $perpage = 204;
       $page = isset($_GET['p']) ? $_GET['p'] : 0;
       $start = $page * $perpage;
       $end = $perpage;
