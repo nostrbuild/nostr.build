@@ -277,7 +277,6 @@ class Plans
           'AI Studio Extended Access',
           'NIP-05 @nostr.build',
           'Expandable storage *',
-          'TOR Private Links *',
           'All Creator features',
         ],
         currency: 'sats',
