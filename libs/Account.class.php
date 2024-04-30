@@ -145,6 +145,7 @@ class Account
     } finally {
       $stmt->close();
     }
+    $this->setSessionParameters();
   }
 
   /**
@@ -248,6 +249,7 @@ class Account
           wallet: $this->account['wallet'],
           ppic: $this->account['ppic']
         );
+        $this->setSessionParameters();
       }
     }
   }
@@ -621,22 +623,31 @@ class Account
     $params[] = $this->npub;
     $types .= 's';
 
+    // DEBUG
+    error_log("Account update SQL: $sql" . PHP_EOL);
     $stmt = $this->db->prepare($sql);
     if (!$stmt) {
+      error_log("Error preparing statement: " . $this->db->error);
       throw new Exception("Error preparing statement: " . $this->db->error);
     }
 
     try {
       if (!$stmt->bind_param($types, ...$params)) {
+        error_log("Error binding parameters: " . $stmt->error);
         throw new Exception("Error binding parameters: " . $stmt->error);
       }
 
       if (!$stmt->execute()) {
+        error_log("Error executing statement: " . $stmt->error);
         throw new Exception("Error executing statement: " . $stmt->error);
       }
+    } catch (Exception $e) {
+      error_log("Error updating account: " . $e->getMessage());
+      throw $e;
     } finally {
       $stmt->close();
     }
+    //error_log("Account updated successfully, SQL: $sql , Params: " . print_r($params, true) . PHP_EOL);
     // Update session parameters
     $this->setSessionParameters();
   }
@@ -790,13 +801,23 @@ class Account
    */
   public function getRemainingStorageSpace(): int
   {
-    $accountLevel = $this->account['acctlevel'];
-    $accountAddonStorage = $this->getAccountAdditionStorage();
-    $limit = SiteConfig::getStorageLimit($accountLevel, $accountAddonStorage) ?? 0; // Default to 0 if level not found
+    $limit = $this->getStorageSpaceLimit();
 
     $usedSpace = $this->fetchAccountSpaceConsumption();
 
     return $limit - $usedSpace;
+  }
+
+  public function getUsedStorageSpace(): int
+  {
+    return $this->fetchAccountSpaceConsumption();
+  }
+
+  public function getStorageSpaceLimit(): int
+  {
+    $accountLevel = $this->account['acctlevel'];
+    $accountAddonStorage = $this->getAccountAdditionStorage();
+    return SiteConfig::getStorageLimit($accountLevel, $accountAddonStorage) ?? 0; // Default to 0 if level not found
   }
 
   /**
@@ -1003,5 +1024,23 @@ class Account
     // Also update PBKDF2 password hash
     $pbkdf2_hashed_password = hashPasswordPBKDF2(trim($newPassword)); // Creates a PBKDF2 password hash
     $this->updateAccount(password: $hashed_password, pbkdf2_password: $pbkdf2_hashed_password);
+  }
+
+  /**
+   * Changes the password for the account in a safe manner.
+   *
+   * This method verifies the current password before changing it to the new password.
+   *
+   * @param string $currentPassword The current password of the account.
+   * @param string $newPassword The new password to be set for the account.
+   * @return bool Returns true if the password was changed successfully, false otherwise.
+   */
+  public function changePasswordSafe(string $currentPassword, string $newPassword): bool
+  {
+    if ($this->verifyPassword($currentPassword)) {
+      $this->changePassword($newPassword);
+      return true;
+    }
+    return false;
   }
 }

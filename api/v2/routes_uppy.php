@@ -11,6 +11,7 @@ use Slim\Routing\RouteCollectorProxy;
 $app->group('/uppy', function (RouteCollectorProxy $group) {
   // Route to upload file(s) via form
   $group->post('/files', function (Request $request, Response $response) {
+    //set_time_limit(600);
     $files = $request->getUploadedFiles();
 
     // If no files are provided, return a 400 response

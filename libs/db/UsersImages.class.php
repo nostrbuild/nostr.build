@@ -75,8 +75,25 @@ class UsersImages extends DatabaseTable
    * @param mixed $folderId
    * @return array
    */
-  public function getFiles(string $npub, ?int $folderId = null): array
+  public function getFiles(string $npub, ?int $folderId = null, ?int $start = null, ?int $limit = null): array
   {
+    $sql_nostr = "
+    SELECT 
+        ui.*,
+        GROUP_CONCAT(CONCAT(uni.note_id, ':', UNIX_TIMESTAMP(unn.created_at))) AS associated_notes
+    FROM 
+        {$this->tableName} ui
+        LEFT JOIN users_nostr_images uni ON ui.id = uni.image_id
+        LEFT JOIN users_nostr_notes unn ON uni.note_id = unn.note_id
+    WHERE 
+        ((? IS NULL AND ui.folder_id IS NULL) OR ui.folder_id = ?)
+        AND ui.usernpub = ?
+        AND ui.image != 'https://nostr.build/p/Folder.png'
+    GROUP BY
+        ui.id
+    ORDER BY 
+        ui.created_at DESC
+    ";
     $sql = "
     SELECT
       ui.id,
@@ -95,22 +112,36 @@ class UsersImages extends DatabaseTable
     FROM {$this->tableName} ui
     WHERE ((? IS NULL AND ui.folder_id IS NULL) OR ui.folder_id = ?)
     AND ui.usernpub = ?
+    AND ui.image != 'https://nostr.build/p/Folder.png'
     ORDER BY ui.created_at DESC
     ";
+    // Decide the SQL based on presence of start and limit
+    if ($start !== null && $limit !== null) {
+      $sql_nostr .= "LIMIT ?, ?";
+    }
 
     try {
-      $stmt = $this->db->prepare($sql);
-      $stmt->bind_param('iis', $folderId, $folderId, $npub);
+      $stmt = $this->db->prepare($sql_nostr);
+      // start and limit are optional
+      if ($start !== null && $limit !== null) {
+        $stmt->bind_param('iisii', $folderId, $folderId, $npub, $start, $limit);
+      } else {
+        $stmt->bind_param('iis', $folderId, $folderId, $npub);
+      }
       $stmt->execute();
 
       $result = $stmt->get_result(); // get mysqli_result object
+      if ($result === false) {
+        error_log("Error: " . $this->db->error);
+        throw new Exception("Error: " . $this->db->error);
+      }
       $files = $result->fetch_all(MYSQLI_ASSOC); // fetch all rows as an associative array
 
       $stmt->close();
+      return $files;
     } catch (Exception $e) {
       error_log("Exception: " . $e->getMessage());
       throw $e;
     }
-    return $files;
   }
 }

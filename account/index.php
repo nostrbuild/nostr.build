@@ -1,80 +1,400 @@
 <?php
 require_once $_SERVER['DOCUMENT_ROOT'] . "/config.php";
-require_once $_SERVER['DOCUMENT_ROOT'] . "/SiteConfig.php";
 require_once $_SERVER['DOCUMENT_ROOT'] . "/functions/session.php";
 require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/permissions.class.php';
-require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/db/UsersImages.class.php';
-require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/db/UsersImagesFolders.class.php';
-require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/utils.funcs.php';
-require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/Account.class.php';
-
-global $link;
 
 $perm = new Permission();
-// Initialize the session
-$user =  $_SESSION["usernpub"] ?? null;
 
-if (!$perm->validateLoggedin()  || !isset($_SESSION["usernpub"])) {
+if (!$perm->validateLoggedin()  || empty($_SESSION["usernpub"])) {
 	header("Location: /login");
 	$link->close();
 	exit;
 }
 
-// If account is not verified, redirect to signup page
+// Redirect to the /plans page if the user does not have a subscription
 if ($perm->validatePermissionsLevelEqual(0)) {
 	header("Location: /plans/");
 	$link->close();
 	exit;
 }
 
-$npub = $_SESSION["usernpub"];
-$nym = $_SESSION["nym"];
-$ppic = $_SESSION["ppic"];
-$wallet = $_SESSION["wallet"];
-$acctlevel = $_SESSION["acctlevel"];
-$userId = $_SESSION["id"];
+// TODO:
+// - Add simple notification for any important messages
+// - Add scheduled nostr posts
+// - Use VidStack video/audio player for media playback
+// - Use file.show attribute to hide deleted files for the purposes of Trash folder (an idea). Will require deletion from CDN (potentially)
+// - Add ability to delete Nostr post when deleting media that is shared
+//   - Warn the user (done)
+//   - Add switch to trigger deletion of Nostr post (TBD)
+//   - Decide how to treat notes that thave other media shared on them (TBD)
+//   - Allow cascading deletion of media that is shared on a Nostr post, based on the note (TBD)
+//   - [Depends on] Implement simple "Trash" folder for deleted media and disable serving it to the public (TBD)
 
-// Instanciate account class
-$account = new Account($npub, $link);
-$daysRemaining = 0;
-try {
-	// Handle cases for users who has no subscription yet
-	$daysRemaining = $account->getRemainingSubscriptionDays();
-} catch (Exception $e) {
-	error_log($e->getMessage());
-}
+// - Add ability to specify API/client upload default folder (client upload)
+// - Allow user to verify their npub in profile edit dialog
 
-// If user has no subscription, redirect to plans page
-$userAccountExpired = $account->isExpired();
-/*
-if ($daysRemaining <= 0) {
-	header("Location: /plans/");
-	$link->close();
-	exit;
-}
-*/
+// DONE
+// - [x] Add media type icons
+// - [x] Add audio poster to the main view
+// - [x] Dialog compatible with all media types
+// - [x] Use axios and axios-retry for API requests
+// - [x] Update icons for loading of all supported media types
+// - [x] Add "Nostr Share" icon when media is shared
+// - [x] Add plumbing for tracking and deleting Nostr events associated with media
+// - [x] Reworked new folder dialog and fixed problem with form IDs
+// - [x] Remove the need for PHP embedded variables in the HTML code (where possible) and in JS code
+// - [x] Add "folder" SVG Icon with the first character of the folder name within the icon
+// - [x] Link all stores from the <body> tag and remove any redundant store definitions in the HTML
+// - [x] Added loading spinner for the page
+// - [x] Fix scroll-lock issue when dialog is open
+// - [x] Add ability to upload files via drag-and-drop and select file dialog
+// - [x] Add warning and option to delete a nostr event when deleting a media item
+// - [x] Enhance uploading experience, files are dynamically added to the list after upload
+// - [x] Add refresh button to update the media list
+// - [x] Add file import via URL
+// - [x] Add warning before user leaves page with unsaved changes
+// - [x] Add renew/upgrade subscription buttons
+// - [x] Add restrictions for the users with expired subscription
+// - [x] Put feature flags for all features that require them
+// - [x] Add all the menu items that exist in the legacy version
 
-$showRenewalButton = $daysRemaining <= 30;
-$showUpgradeButton = $acctlevel < 10 && !$showRenewalButton;
 
-// Fetch user's folder statistics and storage statistics
-$usersFoldersTable = new UsersImagesFolders($link);
-$usersFoldersStats = $usersFoldersTable->getFoldersStats($user);
+$NBLogoSVG = <<<SVG
+<svg class="h-8 w-auto" id="a" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 33.4 39">
+  <defs>
+    <linearGradient id="b" x1="8.25" y1="-326.6" x2="8.25" y2="-297.6" gradientTransform="translate(0 336.6)" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#9b4399"/>
+      <stop offset="1" stop-color="#3d1e56"/>
+      <stop offset="1" stop-color="#231815"/>
+    </linearGradient>
+    <style>
+      .e{stroke-width:0;fill:#fff}
+    </style>
+  </defs>
+  <path d="M16.7 0 .1 9.8l16.6 9.7 16.5-9.7L16.7 0Z" style="fill:#70429a;stroke-width:0"/>
+  <path class="e" d="m16.7 1.7-4.6 2.6v10.8l4.6 2.7 4.6-2.7V9.7l4.5-2.6-9.1-5.4Zm-3 6.3c-1.23-.11-1.13-1.98.1-2 1.3 0 1.27 2.09 0 2m6.8 1.3L16.8 7l3.8-2.3L24.3 7l-3.7 2.3Z"/>
+  <path d="M0 10v19.3L16.5 39V19.7L0 10Z" style="fill:url(#b);stroke-width:0"/>
+  <path class="e" d="m14.4 35.2-3-1.8v-.9L5.1 21.8l-.8-.4v8L2 28.1V13.8l3 1.7v1l6.2 10.7.8.4v-8l2.3 1.3.1 14.3Z"/>
+  <path d="M16.8 19.7V39l16.6-9.7V10l-16.6 9.7Z" style="stroke-width:0;fill:#3d1e56"/>
+  <path class="e" d="M31.3 16.4 29 15.1l-10 5.8v14.3L29.7 29l1.6-2.7v-3.6l-1.6-.9 1.6-2.7v-2.7Zm-2.5 9.9-1.1 2-6.5 3.8v-4.5l6.5-3.8 1.2.7-.1 1.8Zm0-6.3-1 2-6.5 3.8v-4.4l6.5-3.8 1.2.6-.2 1.8Z"/>
+</svg>
+SVG;
 
-// TODO: This should be moved to a separate file, class, method
-// Validate space usage
-$storageUsed = $usersFoldersStats['TOTAL']['totalSize'] ?? 0;
+$pageMenuContent = <<<HTML
+<ul role="list" class="flex flex-1 flex-col gap-y-7" x-data="{ pfpError: false }" x-init="menuStore.setActiveMenuFromHash()" @click.away="!menuStore.showDeleteFolderModal && menuStore.disableDeleteFolderButtons()" x-effect="pfpError = !profileStore.profileInfo.pfpUrl">
 
-// Get user storage limit based on their level
-$userStorageLimit = SiteConfig::getStorageLimit($acctlevel, $account->getAccountAdditionStorage());
-
-// Check if user is over their limit
-$userOverLimit = $storageUsed >= $userStorageLimit || $userStorageLimit === 0;
-$userStorageRemaining = $userOverLimit ? 0 : $userStorageLimit - $storageUsed;
+	<!-- Profile -->
+	<ul role="list" class="-mx-2 space-y-1">
+		<li>
+			<div class="flex items-center justify-between">
+				<div class="flex items-center gap-x-4">
+					<!-- PFP -->
+					<template x-if="profileStore.profileInfo.pfpUrl && !pfpError">
+						<img class="size-8 rounded-full bg-nbpurple-800 object-cover" :src="profileStore.profileInfo.pfpUrl" :alt="'Profile picture for ' + profileStore.profileInfo.name" @error="pfpError = true" @load="pfpError = false">
+					</template>
+					<template x-if="!profileStore.profileInfo.pfpUrl || pfpError">
+						<svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="inline-block size-8 rounded-full text-nbpurple-400">
+							<path stroke-linecap="round" stroke-linejoin="round" d="M17.982 18.725A7.488 7.488 0 0 0 12 15.75a7.488 7.488 0 0 0-5.982 2.975m11.963 0a9 9 0 1 0-11.963 0m11.963 0A8.966 8.966 0 0 1 12 21a8.966 8.966 0 0 1-5.982-2.275M15 9.75a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+						</svg>
+					</template>
+					<!-- /PFP -->
+					<div>
+						<span class="block text-sm font-semibold leading-tight text-nbpurple-50" x-text="profileStore.profileInfo.getNameDisplay()"></span>
+						<span class="block text-xs font-semibold leading-tight text-nbpurple-50" x-text="profileStore.profileInfo.getNpubDisplay()"></span>
+					</div>
+				</div>
+				<div class="flex items-center">
+					<button @click.prevent="profileStore.openDialog(); menuStore.mobileMenuOpen = false; menuStore.disableDeleteFolderButtons(); " class="text-sm font-semibold leading-6 text-nbpurple-50 hover:bg-nbpurple-800 p-2 rounded-md">
+						<svg aria-hidden="true" class="size-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+							<path stroke-linecap="round" stroke-linejoin="round" d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.325.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 0 1 1.37.49l1.296 2.247a1.125 1.125 0 0 1-.26 1.431l-1.003.827c-.293.241-.438.613-.43.992a7.723 7.723 0 0 1 0 .255c-.008.378.137.75.43.991l1.004.827c.424.35.534.955.26 1.43l-1.298 2.247a1.125 1.125 0 0 1-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.47 6.47 0 0 1-.22.128c-.331.183-.581.495-.644.869l-.213 1.281c-.09.543-.56.94-1.11.94h-2.594c-.55 0-1.019-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 0 1-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 0 1-1.369-.49l-1.297-2.247a1.125 1.125 0 0 1 .26-1.431l1.004-.827c.292-.24.437-.613.43-.991a6.932 6.932 0 0 1 0-.255c.007-.38-.138-.751-.43-.992l-1.004-.827a1.125 1.125 0 0 1-.26-1.43l1.297-2.247a1.125 1.125 0 0 1 1.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.086.22-.128.332-.183.582-.495.644-.869l.214-1.28Z" />
+							<path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+						</svg>
+						<span class="sr-only">Profile Settings</span>
+					</button>
+					<button @click.prevent="logoutScreen = true" class="text-sm font-semibold leading-6 text-nbpurple-50 hover:bg-nbpurple-800 p-2 rounded-md">
+						<svg aria-hidden="true" class="size-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+							<path stroke-linecap="round" stroke-linejoin="round" d="M8.25 9V5.25A2.25 2.25 0 0 1 10.5 3h6a2.25 2.25 0 0 1 2.25 2.25v13.5A2.25 2.25 0 0 1 16.5 21h-6a2.25 2.25 0 0 1-2.25-2.25V15M12 9l3 3m0 0-3 3m3-3H2.25" />
+						</svg>
+						<span class="sr-only">Logout</span>
+					</button>
+				</div>
+			</div>
+		</li>
+	</ul>
+	<!-- /Profile -->
+	<!-- Sidebar widgets -->
+	<li>
+		<ul role="list" class="-mx-2 space-y-1">
+			<!-- Storage Usage Widget -->
+			<li>
+				<div class="flex items-center justify-between">
+					<div class="flex items-center">
+						<svg aria-hidden="true" class="size-5 text-nbpurple-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
+						</svg>
+						<span class="ml-2 text-sm font-medium text-nbpurple-300">Usage</span>
+					</div>
+					<div class="text-sm font-medium text-nbpurple-300" x-text="formatBytes(profileStore.profileInfo.storageUsed) + ' / ' + profileStore.profileInfo.totalStorageLimit"></div>
+				</div>
+				<div class="mt-2 w-full bg-nbpurple-200 rounded-full h-2">
+					<div class="bg-nbpurple-600 h-2 rounded-full" :style="'width: ' + (profileStore.profileInfo.getStorageRatio().toFixed(2) * 100) + '%'"></div>
+				</div>
+			</li>
+			<!-- /Storage Usage Widget -->
+			<!-- Remaining Days Widget -->
+			<li>
+				<div class="flex items-center justify-between">
+					<div class="flex items-center">
+						<svg aria-hidden="true" class="size-5 text-nbpurple-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+						</svg>
+						<span class="ml-2 text-sm font-medium text-nbpurple-300">Remaining Days</span>
+					</div>
+					<div class="text-sm font-medium text-nbpurple-300" x-text="profileStore.profileInfo.remainingDays"></div>
+				</div>
+			</li>
+			<!-- /Remaining Days Widget -->
+			<!-- File statistics -->
+			<li>
+				<div class="flex items-center justify-between">
+					<div class="flex items-center">
+						<svg aria-hidden="true" class="size-5 text-nbpurple-300" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+							<path stroke-linecap="round" stroke-linejoin="round" d="M10.5 6a7.5 7.5 0 1 0 7.5 7.5h-7.5V6Z" />
+							<path stroke-linecap="round" stroke-linejoin="round" d="M13.5 10.5H21A7.5 7.5 0 0 0 13.5 3v7.5Z" />
+						</svg>
+						<span class="ml-2 text-sm font-medium text-nbpurple-300" x-text="'Media(' + menuStore.formatNumberInThousands(menuStore.fileStats.totalFiles) + ')'"></span>
+					</div>
+					<div class="flex items-center space-x-2">
+						<div class="flex items-center">
+							<svg aria-hidden="true" class="size-4 text-nbpurple-300" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+								<path stroke-linecap="round" stroke-linejoin="round" d="M12.75 8.25v7.5m6-7.5h-3V12m0 0v3.75m0-3.75H18M9.75 9.348c-1.03-1.464-2.698-1.464-3.728 0-1.03 1.465-1.03 3.84 0 5.304 1.03 1.464 2.699 1.464 3.728 0V12h-1.5M4.5 19.5h15a2.25 2.25 0 0 0 2.25-2.25V6.75A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25v10.5A2.25 2.25 0 0 0 4.5 19.5Z" />
+							</svg>
+							<span class="ml-1 text-sm font-medium text-nbpurple-300" x-text="menuStore.formatNumberInThousands(menuStore.fileStats.totalGifs)"></span>
+						</div>
+						<div class="flex items-center">
+							<svg aria-hidden="true" class="size-4 text-nbpurple-300" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+							</svg>
+							<span class="ml-1 text-sm font-medium text-nbpurple-300" x-text="menuStore.formatNumberInThousands(menuStore.fileStats.totalImages)"></span>
+						</div>
+						<div class="flex items-center">
+							<svg aria-hidden="true" class="size-4 text-nbpurple-300" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+							</svg>
+							<span class="ml-1 text-sm font-medium text-nbpurple-300" x-text="menuStore.formatNumberInThousands(menuStore.fileStats.totalVideos)"></span>
+						</div>
+					</div>
+				</div>
+			</li>
+			<!-- /File statistics -->
+			<!-- Creators Page Shares -->
+			<li x-cloak x-show="profileStore.profileInfo.isCreatorsPageEligible">
+				<div class="flex items-center justify-between">
+					<div class="flex items-center cursor-copy" @click="navigator.clipboard.writeText(profileStore.profileInfo.creatorPageLink); showToast = true">
+						<svg aria-hidden="true" class="size-4 text-nbpurple-300" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+							<path stroke-linecap="round" stroke-linejoin="round" d="M9.53 16.122a3 3 0 0 0-5.78 1.128 2.25 2.25 0 0 1-2.4 2.245 4.5 4.5 0 0 0 8.4-2.245c0-.399-.078-.78-.22-1.128Zm0 0a15.998 15.998 0 0 0 3.388-1.62m-5.043-.025a15.994 15.994 0 0 1 1.622-3.395m3.42 3.42a15.995 15.995 0 0 0 4.764-4.648l3.876-5.814a1.151 1.151 0 0 0-1.597-1.597L14.146 6.32a15.996 15.996 0 0 0-4.649 4.763m3.42 3.42a6.776 6.776 0 0 0-3.42-3.42" />
+						</svg>
+						<span class="ml-2 text-sm font-medium text-nbpurple-300">Creators Page</span>
+						<svg aria-hidden="true" class="ml-1 size-4 text-nbpurple-300" viewBox="0 0 20 20" fill="currentColor">
+							<path fill-rule="evenodd" d="M15.988 3.012A2.25 2.25 0 0 1 18 5.25v6.5A2.25 2.25 0 0 1 15.75 14H13.5v-3.379a3 3 0 0 0-.879-2.121l-3.12-3.121a3 3 0 0 0-1.402-.791 2.252 2.252 0 0 1 1.913-1.576A2.25 2.25 0 0 1 12.25 1h1.5a2.25 2.25 0 0 1 2.238 2.012ZM11.5 3.25a.75.75 0 0 1 .75-.75h1.5a.75.75 0 0 1 .75.75v.25h-3v-.25Z" clip-rule="evenodd" />
+							<path d="M3.5 6A1.5 1.5 0 0 0 2 7.5v9A1.5 1.5 0 0 0 3.5 18h7a1.5 1.5 0 0 0 1.5-1.5v-5.879a1.5 1.5 0 0 0-.44-1.06L8.44 6.439A1.5 1.5 0 0 0 7.378 6H3.5Z" />
+						</svg>
+					</div>
+					<a class="flex items-center cursor-pointer" :href="profileStore.profileInfo.creatorPageLink">
+						<svg aria-hidden="true" class="size-4 text-nbpurple-300" viewBox="0 0 20 20" fill="currentColor">
+							<path d="M12.232 4.232a2.5 2.5 0 0 1 3.536 3.536l-1.225 1.224a.75.75 0 0 0 1.061 1.06l1.224-1.224a4 4 0 0 0-5.656-5.656l-3 3a4 4 0 0 0 .225 5.865.75.75 0 0 0 .977-1.138 2.5 2.5 0 0 1-.142-3.667l3-3Z" />
+							<path d="M11.603 7.963a.75.75 0 0 0-.977 1.138 2.5 2.5 0 0 1 .142 3.667l-3 3a2.5 2.5 0 0 1-3.536-3.536l1.225-1.224a.75.75 0 0 0-1.061-1.06l-1.224 1.224a4 4 0 1 0 5.656 5.656l3-3a4 4 0 0 0-.225-5.865Z" />
+						</svg>
+						<span class="ml-1 text-sm font-medium text-nbpurple-300" x-text="menuStore.formatNumberInThousands(menuStore.fileStats.creatorCount)"></span>
+					</a>
+				</div>
+			</li>
+			<!-- /Creators Page Shares -->
+		</ul>
+	</li>
+	<!-- /Sidebar widgets -->
+	<!-- Menu items -->
+	<li>
+		<!-- Top-level menu items -->
+		<ul role="list" class="-mx-2 space-y-1">
+			<template x-for="item in menuStore.menuItems" :key="item.name">
+				<li>
+					<a :href="item.route" :class="{ 'bg-nbpurple-800 text-nbpurple-50': menuStore.activeMenu === item.name, 'text-nbpurple-300 hover:text-nbpurple-50 hover:bg-nbpurple-800': menuStore.activeMenu !== item.name }" class="group flex gap-x-3 rounded-md p-2 text-sm leading-6 font-semibold" @click="menuStore.setActiveMenu(item.name); menuStore.mobileMenuOpen = false">
+						<svg aria-hidden="true" class="size-6 shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true" x-html="item.icon"></svg>
+						<span x-text="item.name"></span>
+					</a>
+				</li>
+			</template>
+		</ul>
+		<!-- AI Studio submenu -->
+		<div x-data="{ AISubMenuExpand: menuStore.menuItemsAI.length === 1, isAI: menuStore.menuItemsAI.find(item=>item.name === menuStore.activeMenu) }" x-init="fileStore.fullWidth = !isAI" class="-mx-2 space-y-1 mt-1">
+			<button @click.throttle="AISubMenuExpand = !AISubMenuExpand" type="button" class="text-nbpurple-300 hover:text-nbpurple-50 hover:bg-nbpurple-800 flex items-center w-full text-left rounded-md p-2 gap-x-3 text-sm leading-6 font-semibold" aria-controls="sub-menu-ai" aria-expanded="AISubMenuExpand">
+				<svg class="h-6 w-6 shrink-0 text-nbpurple-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+					<path d="M12 8V4H8"/>
+					<rect width="16" height="12" x="4" y="8" rx="2"/>
+					<path d="M2 14h2"/><path d="M20 14h2"/><path d="M15 13v2"/><path d="M9 13v2"/>
+				</svg>
+				AI Studio
+				<svg :class="AISubMenuExpand ? 'rotate-90 text-nbpurple-500' : 'text-nbpurple-400'" class="ml-auto h-5 w-5 shrink-0" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+					<path fill-rule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clip-rule="evenodd" />
+				</svg>
+			</button>
+			<ul x-cloak x-show="AISubMenuExpand || isAI" class="mt-1 px-2" id="sub-menu-ai">
+				<template x-for="item in menuStore.menuItemsAI" :key="item.name">
+					<li>
+						<a :href="item.route" :class="{ 'bg-nbpurple-800 text-nbpurple-50': menuStore.activeMenu === item.name, 'text-nbpurple-300 hover:text-nbpurple-50 hover:bg-nbpurple-800': menuStore.activeMenu !== item.name }" class="group flex gap-x-3 rounded-md p-2 text-sm leading-6 font-semibold" @click="menuStore.setActiveMenu(item.name); menuStore.mobileMenuOpen = false">
+							<svg aria-hidden="true" class="size-6 shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true" x-html="item.icon"></svg>
+							<span x-text="item.name"></span>
+						</a>
+					</li>
+				</template>
+			</ul>
+		</div>
+		<!-- External menu items -->
+		<ul role="list" class="-mx-2 space-y-1">
+			<template x-for="item in menuStore.externalMenuItems" :key="item.name">
+				<li x-show="profileStore.profileInfo.allowed(item.allowed)">
+					<a :href="item.route" :class="{ 'bg-nbpurple-800 text-nbpurple-50': menuStore.activeMenu === item.name, 'text-nbpurple-300 hover:text-nbpurple-50 hover:bg-nbpurple-800': menuStore.activeMenu !== item.name }" class="group flex gap-x-3 rounded-md p-2 text-sm leading-6 font-semibold">
+						<svg aria-hidden="true" class="size-6 shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true" x-html="item.icon"></svg>
+						<span x-text="item.name"></span>
+					</a>
+				</li>
+			</template>
+		</ul>
+		<!-- Admin menu items -->
+		<template x-if="profileStore.profileInfo.isAdmin || profileStore.profileInfo.isModerator">
+			<div x-data="{AdminSubMenuExpand: false}" class="-mx-2 space-y-1 mt-1">
+				<button @click.throttle="AdminSubMenuExpand = !AdminSubMenuExpand" type="button" class="text-nbpurple-300 hover:text-nbpurple-50 hover:bg-nbpurple-800 flex items-center w-full text-left rounded-md p-2 gap-x-3 text-sm leading-6 font-semibold" aria-controls="sub-menu-admin" aria-expanded="AdminSubMenuExpand">
+					<svg class="h-6 w-6 shrink-0 text-nbpurple-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+						<path stroke-linecap="round" stroke-linejoin="round" d="M12 3v17.25m0 0c-1.472 0-2.882.265-4.185.75M12 20.25c1.472 0 2.882.265 4.185.75M18.75 4.97A48.416 48.416 0 0 0 12 4.5c-2.291 0-4.545.16-6.75.47m13.5 0c1.01.143 2.01.317 3 .52m-3-.52 2.62 10.726c.122.499-.106 1.028-.589 1.202a5.988 5.988 0 0 1-2.031.352 5.988 5.988 0 0 1-2.031-.352c-.483-.174-.711-.703-.59-1.202L18.75 4.971Zm-16.5.52c.99-.203 1.99-.377 3-.52m0 0 2.62 10.726c.122.499-.106 1.028-.589 1.202a5.989 5.989 0 0 1-2.031.352 5.989 5.989 0 0 1-2.031-.352c-.483-.174-.711-.703-.59-1.202L5.25 4.971Z" />
+					</svg>
+					Administrate
+					<svg :class="AdminSubMenuExpand ? 'rotate-90 text-nbpurple-500' : 'text-nbpurple-400'" class="ml-auto h-5 w-5 shrink-0" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+						<path fill-rule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clip-rule="evenodd" />
+					</svg>
+				</button>
+				<ul x-cloak x-show="AdminSubMenuExpand" class="mt-1 px-2" id="sub-menu-ai">
+					<template x-for="item in menuStore.adminMenuItems" :key="item.name">
+						<li x-show="profileStore.profileInfo.allowed(item.allowed)">
+							<a :href="item.route" :class="{ 'bg-nbpurple-800 text-nbpurple-50': menuStore.activeMenu === item.name, 'text-nbpurple-300 hover:text-nbpurple-50 hover:bg-nbpurple-800': menuStore.activeMenu !== item.name }" class="group flex gap-x-3 rounded-md p-2 text-sm leading-6 font-semibold">
+								<svg x-show="item.icon.length > 0" aria-hidden="true" class="size-6 shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true" x-html="item.icon"></svg>
+								<span x-text="item.name"></span>
+							</a>
+						</li>
+					</template>
+				</ul>
+			</div>
+		</template>
+	</li>
+	<!-- /Menu items -->
+	<!-- Folders -->
+	<li>
+		<div class="flex items-center justify-between text-xs font-semibold leading-6 text-nbpurple-300">
+			<span class="font-bold" x-text="'Folders (' + menuStore.folders.length + ')'"></span>
+			<div>
+				<!-- Button to create a new folder -->
+				<button type="button" class="ml-2 p-1 text-xs font-semibold text-nbpurple-300 hover:text-nbpurple-50 hover:bg-nbpurple-800 rounded-md" @click="menuStore.newFolderDialogOpen(); menuStore.disableDeleteFolderButtons()" :disabled="menuStore.newFolderDialog">
+					<svg aria-hidden="true" class="size-6" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+						<path stroke-linecap="round" stroke-linejoin="round" d="M12 10.5v6m3-3H9m4.06-7.19-2.12-2.12a1.5 1.5 0 0 0-1.061-.44H4.5A2.25 2.25 0 0 0 2.25 6v12a2.25 2.25 0 0 0 2.25 2.25h15A2.25 2.25 0 0 0 21.75 18V9a2.25 2.25 0 0 0-2.25-2.25h-5.379a1.5 1.5 0 0 1-1.06-.44Z" />
+					</svg>
+					<span class="sr-only">Create a new folder</span>
+				</button>
+				<!-- Button to delete folders -->
+				<button type="button" class="ml-2 p-1 text-xs font-semibold text-nbpurple-300 hover:text-nbpurple-50 hover:bg-nbpurple-800 rounded-md" @click="menuStore.toggleDeleteFolderButtons()" :disabled="menuStore.newFolderDialog">
+					<svg x-show="!menuStore.showDeleteFolderButtons" aria-hidden="true" class="size-6" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+						<path stroke-linecap="round" stroke-linejoin="round" d="M15 13.5H9m4.06-7.19-2.12-2.12a1.5 1.5 0 0 0-1.061-.44H4.5A2.25 2.25 0 0 0 2.25 6v12a2.25 2.25 0 0 0 2.25 2.25h15A2.25 2.25 0 0 0 21.75 18V9a2.25 2.25 0 0 0-2.25-2.25h-5.379a1.5 1.5 0 0 1-1.06-.44Z" />
+					</svg>
+					<svg x-cloak x-show="menuStore.showDeleteFolderButtons" aria-hidden="true" class="size-6" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+						<path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12.75V12A2.25 2.25 0 0 1 4.5 9.75h15A2.25 2.25 0 0 1 21.75 12v.75m-8.69-6.44-2.12-2.12a1.5 1.5 0 0 0-1.061-.44H4.5A2.25 2.25 0 0 0 2.25 6v12a2.25 2.25 0 0 0 2.25 2.25h15A2.25 2.25 0 0 0 21.75 18V9a2.25 2.25 0 0 0-2.25-2.25h-5.379a1.5 1.5 0 0 1-1.06-.44Z" />
+					</svg>
+					<span class="sr-only">Delete folder(s)</span>
+				</button>
+			</div>
+		</div>
+		<ul role="list" class="-mx-2 mt-2 space-y-1">
+			<!-- New Folder Form -->
+			<li x-cloak x-show="menuStore.newFolderDialog" x-trap="menuStore.newFolderDialog">
+				<div x-id="['new-folder', 'new-folder-error']">
+					<div class="flex items-center gap-x-3 relative">
+						<!-- Error message -->
+						<div
+							:id="\$id('new-folder-error')"
+							x-show="menuStore.newFolderNameError"
+							class="absolute left-1/3 -translate-x-1/2 z-10 text-sm font-semibold text-orange-300 transition-opacity duration-300 bg-nbpurple-950/85 rounded-md p-2"
+							:class="{
+								'opacity-0': !menuStore.newFolderNameError,
+								'opacity-100': menuStore.newFolderNameError
+							}"
+							x-transition:enter="transition ease-out duration-300"
+							x-transition:leave="transition ease-in duration-300"
+							x-text="menuStore.newFolderNameError"
+							aria-live="assertive"
+							role="alert"
+						>
+						</div>
+						<label :for="\$id('new-folder')" class="sr-only">New folder name</label>
+						<input :id="\$id('new-folder')" x-ref="newFolderNameInput" type="text" name="new-folder-name" :class="{'animate-shake': menuStore.newFolderNameError }" class="w-full text-sm font-semibold text-nbpurple-300 bg-nbpurple-800 rounded-md p-2" x-model="menuStore.newFolderName" @keydown.enter="menuStore.createFolder(menuStore.newFolderName)" @keydown.escape.stop="menuStore.newFolderDialogClose()" aria-describedby="new-folder-error-message">
+						<button type="button" class="-ml-2 text-nbpurple-300 hover:text-nbpurple-50 hover:bg-nbpurple-800 rounded-md p-2 text-sm leading-6 font-semibold" @click="menuStore.createFolder(menuStore.newFolderName)">
+							<svg aria-hidden="true" class="size-5 shrink-0 items-center justify-center rounded-lg border border-nbpurple-700 bg-nbpurple-800 text-[0.625rem] font-medium text-nbpurple-300 group-hover:text-nbpurple-50" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+								<path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+							</svg>
+							<span class="sr-only">Create folder</span>
+						</button>
+						<button type="button" class="-mx-2 text-nbpurple-300 hover:text-nbpurple-50 hover:bg-nbpurple-800 rounded-md p-2 text-sm leading-6 font-semibold" @click="menuStore.newFolderDialogClose()">
+							<svg aria-hidden="true" class="size-5 shrink-0 items-center justify-center rounded-lg border border-nbpurple-700 bg-nbpurple-800 text-[0.625rem] font-medium text-nbpurple-300 group-hover:text-nbpurple-50" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+								<path stroke-linecap="round" stroke-linejoin="round" d="m9.75 9.75 4.5 4.5m0-4.5-4.5 4.5M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+							</svg>
+							<span class="sr-only">Cancel</span>
+						</button>
+					</div>
+				</div>
+			</li>
+			<!-- /New Folder Form -->
+			<template x-for="folder in menuStore.folders" :key="folder.name">
+				<li>
+					<div class="flex justify-between" x-transition:enter="transition-opacity ease-linear duration-500" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" x-transition:leave="transition-opacity ease-linear duration-300" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0">
+						<a :href="folder.route" :class="{ 'bg-nbpurple-800 text-nbpurple-50': menuStore.activeFolder === folder.name, 'text-nbpurple-300 hover:text-nbpurple-50 hover:bg-nbpurple-800': menuStore.activeFolder !== folder.name }" class="w-full group flex gap-x-3 rounded-md p-2 text-sm leading-6 font-semibold" @click.prevent="menuStore.setActiveFolder(folder.name); menuStore.mobileMenuOpen = false; menuStore.disableDeleteFolderButtons()">
+							<!--
+							<span class="flex size-6 shrink-0 items-center justify-center rounded-lg border border-nbpurple-700 bg-nbpurple-800 text-[0.625rem] font-medium text-nbpurple-300 group-hover:text-nbpurple-50" x-text="folder.icon"></span>
+							-->
+							<span class="relative flex size-6 shrink-0 items-center justify-center rounded-lg border border-nbpurple-700 bg-nbpurple-800 text-[0.5rem] font-normal text-nbpurple-300 group-hover:text-nbpurple-50">
+								<svg class="absolute w-full h-full" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+									<path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/>
+								</svg>
+								<span class="relative z-10 -mb-[0.1rem]" x-text="folder.icon"></span>
+							</span>
+							<span class="truncate" x-text="folder.name"></span>
+						</a>
+						<!-- Delete folder Icon -->
+						<button x-cloak x-show="menuStore.showDeleteFolderButtons && folder.allowDelete && folder.name !== menuStore.activeFolder" type="button" class="text-nbpurple-300 hover:text-nbpurple-50 hover:bg-nbpurple-800 rounded-md p-2 text-sm leading-6 font-semibold" @click="menuStore.openDeleteFolderModal(folder.id)">
+							<svg aria-hidden="true" class="size-5 shrink-0 items-center justify-center rounded-lg border border-nbpurple-700 bg-nbpurple-800 text-[0.625rem] font-medium text-nbpurple-300 group-hover:text-nbpurple-50" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+								<path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
+							</svg>
+							<span class="sr-only">Delete folder</span>
+						</button>
+					</div>
+				</li>
+			</template>
+			<li x-cloak x-show="!menuStore.newFolderDialog">
+				<button type="button" class="w-full text-nbpurple-300 hover:text-nbpurple-50 hover:bg-nbpurple-800 group flex gap-x-3 rounded-md p-2 text-sm leading-6 font-semibold" @click="menuStore.newFolderDialogOpen()">
+					<svg aria-hidden="true" class="flex size-6 shrink-0 items-center justify-center rounded-lg border border-nbpurple-700 bg-nbpurple-800 text-[0.625rem] font-medium text-nbpurple-300 group-hover:text-nbpurple-50" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+						<path stroke-linecap="round" stroke-linejoin="round" d="M12 10.5v6m3-3H9m4.06-7.19-2.12-2.12a1.5 1.5 0 0 0-1.061-.44H4.5A2.25 2.25 0 0 0 2.25 6v12a2.25 2.25 0 0 0 2.25 2.25h15A2.25 2.25 0 0 0 21.75 18V9a2.25 2.25 0 0 0-2.25-2.25h-5.379a1.5 1.5 0 0 1-1.06-.44Z" />
+					</svg>
+					<span class="truncate">Create folder</span>
+				</button>
+			</li>
+		</ul>
+	</li>
+	<!-- /Folders -->
+	<!-- Bottom buffer -->
+	<li class="flex-1 min-h-12"></li>
+	<!-- /Bottom buffer -->
+</ul>
+HTML;
 ?>
 
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="h-full bg-gradient-to-tr from-nbpurple-950 to-nbpurple-800 bg-fixed bg-no-repeat bg-cover antialiased">
 
 <head>
 	<meta charset="UTF-8" />
@@ -82,719 +402,1180 @@ $userStorageRemaining = $userOverLimit ? 0 : $userStorageLimit - $storageUsed;
 	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 	<title>nostr.build account</title>
 
-	<link rel="stylesheet" href="/styles/account.css?v=148e0a0e2392c20a08d769499e95b3ba" />
-	<link href="/scripts/dist/index.css?v=41124e3fc077d9db25d2c401ccdecbff" rel="stylesheet">
-	<link href="/styles/twbuild.css?v=f95e0de5bb8bee21a45d018b0f54aa4c" rel="stylesheet">
-	<link rel="icon" href="/assets/primo_nostr.png" />
+	<script defer src="/scripts/dist/account-v2.js?v=4b42e505aa72fad07d9711b62b5dc2ea"></script>
+	<link href="/scripts/dist/account-v2.css?v=b53dd90fe055a3de4cdc4c77295177dd" rel="stylesheet">
 
-	<script defer src="/scripts/dist/index.js?v=a057b2c5055ed99343fbf429e906665c"></script>
-	<script defer src="/scripts/fw/alpinejs-intersect.min.js?v=e6545f3f0a314d90d9a1442ff104eab9"></script>
-	<script defer src="/scripts/fw/alpinejs.min.js?v=34fbe266eb872c1a396b8bf9022b7105"></script>
-	<script defer src="/scripts/fw/htmx.min.js?v=0dc2b5da8a531cecfa8100af6cec8d61"></script>
-	<script defer src="/scripts/fw/htmx/loading-states.js?v=128bcf948f60619461c2d6f77b9b8da4"></script>
+	<link rel="icon" href="/assets/nb-logo-color-w.png" />
+	<link href="/styles/twbuild.css?v=88fba0465d458e1daffb61bec6d143ff" rel="stylesheet">
+
 	<style>
 		[x-cloak] {
 			display: none !important;
 		}
 
-		.publicly-shared {
-			border: 0.3125rem solid #00ff00;
+
+		/* More of Uppy styles */
+		[data-uppy-theme=dark] .uppy-ProviderBrowser-viewType--list {
+			background-color: #302B64;
+		}
+
+		[data-uppy-theme=dark] .uppy-ProviderBrowser-viewType--list li.uppy-ProviderBrowserItem {
+			color: #E4E2F3;
+		}
+
+		[data-uppy-theme=dark] .uppy-ProviderBrowser-viewType--grid li.uppy-ProviderBrowserItem--noPreview .uppy-ProviderBrowserItem-inner,
+		[data-uppy-theme=dark] .uppy-ProviderBrowser-viewType--unsplash li.uppy-ProviderBrowserItem--noPreview .uppy-ProviderBrowserItem-inner {
+			background-color: #A39FD6;
+		}
+
+		[data-uppy-theme=dark] .uppy-ProviderBrowser-viewType--grid li.uppy-ProviderBrowserItem--noPreview svg,
+		[data-uppy-theme=dark] .uppy-ProviderBrowser-viewType--unsplash li.uppy-ProviderBrowserItem--noPreview svg {
+			fill: #DAD8EE;
+		}
+
+		[data-uppy-theme=dark] .uppy-ProviderBrowser-viewType--grid .uppy-ProviderBrowserItem-inner,
+		[data-uppy-theme=dark] .uppy-ProviderBrowser-viewType--unsplash .uppy-ProviderBrowserItem-inner {
+			box-shadow: 0 0 0 3px #8C86CB;
+		}
+
+		[data-uppy-theme=dark] .uppy-ProviderBrowser-viewType--list .uppy-ProviderBrowserItem-checkbox:focus {
+			border-color: #7069BF;
+			box-shadow: 0 0 0 3px #5950B4;
+		}
+
+		[data-uppy-theme=dark] .uppy-ProviderBrowser-userLogout:focus {
+			background-color: #494299;
+		}
+
+		[data-uppy-theme=dark] .uppy-ProviderBrowser-breadcrumbs {
+			color: #E4E2F3;
+		}
+
+		[data-uppy-theme=dark] .uppy-ProviderBrowser-breadcrumbs button:focus {
+			background-color: #494299;
+		}
+
+		[data-uppy-theme=dark] .uppy-ProviderBrowser-breadcrumbs button {
+			color: #E4E2F3;
+		}
+
+		[data-uppy-theme=dark] .uppy-Provider-authTitle {
+			color: #BEBBE2;
+		}
+
+		[data-uppy-theme=dark] .uppy-Provider-breadcrumbsIcon {
+			color: #E4E2F3;
+		}
+
+		[data-uppy-theme=dark] .uppy-Provider-breadcrumbsIcon svg {
+			fill: #E4E2F3;
+		}
+
+		[data-uppy-theme=dark] .uppy-DashboardContent-panelBody {
+			background-color: #302B64;
+		}
+
+		[data-uppy-theme=dark] .uppy-Provider-breadcrumbs button:hover,
+		[data-uppy-theme=dark] .uppy-Provider-breadcrumbs button:focus {
+			color: #E4E2F3;
+		}
+
+		[data-uppy-theme=dark] .uppy-Dashboard-serviceMsg {
+			background-color: #302B64;
+			border-top: 1px solid #494299;
+			border-bottom: 1px solid #494299;
+		}
+
+		[data-uppy-theme=dark] .uppy-Dashboard-serviceMsg-title {
+			color: #E4E2F3;
+		}
+
+		[data-uppy-theme=dark] .uppy-Size--md.uppy-Dashboard--modal .uppy-Dashboard-inner {
+			background-color: #302B64;
+		}
+
+		[data-uppy-theme=dark] .uppy-Dashboard-browse:hover,
+		[data-uppy-theme=dark] .uppy-Dashboard-browse:focus {
+			border-bottom: 1px solid #7069BF;
+		}
+
+		[data-uppy-theme=dark] .uppy-Dashboard-fileCard {
+			background-color: #302B64;
+			box-shadow: 0 0 0 2px #5950B4;
+		}
+
+		[data-uppy-theme=dark] .uppy-Dashboard-fileCard .uppy-Dashboard-fileCard-preview {
+			background-color: #302B64;
+			border-bottom: 1px solid #494299;
+		}
+
+		[data-uppy-theme=dark] .uppy-Dashboard-fileCard .uppy-Dashboard-fileCard-info {
+			background-color: #302B64;
+		}
+
+		[data-uppy-theme=dark] .uppy-Dashboard-fileCard .uppy-Dashboard-fileCard-actions {
+			background-color: #302B64;
+			border-top: 1px solid #494299;
+		}
+
+		[data-uppy-theme=dark] .uppy-Dashboard-AddFiles-title {
+			color: #E4E2F3;
+		}
+
+		[data-uppy-theme=dark] .uppy-Dashboard-note {
+			color: #BEBBE2;
+		}
+
+		[data-uppy-theme=dark] .uppy-StatusBar:not([aria-hidden=true]).is-waiting {
+			background-color: #302B64;
+			border-top: 1px solid #494299;
+		}
+
+		[data-uppy-theme=dark] .uppy-StatusBar-serviceMsg {
+			color: #E4E2F3;
+		}
+
+		[data-uppy-theme=dark] .uppy-DashboardContent-title {
+			color: #E4E2F3;
+		}
+
+		[data-uppy-theme=dark] .uppy-DashboardContent-back:focus {
+			background-color: #494299;
+		}
+
+		[data-uppy-theme=dark] .uppy-DashboardContent-addMore:focus {
+			background-color: #494299;
+		}
+
+		[data-uppy-theme=dark] .uppy-DashboardTab {
+			border-bottom: 1px solid #494299;
+		}
+
+		[data-uppy-theme=dark] .uppy-DashboardTab-btn {
+			color: #E4E2F3;
+		}
+
+		[data-uppy-theme=dark] .uppy-DashboardTab-btn:hover {
+			background-color: #494299;
+		}
+
+		[data-uppy-theme=dark] .uppy-DashboardTab-btn:active,
+		[data-uppy-theme=dark] .uppy-DashboardTab-btn:focus {
+			background-color: #3C367D;
+		}
+
+		[data-uppy-theme=dark] .uppy-Dashboard-Item-previewLink:focus {
+			box-shadow: inset 0 0 0 3px #8C86CB;
+		}
+
+		[data-uppy-theme=dark] .uppy-Dashboard-Item-action {
+			color: #BEBBE2;
+		}
+
+		[data-uppy-theme=dark] .uppy-Dashboard-Item-action:focus {
+			outline: none;
+		}
+
+		[data-uppy-theme=dark] .uppy-Dashboard-Item-action::-moz-focus-inner {
+			border: 0;
+		}
+
+		[data-uppy-theme=dark] .uppy-Dashboard-Item-action:focus {
+			box-shadow: 0 0 0 2px #8C86CB;
+		}
+
+		[data-uppy-theme=dark] .uppy-Dashboard-Item-action:hover {
+			color: #E4E2F3;
+		}
+
+		[data-uppy-theme=dark] .uppy-Dashboard-Item-action--remove {
+			color: #3C367D;
+		}
+
+		[data-uppy-theme=dark] .uppy-Dashboard-Item-action--remove:hover {
+			color: #494299;
+		}
+
+		[data-uppy-theme=dark] .uppy-Dashboard-dropFilesHereHint {
+			color: #DAD8EE;
+			border-color: #7069BF;
+		}
+
+		[data-uppy-theme=dark] .uppy-Dashboard-serviceMsg-actionBtn--disabled {
+			color: #5950B4;
+		}
+
+		[data-uppy-theme=dark] .uppy-ImageCropper .cropper-view-box {
+			background: repeating-conic-gradient(#302B64 0% 25%, #292556 0% 50%) 50%/16px 16px;
+		}
+
+		[data-uppy-theme=dark] .uppy-ImageCropper .cropper-modal {
+			opacity: 0.7;
+			background-color: #292556;
+		}
+
+		/* Uppy styles */
+
+		[data-uppy-theme=dark] .uppy-Dashboard-inner,
+		.uppy-Dashboard-inner {
+			background-color: transparent;
+			border: none;
+		}
+
+		[data-uppy-theme=dark] .uppy-Dashboard-AddFiles {
+			background-color: transparent;
+			border: none;
+		}
+
+		[data-uppy-theme=dark] .uppy-Dashboard-inner {
+			background-color: transparent;
+		}
+
+		[data-uppy-theme=dark] .uppy-Dashboard-Item {
+			border: none;
+		}
+
+		[data-uppy-theme=dark] .uppy-DashboardContent-bar {
+			background-color: transparent;
+			border-bottom: 1px solid rgb(140 134 203);
+		}
+
+		[data-uppy-theme=dark] .uppy-StatusBar.is-waiting .uppy-StatusBar-actions {
+			background-color: transparent;
+		}
+
+		[data-uppy-theme=dark] .uppy-Dashboard-Item-action--remove {
+			color: rgb(140 134 203);
+		}
+
+		[data-uppy-theme=dark].uppy-Dashboard-dropFilesHereHint,
+		.uppy-Dashboard-dropFilesHereHint {
+			color: rgb(140 134 203);
+			border: none;
+			background-color: transparent;
+		}
+
+		[data-uppy-theme=dark] .uppy-StatusBar:not([aria-hidden=true]).is-waiting {
+			background-color: transparent;
+			border-top: 1px solid rgb(140 134 203);
+		}
+
+		[data-uppy-theme=dark] .uppy-StatusBar,
+		[data-uppy-theme=dark] .uppy-StatusBar:before {
+			background-color: transparent;
+		}
+
+		.uppy-StatusBar.is-complete .uppy-StatusBar-progress {
+			background-color: rgb(163 159 214);
+		}
+
+		[data-uppy-theme=dark] .uppy-DashboardTab-inner {
+			background-color: transparent;
+			box-shadow: 0 1px 1px #0003, 0 1px 2px #0003, 0 2px 3px #00000014;
 		}
 	</style>
 
 </head>
 
-<body x-data="{ url_up_open: false }">
-	<aside class="sidebar">
-		<h1 class="sidebar_title">nostr.build</h1>
-		<div class="account_selector">
-			<a href="/functions/settings.php"><img src="<?= empty($ppic) ? '/assets/temp_ppic.png' : $ppic ?>" alt="user image" class="rounded-full w-6 h-6"></a>
-			<div class="user_info">
-				<p class="user_name"><?= htmlentities($nym) ?></p>
-				<p class="user_address"><?= strlen($user) > 17 ? substr(htmlspecialchars($user), 0, 17) . "..." : htmlspecialchars($user) ?></p>
-			</div>
-			<div class="icons">
-				<button class="logout_button" onclick="window.location.href='/functions/logout.php';">
-					<svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-						<path d="M11.8766 2.31856C11.5384 2.33448 11.1024 2.39202 10.4654 2.47697L6.07073 3.06292C5.8229 3.09596 5.74811 3.1068 5.68998 3.12071C5.13911 3.25249 4.73161 3.71792 4.6738 4.28137C4.6677 4.34083 4.66683 4.4164 4.66683 4.66643C4.66683 5.03462 4.36836 5.3331 4.00017 5.3331C3.63198 5.3331 3.3335 5.03462 3.3335 4.66643V4.63223C3.33345 4.4313 3.33343 4.28178 3.34743 4.14528C3.46305 3.01838 4.27804 2.08751 5.37978 1.82396C5.51323 1.79204 5.66143 1.77231 5.86061 1.7458L10.3184 1.15143C10.919 1.07134 11.4118 1.00562 11.8139 0.986703C12.2292 0.96717 12.6159 0.992543 12.9854 1.1395C13.5538 1.36546 14.0271 1.77988 14.3262 2.31332C14.5207 2.66024 14.597 3.04017 14.6325 3.45438C14.6668 3.85547 14.6668 4.35263 14.6668 4.95853V11.041C14.6668 11.6469 14.6668 12.144 14.6325 12.5452C14.597 12.9594 14.5207 13.3393 14.3262 13.6862C14.0271 14.2196 13.5538 14.6341 12.9854 14.86C12.6159 15.007 12.2292 15.0324 11.8139 15.0128C11.4118 14.9939 10.919 14.9282 10.3184 14.8481L5.86051 14.2537C5.66147 14.2272 5.51318 14.2075 5.37978 14.1756C4.27804 13.912 3.46305 12.9812 3.34743 11.8542C3.33343 11.7178 3.33345 11.5682 3.3335 11.3673V11.3331C3.3335 10.9649 3.63198 10.6664 4.00017 10.6664C4.36836 10.6664 4.66683 10.9649 4.66683 11.3331C4.66683 11.5832 4.6677 11.6587 4.6738 11.7182C4.73161 12.2816 5.13911 12.747 5.68998 12.8788C5.7481 12.8927 5.82291 12.9036 6.07074 12.9366L10.4654 13.5226C11.1024 13.6075 11.5384 13.665 11.8766 13.681C12.2082 13.6966 12.377 13.6671 12.4928 13.621C12.777 13.5081 13.0136 13.3008 13.1632 13.0342C13.2242 12.9254 13.2756 12.762 13.304 12.4312C13.333 12.0939 13.3335 11.6542 13.3335 11.0114V4.98808C13.3335 4.34536 13.333 3.90564 13.304 3.56829C13.2756 3.23757 13.2242 3.07416 13.1632 2.96539C13.0136 2.69867 12.777 2.49146 12.4928 2.37848C12.377 2.3324 12.2082 2.30296 11.8766 2.31856Z" fill="#D0BED8" />
-						<path d="M7.52876 4.86176C7.7891 4.60142 8.21123 4.60142 8.47156 4.86176L11.1382 7.52844C11.3986 7.78877 11.3986 8.2109 11.1382 8.47124L8.47156 11.1379C8.21123 11.3982 7.7891 11.3982 7.52876 11.1379C7.26843 10.8776 7.26843 10.4554 7.52876 10.1951L9.05736 8.6665H2.00016C1.63198 8.6665 1.3335 8.36804 1.3335 7.99984C1.3335 7.63164 1.63198 7.33317 2.00016 7.33317H9.05736L7.52876 5.80458C7.26843 5.54422 7.26843 5.12212 7.52876 4.86176Z" fill="#D0BED8" />
-					</svg>
-				</button>
-				<button class="accounts_button" onclick="window.location.href='/functions/settings.php';">
-					<svg width="16" height="16" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="#e5e7eb">
-						<path stroke-linecap="round" stroke-linejoin="round" d="M10.343 3.94c.09-.542.56-.94 1.11-.94h1.093c.55 0 1.02.398 1.11.94l.149.894c.07.424.384.764.78.93.398.164.855.142 1.205-.108l.737-.527a1.125 1.125 0 011.45.12l.773.774c.39.389.44 1.002.12 1.45l-.527.737c-.25.35-.272.806-.107 1.204.165.397.505.71.93.78l.893.15c.543.09.94.56.94 1.109v1.094c0 .55-.397 1.02-.94 1.11l-.893.149c-.425.07-.765.383-.93.78-.165.398-.143.854.107 1.204l.527.738c.32.447.269 1.06-.12 1.45l-.774.773a1.125 1.125 0 01-1.449.12l-.738-.527c-.35-.25-.806-.272-1.203-.107-.397.165-.71.505-.781.929l-.149.894c-.09.542-.56.94-1.11.94h-1.094c-.55 0-1.019-.398-1.11-.94l-.148-.894c-.071-.424-.384-.764-.781-.93-.398-.164-.854-.142-1.204.108l-.738.527c-.447.32-1.06.269-1.45-.12l-.773-.774a1.125 1.125 0 01-.12-1.45l.527-.737c.25-.35.273-.806.108-1.204-.165-.397-.505-.71-.93-.78l-.894-.15c-.542-.09-.94-.56-.94-1.109v-1.094c0-.55.398-1.02.94-1.11l.894-.149c.424-.07.765-.383.93-.78.165-.398.143-.854-.107-1.204l-.527-.738a1.125 1.125 0 01.12-1.45l.773-.773a1.125 1.125 0 011.45-.12l.737.527c.35.25.807.272 1.204.107.397-.165.71-.505.78-.929l.15-.894z" />
-						<path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-					</svg>
-				</button>
-			</div>
-		</div>
-		<nav class="nav_buttons">
-			<button class="nav_item" onclick="window.location.href='/account';">
-				<svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-					<path opacity="0.4" d="M14.1667 7.5L9.63808 12.0286C9.47308 12.1936 9.39058 12.2761 9.29542 12.307C9.21175 12.3343 9.12158 12.3343 9.03792 12.307C8.94275 12.2761 8.86025 12.1936 8.69525 12.0286L7.13808 10.4714C6.97307 10.3064 6.89056 10.2239 6.79542 10.193C6.71174 10.1657 6.62159 10.1657 6.53791 10.193C6.44278 10.2239 6.36027 10.3064 6.19526 10.4714L2.5 14.1667M14.1667 7.5H10.8333M14.1667 7.5V10.8333" stroke="white" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round" />
-					<path d="M2.5 6.5C2.5 5.09987 2.5 4.3998 2.77248 3.86503C3.01217 3.39462 3.39462 3.01217 3.86503 2.77248C4.3998 2.5 5.09987 2.5 6.5 2.5H13.5C14.9002 2.5 15.6002 2.5 16.135 2.77248C16.6054 3.01217 16.9878 3.39462 17.2275 3.86503C17.5 4.3998 17.5 5.09987 17.5 6.5V13.5C17.5 14.9002 17.5 15.6002 17.2275 16.135C16.9878 16.6054 16.6054 16.9878 16.135 17.2275C15.6002 17.5 14.9002 17.5 13.5 17.5H6.5C5.09987 17.5 4.3998 17.5 3.86503 17.2275C3.39462 16.9878 3.01217 16.6054 2.77248 16.135C2.5 15.6002 2.5 14.9002 2.5 13.5V6.5Z" stroke="white" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round" />
-				</svg>
-				Dashboard
-			</button>
-			<button class="nav_item" onclick="window.location.href='/';">
-				<svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-					<path opacity="0.12" d="M10.0003 18.3337C14.6027 18.3337 18.3337 14.6027 18.3337 10.0003C18.3337 5.39795 14.6027 1.66699 10.0003 1.66699C5.39795 1.66699 1.66699 5.39795 1.66699 10.0003C1.66699 14.6027 5.39795 18.3337 10.0003 18.3337Z" fill="#D0BED8" />
-					<path d="M13.3337 10.0003L10.0003 6.66699M10.0003 6.66699L6.66699 10.0003M10.0003 6.66699V14.3337C10.0003 15.4926 10.0003 16.0721 10.4591 16.7208C10.7639 17.1519 11.6415 17.6839 12.1647 17.7548C12.9521 17.8615 13.2511 17.7055 13.8492 17.3936C16.5142 16.0033 18.3337 13.2143 18.3337 10.0003C18.3337 5.39795 14.6027 1.66699 10.0003 1.66699C5.39795 1.66699 1.66699 5.39795 1.66699 10.0003C1.66699 13.0848 3.34282 15.7779 5.83366 17.2188" stroke="#D0BED8" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round" />
-				</svg>
-				Free &amp; profile picture uploads
-			</button>
-			<button class="nav_item" onclick="window.location.href='/account/ai';">
-				<svg class="text-[#f79413]" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-bot">
-					<path d="M12 8V4H8" />
-					<rect width="16" height="12" x="4" y="8" rx="2" />
-					<path d="M2 14h2" />
-					<path d="M20 14h2" />
-					<path d="M15 13v2" />
-					<path d="M9 13v2" />
-				</svg>
-				AI Studio
-				<span class="inline-flex items-center rounded-full bg-nbpurple-200 px-1.5 py-0.5 text-xs font-medium text-nbpurple-800 ring-1 ring-inset ring-nbpurple-700/10">New</span>
-			</button>
+<body x-data="{
+	showToast: false,
+	logoutScreen: false,
+	// Stores
+	menuStore: $store.menuStore,
+	fileStore: $store.fileStore,
+	GAI: $store.GAI,
+	profileStore: $store.profileStore,
+	nostrStore: $store.nostrStore,
+	uppyStore: $store.uppyStore,
+	urlImportStore: $store.urlImportStore,
+	}" x-init="if (!menuStore.foldersFetched) await menuStore.fetchFolders(); $watch('showToast', value => {
+		if (value) {
+			setTimeout(() => showToast = false, 2000);
+		}
+	})" class="h-full">
+	<!-- Big loading spinner -->
+	<div x-show="!menuStore.alpineInitiated || !menuStore.menuStoreInitiated || !profileStore.profileDataInitialized" id="bls-screen" class="flex flex-col fixed inset-0 z-[9999] items-center justify-center bg-gradient-to-tr from-nbpurple-950 to-nbpurple-800 bg-fixed bg-no-repeat bg-cover" x-transition:enter="transition ease-out duration-500" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" x-transition:leave="transition ease-in duration-500" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0">
+		<svg class="animate-spin size-1/4 text-nbpurple-100" fill="none" viewBox="0 0 24 24">
+			<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+			<path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+		</svg>
+		<p class="absolute bottom-1/4 text-nbpurple-100 text-lg md:text-2xl lg:text-3xl xl:text-4xl font-semibold ml-4 animate-pulse">Loading...</p>
+	</div>
+	<main>
+		<div>
+			<!-- Off-canvas menu for mobile, show/hide based on off-canvas menu state. -->
+			<div x-cloak class="relative z-50 xl:hidden" role="dialog" aria-modal="true" x-show="menuStore.mobileMenuOpen" x-transition:enter="transition-opacity ease-linear duration-300" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" x-transition:leave="transition-opacity ease-linear duration-300" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0">
+				<div class="fixed inset-0 bg-nbpurple-900/80"></div>
 
-			<?php
-			// Menu items for Creators and Admins
-			// Menu items for all verified accounts, and moderators
-			if ($perm->validatePermissionsLevelAny(1, 2, 3, 4, 10) || $perm->hasPrivilege('canModerate') || $perm->isAdmin()) :
-			?>
+				<div class="fixed inset-0 flex">
+					<div class="relative mr-16 flex w-full max-w-xs flex-1" x-show="menuStore.mobileMenuOpen" x-transition:enter="transition ease-in-out duration-300 transform" x-transition:enter-start="-translate-x-full" x-transition:enter-end="translate-x-0" x-transition:leave="transition ease-in-out duration-300 transform" x-transition:leave-start="translate-x-0" x-transition:leave-end="-translate-x-full">
+						<div class="absolute left-full top-0 flex w-16 justify-center pt-5">
+							<button type="button" class="-m-2.5 p-2.5" @click="menuStore.mobileMenuOpen = false">
+								<span class="sr-only">Close sidebar</span>
+								<svg class="size-6 text-white" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true">
+									<path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+								</svg>
+							</button>
+						</div>
 
-				<button class="nav_item" onclick="window.location.href='/viewall/'; ">
-					<svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-						<g clip-path="url(#clip0_419_1449)">
-							<path opacity="0.4" d="M7.08317 8.74984C8.00365 8.74984 8.74985 8.00365 8.74985 7.08317C8.74985 6.1627 8.00365 5.4165 7.08317 5.4165C6.1627 5.4165 5.4165 6.1627 5.4165 7.08317C5.4165 8.00365 6.1627 8.74984 7.08317 8.74984Z" stroke="#C449F3" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round" />
-							<path d="M4.99949 16.6668L12.3903 9.276C12.7203 8.946 12.8854 8.78092 13.0757 8.71917C13.243 8.66475 13.4233 8.66475 13.5907 8.71917C13.7809 8.78092 13.946 8.946 14.276 9.276L17.8376 12.8376M18.3332 9.99984C18.3332 14.6022 14.6022 18.3332 9.99984 18.3332C5.39746 18.3332 1.6665 14.6022 1.6665 9.99984C1.6665 5.39746 5.39746 1.6665 9.99984 1.6665C14.6022 1.6665 18.3332 5.39746 18.3332 9.99984Z" stroke="#C449F3" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round" />
-						</g>
-						<defs>
-							<clipPath id="clip0_419_1449">
-								<rect width="20" height="20" fill="white" />
-							</clipPath>
-						</defs>
-					</svg>
-					View All - free images
-				</button>
-			<?php
-			endif;
-			// Menu items for Admins only
-			if ($perm->isAdmin()) :
-			?>
-
-				<button type="button" class="nav_item" data-toggle="modal" data-target="#myModal0" id="myModal0">** Admin Resources</button>
-
-				<!-- The Modal -->
-				<div id="myModal0" class="modal">
-
-					<!-- Modal content -->
-					<div class="modal-content" style="color: #fff;">
-						&ensp;<a href="admin/newacct.php" target="_blank">New Accounts</a><BR>
-						&ensp;<a href="admin/profilepics.php" target="_blank">Profile Pics</a><BR>
-						&ensp;<a href="admin/list_db.php" target="_blank">Database Tables</a><BR>
-						&ensp;<a href="admin/update_db.php" target="_blank">Update Database Tables</a><BR>
-						&ensp;<a href="admin/allmediauploads.php" target="_blank">All Media uploaded</a><BR>
-						&ensp;<a href="admin/approve.php" target="_blank">Approve Content</a><BR>
-						&ensp;<a href="admin/stats.php" target="_blank">Free uploads stats</a><BR>
-						&ensp;<a href="admin/account_stats.php" target="_blank">Account stats</a><BR>
-						&ensp;<a href="admin/promo.php" target="_blank">Manage Promotions</a><BR>
-						&ensp;<a href="https://btcpay.nostr.build" target="_blank">BTCPay Server</a><BR>
+						<!-- Sidebar component -->
+						<div class="flex grow flex-col gap-y-5 overflow-y-auto bg-nbpurple-900 px-6 ring-1 ring-white/10" @click.outside="menuStore.mobileMenuOpen = false; menuStore.disableDeleteFolderButtons()" @keydown.escape="menuStore.mobileMenuOpen = false; menuStore.disableDeleteFolderButtons()">
+							<div class="flex h-16 shrink-0 items-center -mb-5">
+								<?= $NBLogoSVG ?>
+								<span class="text-nbpurple-50 font-semibold ml-4" x-text="profileStore.profileInfo.planName + ' Account'"></span>
+								<!-- Upgrade or renewal button -->
+								<button x-cloak x-show="profileStore.profileInfo.accountEligibleForRenewal || profileStore.profileInfo.accountEligibleForUpgrade" type="button" class="ml-auto p-1 text-nbpurple-50 hover:text-nbpurple-100 rounded-md bg-nbpurple-600 hover:bg-nbpurple-400 text-xs" @click="window.location.href='/plans/'">
+									<span x-text="profileStore.profileInfo.accountEligibleForRenewal ? 'Renew' : profileStore.profileInfo.accountEligibleForUpgrade ? 'Upgrade' : ''">Renew</span>
+								</button>
+							</div>
+							<nav class="flex flex-1 flex-col">
+								<!-- Mobile menu content -->
+								<?= $pageMenuContent ?>
+							</nav>
+						</div>
 					</div>
 				</div>
-			<?php
-			// Menu items for moderators
-			elseif ($perm->hasPrivilege('canModerate')) :
-			?>
-				&ensp;&ensp;&ensp;<a class="nav_item" style="color: #fff;" href="admin/approve.php" target="_blank">** Admin Content Review **</a><BR>
-			<?php
-			endif;
+			</div>
 
-			$divCount = 0;
-			$foldercount = $usersFoldersStats['TOTAL']['folderCount'];
-			?>
-		</nav>
+			<!-- Static sidebar for desktop -->
+			<div class="hidden xl:fixed xl:inset-y-0 xl:z-50 xl:flex xl:w-72 xl:flex-col">
+				<!-- Sidebar component, swap this element with another sidebar if you like -->
+				<div class="flex grow flex-col gap-y-5 overflow-y-auto bg-nbpurple-900/10 px-6 ring-1 ring-white/5">
+					<div class="flex h-16 shrink-0 items-center -mb-5">
+						<?= $NBLogoSVG ?>
+						<span class="text-nbpurple-50 font-semibold ml-4" x-text="profileStore.profileInfo.planName + ' Account'"></span>
+						<!-- Upgrade or renewal button -->
+						<button x-cloak x-show="profileStore.profileInfo.accountEligibleForRenewal || profileStore.profileInfo.accountEligibleForUpgrade" type="button" class="ml-auto p-1 text-nbpurple-50 hover:text-nbpurple-100 rounded-md bg-nbpurple-600 hover:bg-nbpurple-400 text-xs" @click="window.location.href='/plans/'">
+							<span x-text="profileStore.profileInfo.accountEligibleForRenewal ? 'Renew' : profileStore.profileInfo.accountEligibleForUpgrade ? 'Upgrade' : ''">Renew</span>
+						</button>
+					</div>
+					<nav class="flex flex-1 flex-col">
+						<!-- Desktop menu content -->
+						<?= $pageMenuContent ?>
+					</nav>
+				</div>
+			</div>
 
-		<div class="folder_info">
-			<p>Your folders (<span> <?= $foldercount ?? 0 ?> </span>)</p>
-			<button class="edit_folder_button" onclick="window.location.href='?editfolder=true';">
-				<svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
-					<g clip-path="url(#clip0_419_1457)">
-						<path d="M10.4997 5.83318L8.16636 3.49985M1.45801 12.5415L3.43222 12.3222C3.67343 12.2954 3.79402 12.2819 3.90675 12.2455C4.00676 12.2131 4.10194 12.1674 4.18969 12.1095C4.2886 12.0442 4.37441 11.9585 4.54602 11.7869L12.2497 4.08318C12.894 3.43885 12.894 2.39418 12.2497 1.74985C11.6053 1.10552 10.5607 1.10552 9.91636 1.74985L2.21268 9.45353C2.04108 9.62514 1.95527 9.71089 1.89005 9.80983C1.83218 9.89762 1.78643 9.99276 1.75406 10.0928C1.71757 10.2055 1.70416 10.3261 1.67736 10.5673L1.45801 12.5415Z" stroke="url(#paint0_linear_419_1457)" stroke-width="1.16667" stroke-linecap="round" stroke-linejoin="round" />
-					</g>
-					<defs>
-						<linearGradient id="paint0_linear_419_1457" x1="7.09548" y1="1.2666" x2="7.09548" y2="12.5415" gradientUnits="userSpaceOnUse">
-							<stop stop-color="#2EDF95" />
-							<stop offset="1" stop-color="#07847C" />
-						</linearGradient>
-						<clipPath id="clip0_419_1457">
-							<rect width="14" height="14" fill="white" />
-						</clipPath>
-					</defs>
-				</svg>
-				Edit
-			</button>
+			<div class="xl:pl-72">
+				<!-- Sticky search header -->
+				<div class="sticky top-0 z-40 flex h-16 shrink-0 items-center gap-x-6 border-b border-white/5 bg-nbpurple-900 px-4 shadow-sm sm:px-6 lg:px-8">
+					<button type="button" class="-m-2.5 p-2.5 text-white xl:hidden" @click="menuStore.mobileMenuOpen = true">
+						<span class="sr-only">Open sidebar</span>
+						<svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+							<path fill-rule="evenodd" d="M2 4.75A.75.75 0 012.75 4h14.5a.75.75 0 010 1.5H2.75A.75.75 0 012 4.75zM2 10a.75.75 0 01.75-.75h14.5a.75.75 0 010 1.5H2.75A.75.75 0 012 10zm0 5.25a.75.75 0 01.75-.75h14.5a.75.75 0 010 1.5H2.75a.75.75 0 01-.75-.75z" clip-rule="evenodd" />
+						</svg>
+					</button>
 
-			<button class="done_folder_button">
-				<svg width="12" height="9" viewBox="0 0 12 9" fill="none" xmlns="http://www.w3.org/2000/svg">
-					<path fill-rule="evenodd" clip-rule="evenodd" d="M11.8047 0.528756C12.0651 0.789109 12.0651 1.21122 11.8047 1.47157L4.47141 8.8049C4.21105 9.06523 3.78895 9.06523 3.52859 8.8049L0.19526 5.47156C-0.0650867 5.21123 -0.0650867 4.7891 0.19526 4.52876C0.455613 4.26843 0.87772 4.26843 1.13807 4.52876L4 7.3907L10.8619 0.528756C11.1223 0.268409 11.5444 0.268409 11.8047 0.528756Z" fill="url(#paint0_linear_307_2696)" />
-					<defs>
-						<linearGradient id="paint0_linear_307_2696" x1="5.99999" y1="0.333496" x2="5.99999" y2="9.00015" gradientUnits="userSpaceOnUse">
-							<stop stop-color="#2EDF95" />
-							<stop offset="1" stop-color="#07847C" />
-						</linearGradient>
-					</defs>
-				</svg>
-				Done
-			</button>
+					<div class="flex flex-1 gap-x-4 self-stretch lg:gap-x-6">
+						<form class="flex flex-1" action="#" method="GET">
+							<label for="search-field" class="sr-only">Search</label>
+							<div class="relative w-full">
+								<svg class="pointer-events-none absolute inset-y-0 left-0 h-full w-5 text-nbpurple-500" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+									<path fill-rule="evenodd" d="M9 3.5a5.5 5.5 0 100 11 5.5 5.5 0 000-11zM2 9a7 7 0 1112.452 4.391l3.328 3.329a.75.75 0 11-1.06 1.06l-3.329-3.328A7 7 0 012 9z" clip-rule="evenodd" />
+								</svg>
+								<input id="search-field" class="block h-full w-full border-0 bg-transparent py-0 pl-8 pr-0 text-nbpurple-50 focus:ring-0 sm:text-sm placeholder:text-nbpurple-300" placeholder="Search..." type="search" name="search" disabled>
+							</div>
+						</form>
+					</div>
+					<!-- notification bell -->
+					<div class="flex items-center gap-x-4 relative">
+						<!--
+						<button type="button" class="p-2.5 text-nbpurple-50">
+							<span class="sr-only">Notifications</span>
+							<svg :class="{ 'animate-[wiggle_1s_ease-in-out_infinite]': false }" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+								<path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 0 0 5.454-1.31A8.967 8.967 0 0 1 18 9.75V9A6 6 0 0 0 6 9v.75a8.967 8.967 0 0 1-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 0 1-5.714 0m5.714 0a3 3 0 1 1-5.714 0" />
+							</svg>
+-->
+						<!--
+							<span x-cloak class="animate-ping absolute top-2 right-2.5 block h-1 w-1 rounded-full ring-2 ring-nbpurple-400 bg-nbpurple-600"></span>
+							-->
+						<!--
+						</button>
+-->
+						<!-- Refresh folder content button -->
+						<button :disabled="loading" @click="loading = true; fileStore.refreshFoldersAfterFetch = true; fileStore.fetchFiles(menuStore.activeFolder, true).finally(() => setTimeout(() => { loading = false}, 1000))" type="button" class="p-2 text-nbpurple-100" x-data="{ loading: false }">
+							<svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" :class="{'animate-spin': loading}" class="size-6">
+								<path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99" />
+							</svg>
+							<span class="sr-only">Refresh file list</span>
+						</button>
+					</div>
+				</div>
 
-		</div>
-		<section class="folder_section">
-			<ul class="drag-sort-enable folders">
-				<li class="folder new_folder" id="myBtn">
-					<svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-						<path opacity="0.4" d="M10.8332 5.83333L9.90359 3.9741C9.636 3.439 9.50225 3.17144 9.30267 2.97597C9.12617 2.80311 8.91342 2.67164 8.67992 2.59109C8.41584 2.5 8.11668 2.5 7.51841 2.5H4.33317C3.39975 2.5 2.93304 2.5 2.57652 2.68166C2.26291 2.84144 2.00795 3.09641 1.84816 3.41002C1.6665 3.76653 1.6665 4.23325 1.6665 5.16667V5.83333" stroke="white" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round" />
-						<path d="M9.99984 14.1668V9.16683M7.49984 11.6668H12.4998M1.6665 5.8335H14.3332C15.7333 5.8335 16.4333 5.8335 16.9682 6.10598C17.4386 6.34566 17.821 6.72811 18.0607 7.19852C18.3332 7.7333 18.3332 8.43333 18.3332 9.8335V13.5002C18.3332 14.9003 18.3332 15.6003 18.0607 16.1352C17.821 16.6056 17.4386 16.988 16.9682 17.2277C16.4333 17.5002 15.7333 17.5002 14.3332 17.5002H5.6665C4.26637 17.5002 3.5663 17.5002 3.03153 17.2277C2.56112 16.988 2.17867 16.6056 1.93899 16.1352C1.6665 15.6003 1.6665 14.9003 1.6665 13.5002V5.8335Z" stroke="white" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round" />
-					</svg>
+				<main x-cloak x-show="menuStore.menuItemsAI.find(item => item.name === menuStore.activeMenu)" class="h-full lg:pr-[41rem]">
+					<!-- Main content -->
+					<h3 class="px-6 py-2 text-1xl font-semibold text-nbpurple-50" x-text="menuStore.activeMenu"></h3>
+					<template x-if="profileStore.profileInfo.isAIStudioEligible">
+						<div class="p-4">
+							<form action="#" class="relative" x-data="{ assignOpen: false, labelOpen: false, dueDateOpen: false, title: '', prompt: '', selectedModel: '@cf/lykon/dreamshaper-8-lcm' }">
+								<!-- Clear button -->
+								<div x-cloak x-show="title.length > 0 || prompt.length > 0" class="flex-shrink-0 absolute top-1 right-1 z-10">
+									<button type="button" class="inline-flex items-center rounded-full bg-nbpurple-600/50 p-1 sm:text-sm text-xs font-semibold text-nbpurple-50 shadow-sm hover:bg-nbpurple-500/50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-nbpurple-600" @click="title = ''; prompt = ''; GAI.clearImage()">
+										<span class="sr-only">Clear fields</span>
+										<svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-rotate-ccw">
+											<path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+											<path d="M3 3v5h5" />
+										</svg>
+									</button>
+								</div>
+								<!-- Form fields -->
+								<div class="overflow-hidden rounded-lg border border-nbpurple-300 shadow-sm focus-within:border-nbpurple-500 focus-within:ring-1 focus-within:ring-nbpurple-500">
+									<!--
+									<label for="title" class="sr-only">Title</label>
+									<input x-model="title" type="text" name="title" id="title" class="block w-full border-0 pt-2.5 text-sm text-nbpurple-800 font-medium placeholder:text-nbpurple-400 focus:ring-0 bg-nbpurple-50" placeholder="Title (name your creation)">
+					-->
+									<label for="prompt" class="sr-only">Prompt</label>
+									<textarea x-model="prompt" rows="3" name="prompt" id="prompt" class="block w-full resize-none border-0 py-0 pt-2 text-nbpurple-900 placeholder:text-nbpurple-400 focus:ring-0 sm:text-sm sm:leading-6 bg-nbpurple-50" placeholder="(prompt) ex.: purple ostrich surfing a big wave ..."></textarea>
 
-					<!-- Trigger/Open The Modal -->
-					<button id="myBtn">New Folder</button>
+									<!-- Spacer element to match the height of the toolbar -->
+									<div aria-hidden="true">
+										<div class="py-2">
+											<div class="py-px">
+												<div class="h-8"></div>
+											</div>
+										</div>
+									</div>
+								</div>
 
-				</li>
+								<div class="absolute inset-x-px bottom-0 bg-inherit">
+									<div class="flex items-center justify-between space-x-3 border-t border-nbpurple-200 px-2 py-2 sm:px-3">
+										<div class="flex">
+											<div x-data="{
+																		modelMenuOpen: false,
+																		selectedModelTitle: 'Dream Shaper',
+																		modelOptions: [
+																			{ value: '@cf/lykon/dreamshaper-8-lcm', title: 'Dream Shaper', description: 'Stable Diffusion model that has been fine-tuned to be better at photorealism without sacrificing range.', disabled: !profileStore.profileInfo.isAIDreamShaperEligible },
+																			{ value: '@cf/bytedance/stable-diffusion-xl-lightning', title: 'SDXL-Lightning', description: 'SDXL-Lightning is a lightning-fast text-to-image generation model. It can generate high-quality 1024px images in a few steps.', disabled: !profileStore.profileInfo.isAISDXLLightningEligible },
+																			{ value: '@cf/stabilityai/stable-diffusion-xl-base-1.0', title: 'Stable Diffusion', description: 'Diffusion-based text-to-image generative model by Stability AI. Generates and modify images based on text prompts.', disabled: !profileStore.profileInfo.isAISDiffusionEligible },
+																		]
+																	}">
+												<label id="listbox-label" class="sr-only">Change generative model</label>
+												<div class="relative">
+													<div class="inline-flex divide-x divide-nbpurple-700 rounded-md shadow-sm">
+														<div class="inline-flex items-center gap-x-1.5 rounded-l-md bg-nbpurple-600 px-3 py-2 text-white shadow-sm">
+															<svg class="-ml-0.5 h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+																<path fill-rule="evenodd" d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.05-.143z" clip-rule="evenodd" />
+															</svg>
+															<p class="sm:text-sm text-xs font-semibold" x-text="selectedModelTitle"></p>
+														</div>
+														<button type="button" class="inline-flex items-center rounded-l-none rounded-r-md bg-nbpurple-600 p-2 hover:bg-nbpurple-700 focus:outline-none focus:ring-2 focus:ring-nbpurple-600 focus:ring-offset-2 focus:ring-offset-gray-50" aria-haspopup="listbox" aria-expanded="true" aria-labelledby="listbox-label" @click="modelMenuOpen = !modelMenuOpen">
+															<span class="sr-only">Change generative model</span>
+															<svg class="h-5 w-5 text-white" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+																<path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clip-rule="evenodd" />
+															</svg>
+														</button>
+													</div>
+													<ul id="models-listbox" x-cloak @click.outside="modelMenuOpen = false" x-show="modelMenuOpen" x-transition:enter="" x-transition:enter-start="" x-transition:enter-end="" x-transition:leave="transition ease-in duration-100" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0" class="absolute left-0 z-30 mt-2 sm:w-96 xs:w-72 w-64 origin-top-left divide-y divide-gray-200 overflow-hidden rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none" tabindex="-1" role="listbox" aria-labelledby="listbox-label" aria-activedescendant="listbox-option-0">
+														<template x-for="(option, index) in modelOptions" :key="option.value">
+															<li :class="{
+																						'bg-nbpurple-100': selectedModel === option.value,
+																						'text-gray-400 cursor-not-allowed': option.disabled,
+																						'hover:bg-nbpurple-100 text-gray-900 cursor-default': !option.disabled
+																					}" class="select-none p-4 text-sm" :id="'listbox-option-' + index" role="option" @click="if (!option.disabled) { selectedModel = option.value; selectedModelTitle = option.title; modelMenuOpen = false; }">
+																<div class="flex flex-col">
+																	<div class="flex justify-between">
+																		<div class="flex items-center">
+																			<p class="font-normal" x-text="option.title"></p>
+																			<a x-show="option.disabled" href="/plans/" class="ml-2 text-nbpurple-600 text-xs hover:underline">
+																				Upgrade to Advanced or Renew
+																			</a>
+																		</div>
+																		<span class="text-nbpurple-600" x-show="selectedModel === option.value">
+																			<svg class="size-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+																				<path fill-rule="evenodd" d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.05-.143z" clip-rule="evenodd" />
+																			</svg>
+																		</span>
+																	</div>
+																	<p class="text-gray-500 leading-tight mt-2" x-text="option.description"></p>
+																</div>
+															</li>
+														</template>
+													</ul>
+												</div>
+												<!-- Hidden input field to store the selected model value -->
+												<input id="selected-model" type="hidden" name="selectedModel" x-model="selectedModel">
+											</div>
+										</div>
+										<div class="flex-shrink-0">
+											<button @click="await GAI.generateImage(title, prompt, selectedModel)" type="button" class="inline-flex items-center rounded-md bg-nbpurple-600 px-3 py-2 sm:text-sm text-xs h-9 font-semibold text-white shadow-sm hover:bg-nbpurple-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-nbpurple-600 disabled:bg-nbpurple-400" :disabled="prompt.trim() === '' || GAI.ImageLoading === true">Generate</button>
+										</div>
+									</div>
+								</div>
+							</form>
+						</div>
+					</template>
 
-				<!-- The Modal -->
-				<div id="myModal" class="modal" style="display: none;">
+					<!-- Generate image -->
+					<template x-if="profileStore.profileInfo.isAIStudioEligible">
+						<div class="bg-black/10 rounded-lg shadow-xl my-8 mx-auto w-11/12 max-w-2xl overflow-hidden">
+							<div class="bg-black/50 p-4 relative transition-transform">
+								<p x-cloak x-show="!GAI.ImageShow && !GAI.ImageLoading" class="flex items-center justify-center text-nbpurple-200 text-center text-lg h-24 lg:h-72" x-transition:enter="transition-opacity duration-500" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100">
+									No image to display, generate a new one.
+								</p>
+								<p x-cloak x-show="!GAI.ImageShow && GAI.ImageLoading" class="animate-pulse flex flex-col items-center justify-center text-nbpurple-200 text-center text-lg h-72" x-transition:enter="transition-opacity duration-500" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100">
+									<span>Generating your image ...</span>
+									<br />
+									<!-- Rocket boom! -->
+									<svg x-cloak x-show="GAI.ImageLoading" class="size-24 text-nbpurple-400" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+										<path stroke-linecap="round" stroke-linejoin="round" d="M15.59 14.37a6 6 0 0 1-5.84 7.38v-4.8m5.84-2.58a14.98 14.98 0 0 0 6.16-12.12A14.98 14.98 0 0 0 9.631 8.41m5.96 5.96a14.926 14.926 0 0 1-5.841 2.58m-.119-8.54a6 6 0 0 0-7.381 5.84h4.8m2.581-5.84a14.927 14.927 0 0 0-2.58 5.84m2.699 2.7c-.103.021-.207.041-.311.06a15.09 15.09 0 0 1-2.448-2.448 14.9 14.9 0 0 1 .06-.312m-2.24 2.39a4.493 4.493 0 0 0-1.757 4.306 4.493 4.493 0 0 0 4.306-1.758M16.5 9a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0Z" />
+									</svg>
+								</p>
+								<!-- Clear button -->
+								<div x-cloak x-show="GAI.ImageShow" class="flex-shrink-0 absolute top-2 right-2 z-10">
+									<button type="button" class="inline-flex items-center rounded-full bg-nbpurple-600/50 p-1 sm:text-sm text-xs font-semibold text-nbpurple-50 shadow-sm hover:bg-nbpurple-500/50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-nbpurple-600" @click="GAI.clearImage()">
+										<span class="sr-only">Clear image</span>
+										<svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-rotate-ccw">
+											<path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+											<path d="M3 3v5h5" />
+										</svg>
+									</button>
+								</div>
+								<!-- /Clear button -->
+								<img x-cloak x-show="GAI.ImageShow" @load="GAI.ImageShow = true; GAI.ImageLoading = false" :src="GAI.file.thumb" :srcset="GAI.file.srcset" :sizes="GAI.file.sizes" :alt="GAI.file.title || GAI.file.name" :width="GAI.file.width" :height="GAI.file.height" loading="eager" class="w-full transition-transform" x-transition:enter="transition-opacity ease-in duration-750" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" />
+							</div>
+							<div x-cloak x-show="GAI.ImageShow" class="bg-black/20 px-6 py-4 sm:flex sm:justify-between">
+								<div class="mb-4 sm:mb-0">
+									<p class="text-sm text-gray-300" x-text="GAI.file.title ? 'Title: ' + GAI.file.title : 'Name: ' + GAI.file.name"></p>
+									<p class="text-sm text-gray-300">Size: <span x-text="formatBytes(GAI.file.size)"></span></p>
+								</div>
+								<div>
+									<p class="text-sm text-gray-300">Dimensions: <span x-text="GAI.ImageDimensions"></span></p>
+									<p class="text-sm text-gray-300">URL: <a :href="GAI.file.url" target="_blank" x-text="GAI.ImageUrl"></a>
+										<svg class="size-3 ml-1 inline-block" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+											<path stroke-linecap="round" stroke-linejoin="round" d="M13.19 8.688a4.5 4.5 0 0 1 1.242 7.244l-4.5 4.5a4.5 4.5 0 0 1-6.364-6.364l1.757-1.757m13.35-.622 1.757-1.757a4.5 4.5 0 0 0-6.364-6.364l-4.5 4.5a4.5 4.5 0 0 0 1.242 7.244" />
+										</svg>
+									</p>
+								</div>
+							</div>
+						</div>
+					</template>
+					<!-- /Generate image -->
+					<template x-if="!profileStore.profileInfo.isAIStudioEligible">
+						<div class="p-4">
+							<div class="bg-black/10 rounded-lg shadow-xl my-8 mx-auto w-11/12 max-w-2xl p-4 max-h-48 align-middle">
+								<p class="text-nbpurple-200 text-center text-md">Your plan does not include AI Features or subscription expired/storage full.</p>
+								<!-- Upgrade button -->
+								<div class="flex justify-center mt-4">
+									<a href="/plans/" class="inline-flex items-center rounded-md bg-nbpurple-600 px-3 py-2 sm:text-sm text-xs h-9 font-semibold text-white shadow-sm hover:bg-nbpurple-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-nbpurple-600">Upgrade or Renew</a>
+								</div>
+							</div>
+						</div>
+					</template>
+					<!-- /Main content -->
+				</main>
 
-					<!-- Modal content -->
-					<div class="modal-content">
-						<span class="close" style="color: #fff;">&times;</span>
-						<div>
-							<input id="folderName" placeholder="Folder name" />
-							<button onclick="createFolder();" style="color: #fff;">
-								Create
+				<!-- Activity feed -->
+				<aside x-data="{
+					showScrollButton: false,
+					multiSelect: false,
+					uploadDialog: false,
+					selectedItems: [],
+					toggleSelected(id) {
+						const index = this.selectedItems.indexOf(id);
+						if (index === -1) {
+							this.selectedItems.push(id);
+						} else {
+							this.selectedItems.splice(index, 1);
+						}
+					},
+					isSelected(id) {
+						return this.selectedItems.includes(id);
+					},
+					toggleMultiSelect() {
+						this.multiSelect = !this.multiSelect;
+						if (!this.multiSelect) {
+							this.selectedItems = [];
+						}
+					},
+				}" x-ref="sidebar" @scroll.window.throttle="showScrollButton = window.pageYOffset > 500" @scroll.throttle="showScrollButton = $refs.sidebar.scrollTop > 500" :class="fileStore.fullWidth ? 'lg:w-full xl:pl-72' : 'lg:w-[40rem]'" class="bg-nbpurple-900/10 lg:fixed lg:bottom-0 lg:right-0 lg:top-16 lg:overflow-y-auto lg:border-l lg:border-nbpurple-950/5">
+					<!-- Floating bar -->
+					<div class="z-20 sticky top-16 lg:top-0 bg-nbpurple-900/75 py-2 px-4 md:px-4 align-middle flex items-center justify-between backdrop-filter backdrop-blur-md">
+						<!-- Refresh folder content button -->
+						<!--
+						<button :disabled="loading" @click="loading = true; fileStore.fetchFiles(menuStore.activeFolder, true).finally(() => setTimeout(() => { loading = false}, 1000))" type="button" class="mr-3 inline-flex items-center rounded-md bg-nbpurple-600 px-3 py-2 text-xs font-semibold text-nbpurple-50 shadow-sm hover:bg-nbpurple-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-nbpurple-600" x-data="{ loading: false }">
+							<svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" :class="{'animate-spin': loading}" class="size-4">
+								<path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99" />
+							</svg>
+							<span class="hidden sm:inline-block sm:ml-1"> Refresh</span>
+						</button>
+			-->
+						<h3 class="text-sm sm:text-base font-semibold leading-6 text-nbpurple-100" x-text="menuStore.activeFolder"></h3>
+						<div class="flex ml-4 mt-0 transition-all">
+							<!-- Upload button -->
+							<button x-cloak x-show="profileStore.profileInfo.isUploadEligible" @click="uppyStore.mainDialog.toggle()" type="button" class="ml-3 inline-flex items-center rounded-md bg-nbpurple-600 px-3 py-2 text-xs font-semibold text-nbpurple-50 shadow-sm hover:bg-nbpurple-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-nbpurple-600">
+								<svg x-show="true" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" class="size-4">
+									<path d="M10.3 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v10l-3.1-3.1a2 2 0 0 0-2.814.014L6 21" />
+									<path d="m14 19.5 3-3 3 3" />
+									<path d="M17 22v-5.5" />
+									<circle cx="9" cy="9" r="2" />
+								</svg>
+								<span class="hidden sm:inline-block sm:ml-1" x-text="uppyStore.mainDialog.isOpen ? 'Hide' : uppyStore.mainDialog.uploadProgress ? 'Uploading' : 'Upload'"></span>
+								<span x-cloak x-show="uppyStore.mainDialog.isLoading && !uppyStore.mainDialog.isOpen" class="text-xs font-semibold text-nbpurple-50 ml-1" x-text="'(' + uppyStore.mainDialog.uploadProgress + ')'"></span>
+							</button>
+							<!-- Multi-select button -->
+							<button @click="toggleMultiSelect()" type="button" class="ml-3 inline-flex items-center rounded-md bg-nbpurple-600 px-3 py-2 text-xs font-semibold text-nbpurple-50 shadow-sm hover:bg-nbpurple-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-nbpurple-600">
+								<svg x-show="!multiSelect" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-4 mr-1">
+									<path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+								</svg>
+								<svg x-cloak x-show="multiSelect" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-4">
+									<path stroke-linecap="round" stroke-linejoin="round" d="m9.75 9.75 4.5 4.5m0-4.5-4.5 4.5M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+								</svg>
+								<span class="hidden xs:inline-block xs:ml-1" x-text="multiSelect ? 'Cancel' : 'Select'"></span>
 							</button>
 						</div>
 					</div>
-				</div>
-				</div>
-
-
-				<li class="folder" onclick="window.location.href='/account';">
-					<svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-						<path opacity="0.4" d="M10.8332 5.83333L9.90359 3.9741C9.636 3.439 9.50225 3.17144 9.30267 2.97597C9.12617 2.80311 8.91342 2.67164 8.67992 2.59109C8.41584 2.5 8.11668 2.5 7.51841 2.5H4.33317C3.39975 2.5 2.93304 2.5 2.57652 2.68166C2.26291 2.84144 2.00795 3.09641 1.84816 3.41002C1.6665 3.76653 1.6665 4.23325 1.6665 5.16667V5.83333" stroke="#D0BED8" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round" />
-						<path d="M7.9165 9.5835L12.0832 13.7502M12.0832 9.5835L7.9165 13.7502M1.6665 5.8335H14.3332C15.7333 5.8335 16.4333 5.8335 16.9682 6.10598C17.4386 6.34566 17.821 6.72811 18.0607 7.19852C18.3332 7.7333 18.3332 8.43333 18.3332 9.8335V13.5002C18.3332 14.9003 18.3332 15.6003 18.0607 16.1352C17.821 16.6056 17.4386 16.988 16.9682 17.2277C16.4333 17.5002 15.7333 17.5002 14.3332 17.5002H5.6665C4.26637 17.5002 3.5663 17.5002 3.03153 17.2277C2.56112 16.988 2.17867 16.6056 1.93899 16.1352C1.6665 15.6003 1.6665 14.9003 1.6665 13.5002V5.8335Z" stroke="#D0BED8" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round" />
-					</svg>
-					<p class="folder_name"><a href="/account">No folder</a></p>
-					<span><?= $usersFoldersStats['FOLDERS']['/']['fileCount'] ?></span>
-					<span><?= formatSizeUnits($usersFoldersStats['FOLDERS']['/']['totalSize']) ?></span>
-					<div class="folder_icons">
-						<svg class="delete_folder" width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-							<path opacity="0.12" d="M12.1993 11.0129L12.6668 4H3.3335L3.80102 11.0129C3.87116 12.065 3.90624 12.5911 4.13348 12.99C4.33356 13.3412 4.63534 13.6235 4.99906 13.7998C5.41218 14 5.93944 14 6.99396 14H9.00636C10.0609 14 10.5882 14 11.0013 13.7998C11.365 13.6235 11.6668 13.3412 11.8668 12.99C12.0941 12.5911 12.1292 12.065 12.1993 11.0129Z" fill="#A58EAD" />
-							<path d="M6 2H10M2 4H14M12.6667 4L12.1991 11.0129C12.129 12.065 12.0939 12.5911 11.8667 12.99C11.6666 13.3412 11.3648 13.6235 11.0011 13.7998C10.588 14 10.0607 14 9.0062 14H6.9938C5.93927 14 5.41202 14 4.99889 13.7998C4.63517 13.6235 4.33339 13.3412 4.13332 12.99C3.90607 12.5911 3.871 12.065 3.80086 11.0129L3.33333 4M6.66667 7V10.3333M9.33333 7V10.3333" stroke="#A58EAD" stroke-width="1.33333" stroke-linecap="round" stroke-linejoin="round" />
-						</svg>
-						<svg class="arrange_folder" width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-							<g opacity="0.8" clip-path="url(#clip0_307_2617)">
-								<path d="M13.3337 6H2.66699V7.33333H13.3337V6ZM2.66699 10H13.3337V8.66667H2.66699V10Z" fill="#A58EAD" />
-							</g>
-							<defs>
-								<clipPath id="clip0_307_2617">
-									<rect width="16" height="16" fill="white" />
-								</clipPath>
-							</defs>
-						</svg>
-					</div>
-				</li>
-				<?php
-				// Display folders
-				foreach ($usersFoldersStats['FOLDERS'] as $folder => $folderStats) :
-					if ($folder == '/') continue;
-				?>
-					<li type="button" class="folder" onclick="folderClicked('<?= htmlspecialchars($folder) ?>' , '<?= $usersFoldersStats['TOTAL']['fileCount'] ?>');">
-						<svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-							<path opacity="0.4" d="M10.8332 5.83333L9.90359 3.9741C9.636 3.43899 9.50225 3.17144 9.30267 2.97597C9.12617 2.80311 8.91342 2.67164 8.67992 2.59109C8.41584 2.5 8.11668 2.5 7.51841 2.5H4.33317C3.39975 2.5 2.93304 2.5 2.57652 2.68166C2.26291 2.84144 2.00795 3.09641 1.84816 3.41002C1.6665 3.76653 1.6665 4.23324 1.6665 5.16667V5.83333" stroke="#D0BED8" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round" />
-							<path d="M1.6665 5.8335H14.3332C15.7333 5.8335 16.4333 5.8335 16.9682 6.10598C17.4386 6.34566 17.821 6.72811 18.0607 7.19852C18.3332 7.7333 18.3332 8.43333 18.3332 9.8335V13.5002C18.3332 14.9003 18.3332 15.6003 18.0607 16.1352C17.821 16.6056 17.4386 16.988 16.9682 17.2277C16.4333 17.5002 15.7333 17.5002 14.3332 17.5002H5.6665C4.26637 17.5002 3.5663 17.5002 3.03153 17.2277C2.56112 16.988 2.17867 16.6056 1.93899 16.1352C1.6665 15.6003 1.6665 14.9003 1.6665 13.5002V5.8335Z" stroke="#D0BED8" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round" />
-						</svg>
-						<p class="folder_name"><a ondblclick="folderDoubleClicked('<?= $folder ?>');" onclick="folderClicked('<?= $folder ?>', '<?= $usersFoldersStats['TOTAL']['fileCount'] ?>');"><?= $folder ?></a></p>
-						<span> <?= $folderStats['fileCount'] ?> </span>
-						<span> <?= formatSizeUnits($folderStats['totalSize']) ?> </span>
-						<div class="folder_icons">
-							<svg class="delete_folder" width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-								<path opacity="0.12" d="M12.1993 11.0129L12.6668 4H3.3335L3.80102 11.0129C3.87116 12.065 3.90624 12.5911 4.13348 12.99C4.33356 13.3412 4.63534 13.6235 4.99906 13.7998C5.41218 14 5.93944 14 6.99396 14H9.00636C10.0609 14 10.5882 14 11.0013 13.7998C11.365 13.6235 11.6668 13.3412 11.8668 12.99C12.0941 12.5911 12.1292 12.065 12.1993 11.0129Z" fill="#A58EAD" />
-								<path d="M6 2H10M2 4H14M12.6667 4L12.1991 11.0129C12.129 12.065 12.0939 12.5911 11.8667 12.99C11.6666 13.3412 11.3648 13.6235 11.0011 13.7998C10.588 14 10.0607 14 9.0062 14H6.9938C5.93927 14 5.41202 14 4.99889 13.7998C4.63517 13.6235 4.33339 13.3412 4.13332 12.99C3.90607 12.5911 3.871 12.065 3.80086 11.0129L3.33333 4M6.66667 7V10.3333M9.33333 7V10.3333" stroke="#A58EAD" stroke-width="1.33333" stroke-linecap="round" stroke-linejoin="round" />
-							</svg>
-							<svg class="arrange_folder" width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-								<g opacity="0.8" clip-path="url(#clip0_307_2617)">
-									<path d="M13.3337 6H2.66699V7.33333H13.3337V6ZM2.66699 10H13.3337V8.66667H2.66699V10Z" fill="#A58EAD" />
-								</g>
-								<defs>
-									<clipPath id="clip0_307_2617">
-										<rect width="16" height="16" fill="white" />
-									</clipPath>
-								</defs>
-							</svg>
-						</div>
-					</li>
-				<?php
-				endforeach; // Flder list loop end
-				?>
-			</ul>
-			<!-- Empty buffer to unbreak mobile display -->
-			<div class="block h-24 w-auto"></div>
-		</section>
-	</aside>
-	<main>
-		<header>
-			<svg class="menu_button" width="20" height="15" viewBox="0 0 20 15" fill="none" xmlns="http://www.w3.org/2000/svg">
-				<path d="M1 7.5H19M1 1.5H19M1 13.5H19" stroke="#A58EAD" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
-			</svg>
-			<h2 class="header_title">Dashboard</h2>
-
-			<?php
-			// doesn't print upload button if user is over their limit
-			if (!$userOverLimit && !$userAccountExpired) :
-			?>
-				<button id="open-account-url-upload-button" type="button" class="inline-flex items-center gap-x-2 rounded-md bg-indigo-600 px-3.5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600" @click="url_up_open = true">
-					<span class="hidden sm:inline">Import URL</span>
-					<svg class="self-center -mr-0.5 h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
-						<path d="M12.232 4.232a2.5 2.5 0 013.536 3.536l-1.225 1.224a.75.75 0 001.061 1.06l1.224-1.224a4 4 0 00-5.656-5.656l-3 3a4 4 0 00.225 5.865.75.75 0 00.977-1.138 2.5 2.5 0 01-.142-3.667l3-3z" />
-						<path d="M11.603 7.963a.75.75 0 00-.977 1.138 2.5 2.5 0 01.142 3.667l-3 3a2.5 2.5 0 01-3.536-3.536l1.225-1.224a.75.75 0 00-1.061-1.06l-1.224 1.224a4 4 0 105.656 5.656l3-3a4 4 0 00-.225-5.865z" />
-					</svg>
-				</button>
-				<button id="open-account-dropzone-button" type="button" class="inline-flex items-center gap-x-2 rounded-md bg-indigo-600 px-3.5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600">
-					<span class="hidden sm:inline">Upload Media</span>
-					<svg class="self-center -mr-0.5 h-5 w-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-						<path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
-					</svg>
-				</button>
-				<div id="files-account-dropzone"></div>
-			<?php endif; ?>
-		</header>
-
-		<?php
-		if ($perm->validatePermissionsLevelAny(1, 10, 99) && $usersFoldersStats['TOTAL']['publicCount'] > 0) :
-		?>
-			<section class="subheader p-2 text-center">
-				<!--
-				<p class="header_subtitle inline">You have <?= $usersFoldersStats['TOTAL']['publicCount'] ?> media files marked as public showing your Creator Page.</p>
-		-->
-
-				<!-- Copy link to clipboard button -->
-				<div class="inline-flex rounded-md shadow-sm ml-0 bg-transparent" x-data="{ open: false }">
-					<button @click="window.location.href = '/creators/creator/?user=<?= $userId ?>'" type="button" class="relative inline-flex items-center rounded-l-md bg-gradient-to-br from-[#399dfa] to-white px-3 py-2 text-sm font-semibold text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-[#399dfaec] focus:z-10">Visit Your Creator Page with <?= $usersFoldersStats['TOTAL']['publicCount'] ?> shared files</button>
-					<div class="relative -ml-px block">
-						<button @click="open = !open" type="button" class="relative inline-flex items-center rounded-r-md bg-[#399dfa] px-2 py-2 text-gray-800 ring-1 ring-inset ring-gray-300 hover:bg-[#399dfaec] focus:z-10" id="option-menu-button" :aria-expanded="open.toString()" aria-haspopup="true">
-							<span class="sr-only">Open options</span>
-							<svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-								<path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clip-rule="evenodd" />
-							</svg>
-						</button>
-
-						<div x-show="open" x-transition:enter="transition ease-out duration-100" x-cloak x-transition:enter-start="transform opacity-0 scale-95" x-transition:enter-end="transform opacity-100 scale-100" x-transition:leave="transition ease-in duration-75" x-transition:leave-start="transform opacity-100 scale-100" x-transition:leave-end="transform opacity-0 scale-95" @click.away="open = false" class="absolute right-0 z-10 -mr-1 mt-2 w-56 origin-top-right rounded-md bg-gradient-to-br from-[#399dfa] to-white hover:bg-[#399dfaec] shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none" role="menu" aria-orientation="vertical" aria-labelledby="option-menu-button" tabindex="-1">
-							<div class="py-1" role="none">
-								<!-- Menu item to copy the link -->
-								<button @click="buttonText = 'Link Copied'; setTimeout(() => { buttonText = 'Copy Link' }, 2000); navigator.clipboard.writeText('https://<?= $_SERVER['HTTP_HOST'] ?>/creators/creator/?user=<?= $userId ?>')" x-text="buttonText" class="text-gray-700 block px-4 py-2 text-sm" role="menuitem" tabindex="-1" id="option-menu-item-0" x-data="{ buttonText: 'Copy Link' }">Copy Link</button>
-							</div>
-						</div>
-					</div>
-				</div>
-			</section>
-
-		<?php
-		endif;
-		?>
-
-
-		<section class="dashboard_section">
-			<h3 class="dashboard_title">Welcome <b><?= $nym ?? 'anon' ?><?= $userAccountExpired ? '(EXPIRED)' : '' ?></b>!
-				<?php
-				/*
-				echo SiteConfig::getAccountType($acctlevel) . ', ';
-				echo '<b>' . ($nym ?? 'anon') . '</b>';
-				*/
-				?>
-				<?php if ($showRenewalButton) : ?>
-					<button @click="window.location.href='/plans/'" type="button" class="inline-flex items-center gap-x-1.5 rounded-md bg-indigo-600 px-2.5 py-1.5 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600">
-						<svg class="-ml-0.5 h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-							<path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z" clip-rule="evenodd" />
-						</svg>
-						Renew
-					</button>
-				<?php elseif ($showUpgradeButton) : ?>
-					<button @click="window.location.href='/plans/'" type="button" class="inline-flex items-center gap-x-1.5 rounded-md bg-indigo-600 px-2.5 py-1.5 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600">
-						<svg class="-ml-0.5 h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-							<path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z" clip-rule="evenodd" />
-						</svg>
-						Upgrade
-					</button>
-				<?php endif; ?>
-			</h3>
-			<div class="dashboard_info">
-				<div class="plan_data">
-					<div class="plan_data_info">
-						<h4>Plan data</h4>
-						<p style="text-align: left;">
-							<b>Remaining Days:</b> <?= $daysRemaining ?>
-						</p>
-						<p>
-							<b><?= formatSizeUnits($usersFoldersStats['TOTAL']['totalSize']) ?></b> /
-							<?= htmlentities(SiteConfig::getStorageLimitMessage($acctlevel)) ?>
-							<?= $userOverLimit ? '<br><span style="color: red;">Max storage reached! Delete images or upgrade plan for more space.</span><br>' : '' ?>
-						</p>
-					</div>
-					<div class="plan_data_graph">
-
-						<div class="circular-progress" data-inner-circle-color="#1e1530" data-percentage="<?=
-																																															$userOverLimit ? 100 : min(100, max(1, round(($storageUsed / $userStorageLimit) * 100)))
-																																															?>" data-progress-color="rgba(46, 223, 149, 1)" data-bg-color="rgba(255, 255, 255, 0.16)">
-
-							<div class="inner-circle"></div>
-							<p class="percentage">0%</p>
-						</div>
-
-					</div>
-				</div>
-				<div class="activity_info">
-					<div class="files_info">
-						<h4>Files</h4>
-						<p><?= $usersFoldersStats['TOTAL']['fileCount'] ?></p>
-					</div>
-					<ul class="list_details">
-						<li>
-							<svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-								<g clip-path="url(#clip0_303_2210)">
-									<path opacity="0.4" d="M7.08366 8.74984C8.00413 8.74984 8.75034 8.00365 8.75034 7.08317C8.75034 6.1627 8.00413 5.4165 7.08366 5.4165C6.16318 5.4165 5.41699 6.1627 5.41699 7.08317C5.41699 8.00365 6.16318 8.74984 7.08366 8.74984Z" stroke="#D0BED8" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round" />
-									<path d="M4.99998 16.6668L12.3908 9.276C12.7208 8.946 12.8859 8.78092 13.0762 8.71917C13.2435 8.66475 13.4238 8.66475 13.5912 8.71917C13.7814 8.78092 13.9465 8.946 14.2765 9.276L17.8381 12.8376M18.3337 9.99984C18.3337 14.6022 14.6027 18.3332 10.0003 18.3332C5.39795 18.3332 1.66699 14.6022 1.66699 9.99984C1.66699 5.39746 5.39795 1.6665 10.0003 1.6665C14.6027 1.6665 18.3337 5.39746 18.3337 9.99984Z" stroke="#D0BED8" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round" />
-								</g>
-								<defs>
-									<clipPath id="clip0_303_2210">
-										<rect width="20" height="20" fill="white" />
-									</clipPath>
-								</defs>
-							</svg>
-							<p>Images</p>
-							<span><?= $usersFoldersStats['TOTAL']['imageCount'] ?></span>
-						</li>
-						<li>
-							<svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-								<path opacity="0.12" d="M1.66699 8.1665C1.66699 6.76637 1.66699 6.0663 1.93948 5.53153C2.17916 5.06112 2.56161 4.67867 3.03202 4.43899C3.56679 4.1665 4.26686 4.1665 5.66699 4.1665H10.167C11.5672 4.1665 12.2672 4.1665 12.802 4.43899C13.2724 4.67867 13.6548 5.06112 13.8945 5.53153C14.167 6.0663 14.167 6.76637 14.167 8.1665V11.8332C14.167 13.2333 14.167 13.9333 13.8945 14.4682C13.6548 14.9386 13.2724 15.321 12.802 15.5607C12.2672 15.8332 11.5672 15.8332 10.167 15.8332H5.66699C4.26686 15.8332 3.56679 15.8332 3.03202 15.5607C2.56161 15.321 2.17916 14.9386 1.93948 14.4682C1.66699 13.9333 1.66699 13.2333 1.66699 11.8332V8.1665Z" fill="#D0BED8" stroke="#D0BED8" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round" />
-								<path d="M18.3337 7.44258C18.3337 6.93773 18.3337 6.68532 18.2338 6.56843C18.1472 6.46701 18.0172 6.41318 17.8843 6.42365C17.7311 6.43571 17.5526 6.6142 17.1956 6.97118L14.167 9.99978L17.1956 13.0284C17.5526 13.3854 17.7311 13.5639 17.8843 13.5759C18.0172 13.5864 18.1472 13.5325 18.2338 13.4311C18.3337 13.3143 18.3337 13.0618 18.3337 12.5569V7.44258Z" stroke="#D0BED8" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round" />
-								<path d="M1.66699 8.1665C1.66699 6.76637 1.66699 6.0663 1.93948 5.53153C2.17916 5.06112 2.56161 4.67867 3.03202 4.43899C3.56679 4.1665 4.26686 4.1665 5.66699 4.1665H10.167C11.5672 4.1665 12.2672 4.1665 12.802 4.43899C13.2724 4.67867 13.6548 5.06112 13.8945 5.53153C14.167 6.0663 14.167 6.76637 14.167 8.1665V11.8332C14.167 13.2333 14.167 13.9333 13.8945 14.4682C13.6548 14.9386 13.2724 15.321 12.802 15.5607C12.2672 15.8332 11.5672 15.8332 10.167 15.8332H5.66699C4.26686 15.8332 3.56679 15.8332 3.03202 15.5607C2.56161 15.321 2.17916 14.9386 1.93948 14.4682C1.66699 13.9333 1.66699 13.2333 1.66699 11.8332V8.1665Z" stroke="#D0BED8" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round" />
-							</svg>
-							<p>AV</p>
-							<span><?= $usersFoldersStats['TOTAL']['avCount'] ?></span>
-						</li>
-						<li>
-							<svg width="18" height="16" viewBox="0 0 18 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-								<g clip-path="url(#clip0_303_2245)">
-									<path d="M16 1H2C0.895313 1 0 1.89531 0 3V13C0 14.1047 0.895313 15 2 15H16C17.1047 15 18 14.1047 18 13V3C18 1.89531 17.1031 1 16 1ZM16.5 13C16.5 13.2757 16.2757 13.5 16 13.5H2C1.72431 13.5 1.5 13.2757 1.5 13V3C1.5 2.72431 1.72431 2.5 2 2.5H16C16.2757 2.5 16.5 2.72431 16.5 3V13ZM14.5 5.125H11.75C11.4047 5.125 11.125 5.40478 11.125 5.75V10.25C11.125 10.5953 11.4048 10.875 11.75 10.875C12.0952 10.875 12.375 10.5952 12.375 10.25V8.625H14C14.3453 8.625 14.625 8.34522 14.625 8C14.625 7.65478 14.3438 7.375 14 7.375H12.375V6.375H14.5C14.8453 6.375 15.125 6.09522 15.125 5.75C15.125 5.40478 14.8438 5.125 14.5 5.125ZM9.5 5.125C9.15469 5.125 8.875 5.40478 8.875 5.75V10.25C8.875 10.5953 9.15478 10.875 9.5 10.875C9.84522 10.875 10.125 10.5952 10.125 10.25V5.75C10.125 5.37813 9.84375 5.125 9.5 5.125ZM7.5 7.625H5.7125C5.36719 7.625 5.0875 7.90478 5.0875 8.25C5.0875 8.59522 5.36728 8.875 5.7125 8.875H6.875V9.30406C6.23531 9.7625 5.15 9.69812 4.60094 9.14878C4.29375 8.84062 4.125 8.43437 4.125 8C4.125 7.56563 4.29394 7.15812 4.60094 6.85094C5.21531 6.23625 6.24781 6.23625 6.86219 6.85094C7.10584 7.09506 7.50125 7.09506 7.74594 6.85094C7.99006 6.60728 7.99006 6.21125 7.74594 5.96719C6.66 4.88125 4.80312 4.88031 3.71781 5.96719C3.175 6.50938 2.875 7.23125 2.875 8C2.875 8.76875 3.17431 9.48969 3.71719 10.0328C4.25312 10.5687 5.02187 10.875 5.82812 10.875C6.63531 10.875 7.40531 10.5679 7.94031 10.0328C8.05937 9.91562 8.125 9.75625 8.125 9.59062V8.25C8.125 7.87813 7.84375 7.625 7.5 7.625Z" fill="#D0BED8" />
-								</g>
-								<defs>
-									<clipPath id="clip0_303_2245">
-										<rect width="18" height="16" fill="white" />
-									</clipPath>
-								</defs>
-							</svg>
-							<p>GIFs</p>
-							<span><?= $usersFoldersStats['TOTAL']['gifCount'] ?></span>
-						</li>
-					</ul>
-				</div>
-				<!-- <div class="activity">
-						<div class="activity_graph">
-							<h4>Activity</h4>
-						</div>
-					</div> -->
-			</div>
-			<h4 class="dashboard_subtitles">My media</h4>
-			<section class="image_container">
-				<?php
-				// Display folders
-				if (isset($_GET['editfolder'])) :
-					// Display list of folders for editing
-					foreach ($usersFoldersStats['FOLDERS'] as $folder => $folderStats) :
-						if ($folder == '/') continue;
-				?>
-						<div style="margin:auto; margin-bottom: 1.25rem; color: #fff;">
-							<a onclick="folderClicked('<?= htmlspecialchars($folder) ?>');" ondblclick="folderDoubleClicked('<?= htmlspecialchars($folder) ?>' , '<?= $usersFoldersStats['TOTAL']['fileCount'] ?>');">
-								<svg class="w-24 h-24" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
-									<path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12.75V12A2.25 2.25 0 014.5 9.75h15A2.25 2.25 0 0121.75 12v.75m-8.69-6.44l-2.12-2.12a1.5 1.5 0 00-1.061-.44H4.5A2.25 2.25 0 002.25 6v12a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9a2.25 2.25 0 00-2.25-2.25h-5.379a1.5 1.5 0 01-1.06-.44z" />
-								</svg>
-							</a>
-							<div style="display: flex; justify-content: space-between; margin: 0 0.75rem 0 0.75rem">
-								<label><?= htmlentities($folder) ?></label>
-								<input class="folder_select_checkbox" data-folder-id="<?= $folderStats['id'] ?>" type="checkbox" id="cb<?= $folderStats['id'] ?>" style="width: 2rem; margin-left: 1rem;" onclick="checkboxClicked('<?= $folderStats['id'] ?>' , 0)" />
-							</div>
-						</div>
-					<?php
-					endforeach;
-				else :
-					// Display image grid
-					$images_sql = "SELECT * FROM users_images WHERE usernpub=? AND image != 'https://nostr.build/p/Folder.png' ORDER BY id DESC";
-					$images_stmt = $link->prepare($images_sql);
-					$images_stmt->bind_param("s", $_SESSION['usernpub']);
-					$images_stmt->execute();
-					$images_result = $images_stmt->get_result();
-
-					// TODO: This is definetly going away, just a temp blaspheme until rewrite
-					// There is nothing more permanent tham a temporary solution ;)
-					$i = 0;
-					$divId = 0;
-
-					while ($images_row = $images_result->fetch_assoc()) :
-						// Get mime type and image URL
-						$type = explode('/', $images_row['mime_type'])[0];
-						$image = $images_row['image'];
-
-						// Parse URL and get only the filename
-						$parsed_url = parse_url($image);
-						$filename = pathinfo($parsed_url['path'], PATHINFO_BASENAME);
-
-						// Add 'professional_account_' prefix to the $type
-						$professional_type = 'professional_account_' . $type;
-
-						// Use SiteConfig to get the base URL for this type
-						try {
-							$base_url = SiteConfig::getFullyQualifiedUrl($professional_type);
-						} catch (Exception $e) {
-							// Handle exception or use a default URL
-							$base_url = SiteConfig::ACCESS_SCHEME . "://" . SiteConfig::DOMAIN_NAME . "/p/"; // default URL in case of error
-						}
-
-						$new_url = $base_url . $filename;
-						$image_url = htmlspecialchars($new_url);
-						$thumb_url = htmlspecialchars(SiteConfig::getThumbnailUrl($professional_type) . $filename);
-
-						$element = "element" . $i;
-					?>
-						<div style="margin:auto; margin-bottom: 1.25rem; <?= ($images_row['folder'] != null ? "display: none;" : "") ?>" id="div<?= $divId ?>">
-							<input id="input<?= $divId ?>" value="<?= htmlentities($images_row['folder']) ?>" style="display: none;" />
-							<figure class="image_card">
-								<?php if ($type == 'image') : ?>
-									<img id="<?= $element ?>" x-data="{ src: '<?= $thumb_url ?>'}" x-intersect.margin.500px="$el.src = src" data-src="<?= $image_url ?>" alt="" class="image <?= $images_row['flag'] ? 'publicly-shared' : '' ?>" />
-								<?php elseif ($type == 'video') : ?>
-									<video id="img<?= $element ?>" x-data="{ src: '<?= $thumb_url ?>'}" x-intersect.margin.500px="$el.src = src, $nextTick(() => $el.load())" alt="" class="image <?= $images_row['flag'] ? 'publicly-shared' : '' ?>" preload="auto" controls>
-										<source id="<?= $element ?>" type="<?= $images_row['mime_type'] ?>" data-src="<?= $image_url ?>">
-									</video>
-								<?php elseif ($type == 'audio') : ?>
-									<audio id="img<?= $element ?>" x-data="{ src: '<?= $thumb_url ?>'}" x-intersect.margin.500px="$el.src = src, $nextTick(() => $el.load())" alt="" class="image <?= $images_row['flag'] ? 'publicly-shared' : '' ?>" controls>
-										<source id="<?= $element ?>" type="<?= $images_row['mime_type'] ?>" data-src="<?= $image_url ?>">
-									</audio>
-								<?php endif; ?>
-
-
-								<button class="delete_button">
-									<input class="media_select_checkbox" type="checkbox" id="cb<?= $images_row['id'] ?>" onclick="checkboxClicked('<?= $images_row['id'] ?>' , 1)" />
-								</button>
-
-								<button class="copy_link" id="bt<?= $element ?>" onclick="copyToClipboard('<?= $element ?>')">
-									<svg width="16" height="17" viewBox="0 0 16 17" fill="none" xmlns="http://www.w3.org/2000/svg">
-										<path fill-rule="evenodd" clip-rule="evenodd" d="M8.51692 2.33379C9.27132 1.60516 10.2817 1.20198 11.3305 1.21109C12.3793 1.2202 13.3825 1.64088 14.1242 2.38252C14.8658 3.12414 15.2864 4.12739 15.2956 5.17618C15.3047 6.22497 14.9015 7.2354 14.1729 7.9898L14.1648 7.99807L12.1648 9.99793C11.7594 10.4036 11.2713 10.7173 10.7339 10.9178C10.1965 11.1183 9.62232 11.2008 9.05018 11.1598C8.47805 11.1189 7.92145 10.9553 7.41812 10.6803C6.91472 10.4053 6.47642 10.0253 6.13286 9.56593C5.91232 9.27113 5.97256 8.85333 6.26739 8.6328C6.56222 8.41227 6.97998 8.47247 7.20058 8.76733C7.42958 9.07353 7.72178 9.32687 8.05738 9.5102C8.39292 9.69353 8.76405 9.8026 9.14545 9.82993C9.52685 9.8572 9.90965 9.8022 10.2679 9.66853C10.6262 9.53487 10.9515 9.32574 11.2219 9.05534L13.2177 7.05956C13.701 6.55705 13.9684 5.88514 13.9623 5.18777C13.9562 4.48858 13.6758 3.81974 13.1814 3.32532C12.6869 2.8309 12.0181 2.55045 11.3189 2.54438C10.6213 2.53831 9.94905 2.80592 9.44645 3.28967L8.30338 4.42609C8.04232 4.68568 7.62018 4.68445 7.36058 4.42334C7.10098 4.16224 7.10225 3.74012 7.36332 3.48054L8.50998 2.34054L8.51692 2.33379Z" fill="#D0BED8" />
-										<path fill-rule="evenodd" clip-rule="evenodd" d="M5.26591 6.08234C5.80332 5.88187 6.37755 5.79932 6.94969 5.8403C7.52175 5.88127 8.07842 6.0448 8.58175 6.31981C9.08509 6.59482 9.52342 6.97486 9.86702 7.43417C10.0876 7.72897 10.0273 8.14677 9.73249 8.3673C9.43762 8.58784 9.01982 8.52764 8.79928 8.23277C8.57029 7.92657 8.27802 7.67324 7.94249 7.4899C7.60689 7.30657 7.23582 7.19757 6.85442 7.17024C6.47301 7.1429 6.09019 7.19797 5.73191 7.33157C5.37365 7.46524 5.04831 7.67437 4.77797 7.94477L2.78221 9.94057C2.29885 10.4431 2.03148 11.115 2.03754 11.8124C2.04361 12.5116 2.32407 13.1804 2.81849 13.6748C3.31291 14.1692 3.98174 14.4497 4.68093 14.4558C5.37829 14.4618 6.05021 14.1944 6.55272 13.7111L7.68842 12.5754C7.94875 12.315 8.37089 12.315 8.63122 12.5754C8.89155 12.8358 8.89155 13.2578 8.63122 13.5182L7.49122 14.6582L7.48295 14.6664C6.72855 15.395 5.71813 15.7982 4.66935 15.789C3.62056 15.7799 2.61731 15.3592 1.87568 14.6176C1.13405 13.876 0.713366 12.8727 0.704253 11.824C0.695139 10.7752 1.09832 9.76477 1.82695 9.01037L1.83507 9.0021L3.83499 7.00216C3.83496 7.00219 3.83501 7.00213 3.83499 7.00216C4.24048 6.59655 4.72854 6.28279 5.26591 6.08234Z" fill="#D0BED8" />
+					<!-- /Floating bar -->
+					<!-- File upload area -->
+					<div x-cloak x-show="uppyStore.mainDialog.isOpen && profileStore.profileInfo.isUploadEligible" class="z-20 sticky top-28 lg:top-12 bg-nbpurple-900/75 py-2 px-4 md:px-4 backdrop-filter backdrop-blur-md max-h-[52svh]">
+						<!-- URL Import -->
+						<div class="mt-2 px-2 rounded-lg border border-dashed border-nbpurple-50/25 py-1 w-full h-12">
+							<label for="import-url" class="sr-only">Import URL</label>
+							<div class="mt-[0.075rem] flex rounded-md shadow-sm">
+								<div class="relative flex flex-grow items-stretch focus-within:z-10">
+									<div x-show="urlImportStore.importURL.length === 0" @click="urlImportStore.importURL = await navigator.clipboard.readText()" class="cursor-pointer absolute inset-y-0 left-0 flex items-center pl-3">
+										<svg class="h-5 w-5 text-nbpurple-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+											<path d="M15 2H9a1 1 0 0 0-1 1v2c0 .6.4 1 1 1h6c.6 0 1-.4 1-1V3c0-.6-.4-1-1-1Z" />
+											<path d="M8 4H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2M16 4h2a2 2 0 0 1 2 2v2M11 14h10" />
+											<path d="m17 10 4 4-4 4" />
+										</svg>
+									</div>
+									<div x-show="urlImportStore.importURL.length > 0" @click="urlImportStore.importURL = ''" class="cursor-pointer absolute inset-y-0 left-0 flex items-center pl-3">
+										<svg class="h-5 w-5 text-nbpurple-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+											<path d="m7 21-4.3-4.3c-1-1-1-2.5 0-3.4l9.6-9.6c1-1 2.5-1 3.4 0l5.6 5.6c1 1 1 2.5 0 3.4L13 21" />
+											<path d="M22 21H7" />
+											<path d="m5 11 9 9" />
+										</svg>
+									</div>
+									<input :disabled="urlImportStore.isLoading " x-model="urlImportStore.importURL" type="url" name="import-url" id="import-url" class="block w-full rounded-none rounded-l-md border-0 py-1.5 pl-10 text-nbpurple-900 ring-1 ring-inset ring-nbpurple-300 placeholder:text-nbpurple-400 focus:ring-2 focus:ring-inset focus:ring-nbpurple-600 sm:text-sm sm:leading-6" placeholder="https://example.com/image.jpg">
+								</div>
+								<button @click="urlImportStore.importFromURL()" :disabled="urlImportStore.isLoading" type="button" class="relative -ml-px inline-flex items-center gap-x-1.5 rounded-r-md px-3 py-2 text-sm font-semibold text-nbpurple-50 ring-1 ring-inset ring-nbpurple-300 bg-nbpurple-600 hover:bg-nbpurple-500 disabled:hover:bg-nbpurple-400 disabled:bg-nbpurple-400">
+									<svg x-show="!urlImportStore.isLoading && !urlImportStore.isError" class="-ml-0.5 h-5 w-5 text-nbpurple-100" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+										<path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242" />
+										<path d="M12 12v9" />
+										<path d="m8 17 4 4 4-4" />
 									</svg>
-									Copy
+									<svg x-show="urlImportStore.isLoading" class="animate-spin -ml-0.5 h-5 w-5 text-nbpurple-100" fill="none" viewBox="0 0 24 24">
+										<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+										<path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+									</svg>
+									<svg x-show="!urlImportStore.isLoading && urlImportStore.isError" class="-ml-0.5 h-5 w-5 text-orange-400" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+										<path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />
+									</svg>
+									Import
 								</button>
-
-								<?php
-								if ($perm->validatePermissionsLevelAny(1, 10, 99)) :
-								?>
-									<button class="public_button">Creators page<label class="toggle-switch">
-											<label class="toggle-switch">
-												<input type="checkbox" id="cs<?= $images_row['id'] ?>" onclick="checksliderClicked('<?= $images_row['id'] ?>' , '<?= $element ?>')" <?= $images_row['flag'] ? "checked" : "" ?> />
-												<div class="toggle-switch-background">
-													<div class="toggle-switch-handle"></div>
-												</div>
-											</label>
-									</button>
-								<?php
-								endif;
-								?>
-							</figure>
+							</div>
 						</div>
-				<?php
-						$divId++;
-						$i++;
-					endwhile;
-					$images_stmt->close(); // Close statement for images
-				endif;
-				?>
-			</section>
+						<!-- File upload (Uppy) -->
+						<div x-init="uppyStore.instantiateUppy($el)" class="mt-2 rounded-lg border border-dashed border-nbpurple-50/25 py-1 w-full h-full max-h-[40svh] overflow-y-scroll overflow-visible">
+							<!-- Uppy component -->
+						</div>
+					</div>
+					<!-- /File upload area -->
+					<!-- File actions -->
+					<!-- Activity feed content -->
+					<div class="p-4" x-effect="if (fileStore.files.length === 0) await fileStore.fetchFiles(menuStore.activeFolder)">
+						<ul role="list" :class="fileStore.fullWidth ? 'lg:grid-cols-4 md:grid-cols-3' : 'md:grid-cols-2'" class="grid grid-cols-2 gap-x-4 gap-y-8 md:gap-x-4 xl:gap-x-6">
+							<template x-if="fileStore.loading || !menuStore.activeFolder">
+								<li class="col-span-full relative">
+									<div class="group aspect-h-2 aspect-w-10 block w-full overflow-hidden rounded-lg bg-black/50 focus-within:ring-2 focus-within:ring-nbpurple-500 focus-within:ring-offset-2 focus-within:ring-offset-nbpurple-100">
+										<div class="pointer-events-none object-cover group-hover:opacity-75 h-full flex items-center justify-center">
+											<svg class="pointer-events-none object-cover group-hover:opacity-75 h-full w-full text-nbpurple-400 animate-pulse" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+												<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+											</svg>
+										</div>
+									</div>
+									<!-- Loading state -->
+									<div class="mt-2 text-center">
+										<p class="text-nbpurple-200 text-2xl animate-pulse">Loading ...</p>
+									</div>
+								</li>
+							</template>
+							<template x-if="!fileStore.loading && fileStore.files.length === 0 && menuStore.activeFolder">
+								<li class="col-span-full relative">
+									<!--
+									<div class="group aspect-h-2 aspect-w-10 block w-full overflow-hidden rounded-lg bg-black/50 focus-within:ring-2 focus-within:ring-nbpurple-500 focus-within:ring-offset-2 focus-within:ring-offset-nbpurple-100">
+										<svg class="pointer-events-none object-cover group-hover:opacity-75 h-full w-full text-nbpurple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+											<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+										</svg>
+									</div>
+			-->
+									<!-- Empty state -->
+									<div x-init="uppyStore.mainDialog.open()" class="mt-2 text-center">
+										<p class="text-nbpurple-200 text-2xl">No media found in this folder.</p>
+									</div>
+								</li>
+							</template>
+							<template x-for="file in fileStore.files" :key="file.id">
+								<li :id="file.id" class="relative" x-data="{ showMediaActions: false }">
+									<!-- Media type badge -->
+									<div x-show="file.mime.startsWith('image/') && !file.mime.endsWith('/gif')" class="z-10 absolute -top-3 -right-3 size-6 bg-nbpurple-600 text-white text-xs font-semibold rounded-full flex items-center justify-center">
+										<svg stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="size-5">
+											<rect width="18" height="18" x="3" y="3" rx="2" ry="2" />
+											<circle cx="9" cy="9" r="2" />
+											<path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21" />
+										</svg>
+									</div>
+									<div x-show="file.mime.endsWith('/gif')" class="z-10 absolute -top-3 -right-3 size-6 bg-nbpurple-600 text-white text-xs font-semibold rounded-full flex items-center justify-center">
+										<svg stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="size-5">
+											<path d="m11 16-5 5" />
+											<path d="M11 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v6.5" />
+											<path d="M15.765 22a.5.5 0 0 1-.765-.424V13.38a.5.5 0 0 1 .765-.424l5.878 3.674a1 1 0 0 1 0 1.696z" />
+											<circle cx="9" cy="9" r="2" />
+										</svg>
+									</div>
+									<div x-show="file.mime.startsWith('video/')" class="z-10 absolute -top-3 -right-3 size-6 bg-nbpurple-600 text-white text-xs font-semibold rounded-full flex items-center justify-center">
+										<svg stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="size-5">
+											<path d="m16 13 5.223 3.482a.5.5 0 0 0 .777-.416V7.87a.5.5 0 0 0-.752-.432L16 10.5" />
+											<rect x="2" y="6" width="14" height="12" rx="2" />
+										</svg>
+									</div>
+									<div x-show="file.mime.startsWith('audio/')" class="z-10 absolute -top-3 -right-3 size-6 bg-nbpurple-600 text-white text-xs font-semibold rounded-full flex items-center justify-center">
+										<svg stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="size-5">
+											<path d="M3 14h3a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-7a9 9 0 0 1 18 0v7a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3" />
+										</svg>
+									</div>
+									<!-- /Media type badge -->
+									<!-- Creators page badge -->
+									<div x-cloak x-show="file.flag === 1" class="cursor-pointer absolute -top-[0.85rem] left-3 z-10">
+										<span class="inline-flex items-center rounded-md bg-black/85 px-2 py-1 text-xs font-medium text-yellow-300 ring-1 ring-inset ring-yellow-400/20">
+											Creators
+											<span class="hidden xs:inline ml-1">Page</span>
+										</span>
+									</div>
+									<!-- /Creators page badge -->
+									<!-- Nostr badge -->
+									<div x-data="{ events: 0 }" x-effect="events = file.associated_notes?.split(',')?.length || 0" x-show="events" class="cursor-pointer hover:animate-[wiggle_1s_ease-in-out_infinite] z-10 absolute py-1 h-auto top-4 -right-3 size-6 bg-nbpurple-600 text-white text-xs font-semibold rounded-full flex flex-col items-center justify-center">
+										<svg class="size-5" stroke="currentColor" fill="currentColor" viewBox="0 0 256 256" xmlns="http://www.w3.org/2000/svg">
+											<circle cx="137.9" cy="99" fill="#fff" r="12.1" />
+											<path d="M210.8 115.9c0-47.3-27.7-68.7-64.4-68.7-16.4 0-31 4.4-42.4 12.5-3.8 2.7-9 .1-9-4.5 0-3.1-2.5-5.7-5.7-5.7H57.7c-3.1 0-5.7 2.5-5.7 5.7v144c0 3.1 2.5 5.7 5.7 5.7h33.7c3.1 0 5.6-2.5 5.6-5.6v-8.4c0-62.8-33.2-109.8-.4-116 30-5.7 64.1-3 64.5 20.1 0 2 .3 8 8.6 11.2 5 2 12.6 2.6 22.6 2.4 0 0 9.1-.7 9.1 8.5 0 11.5-20.4 10.7-20.4 10.7-6.7.3-22.6-1.5-31.7 1.2-4.8 1.5-9 4.2-11.5 9.1-4.2 8.3-6.2 26.5-6.5 45.5v15.5c0 3.1 2.5 5.7 5.7 5.7h68c3.1 0 5.7-2.5 5.7-5.7v-83.2z" fill="#fff" />
+										</svg>
+										<span class="text-xs -mt-[0.175] " x-text="events"></span>
+									</div>
+									<!-- /Nostr badge -->
+									<div class="relative group aspect-h-7 aspect-w-10 w-full overflow-hidden rounded-lg bg-black/50 focus-within:ring-2 focus-within:ring-indigo-500 focus-within:ring-offset-2 focus-within:ring-offset-gray-100">
+										<!-- Loading placeholders -->
+										<template x-if="!file.loaded && file.mime.startsWith('image/') && !file.name.endsWith('.gif')">
+											<svg class="absolute inset-0 pointer-events-none object-cover group-hover:opacity-75 h-full w-full text-nbpurple-400 animate-pulse" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+												<rect width="18" height="18" x="3" y="3" rx="2" ry="2" />
+												<circle cx="9" cy="9" r="2" />
+												<path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21" />
+											</svg>
+										</template>
 
-			<div class="toast hidden_element">
-				<div class="import_icon">
-					<svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-						<path d="M10.5893 15.3033L9.41081 16.4818C7.78361 18.109 5.14542 18.109 3.51824 16.4818C1.89106 14.8546 1.89106 12.2164 3.51824 10.5893L4.69675 9.41077M15.3034 10.5893L16.4819 9.41077C18.1091 7.78355 18.1091 5.14536 16.4819 3.51818C14.8547 1.89099 12.2165 1.89099 10.5893 3.51818L9.41083 4.69669M7.08341 12.9166L12.9167 7.0833" stroke="url(#paint0_linear_160_1541)" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round" />
-						<defs>
-							<linearGradient id="paint0_linear_160_1541" x1="10.0001" y1="2.29779" x2="10.0001" y2="17.7022" gradientUnits="userSpaceOnUse">
-								<stop stop-color="#2EDF95" />
-								<stop offset="1" stop-color="#07847C" />
-							</linearGradient>
-						</defs>
-					</svg>
-				</div>
-				<div class="toast_info">
-					Copied
-					<p>Link of your media copied to clipboard</p>
-				</div>
-			</div>
+										<template x-if="!file.loaded && file.mime.startsWith('image/') && file.name.endsWith('.gif')">
+											<svg class="absolute inset-0 pointer-events-none object-cover group-hover:opacity-75 h-full w-full text-nbpurple-400 animate-pulse" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+												<path d="m11 16-5 5" />
+												<path d="M11 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v6.5" />
+												<path d="M15.765 22a.5.5 0 0 1-.765-.424V13.38a.5.5 0 0 1 .765-.424l5.878 3.674a1 1 0 0 1 0 1.696z" />
+												<circle cx="9" cy="9" r="2" />
+											</svg>
+										</template>
 
-			<!-- Edit bar -->
-			<div x-data class="fixed inset-x-0 bottom-0 z-50" x-cloak>
-				<div class="relative w-screen" x-show="$store.mediaEditBar.show" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 transform translate-y-full" x-transition:enter-end="opacity-100 transform translate-y-0" x-transition:leave="transition ease-in duration-300" x-transition:leave-start="opacity-100 transform translate-y-0" x-transition:leave-end="opacity-0 transform translate-y-full">
+										<template x-if="!file.loaded && file.mime.startsWith('video/')">
+											<svg class="absolute inset-0 pointer-events-none object-cover group-hover:opacity-75 h-full w-full text-nbpurple-400 animate-pulse" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+												<path d="m16 13 5.223 3.482a.5.5 0 0 0 .777-.416V7.87a.5.5 0 0 0-.752-.432L16 10.5" />
+												<rect x="2" y="6" width="14" height="12" rx="2" />
+											</svg>
+										</template>
 
-					<div class="h-1/4 bg-purple-500/80 shadow-xl overflow-y-auto relative">
-						<button @click="$store.mediaEditBar.toggle()" type="button" class="inset-auto absolute top-1 right-1 flex items-center justify-center h-8 w-8 rounded-full focus:outline-none focus:ring-1 focus:ring-inset focus:ring-white">
-							<span class="sr-only">Close panel</span>
-							<svg class="h-6 w-6 text-purple-100" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+										<template x-if="!file.loaded && file.mime.startsWith('audio/')">
+											<svg class="absolute inset-0 pointer-events-none object-cover group-hover:opacity-75 h-full w-full text-nbpurple-400 animate-pulse" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+												<path d="M3 14h3a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-7a9 9 0 0 1 18 0v7a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3" />
+											</svg>
+										</template>
+										<!-- /Loading placeholders -->
+
+										<!-- Media actions -->
+										<div x-cloak x-show="showMediaActions" @click.outside="showMediaActions = false || fileStore.deleteConfirmation.isOpen || fileStore.shareMedia.isOpen || fileStore.moveToFolder.isOpen" class="absolute inset-0 object-contain bg-black/80 py-1 px-3 sm:py-2 z-10 flex flex-col">
+											<div class="m-auto w-5/6 grid gap-1 grid-cols-3 place-items-center">
+												<!-- Buttons -->
+												<!-- Delete button -->
+												<button x-data="{deleteClick: false}" @click="fileStore.deleteConfirmation.open(file.id)" class="p-1 bg-nbpurple-600/10 text-white rounded-md hover:bg-nbpurple-700/10 focus:outline-none focus:ring-2 focus:ring-nbpurple-500/10" aria-label="Delete media file">
+													<svg x-show="!deleteClick" class="max-h-11 w-full inline-block" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true" x-transition:enter="transition-opacity duration-500" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100">
+														<path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
+													</svg>
+													<svg x-cloak x-show="deleteClick" class="max-h-11 animate-[pulse_3s_ease-in-out_infinite] w-full inline-block" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true" x-transition:enter="transition-opacity duration-500" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100">
+														<path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" />
+													</svg>
+												</button>
+												<!-- Share button -->
+												<button x-cloak x-show="profileStore.profileInfo.isShareEligible" x-data="{shareClick: false}" @click="fileStore.shareMedia.open(file.id)" class="p-1 bg-nbpurple-600/10 text-white rounded-md hover:bg-nbpurple-700/10 focus:outline-none focus:ring-2 focus:ring-nbpurple-500/10" aria-label="Share media file">
+													<svg x-show="!shareClick" class="max-h-11 w-full inline-block" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true" x-transition:enter="transition-opacity duration-500" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100">
+														<path stroke-linecap="round" stroke-linejoin="round" d="M7.5 7.5h-.75A2.25 2.25 0 0 0 4.5 9.75v7.5a2.25 2.25 0 0 0 2.25 2.25h7.5a2.25 2.25 0 0 0 2.25-2.25v-7.5a2.25 2.25 0 0 0-2.25-2.25h-.75m0-3-3-3m0 0-3 3m3-3v11.25m6-2.25h.75a2.25 2.25 0 0 1 2.25 2.25v7.5a2.25 2.25 0 0 1-2.25 2.25h-7.5a2.25 2.25 0 0 1-2.25-2.25v-.75" />
+													</svg>
+													<svg x-cloak x-show="shareClick" class="max-h-11 animate-[pulse_3s_ease-in-out_infinite] w-full inline-block" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true" x-transition:enter="transition-opacity duration-500" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100">
+														<path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" />
+													</svg>
+												</button>
+												<!-- Move button -->
+												<button x-data="{moveClick: false}" @click="fileStore.moveToFolder.open(file.id)" class="p-1 bg-nbpurple-600/10 text-white rounded-md hover:bg-nbpurple-700/10 focus:outline-none focus:ring-2 focus:ring-nbpurple-500/10" aria-label="Move media file to folder">
+													<svg x-show="!moveClick" class="max-h-11 w-full inline-block" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true" x-transition:enter="transition-opacity duration-500" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100">
+														<path stroke-linecap="round" stroke-linejoin="round" d="M2 9V5a2 2 0 0 1 2-2h3.9a2 2 0 0 1 1.69.9l.81 1.2a2 2 0 0 0 1.67.9H20a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-1" />
+														<path stroke-linecap="round" stroke-linejoin="round" d="M2 13h10" />
+														<path stroke-linecap="round" stroke-linejoin="round" d="m9 16 3-3-3-3" />
+													</svg>
+													<svg x-cloak x-show="moveClick" class="max-h-11 animate-[pulse_3s_ease-in-out_infinite] w-full inline-block" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true" x-transition:enter="transition-opacity duration-500" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100">
+														<path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" />
+													</svg>
+												</button>
+												<!-- Copy link -->
+												<button x-data="{copyClick: false}" @click="fileStore.copyUrlToClipboard(file.url); copyClick = true; setTimeout(() => copyClick = false, 2000); showToast = true" class="p-1 sm:hidden bg-nbpurple-600/10 text-white rounded-md hover:bg-nbpurple-700/10 focus:outline-none focus:ring-2 focus:ring-nbpurple-500/10" aria-label="Copy image URL to clipboard">
+													<svg x-show="!copyClick" class="max-h-11 w-full inline-block" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true" x-transition:enter="transition-opacity duration-500" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100">
+														<path stroke-linecap="round" stroke-linejoin="round" d="M11.35 3.836c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 0 0 .75-.75 2.25 2.25 0 0 0-.1-.664m-5.8 0A2.251 2.251 0 0 1 13.5 2.25H15c1.012 0 1.867.668 2.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m8.9-4.414c.376.023.75.05 1.124.08 1.131.094 1.976 1.057 1.976 2.192V16.5A2.25 2.25 0 0 1 18 18.75h-2.25m-7.5-10.5H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V18.75m-7.5-10.5h6.375c.621 0 1.125.504 1.125 1.125v9.375m-8.25-3 1.5 1.5 3-3.75" />
+													</svg>
+													<svg x-cloak x-show="copyClick" class="max-h-11 animate-[pulse_3s_ease-in-out_infinite] w-full inline-block" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true" x-transition:enter="transition-opacity duration-500" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100">
+														<path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" />
+													</svg>
+												</button>
+												<!-- Nostr Share -->
+												<button x-cloak x-show="profileStore.profileInfo.isNostrShareEligible" @click="nostrStore.share.open(file.id)" class="p-1 xs:hidden bg-nbpurple-600/10 text-nostrpurple-50 rounded-md hover:bg-nbpurple-700/10 focus:outline-none focus:ring-2 focus:ring-nbpurple-500/10" aria-label="Share image on Nostr">
+													<svg class="max-h-11 w-full inline-block" stroke="currentColor" fill="currentColor" viewBox="0 0 256 256" xmlns="http://www.w3.org/2000/svg">
+														<circle cx="137.9" cy="99" fill="#fff" r="12.1" />
+														<path d="M210.8 115.9c0-47.3-27.7-68.7-64.4-68.7-16.4 0-31 4.4-42.4 12.5-3.8 2.7-9 .1-9-4.5 0-3.1-2.5-5.7-5.7-5.7H57.7c-3.1 0-5.7 2.5-5.7 5.7v144c0 3.1 2.5 5.7 5.7 5.7h33.7c3.1 0 5.6-2.5 5.6-5.6v-8.4c0-62.8-33.2-109.8-.4-116 30-5.7 64.1-3 64.5 20.1 0 2 .3 8 8.6 11.2 5 2 12.6 2.6 22.6 2.4 0 0 9.1-.7 9.1 8.5 0 11.5-20.4 10.7-20.4 10.7-6.7.3-22.6-1.5-31.7 1.2-4.8 1.5-9 4.2-11.5 9.1-4.2 8.3-6.2 26.5-6.5 45.5v15.5c0 3.1 2.5 5.7 5.7 5.7h68c3.1 0 5.7-2.5 5.7-5.7v-83.2z" fill="#fff" />
+													</svg>
+												</button>
+											</div>
+										</div>
+										<!-- /Media actions -->
+
+										<!-- Image -->
+										<template x-if="file.mime.startsWith('image/')">
+											<img x-intersect:enter.once.margin.550px="$nextTick(async () => {
+														$el.src = file.thumb;
+														$el.srcset = file.srcset;
+														$el.sizes = file.sizes;});
+														if (file.loadMore && !fileStore.loading && !fileStore.loadingMoreFiles) setTimeout(async () => {await fileStore.loadMoreFiles()}, 0);
+													  " @load="file.loaded = true" @error="file.loaded = true, file.loadError" :data-src="file.thumb" :data-srcset="file.srcset" :data-sizes="file.sizes" :alt="file.name" :width="file.width" :height="file.height" loading="lazy" class="transition-opacity duration-300 ease-in pointer-events-none object-contain group-hover:opacity-75" x-cloak x-transition:enter="transition-opacity ease-in duration-1000" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" />
+										</template>
+
+										<!-- Video -->
+										<template x-if="file.mime.startsWith('video/')">
+											<video crossorigin="anonymous" x-intersect:enter.once.margin.500px="$nextTick(async () => {
+														$el.src = file.url;
+														$el.load();
+														if (file.loadMore && !fileStore.loading && !fileStore.loadingMoreFiles) fileStore.loadMoreFiles();
+													})" @loadedmetadata="file.loaded = true" playsinline preload="none" class="pointer-events-none object-cover" x-cloak x-transition:enter="transition-opacity ease-in duration-1000" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100">
+												<source :data-src="file.url" type="video/mp4">
+												<p>
+													Your browser does not support the video tag.
+													<a :href="file.url" download>Download the video</a>
+												</p>
+											</video>
+										</template>
+
+										<!-- Audio -->
+										<template x-if="file.mime.startsWith('audio/')">
+											<!-- Default poster -->
+											<img src="https://cdn.nostr.build/assets/audio/jpg/audio-wave@0.5x.jpg" :alt="'Poster for ' + file.name" @load="file.loaded = true" loading="eager" class="pointer-events-none object-cover group-hover:opacity-75" />
+										</template>
+
+										<button @click="fileStore.openModal(file)" type="button" :class="{'hidden pointer-events-none': showMediaActions}" class="absolute inset-0 focus:outline-none">
+											<span class="sr-only" x-text="'View details for ' + file.name"></span>
+											<div class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-80 transition-opacity duration-300">
+												<svg x-show="file.mime.startsWith('image/')" class="size-1/3 text-nbpurple-50" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+													<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7" />
+												</svg>
+												<svg x-show="file.mime.startsWith('video/')" class="size-1/3 text-nbpurple-50" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+													<path d="m16 13 5.223 3.482a.5.5 0 0 0 .777-.416V7.87a.5.5 0 0 0-.752-.432L16 10.5" />
+													<rect x="2" y="6" width="14" height="12" rx="2" />
+												</svg>
+												<svg x-show="file.mime.startsWith('audio/')" class="size-1/3 text-nbpurple-50" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+													<path d="M3 14h3a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-7a9 9 0 0 1 18 0v7a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3" />
+												</svg>
+											</div>
+										</button>
+									</div>
+									<div class="flex justify-between items-center">
+										<div>
+											<p class="pointer-events-none mt-2 block truncate text-sm font-medium text-nbpurple-300" x-text="file.name"></p>
+											<p class="pointer-events-none block text-sm font-medium text-nbpurple-500" x-text="formatBytes(file.size)"></p>
+										</div>
+										<!-- Normal actions -->
+										<div x-show="!multiSelect" x-data="{copyClick: false}">
+											<!-- Nostr Share -->
+											<button x-cloak x-show="profileStore.profileInfo.isNostrShareEligible" @click="nostrStore.share.open(file.id)" class="hidden xs:inline-block ring-1 ring-nostrpurple-400 mt-2 px-2 py-1 bg-nostrpurple-500 text-nostrpurple-50 rounded-md hover:bg-nostrpurple-400 focus:outline-none focus:ring-2 focus:ring-nostrpurple-300 shadow-sm hover:shadow-nostrpurple-100" aria-label="Share image on Nostr">
+												<svg aria-hidden="true" class="size-6 inline-block" stroke="currentColor" fill="currentColor" viewBox="0 0 256 256" xmlns="http://www.w3.org/2000/svg">
+													<circle cx="137.9" cy="99" fill="#fff" r="12.1" />
+													<path d="M210.8 115.9c0-47.3-27.7-68.7-64.4-68.7-16.4 0-31 4.4-42.4 12.5-3.8 2.7-9 .1-9-4.5 0-3.1-2.5-5.7-5.7-5.7H57.7c-3.1 0-5.7 2.5-5.7 5.7v144c0 3.1 2.5 5.7 5.7 5.7h33.7c3.1 0 5.6-2.5 5.6-5.6v-8.4c0-62.8-33.2-109.8-.4-116 30-5.7 64.1-3 64.5 20.1 0 2 .3 8 8.6 11.2 5 2 12.6 2.6 22.6 2.4 0 0 9.1-.7 9.1 8.5 0 11.5-20.4 10.7-20.4 10.7-6.7.3-22.6-1.5-31.7 1.2-4.8 1.5-9 4.2-11.5 9.1-4.2 8.3-6.2 26.5-6.5 45.5v15.5c0 3.1 2.5 5.7 5.7 5.7h68c3.1 0 5.7-2.5 5.7-5.7v-83.2z" fill="#fff" />
+												</svg>
+											</button>
+											<!-- Copy link -->
+											<button @click="copyUrlToClipboard(file.url); copyClick = true; setTimeout(() => copyClick = false, 2000); showToast = true" class="hidden sm:inline-block mt-2 px-2 py-1 bg-nbpurple-600 text-nbpurple-50 rounded-md hover:bg-nbpurple-700 focus:outline-none focus:ring-2 focus:ring-nbpurple-500" aria-label="Copy image URL to clipboard">
+												<svg x-show="!copyClick" class="size-6 inline-block" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true" x-transition:enter="transition-opacity duration-500" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100">
+													<path stroke-linecap="round" stroke-linejoin="round" d="M11.35 3.836c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 0 0 .75-.75 2.25 2.25 0 0 0-.1-.664m-5.8 0A2.251 2.251 0 0 1 13.5 2.25H15c1.012 0 1.867.668 2.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m8.9-4.414c.376.023.75.05 1.124.08 1.131.094 1.976 1.057 1.976 2.192V16.5A2.25 2.25 0 0 1 18 18.75h-2.25m-7.5-10.5H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V18.75m-7.5-10.5h6.375c.621 0 1.125.504 1.125 1.125v9.375m-8.25-3 1.5 1.5 3-3.75" />
+												</svg>
+												<svg x-cloak x-show="copyClick" class="animate-[pulse_3s_ease-in-out_infinite] size-6 inline-block" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true" x-transition:enter="transition-opacity duration-500" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100">
+													<path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" />
+												</svg>
+											</button>
+											<!-- Media actions -->
+											<button @click="showMediaActions = !showMediaActions" class="mt-2 px-2 py-1 bg-nbpurple-600 text-nbpurple-50 rounded-md hover:bg-nbpurple-700 focus:outline-none focus:ring-2 focus:ring-nbpurple-500" aria-label="Show media actions">
+												<svg class="size-6 inline-block text-nbpurple-50" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+													<path stroke-linecap="round" stroke-linejoin="round" d="M8.625 12a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0H8.25m4.125 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0H12m4.125 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0h-.375M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+												</svg>
+											</button>
+										</div>
+										<!-- Multi-select -->
+										<div x-cloak x-show="multiSelect">
+											<button @click="toggleSelected(file.id)" type="button" :class="{ 'bg-nbpurple-600 p-1.5 text-nbpurple-50 hover:bg-nbpurple-500': isSelected(file.id), 'text-nbpurple-600 p-1.5 bg-nbpurple-50 hover:bg-nbpurple-200': !isSelected(file.id) }" class="rounded-full p-1.5 shadow-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-nbpurple-600">
+												<svg x-show="!isSelected(file.id)" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+													<path d="M10.75 4.75a.75.75 0 00-1.5 0v4.5h-4.5a.75.75 0 000 1.5h4.5v4.5a.75.75 0 001.5 0v-4.5h4.5a.75.75 0 000-1.5h-4.5v-4.5z" />
+												</svg>
+												<svg x-show="isSelected(file.id)" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+													<path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" />
+												</svg>
+											</button>
+										</div>
+									</div>
+								</li>
+							</template>
+							<li x-cloak x-show="fileStore.files.length > 0 && (fileStore.loadingMoreFiles || fileStore.fileFetchHasMore)" class="col-span-full relative">
+								<div @click="await fileStore.fetchFiles(menuStore.activeFolder)" class="cursor-pointer group aspect-h-2 aspect-w-10 block w-full overflow-hidden rounded-lg bg-black/50 focus-within:ring-2 focus-within:ring-nbpurple-500 focus-within:ring-offset-2 focus-within:ring-offset-nbpurple-100">
+									<div class="pointer-events-none object-cover group-hover:opacity-75 h-full flex flex-col items-center justify-center">
+										<svg class="pointer-events-none object-cover group-hover:opacity-75 h-1/2 w-1/2 text-nbpurple-400 animate-pulse" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+											<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+										</svg>
+										<span class="pointer-events-none object-cover group-hover:opacity-75 text-nbpurple-400 font-semibold text-2xl text-center mt-2">Retry loading more</span>
+									</div>
+								</div>
+								<div class="mt-2 text-center">
+									<p class="text-nbpurple-200 text-2xl animate-pulse">Loading more...</p>
+								</div>
+							</li>
+						</ul>
+					</div>
+
+					<!-- Scroll to top button -->
+					<div x-cloak x-show="showScrollButton" :class="{ 'bottom-6': !multiSelect, 'bottom-16': multiSelect }" class="sticky ml-6 z-20 transition-all w-fit">
+						<button @click="showScrollButton = false; window.scrollTo({ top: 0, behavior: 'smooth' }); $refs.sidebar.scrollTo({ top: 0, behavior: 'smooth' })" type="button" class="bg-nbpurple-500 text-nbpurple-50 rounded-full p-2 shadow-md hover:bg-nbpurple-600 focus:outline-none focus:ring-2 focus:ring-nbpurple-500">
+							<svg class="size-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+								<path stroke-linecap="round" stroke-linejoin="round" d="m4.5 18.75 7.5-7.5 7.5 7.5" />
+								<path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 7.5-7.5 7.5 7.5" />
 							</svg>
 						</button>
-						<div class="px-4 py-3 sm:p-5">
-							<div class="mt-0">
-								<!-- Your content goes here -->
-								<button x-data="{
-									getSelectedCount() {
-										return $store.checkedCheckboxesMedia.count + $store.checkedCheckboxesFolders.count;
-									},
-									getSelectedType() {
-										if ($store.checkedCheckboxesMedia.count > 0 && $store.checkedCheckboxesFolders.count > 0) {
-											return 'item(s)';
-										} else if ($store.checkedCheckboxesMedia.count > 0) {
-											return 'file(s)';
-										} else if ($store.checkedCheckboxesFolders.count > 0) {
-											return 'folder(s)';
-										} else {
-											return 'item(s)';
-										}
-									}
-								}" @click="$store.deleteConfirmation.open()" type="button" class="rounded-md bg-red-500 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-red-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-500">
-									Delete <span x-text="getSelectedCount()"></span> <span x-text="getSelectedType()"></span>
-								</button>
-								<?php if (!isset($_GET['editfolder'])) : ?>
-									<button x-data="{
-										getSelectedCount() {
-											return $store.checkedCheckboxesMedia.count;
-										},
-									}" @click="$store.moveToFolder.open()" type="button" class="rounded-md bg-purple-500 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-purple-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-purple-500">
-										Move to <span x-text="getSelectedCount()"></span> file(s) to folder
-									</button>
-								<?php endif; ?>
+					</div>
+					<!-- /Scroll to top button -->
+
+					<!-- Bottom bar -->
+					<div x-cloak x-show="multiSelect" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 transform translate-y-full" x-transition:enter-end="opacity-100 transform translate-y-0" x-transition:leave="transition ease-in duration-300" x-transition:leave-start="opacity-100 transform translate-y-0" x-transition:leave-end="opacity-0 transform translate-y-full" class="z-20 sticky bottom-0 bg-nbpurple-900/75 py-2 px-2 align-middle flex items-center justify-center sm:justify-end backdrop-filter backdrop-blur-md">
+						<div class="flex items-center">
+							<button @click="fileStore.deleteConfirmation.open(selectedItems, () => { toggleMultiSelect() })" :disabled="!selectedItems.length" type="button" class="inline-flex items-center rounded-md bg-nbpurple-600 disabled:bg-nbpurple-400 px-3 py-2 text-xs font-semibold text-nbpurple-50 shadow-sm hover:bg-nbpurple-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-nbpurple-600">
+								<svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4 mr-1">
+									<path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
+								</svg>
+								<span class="hidden xs:inline">Delete </span>(<span x-text="selectedItems.length"></span>)
+							</button>
+							<button x-cloak x-show="profileStore.profileInfo.isShareEligible" @click="fileStore.shareMedia.open(selectedItems, () => { toggleMultiSelect() })" :disabled="!selectedItems.length" type="button" class="ml-3 inline-flex items-center rounded-md bg-nbpurple-600 disabled:bg-nbpurple-400 px-3 py-2 text-xs font-semibold text-nbpurple-50 shadow-sm hover:bg-nbpurple-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-nbpurple-600">
+								<svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4 mr-1">
+									<path stroke-linecap="round" stroke-linejoin="round" d="M7.5 7.5h-.75A2.25 2.25 0 0 0 4.5 9.75v7.5a2.25 2.25 0 0 0 2.25 2.25h7.5a2.25 2.25 0 0 0 2.25-2.25v-7.5a2.25 2.25 0 0 0-2.25-2.25h-.75m0-3-3-3m0 0-3 3m3-3v11.25m6-2.25h.75a2.25 2.25 0 0 1 2.25 2.25v7.5a2.25 2.25 0 0 1-2.25 2.25h-7.5a2.25 2.25 0 0 1-2.25-2.25v-.75" />
+								</svg>
+								<span class="hidden xs:inline">Share </span>(<span x-text="selectedItems.length"></span>)
+							</button>
+							<button @click="fileStore.moveToFolder.open(selectedItems, () => { toggleMultiSelect() })" :disabled="!selectedItems.length" type="button" class="ml-3 inline-flex items-center rounded-md bg-nbpurple-600 disabled:bg-nbpurple-400 px-3 py-2 text-xs font-semibold text-nbpurple-50 shadow-sm hover:bg-nbpurple-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-nbpurple-600">
+								<svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4 mr-1">
+									<path stroke-linecap="round" stroke-linejoin="round" d="M2 9V5a2 2 0 0 1 2-2h3.9a2 2 0 0 1 1.69.9l.81 1.2a2 2 0 0 0 1.67.9H20a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-1" />
+									<path stroke-linecap="round" stroke-linejoin="round" d="M2 13h10" />
+									<path stroke-linecap="round" stroke-linejoin="round" d="m9 16 3-3-3-3" />
+								</svg>
+								<span class="hidden xs:inline">Move </span>(<span x-text="selectedItems.length"></span>)
+							</button>
+						</div>
+					</div>
+					<!-- /Bottom bar -->
+				</aside>
+			</div>
+		</div>
+
+		<!-- Delete confirmation window -->
+		<div x-cloak class="relative z-50" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+			<div x-show="fileStore.deleteConfirmation.isOpen" x-transition:enter="ease-out duration-300" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" x-transition:leave="ease-in duration-200" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0" class="fixed inset-0 bg-nbpurple-500 bg-opacity-75 transition-opacity"></div>
+
+			<div x-show="fileStore.deleteConfirmation.isOpen" x-transition:enter="ease-out duration-300" x-transition:enter-start="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95" x-transition:enter-end="opacity-100 translate-y-0 sm:scale-100" x-transition:leave="ease-in duration-200" x-transition:leave-start="opacity-100 translate-y-0 sm:scale-100" x-transition:leave-end="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95" class="fixed inset-0 z-50 overflow-y-auto">
+				<div class="flex min-h-screen items-end justify-center p-4 text-center sm:items-center sm:p-0">
+					<div @click.outside="!fileStore.deleteConfirmation.isLoading && fileStore.deleteConfirmation.close(true)" @keydown.escape="!fileStore.deleteConfirmation.isLoading && fileStore.deleteConfirmation.close(true)" class="relative transform overflow-hidden rounded-lg bg-nbpurple-50 text-left shadow-xl transition-all mb-24 sm:my-8 sm:w-full sm:max-w-lg">
+						<div class="bg-nbpurple-50 px-4 pb-4 pt-5 sm:p-6 sm:pb-4">
+							<div class="sm:flex sm:items-start">
+								<div class="mx-auto flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-red-100 sm:mx-0 sm:h-10 sm:w-10">
+									<svg class="size-6 text-red-600" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+										<path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
+									</svg>
+								</div>
+								<div class="mt-3 text-center sm:ml-4 sm:mt-0 sm:text-left">
+									<h3 class="text-base font-semibold leading-6 text-gray-900" id="modal-title">Confirm Delete</h3>
+									<div class="mt-2">
+										<p class="text-sm text-gray-500">
+											Are you sure you want to delete the selected <span class="font-bold" x-text="fileStore.deleteConfirmation.selectedFiles.length"></span> file(s)? This action cannot be undone.
+										</p>
+										<!-- List of selected media -->
+										<div class="flex items-center justify-center">
+											<div class="isolate flex -space-x-2 overflow-hidden pl-3 py-2">
+												<template x-for="(file, index) in (fileStore.deleteConfirmation.selectedFiles.length > 5 ? fileStore.deleteConfirmation.selectedFiles.slice(0, 5) : fileStore.deleteConfirmation.selectedFiles)" :key="file.id">
+													<div>
+														<img x-show="file.mime.startsWith('image/')" :class="'relative z-' + (50 - index * 10)" class="inline-block w-12 h-12 object-cover rounded-full ring-2 ring-white" :src="file.thumb" :alt="file.name">
+														<div x-show="file.mime.startsWith('video/')" :class="'relative z-' + (50 - index * 10)" class="size-12 object-cover rounded-full ring-2 ring-white bg-nbpurple-500 text-nbpurple-50 flex items-center justify-center">
+															<svg stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="size-8">
+																<path d="m16 13 5.223 3.482a.5.5 0 0 0 .777-.416V7.87a.5.5 0 0 0-.752-.432L16 10.5" />
+																<rect x="2" y="6" width="14" height="12" rx="2" />
+															</svg>
+														</div>
+														<div x-show="file.mime.startsWith('audio/')" :class="'relative z-' + (50 - index * 10)" class="size-12 object-cover rounded-full ring-2 ring-white bg-nbpurple-500 text-nbpurple-50 flex items-center justify-center">
+															<svg stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="size-8">
+																<path d="M3 14h3a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-7a9 9 0 0 1 18 0v7a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3" />
+															</svg>
+														</div>
+													</div>
+												</template>
+												<template x-if="fileStore.deleteConfirmation.selectedFiles.length > 5">
+													<div class="relative z-0 inline-flex items-center justify-center w-12 h-12 rounded-full bg-nbpurple-600 text-white ring-2 ring-white">
+														<span class="text-xs xs:text-sm font-medium">+<span x-text="fileStore.deleteConfirmation.selectedFiles.length - 5"></span></span>
+													</div>
+												</template>
+											</div>
+										</div>
+										<!-- /List of selected media -->
+										<!-- Nostr shared warning -->
+										<div x-show="fileStore.deleteConfirmation.selectedFiles.some(file => file.associated_notes)" class="mt-3">
+											<p class="text-sm text-red-500">Note: Some of the selected media have been shared on Nostr.</p>
+											<!-- TODO: List of shared notes, ability to see them, and delete them -->
+										</div>
+										<!-- Nostr shared warning -->
+										<!-- Notice about deletion -->
+										<div class="mt-3">
+											<p class="text-sm text-red-500">Note: Deleting media won't immediately remove it from browser/client caches, other proxies, especially if it has been already publicly shared.</p>
+										</div>
+										<!-- Error message -->
+										<div x-cloak x-show="fileStore.deleteConfirmation.isError" class="mt-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
+											<strong class="font-bold">Error!</strong>
+											<span class="block sm:inline">An error occurred while deleting the files.</span>
+										</div>
+									</div>
+								</div>
 							</div>
+						</div>
+						<div class="bg-nbpurple-50 px-4 py-3 gap-3 flex flex-row-reverse sm:px-6">
+							<button :disabled="fileStore.deleteConfirmation.isLoading" @click="fileStore.confirmDelete()" type="button" class="mt-3 inline-flex w-full justify-center rounded-md bg-red-600 px-4 py-2 text-base font-medium text-white shadow-sm hover:bg-red-500 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">
+								<svg x-show="fileStore.deleteConfirmation.isLoading" class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+									<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+									<path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+								</svg>
+								Delete
+							</button>
+							<button :disabled="fileStore.deleteConfirmation.isLoading" @click="fileStore.deleteConfirmation.close(true)" type="button" class="mt-3 inline-flex w-full justify-center rounded-md bg-white px-4 py-2 text-base font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-nbpurple-500 focus:ring-offset-2 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">Cancel</button>
 						</div>
 					</div>
 				</div>
 			</div>
+		</div>
 
-			<!-- Delete confirmation window -->
-			<div x-cloak x-data class="relative z-50" aria-labelledby="modal-title" role="dialog" aria-modal="true">
-				<div x-show="$store.deleteConfirmation.isOpen" x-transition:enter="ease-out duration-300" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" x-transition:leave="ease-in duration-200" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0" class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity"></div>
+		<!-- Share window -->
+		<template x-if="profileStore.profileInfo.isShareEligible">
+			<div x-cloak class="relative z-50" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+				<div x-show="fileStore.shareMedia.isOpen" x-transition:enter="ease-out duration-300" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" x-transition:leave="ease-in duration-200" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0" class="fixed inset-0 bg-nbpurple-500 bg-opacity-75 transition-opacity"></div>
 
-				<div x-show="$store.deleteConfirmation.isOpen" x-transition:enter="ease-out duration-300" x-transition:enter-start="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95" x-transition:enter-end="opacity-100 translate-y-0 sm:scale-100" x-transition:leave="ease-in duration-200" x-transition:leave-start="opacity-100 translate-y-0 sm:scale-100" x-transition:leave-end="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95" class="fixed inset-0 z-50 overflow-y-auto">
+				<div x-show="fileStore.shareMedia.isOpen" x-transition:enter="ease-out duration-300" x-transition:enter-start="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95" x-transition:enter-end="opacity-100 translate-y-0 sm:scale-100" x-transition:leave="ease-in duration-200" x-transition:leave-start="opacity-100 translate-y-0 sm:scale-100" x-transition:leave-end="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95" class="fixed inset-0 z-50 overflow-y-auto">
 					<div class="flex min-h-screen items-end justify-center p-4 text-center sm:items-center sm:p-0">
-						<div class="relative transform overflow-hidden rounded-lg bg-purple-50 text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg">
-							<div class="bg-purple-50 px-4 pb-4 pt-5 sm:p-6 sm:pb-4">
+						<div @click.outside="!fileStore.shareMedia.isLoading && fileStore.shareMedia.close(true)" @keydown.escape="!fileStore.shareMedia.isLoading && fileStore.shareMedia.close(true)" class="relative transform overflow-hidden rounded-lg bg-nbpurple-50 text-left shadow-xl transition-all mb-24 sm:my-8 w-full max-w-lg">
+							<div class="bg-nbpurple-50 px-4 pb-4 pt-5 sm:p-6 sm:pb-4">
 								<div class="sm:flex sm:items-start">
-									<div class="mx-auto flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-red-100 sm:mx-0 sm:h-10 sm:w-10">
-										<svg class="h-6 w-6 text-red-600" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
-											<path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
+									<div class="mx-auto flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-nbpurple-100 sm:mx-0 sm:h-10 sm:w-10">
+										<svg class="size-6 text-nbpurple-600" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+											<path stroke-linecap="round" stroke-linejoin="round" d="M7.5 7.5h-.75A2.25 2.25 0 0 0 4.5 9.75v7.5a2.25 2.25 0 0 0 2.25 2.25h7.5a2.25 2.25 0 0 0 2.25-2.25v-7.5a2.25 2.25 0 0 0-2.25-2.25h-.75m0-3-3-3m0 0-3 3m3-3v11.25m6-2.25h.75a2.25 2.25 0 0 1 2.25 2.25v7.5a2.25 2.25 0 0 1-2.25 2.25h-7.5a2.25 2.25 0 0 1-2.25-2.25v-.75" />
 										</svg>
 									</div>
 									<div class="mt-3 text-center sm:ml-4 sm:mt-0 sm:text-left">
-										<h3 class="text-base font-semibold leading-6 text-gray-900" id="modal-title">Confirm Delete</h3>
+										<h3 class="text-base font-semibold leading-6 text-gray-900" id="modal-title">Share Media</h3>
 										<div class="mt-2">
-											<p class="text-sm text-gray-500" x-data="{
-													getSelectedCount() {
-														return $store.checkedCheckboxesMedia.count + $store.checkedCheckboxesFolders.count;
-													},
-													getSelectedType() {
-														if ($store.checkedCheckboxesMedia.count > 0 && $store.checkedCheckboxesFolders.count > 0) {
-															return 'item(s)';
-														} else if ($store.checkedCheckboxesMedia.count > 0) {
-															return 'file(s)';
-														} else if ($store.checkedCheckboxesFolders.count > 0) {
-															return 'folder(s)';
-														} else {
-															return 'item(s)';
-														}
-													}
-												}">
-												Are you sure you want to delete <span x-text="getSelectedCount()"></span> <span x-text="getSelectedType()"></span>? This action cannot be undone.
-											</p>
-											<!-- Notice about deletion -->
-											<div class="mt-3">
-												<p class="text-sm text-red-500">Note: Deleting media won't immediately remove it from browser/client caches, other proxies, especially if it has been already publicly shared.</p>
-											</div>
-										</div>
-									</div>
-								</div>
-							</div>
-							<div class="bg-purple-50 px-4 py-3 gap-3 flex flex-row-reverse sm:px-6">
-								<button @click="$store.deleteConfirmation.confirm()" type="button" class="mt-3 inline-flex w-full justify-center rounded-md bg-red-600 px-4 py-2 text-base font-medium text-white shadow-sm hover:bg-red-500 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">
-									<svg x-show="$store.deleteConfirmation.isLoading" class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-										<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-										<path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-									</svg>
-									Delete
-								</button>
-								<button @click="$store.deleteConfirmation.close()" type="button" class="mt-3 inline-flex w-full justify-center rounded-md bg-white px-4 py-2 text-base font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">Cancel</button>
-							</div>
-						</div>
-					</div>
-				</div>
-			</div>
-
-
-			<!-- Move to folder modal -->
-			<div x-cloak x-data="{ searchTerm: '' }" class="relative z-50" aria-labelledby="modal-title" role="dialog" aria-modal="true">
-				<!-- Background overlay -->
-				<div x-show="$store.moveToFolder.isOpen" x-transition:enter="ease-out duration-300" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" x-transition:leave="ease-in duration-200" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0" class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity"></div>
-				<!-- Modal content -->
-				<div x-show="$store.moveToFolder.isOpen" x-transition:enter="ease-out duration-300" x-transition:enter-start="opacity-0 translate-y-0 sm:-translate-y-4" x-transition:enter-end="opacity-100 translate-y-0 sm:translate-y-0 sm:scale-100" x-transition:leave="ease-in duration-200" x-transition:leave-start="opacity-100 translate-y-0 sm:translate-y-0 sm:scale-100" x-transition:leave-end="opacity-0 translate-y-0 sm:-translate-y-4 sm:scale-95" class="fixed inset-0 z-50 overflow-y-auto">
-					<div class="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
-						<div class="relative transform overflow-hidden rounded-lg bg-white text-left shadow-xl transition-all h-52 max-h-72 my-8 w-full sm:max-w-lg overflow-y-auto">
-							<div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
-								<div class="sm:flex sm:items-start">
-									<div class="mt-3 text-center sm:mt-0 sm:text-left w-full">
-										<div class="mt-2 flex items-center">
-											<label for="combobox" class="block text-sm font-medium leading-6 text-gray-900 mr-2">Select Folder</label>
-											<div class="relative w-full z-auto">
-												<input id="combobox" type="text" x-model="$store.moveToFolder.selectedFolder" @input="searchTerm = $store.moveToFolder.selectedFolder" @click="$store.moveToFolder.toggleDropdown()" @click.away="searchTerm = ''; $store.moveToFolder.isDropdownOpen = false" class="w-full rounded-md border-0 bg-white py-1.5 pl-3 pr-12 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6" role="combobox" aria-controls="options" :aria-expanded="$store.moveToFolder.isDropdownOpen.toString()">
-												<button type="button" @click="$store.moveToFolder.toggleDropdown()" class="absolute inset-y-0 right-0 flex items-center rounded-r-md px-2 focus:outline-none">
-													<svg class="h-5 w-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-														<path fill-rule="evenodd" d="M10 3a.75.75 0 01.55.24l3.25 3.5a.75.75 0 11-1.1 1.02L10 4.852 7.3 7.76a.75.75 0 01-1.1-1.02l3.25-3.5A.75.75 0 0110 3zm-3.76 9.2a.75.75 0 011.06.04l2.7 2.908 2.7-2.908a.75.75 0 111.1 1.02l-3.25 3.5a.75.75 0 01-1.1 0l-3.25-3.5a.75.75 0 01.04-1.06z" clip-rule="evenodd" />
-													</svg>
-												</button>
-												<ul x-show="$store.moveToFolder.isDropdownOpen" @click.away="$store.moveToFolder.isDropdownOpen = false" class="absolute z-10 mt-1 h-32 max-h-60 w-full overflow-auto rounded-md bg-white py-1 text-base shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none sm:text-sm" id="options" role="listbox">
-													<template x-for="folder in $store.moveToFolder.folders.filter(f => f.name.toLowerCase().includes(searchTerm.toLowerCase()))">
-														<li class="relative cursor-default select-none py-2 pl-3 pr-9 text-gray-900" :id="'option-' + folder.id" role="option" @click="$store.moveToFolder.selectFolder(folder.name); $store.moveToFolder.isDropdownOpen = false" @mouseenter="$store.moveToFolder.hoveredFolder = folder.id" @mouseleave="$store.moveToFolder.hoveredFolder = null" :class="{ 'bg-indigo-600 text-white': folder.id === $store.moveToFolder.hoveredFolder, 'text-gray-900': folder.id !== $store.moveToFolder.hoveredFolder }">
-															<div class="flex">
-																<span x-text="folder.name" class="truncate" :class="{ 'font-semibold': folder.name === $store.moveToFolder.selectedFolder }"></span>
-															</div>
-															<span x-show="folder.name === $store.moveToFolder.selectedFolder" class="absolute inset-y-0 right-0 flex items-center pr-4" :class="{ 'text-white': folder.id === $store.moveToFolder.hoveredFolder, 'text-indigo-600': folder.id !== $store.moveToFolder.hoveredFolder }">
-																<svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-																	<path fill-rule="evenodd" d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.05-.143z" clip-rule="evenodd" />
+											<!-- List of selected media -->
+											<div class="flex items-center justify-center">
+												<div class="isolate flex -space-x-2 overflow-hidden pl-3 py-2">
+													<template x-for="(file, index) in (fileStore.shareMedia.selectedFiles.length > 5 ? fileStore.shareMedia.selectedFiles.slice(0, 5) : fileStore.shareMedia.selectedFiles)" :key="file.id">
+														<div>
+															<img x-show="file.mime.startsWith('image/')" :class="'relative z-' + (50 - index * 10)" class="inline-block w-12 h-12 object-cover rounded-full ring-2 ring-white" :src="file.thumb" :alt="file.name">
+															<div x-show="file.mime.startsWith('video/')" :class="'relative z-' + (50 - index * 10)" class="size-12 object-cover rounded-full ring-2 ring-white bg-nbpurple-500 text-nbpurple-50 flex items-center justify-center">
+																<svg stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="size-8">
+																	<path d="m16 13 5.223 3.482a.5.5 0 0 0 .777-.416V7.87a.5.5 0 0 0-.752-.432L16 10.5" />
+																	<rect x="2" y="6" width="14" height="12" rx="2" />
 																</svg>
-															</span>
-														</li>
+															</div>
+															<div x-show="file.mime.startsWith('audio/')" :class="'relative z-' + (50 - index * 10)" class="size-12 object-cover rounded-full ring-2 ring-white bg-nbpurple-500 text-nbpurple-50 flex items-center justify-center">
+																<svg stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="size-8">
+																	<path d="M3 14h3a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-7a9 9 0 0 1 18 0v7a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3" />
+																</svg>
+															</div>
+														</div>
 													</template>
-												</ul>
+													<template x-if="fileStore.shareMedia.selectedFiles.length > 5">
+														<div class="relative z-0 inline-flex items-center justify-center w-12 h-12 rounded-full bg-nbpurple-600 text-white ring-2 ring-white">
+															<span class="text-xs xs:text-sm font-medium">+<span x-text="fileStore.shareMedia.selectedFiles.length - 5"></span></span>
+														</div>
+													</template>
+												</div>
+											</div>
+											<!-- /List of selected media -->
+											<!-- Sharing options -->
+											<div class="flex flex-col items-center sm:justify-center sm:items-start">
+												<!-- Creators Page Sharing -->
+												<div x-data="{
+																			enabled: false,
+																			supported: profileStore.profileInfo.isCreatorsPageEligible,
+																			init() {
+																				this.enabled = this.getFlag();
+																				this.$watch('fileStore.shareMedia.selectedFiles', () => {
+																					this.enabled = this.getFlag();
+																				});
+																			},
+																			getFlag() {
+																				// return fileStore.shareMedia.selectedFiles.length === 1 ? fileStore.shareMedia.selectedFiles[0].flag === 1 : false;
+																				// If even one file is flagged, enable the switch
+																				return fileStore.shareMedia.selectedFiles.some(file => file.flag === 1);
+																			}
+																		}" class="flex items-center mt-4">
+													<button :disabled="!supported" :class="{
+																																	'cursor-not-allowed': !supported,
+																																	'cursor-pointer': supported,
+																																	'bg-nbpurple-600': enabled,
+																																	'bg-nbpurple-300': !enabled
+																																}" type="button" class="relative inline-flex h-6 w-11 flex-shrink-0 rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-nbpurple-600 focus:ring-offset-2" role="switch" :aria-checked="enabled" aria-labelledby="creator-page-share-single" @click="fileStore.shareMediaCreatorConfirm(!enabled)">
+														<span aria-hidden="true" :class="enabled ? 'translate-x-5' : 'translate-x-0'" class="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-nbpurple-50 shadow ring-0 transition duration-200 ease-in-out"></span>
+													</button>
+													<span class="ml-4 text-sm" id="creator-page-share-single">
+														<span class="font-medium text-nbpurple-900">Share on Creators Page</span>
+														<a x-show="!supported" href="/plans/" class="ml-2 text-nbpurple-600 text-xs hover:underline">
+															Upgrade to Creator+
+														</a>
+													</span>
+												</div>
+												<!-- /Creators Page Sharing -->
+												<!-- Nostr Share -->
+												<div x-show="profileStore.profileInfo.isNostrShareEligible" class="flex items-center mt-3">
+													<button :disabled="fileStore.shareMedia.isLoading" @click="nostrStore.share.open(fileStore.shareMedia.selectedIds, fileStore.shareMedia.callback); fileStore.shareMedia.close(true);" class="ring-1 ring-nostrpurple-400 px-2 py-1 bg-nostrpurple-500 text-nostrpurple-50 rounded-md hover:bg-nostrpurple-400 focus:outline-none focus:ring-2 focus:ring-nostrpurple-300 shadow-sm hover:shadow-nostrpurple-100 disabled:cursor-not-allowed disabled:bg-nostrpurple-200" aria-label="Share images(s) on Nostr">
+														<svg aria-hidden="true" class="size-6 inline-block" stroke="currentColor" fill="currentColor" viewBox="0 0 256 256" xmlns="http://www.w3.org/2000/svg">
+															<circle cx="137.9" cy="99" fill="#fff" r="12.1" />
+															<path d="M210.8 115.9c0-47.3-27.7-68.7-64.4-68.7-16.4 0-31 4.4-42.4 12.5-3.8 2.7-9 .1-9-4.5 0-3.1-2.5-5.7-5.7-5.7H57.7c-3.1 0-5.7 2.5-5.7 5.7v144c0 3.1 2.5 5.7 5.7 5.7h33.7c3.1 0 5.6-2.5 5.6-5.6v-8.4c0-62.8-33.2-109.8-.4-116 30-5.7 64.1-3 64.5 20.1 0 2 .3 8 8.6 11.2 5 2 12.6 2.6 22.6 2.4 0 0 9.1-.7 9.1 8.5 0 11.5-20.4 10.7-20.4 10.7-6.7.3-22.6-1.5-31.7 1.2-4.8 1.5-9 4.2-11.5 9.1-4.2 8.3-6.2 26.5-6.5 45.5v15.5c0 3.1 2.5 5.7 5.7 5.7h68c3.1 0 5.7-2.5 5.7-5.7v-83.2z" fill="#fff" />
+														</svg>
+														Share on Nostr
+													</button>
+												</div>
+												<!-- /Nostr Share -->
+											</div>
+											<!-- Error message -->
+											<div x-cloak x-show="fileStore.shareMedia.isError" class="mt-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
+												<strong class="font-bold">Error!</strong>
+												<span class="block sm:inline">An error occurred while sharing the files.</span>
 											</div>
 										</div>
 									</div>
 								</div>
 							</div>
-							<div class="bg-white px-4 py-3 sm:px-6 sm:flex sm:flex-wrap sm:justify-end">
-								<button x-data="{
-													getSelectedCount() { return $store.checkedCheckboxesMedia.count; }
-												}" x-show="!$store.moveToFolder.isLoading" @click="$store.moveToFolder.moveToSelectedFolder()" type="button" class="inline-flex justify-center rounded-md bg-indigo-600 px-4 py-2 text-base font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 sm:order-1 sm:ml-3 sm:w-auto sm:text-sm">
-									Move&nbsp;<span x-text="getSelectedCount()"></span>&nbsp;file(s) to folder
-								</button>
-								<button x-show="$store.moveToFolder.isLoading" type="button" class="inline-flex justify-center rounded-md bg-indigo-600 px-4 py-2 text-base font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 sm:order-1 sm:ml-3 sm:w-auto sm:text-sm" disabled>
-									<svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+							<div class="bg-nbpurple-50 px-4 py-3 gap-3 justify-center sm:justify-normal flex flex-row-reverse sm:px-6">
+								<button @click="fileStore.shareMedia.close()" :disabled="fileStore.shareMedia.isLoading" type="button" class="mt-3 inline-flex w-1/2 justify-center rounded-md bg-nbpurple-500 px-4 py-2 text-base font-medium text-nbpurple-50 shadow-sm hover:bg-nbpurple-200 focus:outline-none focus:ring-2 focus:ring-nbpurple-500 focus:ring-offset-2 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">
+									<svg x-show="fileStore.shareMedia.isLoading" class="animate-spin -ml-1 mr-3 h-5 w-5 text-nbpurple-50" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
 										<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
 										<path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
 									</svg>
-									Moving...
+									Done
 								</button>
-								<button @click="$store.moveToFolder.close()" type="button" class="mt-3 inline-flex justify-center rounded-md bg-white px-4 py-2 text-base font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 sm:order-0 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">
+								<button @click="fileStore.shareMedia.close(true)" type="button" class="mt-3 inline-flex justify-center rounded-md bg-nbpurple-200 px-4 py-2 text-base font-medium text-nbpurple-700 shadow-sm hover:bg-nbpurple-50 focus:outline-none focus:ring-2 focus:ring-nbpurple-500 focus:ring-offset-2 sm:order-0 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">
 									Cancel
 								</button>
 							</div>
@@ -802,398 +1583,570 @@ $userStorageRemaining = $userOverLimit ? 0 : $userStorageLimit - $storageUsed;
 					</div>
 				</div>
 			</div>
+		</template>
 
-
-	</main>
-	<script src="/scripts/account.js?v=431039814f9c9bb55961ae9f04fd9c76"></script>
-
-	<script>
-		var previousBtId;
-		var currentBtId;
-		var checkedFileList = "";
-		var checkedFolderList = "";
-
-		function folderDoubleClicked(folder_name) {
-			if (checkedFolderList == "") {
-				// console.log('There is no folder clicked.');
-				if (checkedFileList != "") {
-					// console.log(checkedFileList);
-					var lastIndex = window.location.href.indexOf("/");
-					var ipAddress = window.location.href.substring(0, lastIndex) + '/functions/add_to_folder.php';
-					var addedList = checkedFileList.replaceAll("cb", "id");
-					window.location.replace(`${ipAddress}?fld=${folder_name}&idList=${addedList}`);
-				}
-			}
-		}
-
-		function folderClicked(folder_name, divCount) {
-			// console.log(folder_name, ", ", divCount);
-			for (var i = 0; i < divCount; i++) {
-				// console.log(document.getElementById('input' + i).value);
-				if (document.getElementById('input' + i).value == folder_name) {
-					document.getElementById('div' + i).style.display = 'block';
-				} else {
-					document.getElementById('div' + i).style.display = 'none';
-				}
-			}
-		}
-
-		function createFolder() {
-			if (document.getElementById('folderName').value == "") {
-				window.alert("Please enter folder name");
-			} else {
-				// console.log(document.getElementById('folderName').value);
-				var lastIndex = window.location.href.indexOf("/");
-				var ipAddress = window.location.href.substring(0, lastIndex) + '/functions/create_folder.php';
-				var folderName = document.getElementById('folderName').value;
-				window.location.replace(`${ipAddress}?folder_name=${folderName}`);
-			}
-		}
-
-		async function checksliderClicked(id, element) {
-			const checkbox = document.getElementById("cs" + id);
-			const targetElement = checkbox.closest('figure').querySelector('img, audio, video');
-
-			const flag = checkbox.checked ? '1' : '0';
-			const originalState = !checkbox.checked; // Store the original state
-			const originalClassState = targetElement.classList.contains('publicly-shared'); // Store the original class state
-
-			// Update UI first (optimistic UI update)
-			if (checkbox.checked) {
-				targetElement.classList.add('publicly-shared');
-			} else {
-				targetElement.classList.remove('publicly-shared');
-			}
-
-			// Assuming your project is in a subfolder and the toggle.php is in /functions/
-			const url = new URL(`/functions/toggle.php`, window.location.origin);
-			url.searchParams.append('id', id);
-			url.searchParams.append('flag', flag);
-
-			try {
-				const response = await fetch(url, {
-					method: 'GET',
-					redirect: 'manual'
-				});
-
-				if (response.type === 'opaqueredirect') {
-					// Operation successful, do nothing
-				} else {
-					// Revert UI state if response type is not 'opaqueredirect'
-					revertUIState(checkbox, targetElement, originalState, originalClassState);
-				}
-			} catch (error) {
-				revertUIState(checkbox, targetElement, originalState, originalClassState);
-			}
-		}
-
-		function revertUIState(checkbox, targetElement, originalState, originalClassState) {
-			checkbox.checked = originalState;
-			if (originalClassState) {
-				targetElement.classList.add('publicly-shared');
-			} else {
-				targetElement.classList.remove('publicly-shared');
-			}
-		}
-
-		document.addEventListener('alpine:init', () => {
-			console.log('Alpine initialized');
-			Alpine.store('mediaEditBar', {
-				show: false,
-
-				toggle() {
-					this.show = !this.show
-					// Uncheck all checkboxes
-					const checkboxes = document.querySelectorAll('input[type="checkbox"].media_select_checkbox');
-					checkboxes.forEach(checkbox => {
-						checkbox.checked = false;
-					});
-				}
-			})
-			Alpine.store('deleteConfirmation', {
-				isOpen: false,
-				isLoading: false,
-				open() {
-					this.isOpen = true;
-					this.isLoading = false;
-				},
-				close() {
-					this.isOpen = false;
-					this.isLoading = false;
-				},
-				confirm() {
-					// Perform the delete action here
-					console.log('Delete action confirmed');
-					this.isLoading = true;
-					checkDelete();
-					//this.close();
-				}
-			})
-			// Store number of checked checkboxes for media
-			Alpine.store('checkedCheckboxesMedia', {
-				count: 0
-			})
-			// Store number of checked checkboxes for folders
-			Alpine.store('checkedCheckboxesFolders', {
-				count: 0
-			})
-
-			Alpine.store('moveToFolder', {
-				isOpen: false,
-				isLoading: false,
-				selectedFolder: '',
-				folders: [
-					<?php foreach ($usersFoldersStats['FOLDERS'] as $folder => $folderStats) : ?>
-						<?php if ($folder == '/') continue; ?> {
-							id: <?= $folderStats['id'] ?>,
-							name: '<?= htmlspecialchars(addslashes($folder)) ?>'
-						},
-					<?php endforeach; ?>
-				],
-				isDropdownOpen: false,
-				hoveredFolder: null,
-				open() {
-					this.isOpen = true;
-					this.isLoading = false;
-					this.selectedFolder = '';
-					this.isDropdownOpen = false;
-					this.hoveredFolder = null;
-				},
-				close() {
-					this.isOpen = false;
-					this.isLoading = false;
-					this.selectedFolder = '';
-					this.isDropdownOpen = false;
-					this.hoveredFolder = null;
-				},
-				toggleDropdown() {
-					this.isDropdownOpen = !this.isDropdownOpen;
-				},
-				selectFolder(folderName) {
-					this.selectedFolder = folderName;
-					this.isDropdownOpen = false;
-				},
-				moveToSelectedFolder() {
-					this.isLoading = true;
-					// Perform the move to folder action here
-					console.log('Moving to folder:', this.selectedFolder);
-					folderDoubleClicked(this.selectedFolder);
-				},
-			});
-		})
-
-		function checkboxClicked(element, type) {
-			if (type == 0) {
-				if (document.getElementById("cb" + element).checked) {
-					checkedFolderList += ("cb" + element);
-				} else {
-					checkedFolderList = checkedFolderList.replace(("cb" + element), '');
-				}
-				// console.log("checkedFolderList : " , checkedFolderList);
-			} else
-			if (type == 1) {
-				if (document.getElementById("cb" + element).checked) {
-					checkedFileList += ("cb" + element);
-				} else {
-					checkedFileList = checkedFileList.replace(("cb" + element), '');
-				}
-				// console.log("checkedFileList : " , checkedFileList);
-			}
-			// Check if any checkbox is checked
-			const checkboxesMedia = document.querySelectorAll('input[type="checkbox"].media_select_checkbox');
-			const checkboxesFolders = document.querySelectorAll('input[type="checkbox"].folder_select_checkbox');
-			const checkedCountMedia = Array.from(checkboxesMedia).filter(checkbox => checkbox.checked).length;
-			const checkedCountFolders = Array.from(checkboxesFolders).filter(checkbox => checkbox.checked).length;
-			// Update number of checked checkboxes
-			Alpine.store('checkedCheckboxesMedia').count = checkedCountMedia;
-			Alpine.store('checkedCheckboxesFolders').count = checkedCountFolders;
-			const isAnyCheckboxChecked = checkedCountMedia > 0 || checkedCountFolders > 0;
-			console.log('isAnyCheckboxChecked:', isAnyCheckboxChecked);
-			console.log('checkedCountMedia:', Alpine.store('checkedCheckboxesMedia').count);
-			console.log('checkedCountFolders:', Alpine.store('checkedCheckboxesFolders').count);
-
-			// Update the isOpen state based on checkbox status
-			Alpine.store('mediaEditBar').show = isAnyCheckboxChecked;
-		}
-
-		function copyToClipboard(element) {
-			var mediaElement = document.getElementById(element);
-
-			if (!mediaElement) {
-				console.error('Element not found:', element);
-				return;
-			}
-
-			var imageUrl = mediaElement.dataset.src;
-
-			if (window.isSecureContext && navigator.clipboard) {
-				navigator.clipboard.writeText(imageUrl);
-				const copyButtonTextContent = document.getElementById('bt' + element).textContent;
-				document.getElementById('bt' + element).textContent = 'Copied';
-				// Revert back to 'Copy' after 2 seconds
-				setTimeout(() => {
-					document.getElementById('bt' + element).textContent = copyButtonTextContent;
-				}, 2000);
-				if (document.getElementById('bt' + previousBtId) != null && previousBtId != element) {
-					document.getElementById('bt' + previousBtId).textContent = 'Copy';
-				}
-				previousBtId = element;
-			} else {
-				var textArea = document.createElement("textarea");
-				textArea.textContent = imageUrl;
-				document.body.appendChild(textArea);
-				var selection = document.getSelection();
-				var range = document.createRange();
-				range.selectNode(textArea);
-				selection.addRange(range);
-				try {
-					if (document.execCommand('copy')) {
-						document.getElementById('bt' + element).textContent = 'Copied';
-						if (document.getElementById('bt' + previousBtId) != null && previousBtId != element) {
-							document.getElementById('bt' + previousBtId).textContent = 'Copy';
-						}
-						previousBtId = element;
-						selection.removeAllRanges();
-					} else {
-						alert("Failed to copy URL!");
-					}
-				} catch (err) {
-					console.error('Unable to copy to clipboard', err);
-					alert("Failed to copy URL!");
-				}
-				document.body.removeChild(textArea);
-			}
-		}
-
-
-		function checkDelete() {
-			var lastIndex = window.location.href.indexOf("/");
-			var ipAddress = window.location.href.substring(0, lastIndex) + '../functions/delete.php';
-			var checkedList = checkedFolderList.replaceAll('cb', 'idr_');
-			checkedList += checkedFileList.replaceAll('cb', 'ide_');
-			window.location.replace(`${ipAddress}?idList=${checkedList}`);
-		}
-
-		// Get the modal
-		const modal = document.getElementById("myModal");
-
-		// Get the button that opens the modal
-		const btn = document.getElementById("myBtn");
-
-		// Get the <span> element that closes the modal
-		const span = document.getElementsByClassName("close")[0];
-
-		// When the user clicks on the button, open the modal
-		btn.onclick = function() {
-			modal.style.display = "block";
-		}
-
-		// When the user clicks on <span> (x), close the modal
-		span.onclick = function() {
-			modal.style.display = "none";
-		}
-
-		// When the user clicks anywhere outside of the modal, close it
-		window.onclick = function(event) {
-			if (event.target == modal) {
-				modal.style.display = "none";
-			}
-		}
-	</script>
-	<!-- URL Upload Modal -->
-	<div x-show="url_up_open" class="relative z-10" aria-labelledby="modal-title" role="dialog" aria-modal="true">
-		<div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" x-cloak x-show="url_up_open" x-transition:enter="ease-out duration-300" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" x-transition:leave="ease-in duration-200" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0"></div>
-
-		<div class=" fixed inset-0 z-10 overflow-y-auto">
-			<div class="flex min-h-full items-center justify-center p-4 text-center sm:items-center sm:p-0">
-				<div class="relative transform overflow-hidden rounded-lg bg-white px-4 pb-4 pt-5 text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg sm:p-6" x-cloak x-show="url_up_open" x-transition:enter="ease-out duration-300" x-transition:enter-start="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95" x-transition:enter-end="opacity-100 translate-y-0 sm:scale-100" x-transition:leave="ease-in duration-200" x-transition:leave-start="opacity-100 translate-y-0 sm:scale-100" x-transition:leave-end="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95">
-
-					<div class="absolute right-0 top-0 pr-4 pt-4 block">
-						<button type="button" class="rounded-md bg-white text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2" @click="url_up_open = false">
-							<span class="sr-only">Close</span>
-							<svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true">
-								<path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
-							</svg>
-						</button>
-					</div>
-
-					<form id="url-import-form" action="/api/v2/account/url" method="POST" hx-ext="loading-states">
-						<label for="url" class="block text-sm font-medium leading-6 text-gray-900">Import media from URL</label>
-						<div class="mt-2 flex rounded-md shadow-sm">
-							<div class="relative flex flex-grow items-stretch focus-within:z-10">
-								<div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
-									<svg data-loading-class="hidden" class="h-5 w-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-										<path d="M12.232 4.232a2.5 2.5 0 013.536 3.536l-1.225 1.224a.75.75 0 001.061 1.06l1.224-1.224a4 4 0 00-5.656-5.656l-3 3a4 4 0 00.225 5.865.75.75 0 00.977-1.138 2.5 2.5 0 01-.142-3.667l3-3z" />
-										<path d="M11.603 7.963a.75.75 0 00-.977 1.138 2.5 2.5 0 01.142 3.667l-3 3a2.5 2.5 0 01-3.536-3.536l1.225-1.224a.75.75 0 00-1.061-1.06l-1.224 1.224a4 4 0 105.656 5.656l3-3a4 4 0 00-.225-5.865z" />
-									</svg>
-									<svg data-loading="block" class="hidden animate-spin -ml-1 mr-3 h-5 w-5 text-indigo-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-										<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-										<path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-									</svg>
+		<!-- Move to folder modal -->
+		<div x-cloak class="relative z-50" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+			<!-- Background overlay -->
+			<div x-show="fileStore.moveToFolder.isOpen" x-transition:enter="ease-out duration-300" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" x-transition:leave="ease-in duration-200" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0" class="fixed inset-0 bg-nbpurple-500 bg-opacity-75 transition-opacity"></div>
+			<!-- Modal content -->
+			<div x-show="fileStore.moveToFolder.isOpen" x-transition:enter="ease-out duration-300" x-transition:enter-start="opacity-0 translate-y-0 sm:-translate-y-4" x-transition:enter-end="opacity-100 translate-y-0 sm:translate-y-0 sm:scale-100" x-transition:leave="ease-in duration-200" x-transition:leave-start="opacity-100 translate-y-0 sm:translate-y-0 sm:scale-100" x-transition:leave-end="opacity-0 translate-y-0 sm:-translate-y-4 sm:scale-95" class="fixed inset-0 z-50 overflow-y-auto">
+				<div class="flex min-h-screen items-end justify-center p-4 text-center sm:items-center sm:p-0">
+					<div @click.outside="!fileStore.moveToFolder.isLoading && fileStore.moveToFolder.close(true)" @keydown.escape="!fileStore.moveToFolder.isLoading && fileStore.moveToFolder.close(true)" class="relative transform overflow-hidden rounded-lg bg-nbpurple-50 text-left shadow-xl transition-all min-h-[50vh] max-h-[80vh] my-8 mb-24 w-full sm:max-w-lg flex flex-col">
+						<div class="bg-nbpurple-50 px-4 pt-5 pb-4 sm:p-6 sm:pb-4 overflow-y-auto flex-grow">
+							<!-- List of selected media -->
+							<div class="flex items-center justify-center">
+								<div class="isolate flex -space-x-2 overflow-hidden pl-3 py-2">
+									<template x-for="(file, index) in (fileStore.moveToFolder.selectedFiles.length > 5 ? fileStore.moveToFolder.selectedFiles.slice(0, 5) : fileStore.moveToFolder.selectedFiles)" :key="file.id">
+										<div>
+											<img x-show="file.mime.startsWith('image/')" :class="'relative z-' + (50 - index * 10)" class="inline-block w-12 h-12 object-cover rounded-full ring-2 ring-white" :src="file.thumb" :alt="file.name">
+											<div x-show="file.mime.startsWith('video/')" :class="'relative z-' + (50 - index * 10)" class="size-12 object-cover rounded-full ring-2 ring-white bg-nbpurple-500 text-nbpurple-50 flex items-center justify-center">
+												<svg stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="size-8">
+													<path d="m16 13 5.223 3.482a.5.5 0 0 0 .777-.416V7.87a.5.5 0 0 0-.752-.432L16 10.5" />
+													<rect x="2" y="6" width="14" height="12" rx="2" />
+												</svg>
+											</div>
+											<div x-show="file.mime.startsWith('audio/')" :class="'relative z-' + (50 - index * 10)" class="size-12 object-cover rounded-full ring-2 ring-white bg-nbpurple-500 text-nbpurple-50 flex items-center justify-center">
+												<svg stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="size-8">
+													<path d="M3 14h3a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-7a9 9 0 0 1 18 0v7a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3" />
+												</svg>
+											</div>
+										</div>
+									</template>
+									<template x-if="fileStore.moveToFolder.selectedFiles.length > 5">
+										<div class="relative z-0 inline-flex items-center justify-center w-12 h-12 rounded-full bg-nbpurple-600 text-white ring-2 ring-white">
+											<span class="text-xs xs:text-sm font-medium">+<span x-text="fileStore.moveToFolder.selectedFiles.length - 5"></span></span>
+										</div>
+									</template>
 								</div>
-								<input type="url" name="url" id="url" data-loading-disable class="disabled:opacity-75 block w-full rounded-none rounded-l-md border-0 py-1.5 pl-10 text-gray-900 ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6" placeholder="https://..." required pattern="https?://.+" title="Enter a valid URL starting with http:// or https://">
 							</div>
-							<button type="submit" hx-post="/api/v2/account/url" hx-trigger="click" hx-swap="none" hx-validate data-loading-disable class="disabled:opacity-75 relative -ml-px inline-flex items-center gap-x-1.5 rounded-r-md px-3 py-2 text-sm font-semibold text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50">
-								<svg class="-ml-0.5 h-5 w-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-									<path fill-rule="evenodd" d="M13.75 7h-3V3.66l1.95 2.1a.75.75 0 101.1-1.02l-3.25-3.5a.75.75 0 00-1.1 0L6.2 4.74a.75.75 0 001.1 1.02l1.95-2.1V7h-3A2.25 2.25 0 004 9.25v7.5A2.25 2.25 0 006.25 19h7.5A2.25 2.25 0 0016 16.75v-7.5A2.25 2.25 0 0013.75 7zm-3 0h-1.5v5.25a.75.75 0 001.5 0V7z" clip-rule="evenodd" />
+							<!-- /List of selected media -->
+							<div class="sm:flex sm:items-start">
+								<div class="mt-3 text-center sm:mt-0 sm:text-left w-full">
+									<div class="mt-2 flex items-center">
+										<label for="combobox" class="block text-sm font-medium leading-6 text-gray-900 mr-2">Select Folder</label>
+										<div class="relative w-full z-auto">
+											<input id="combobox" type="text" x-model="fileStore.moveToFolder.selectedFolderName" @input="fileStore.moveToFolder.searchTerm = $event.target.value; fileStore.moveToFolder.isDropdownOpen = true" @click="fileStore.moveToFolder.toggleDropdown()" @click.away="fileStore.moveToFolder.isDropdownOpen = false" class="w-full rounded-md border-0 bg-nbpurple-50 py-1.5 pl-3 pr-12 text-nbpurple-900 shadow-sm ring-1 ring-inset ring-nbpurple-300 focus:ring-2 focus:ring-inset focus:ring-nbpurple-600 sm:text-sm sm:leading-6" role="combobox" aria-controls="options" :aria-expanded="fileStore.moveToFolder.isDropdownOpen.toString()">
+											<button type="button" @click.stop="fileStore.moveToFolder.toggleDropdown()" class="absolute inset-y-0 right-0 flex items-center rounded-r-md px-2 focus:outline-none">
+												<svg class="h-5 w-5 text-nbpurple-400" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+													<path fill-rule="evenodd" d="M10 3a.75.75 0 01.55.24l3.25 3.5a.75.75 0 11-1.1 1.02L10 4.852 7.3 7.76a.75.75 0 01-1.1-1.02l3.25-3.5A.75.75 0 0110 3zm-3.76 9.2a.75.75 0 011.06.04l2.7 2.908 2.7-2.908a.75.75 0 111.1 1.02l-3.25 3.5a.75.75 0 01-1.1 0l-3.25-3.5a.75.75 0 01.04-1.06z" clip-rule="evenodd" />
+												</svg>
+											</button>
+											<ul x-show="fileStore.moveToFolder.isDropdownOpen" @click.away="fileStore.moveToFolder.isDropdownOpen = false" class="absolute z-10 mt-1 max-h-40 w-full overflow-auto rounded-md bg-nbpurple-50 py-1 text-base shadow-lg ring-1 ring-nbpurple-950 ring-opacity-5 focus:outline-none sm:text-sm" id="options" role="listbox">
+												<template x-for="folder in menuStore.folders.filter(f => f.name.toLowerCase().includes(fileStore.moveToFolder.searchTerm.toLowerCase()))">
+													<li class="relative cursor-default select-none py-2 pl-3 pr-9 text-gray-900" :id="'option-' + folder.id" role="option" @click="fileStore.moveToFolder.destinationFolderId = folder.id; fileStore.moveToFolder.selectedFolderName = folder.name; fileStore.moveToFolder.isDropdownOpen = false; fileStore.moveToFolder.searchTerm = ''" @mouseenter="fileStore.moveToFolder.hoveredFolder = folder.id" @mouseleave="fileStore.moveToFolder.hoveredFolder = null" :class="{ 'bg-nbpurple-600 text-nbpurple-50': folder.id === fileStore.moveToFolder.hoveredFolder, 'text-nbpurple-900': folder.id !== fileStore.moveToFolder.hoveredFolder }">
+														<div class="flex">
+															<span x-text="folder.name" class="truncate" :class="{ 'font-semibold': folder.id === fileStore.moveToFolder.destinationFolderId }"></span>
+														</div>
+														<span x-show="folder.id === fileStore.moveToFolder.destinationFolderId" class="absolute inset-y-0 right-0 flex items-center pr-4" :class="{ 'text-nbpurple-50': folder.id === fileStore.moveToFolder.hoveredFolder, 'text-nbpurple-600': folder.id !== fileStore.moveToFolder.hoveredFolder }">
+															<svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+																<path fill-rule="evenodd" d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.05-.143z" clip-rule="evenodd" />
+															</svg>
+														</span>
+													</li>
+												</template>
+											</ul>
+										</div>
+									</div>
+								</div>
+							</div>
+						</div>
+						<div class="bg-nbpurple-50 px-4 py-3 sm:px-6 sm:flex sm:flex-wrap sm:justify-end">
+							<button x-data="{
+                    folderSelected: false,
+                    init() {
+                      this.$watch('fileStore.moveToFolder.destinationFolderId', () => {
+                        this.folderSelected = fileStore.moveToFolder.destinationFolderId !== null;
+                      });
+                    },
+                    getSelectedCount() { return fileStore.moveToFolder.selectedFiles.length; },
+                    isValidFolderSelected() { return fileStore.moveToFolder.destinationFolderId !== null; }
+                  }" x-show="!fileStore.moveToFolder.isLoading" @click="fileStore.moveToFolderConfirm()" type="button" :disabled="!folderSelected || fileStore.moveToFolder.isLoading" :class="{ 'opacity-50 cursor-not-allowed': !folderSelected }" class="inline-flex justify-center rounded-md bg-nbpurple-600 px-4 py-2 text-base font-medium text-nbpurple-50 shadow-sm hover:bg-nbpurple-700 focus:outline-none focus:ring-2 focus:ring-nbpurple-500 focus:ring-offset-2 sm:order-1 sm:ml-3 sm:w-auto sm:text-sm">
+								Move&nbsp;<span x-text="getSelectedCount()"></span>&nbsp;file(s) to folder
+							</button>
+							<button x-show="fileStore.moveToFolder.isLoading" type="button" class="inline-flex justify-center rounded-md bg-nbpurple-600 px-4 py-2 text-base font-medium text-nbpurple-50 shadow-sm hover:bg-nbpurple-700 focus:outline-none focus:ring-2 focus:ring-nbpurple-500 focus:ring-offset-2 sm:order-1 sm:ml-3 sm:w-auto sm:text-sm" disabled>
+								<svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-nbpurple-50" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+									<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+									<path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
 								</svg>
-								Import
+								Moving...
+							</button>
+							<button @click="fileStore.moveToFolder.close(true)" type="button" class="mt-3 inline-flex justify-center rounded-md bg-nbpurple-200 px-4 py-2 text-base font-medium text-nbpurple-700 shadow-sm hover:bg-nbpurple-50 focus:outline-none focus:ring-2 focus:ring-nbpurple-500 focus:ring-offset-2 sm:order-0 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">
+								Cancel
 							</button>
 						</div>
-						<p class="mt-2 text-sm text-red-600 hidden" id="url-error"></p>
-					</form>
-
+					</div>
 				</div>
 			</div>
 		</div>
-	</div>
-	<script>
-		document.body.addEventListener('htmx:configRequest', (event) => {
-			const form = document.getElementById('url-import-form');
-			if (!form.checkValidity()) {
-				event.preventDefault();
-				const inputs = form.querySelectorAll('input,select,textarea');
-				for (var i = 0; i < inputs.length; i++) {
-					const input = inputs[i];
-					if (!input.checkValidity()) {
-						// Show the error message
-						var errorMessageDiv = document.getElementById(input.id + '-error');
-						errorMessageDiv.textContent = input.validationMessage;
-						errorMessageDiv.classList.remove('hidden');
 
-						// Clear the error on input
-						input.addEventListener('input', () => {
-							errorMessageDiv.textContent = '';
-							errorMessageDiv.classList.add('hidden');
-						});
-					}
-				}
-			}
-		});
+		<!-- Full-screen image Modal -->
+		<div x-cloak x-show="fileStore.modalOpen" x-trap="fileStore.modalOpen" x-transition:enter="transition-opacity ease-linear duration-300" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" x-transition:leave="transition-opacity ease-linear duration-300" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0" class="fixed z-50 inset-0 overflow-y-auto bg-black" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+			<div x-data="{ 
+      startX: null,
+      startY: null,
+      showControls: false,
+      controlsTimeout: null,
+			timeOfTouch: null,
+      handleTouchStart: function(event) {
+				timeOfTouch = new Date().getTime();
+        this.startX = event.touches[0].clientX;
+        this.startY = event.touches[0].clientY;
+      },
+      handleTouchMove: async function(event) {
+        if (!this.startX || !this.startY) return;
 
-		document.body.addEventListener('htmx:afterRequest', function(event) {
-			const xhr = event.detail.xhr;
-			if (xhr.getResponseHeader('Content-Type').includes('application/json')) {
-				const response = JSON.parse(xhr.responseText);
-				if (response.status === "error") {
-					//alert(response.message); // or update some part of your UI to display the error
-					const input = document.getElementById('url');
-					// Show the error message
-					const errorMessageDiv = document.getElementById(input.id + '-error');
-					errorMessageDiv.textContent = response.message;
-					errorMessageDiv.classList.remove('hidden');
+							const timeTaken = new Date().getTime() - timeOfTouch;
+							const currentX = event.touches[0].clientX;
+							const currentY = event.touches[0].clientY;
+							const diffX = this.startX - currentX;
+							const diffY = this.startY - currentY;
 
-					// Clear the error on input
-					input.addEventListener('input', () => {
-						errorMessageDiv.textContent = '';
-						errorMessageDiv.classList.add('hidden');
-					});
-				} else if (response.status === "success") {
-					location.reload();
-				}
-			}
-		});
-	</script>
+							if (Math.abs(diffX) > 125 || Math.abs(diffY) > 125) {
+								const diff = Math.abs(diffX) > Math.abs(diffY) ? diffX : diffY;
+								const fast = timeTaken < 200;
+								if (fast) {
+									if (diff > 0) {
+										await fileStore.modalNext();
+									} else {
+										await fileStore.modalPrevious();
+									}
+								} else {
+									this.showControls = !this.showControls;
+									clearTimeout(this.controlsTimeout);
+									this.controlsTimeout = setTimeout(() => {
+										this.showControls = false;
+									}, 1500);
+								}
+
+								this.startX = null;
+								this.startY = null;
+							}
+						},
+						handleTouchEnd: function(event) {
+							this.startX = null;
+							this.startY = null;
+						},
+						handleMouseEnter: function() {
+							this.showControls = true;
+						},
+						handleMouseLeave: function() {
+							this.showControls = false;
+						},
+						scrollThreshold: 10,
+						scrollTimeout: null,
+						handleScroll: async function(event) {
+							if (Math.abs(event.deltaY) >= this.scrollThreshold) {
+								if (this.scrollTimeout) {
+									clearTimeout(this.scrollTimeout);
+								}
+								
+								this.scrollTimeout = setTimeout(async () => {
+									if (event.deltaY < 0) {
+										// Up
+										await fileStore.modalPrevious();
+									} else if (event.deltaY > 0) {
+										// Down
+										await fileStore.modalNext();
+									}
+								}, 150);
+							}
+						}
+					}" @wheel.passive="handleScroll($event)" @keydown.escape="fileStore.closeModal()" @keydown.down="await fileStore.modalNext()" @keydown.right="await fileStore.modalNext()" @keydown.up="await fileStore.modalPrevious()" @keydown.left="await fileStore.modalPrevious()" @touchstart.passive="handleTouchStart(event)" @touchmove.passive="await handleTouchMove(event)" @touchend.passive="handleTouchEnd(event)" class="flex flex-col h-svh">
+				<div class="flex-grow flex items-center justify-center">
+					<button type="button" class="z-10 absolute top-3 right-3 inline-flex items-center justify-center p-1 bg-black bg-opacity-50 rounded-full text-nbpurple-50 hover:text-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-nbpurple-500" @click="fileStore.closeModal()">
+						<svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+							<path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
+						</svg>
+					</button>
+					<!-- Image -->
+					<!-- Progressive load of media is handled by the next/prev functions -->
+					<template x-if="fileStore.modalFile.mime?.startsWith('image/')">
+						<img :src="fileStore.modalImageUrl" :srcset="fileStore.modalImageSrcset" :sizes="fileStore.modalImageSizes" :alt="fileStore.modalImageAlt" class="w-dvh h-full max-w-full max-h-[80svh] landscape:max-h-svh xl:landscape:max-h-[80svh] object-contain mx-auto">
+					</template>
+					<template x-if="fileStore.modalFile.mime?.startsWith('video/')">
+						<div class="relative w-full h-full flex items-center justify-center" @mouseenter="handleMouseEnter" @mouseleave="handleMouseLeave">
+							<video crossorigin="anonymous" x-effect="fileStore.modalFile.mime?.startsWith('video/') ? ($el.load() && $el.play()) : true" x-init="fileStore.modalOpen ? $el.load() : $el.pause()" loop :controls="showControls" playsinline preload="auto" @loadedmetadata="fileStore.modalOpen && $nextTick(() => {$el.play()})" class="w-dvh h-full max-w-full max-h-[80svh] landscape:max-h-svh xl:landscape:max-h-[80svh] object-contain mx-auto">
+								<source :src="fileStore.modalFile.url" type="video/mp4">
+								Your browser does not support the video tag.
+							</video>
+						</div>
+					</template>
+					<!-- Audio -->
+					<template x-if="fileStore.modalFile.mime?.startsWith('audio/')">
+						<!-- Use video player to play audio files -->
+						<!--
+						<img src="https://cdn.nostr.build/assets/audio/jpg/audio-wave@0.5x.jpg" :alt="fileStore.modalFile.name" class="w-full h-full object-cover">
+						-->
+						<video crossorigin="anonymous" x-effect="fileStore.modalFile.mime?.startsWith('audio/') ? ($el.load() && $el.play()) : true" x-init="fileStore.modalOpen ? $el.load() : $el.pause()" poster="https://cdn.nostr.build/assets/audio/jpg/audio-wave@0.5x.jpg" controls playsinline preload="auto" @loadedmetadata="fileStore.modalOpen && $nextTick(() => {$el.play()})" class="w-dvh h-full max-w-full max-h-[80svh] landscape:max-h-svh xl:landscape:max-h-[80svh] object-contain mx-auto">
+							<source :src="fileStore.modalFile.url" :type="fileStore.modalFile.mime">
+						</video>
+					</template>
+				</div>
+				<div class="bg-black/50 px-4 py-3 sm:px-6 overflow-y-auto landscape:hidden xl:landscape:block">
+					<div class="flex justify-between items-center">
+						<div class="flex flex-col items-start">
+							<p class="text-sm text-gray-300">Name: <span x-text="fileStore.modalImageAlt"></span></p>
+							<p class="text-sm text-gray-300">Size: <span x-text="formatBytes(fileStore.modalImageFilesize)"></span></p>
+						</div>
+						<div class="flex flex-col items-start">
+							<p class="text-sm text-gray-300">Dimensions: <span x-text="fileStore.modalImageDimensions"></span></p>
+							<p class="text-sm text-gray-300">URL: <a :href="fileStore.modalImageUrl" target="_blank" x-text="fileStore.modalImageUrl"></a>
+								<svg class="size-3 ml-1 inline-block" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+									<path stroke-linecap="round" stroke-linejoin="round" d="M13.19 8.688a4.5 4.5 0 0 1 1.242 7.244l-4.5 4.5a4.5 4.5 0 0 1-6.364-6.364l1.757-1.757m13.35-.622 1.757-1.757a4.5 4.5 0 0 0-6.364-6.364l-4.5 4.5a4.5 4.5 0 0 0 1.242 7.244" />
+								</svg>
+							</p>
+						</div>
+					</div>
+					<!-- Prompt and title with copy button -->
+					<div x-show="fileStore.modalImageTitle.length > 0 || fileStore.modalImagePrompt.length > 0" class="mt-4">
+						<div class="flex flex-col items-start">
+							<p x-show="fileStore.modalImageTitle.length > 0" class="text-sm text-gray-300 font-medium">Title: <span class="font-normal" x-text="fileStore.modalImageTitle"></span></p>
+							<p x-show="fileStore.modalImagePrompt.length > 0" class="text-sm text-gray-300 font-medium">Prompt: <span class="font-normal" x-text="fileStore.modalImagePrompt"></span></p>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<!-- Folder deletion confirmation modal -->
+		<div x-cloak class="relative z-50" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+			<div x-show="menuStore.showDeleteFolderModal" x-transition:enter="ease-out duration-300" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" x-transition:leave="ease-in duration-200" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0" class="fixed inset-0 bg-nbpurple-500 bg-opacity-75 transition-opacity"></div>
+
+			<div x-show="menuStore.showDeleteFolderModal" x-transition:enter="ease-out duration-300" x-transition:enter-start="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95" x-transition:enter-end="opacity-100 translate-y-0 sm:scale-100" x-transition:leave="ease-in duration-200" x-transition:leave-start="opacity-100 translate-y-0 sm:scale-100" x-transition:leave-end="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95" class="fixed inset-0 z-50 overflow-y-auto">
+				<div class="flex min-h-screen items-end justify-center p-4 text-center sm:items-center sm:p-0">
+					<div @click.outside="!menuStore.isDeletingFolders && menuStore.closeDeleteFolderModal()" @keydown.escape="!menuStore.isDeletingFolders && menuStore.closeDeleteFolderModal()" class="relative transform overflow-hidden rounded-lg bg-nbpurple-50 text-left shadow-xl transition-all mb-24 sm:my-8 sm:w-full sm:max-w-lg">
+						<div class="bg-nbpurple-50 px-4 pb-4 pt-5 sm:p-6 sm:pb-4">
+							<div class="sm:flex sm:items-start">
+								<div class="mx-auto flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-red-100 sm:mx-0 sm:h-10 sm:w-10">
+									<svg class="size-6 text-red-600" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+										<path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
+									</svg>
+								</div>
+								<div class="mt-3 text-center sm:ml-4 sm:mt-0 sm:text-left">
+									<h3 class="text-base font-semibold leading-6 text-gray-900" id="modal-title">Confirm Delete</h3>
+									<div class="mt-2">
+										<p class="text-sm text-gray-500">
+											Are you sure you want to delete the selected <span class="font-bold" x-text="menuStore.foldersToDeleteIds.length"></span> folder(s)? This action cannot be undone. <span class="font-bold">Deleting a folder will NOT delete the media inside it, and will move them to the main folder instead.</span>
+										</p>
+										<!-- List of selected folders -->
+										<div class="mt-4">
+											<ul role="list" class="list-disc space-y-2 pl-5 text-sm">
+												<template x-for="folder in menuStore.foldersToDelete">
+													<li x-text="folder.name" class="truncate"></li>
+												</template>
+											</ul>
+										</div>
+										<!-- /List of selected folders -->
+									</div>
+								</div>
+							</div>
+						</div>
+						<div class="bg-nbpurple-50 px-4 py-3 gap-3 flex flex-row-reverse sm:px-6">
+							<button :disabled="menuStore.isDeletingFolders" @click="menuStore.deleteFoldersConfirm()" type="button" class="mt-3 inline-flex w-full justify-center rounded-md bg-red-600 px-4 py-2 text-base font-medium text-white shadow-sm hover:bg-red-500 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">
+								<svg x-show="menuStore.isDeletingFolders" class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+									<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+									<path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+								</svg>
+								Delete
+							</button>
+							<button :disabled="menuStore.isDeletingFolders" @click="menuStore.closeDeleteFolderModal()" type="button" class="mt-3 inline-flex w-full justify-center rounded-md bg-white px-4 py-2 text-base font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-nbpurple-500 focus:ring-offset-2 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">Cancel</button>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<!-- Nostr Share modal -->
+		<template x-if="profileStore.profileInfo.isNostrShareEligible">
+			<div x-cloak class="relative z-50" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+				<div x-show="nostrStore.share.isOpen" x-transition:enter="ease-out duration-300" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" x-transition:leave="ease-in duration-200" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0" class="fixed inset-0 bg-nbpurple-500 bg-opacity-75 transition-opacity"></div>
+
+				<div x-show="nostrStore.share.isOpen" x-transition:enter="ease-out duration-300" x-transition:enter-start="opacity-0 translate-y-4" x-transition:enter-end="opacity-100 translate-y-0" x-transition:leave="ease-in duration-200" x-transition:leave-start="opacity-100 translate-y-0" x-transition:leave-end="opacity-0 translate-y-4" class="fixed inset-0 z-50 overflow-y-auto">
+					<div class="flex min-h-screen items-end justify-center p-4 text-center">
+						<div @click.outside="!nostrStore.share.isLoading && nostrStore.share.close(true)" @keydown.escape="!nostrStore.share.isLoading && nostrStore.share.close(true)" class="relative transform overflow-hidden rounded-lg bg-nostrpurple-50 text-left shadow-xl transition-all mb-24 w-full max-w-xl">
+							<div class="bg-nostrpurple-50 px-4 pb-4 pt-5">
+								<div class="">
+									<div class="mx-auto flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-nostrpurple-100">
+										<svg class="size-8" fill="none" viewBox="0 0 256 256" stroke-width="1.5" stroke="currentColor">
+											<circle cx="137.9" cy="99" fill="#fff" r="12.1" />
+											<path d="M210.8 115.9c0-47.3-27.7-68.7-64.4-68.7-16.4 0-31 4.4-42.4 12.5-3.8 2.7-9 .1-9-4.5 0-3.1-2.5-5.7-5.7-5.7H57.7c-3.1 0-5.7 2.5-5.7 5.7v144c0 3.1 2.5 5.7 5.7 5.7h33.7c3.1 0 5.6-2.5 5.6-5.6v-8.4c0-62.8-33.2-109.8-.4-116 30-5.7 64.1-3 64.5 20.1 0 2 .3 8 8.6 11.2 5 2 12.6 2.6 22.6 2.4 0 0 9.1-.7 9.1 8.5 0 11.5-20.4 10.7-20.4 10.7-6.7.3-22.6-1.5-31.7 1.2-4.8 1.5-9 4.2-11.5 9.1-4.2 8.3-6.2 26.5-6.5 45.5v15.5c0 3.1 2.5 5.7 5.7 5.7h68c3.1 0 5.7-2.5 5.7-5.7v-83.2z" fill="#fff" />
+											<path d="M227.6 54.6c-4.4-12.2-14-21.8-26.2-26.2-11.1-3.5-21.5-3.5-42.2-3.5H96.8c-20.7 0-31.1 0-42.2 3.5-12.2 4.4-21.8 14-26.2 26.2-3.5 11.2-3.5 21.5-3.5 42.2v62.5c0 20.7 0 31.1 3.5 42.2 4.4 12.2 14 21.8 26.2 26.2 11.2 3.5 21.5 3.5 42.2 3.5h62.5c20.7 0 31.1 0 42.2-3.5 12.2-4.4 21.8-14 26.2-26.2 3.5-11.1 3.5-21.5 3.5-42.2V96.8c0-20.7 0-31.1-3.6-42.2zm-22.5 150.2h-68c-3.1 0-5.7-2.5-5.7-5.7v-15.5c.3-19 2.3-37.2 6.5-45.5 2.5-5 6.7-7.7 11.5-9.1 9-2.7 24.9-.9 31.7-1.2 0 0 20.4.8 20.4-10.7 0-9.3-9.1-8.5-9.1-8.5-10 .3-17.7-.4-22.6-2.4-8.3-3.3-8.6-9.2-8.6-11.2-.4-23.1-34.5-25.9-64.5-20.1-32.8 6.2.4 53.3.4 116v8.4c-.1 3.1-2.5 5.6-5.6 5.6H57.7c-3.1 0-5.7-2.5-5.7-5.7v-144c0-3.1 2.5-5.7 5.7-5.7h31.7c3.1 0 5.7 2.5 5.7 5.7 0 4.7 5.2 7.2 9 4.5 11.4-8.2 26-12.5 42.4-12.5 36.7 0 64.4 21.4 64.4 68.7v83.2c-.1 3.2-2.6 5.7-5.8 5.7zM125.7 99c0-6.7 5.4-12.1 12.1-12.1S150 92.3 150 99s-5.4 12.1-12.1 12.1-12.2-5.3-12.2-12.1z" fill="#662482" />
+										</svg>
+									</div>
+									<div class="w-full mt-3 text-center">
+										<h3 class="text-base font-semibold leading-6 text-gray-900" id="modal-title">Share on Nostr</h3>
+										<div class="mt-2">
+											<!-- Profile -->
+											<div class="group block flex-shrink-0">
+												<div class="flex items-center">
+													<div class="flex-shrink-0">
+														<img class="size-9 rounded-full object-cover" :src="profileStore.profileInfo.pfpUrl" :alt="profileStore.profileInfo.name">
+													</div>
+													<div class="ml-3 text-left overflow-hidden">
+														<p class="text-sm font-medium text-nostrpurple-700 group-hover:text-nostrpurple-900 truncate">
+															<span class="inline-block max-w-full truncate" x-text="profileStore.profileInfo.name">Anon</span>
+														</p>
+														<p class="text-xs font-medium text-nostrpurple-500 group-hover:text-nostrpurple-700 truncate">
+															<span class="inline-block max-w-full truncate" x-text="nostrStore.share.isOpen && abbreviateBech32(await nostrStore.nostrGetBech32Npub())">npub1...</span>
+														</p>
+													</div>
+												</div>
+											</div>
+											<!-- /Profile -->
+											<div class="w-full">
+												<label for="nostr-comment" class="sr-only">Add your note</label>
+												<div class="mt-2">
+													<textarea x-model="nostrStore.share.note" rows="4" name="nostr-comment" id="nostr-comment" class="block w-full rounded-md border-0 py-1.5 text-nostrpurple-900 shadow-sm ring-1 ring-inset ring-nostrpurple-300 placeholder:text-nostrpurple-400 focus:ring-2 focus:ring-inset focus:ring-nostrpurple-600"></textarea>
+												</div>
+											</div>
+											<!-- List of selected media -->
+											<div :class="nostrStore.share.selectedFiles.length > 3 ? 'justify-start' : 'justify-center'" class="pt-5 pb-4 flex items-center overflow-x-auto scrollbar-hide">
+												<div class="flex space-x-2">
+													<template x-for="(file, index) in nostrStore.share.selectedFiles" :key="file.id">
+														<div class="relative inline-block transition-all flex-shrink-0">
+															<div class="aspect-w-1 aspect-h-1 w-16">
+																<img x-show="file.mime.startsWith('image/')" class="object-cover rounded-md" :src="file.thumb" :alt="file.name">
+																<video crossorigin="anonymous" x-show="file.mime.startsWith('video/')" loop muted autoplay playsinline preload="auto" class="object-cover rounded-md">
+																	<source :src="file.url" type="video/mp4">
+																</video>
+																<img x-show="file.mime.startsWith('audio/')" src="https://cdn.nostr.build/assets/audio/jpg/audio-wave@0.25x.jpg" :alt="'Poster for ' + file.name" loading="eager" class="object-cover rounded-md" />
+															</div>
+															<button x-show="nostrStore.share.selectedFiles.length > 1" @click="nostrStore.share.remove(file.id)" class="absolute right-0 top-0 block h-4 w-4 -translate-y-1/2 translate-x-1/2 transform rounded-full bg-nostrpurple-400 ring-2 ring-nostrpurple-50 hover:bg-nostrpurple-200">
+																<svg class="h-4 w-4 text-nostrpurple-50" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+																	<path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+																</svg>
+															</button>
+														</div>
+													</template>
+												</div>
+											</div>
+											<!-- /List of selected media -->
+											<!-- Error message -->
+											<div x-cloak x-show="nostrStore.share.isError" class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative overflow-y-auto scrollbar-hide max-h-36" role="alert">
+												<template x-for="error in nostrStore.share.getDeduplicatedErrors()">
+													<p x-html="error" class="text-xs xs:text-sm"></p>
+												</template>
+											</div>
+											<!-- /Error message -->
+										</div>
+									</div>
+								</div>
+							</div>
+							<div class="bg-nostrpurple-50 -mt-2 px-4 pb-3 pt-0 gap-3 flex flex-row-reverse">
+								<button :disabled="nostrStore.share.isLoading || nostrStore.share.isCriticalError" @click="await nostrStore.share.send()" type="button" class="mt-3 inline-flex w-full justify-center rounded-md bg-nostrpurple-600 px-4 py-2 text-base font-medium text-nostrpurple-50 shadow-sm hover:bg-nostrpurple-500 focus:outline-none focus:ring-2 focus:ring-nostrpurple-500 focus:ring-offset-2 disabled:bg-nostrpurple-300 disabled:cursor-not-allowed">
+									<svg x-show="nostrStore.share.isLoading" class="animate-spin -ml-1 mr-3 h-5 w-5 text-nostrpurple-50" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+										<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+										<path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+									</svg>
+									Share
+								</button>
+								<button :disabled="nostrStore.share.isLoading" @click="nostrStore.share.close(true)" type="button" class="mt-3 inline-flex w-full justify-center rounded-md bg-nostrpurple-100 px-4 py-2 text-base font-medium text-nostrpurple-700 shadow-sm hover:bg-nostrpurple-200 focus:outline-none focus:ring-2 focus:ring-nostrpurple-500 focus:ring-offset-2">Cancel</button>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</template>
+
+		<!-- Logout confirmation modal -->
+		<div x-show="logoutScreen" x-cloak class="relative z-50" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+			<div x-show="logoutScreen" x-transition:enter="ease-out duration-300" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" x-transition:leave="ease-in duration-200" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0" class="fixed inset-0 bg-nbpurple-500 bg-opacity-75 transition-opacity"></div>
+
+			<div x-show="logoutScreen" class="fixed inset-0 z-10 w-screen overflow-y-auto">
+				<div class="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
+					<div @click.outside="logoutScreen = false" x-show="logoutScreen" x-transition:enter="ease-out duration-300" x-transition:enter-start="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95" x-transition:enter-end="opacity-100 translate-y-0 sm:scale-100" x-transition:leave="ease-in duration-200" x-transition:leave-start="opacity-100 translate-y-0 sm:scale-100" x-transition:leave-end="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95" class="relative transform overflow-hidden rounded-lg bg-white px-4 pb-4 pt-5 text-left shadow-xl transition-all mb-20 sm:my-8 sm:w-full sm:max-w-lg sm:p-6">
+						<div class="sm:flex sm:items-start">
+							<div class="mx-auto flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-red-100 sm:mx-0 sm:h-10 sm:w-10">
+								<svg class="h-6 w-6 text-red-600" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true">
+									<path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+								</svg>
+							</div>
+							<div class="mt-3 text-center sm:ml-4 sm:mt-0 sm:text-left">
+								<h3 class="text-base font-semibold leading-6 text-gray-900" id="modal-title">Logout</h3>
+								<div class="mt-2">
+									<p class="text-sm text-gray-500">Are you sure you want to logout?</p>
+								</div>
+							</div>
+						</div>
+						<div class="mt-5 sm:ml-10 sm:mt-4 sm:flex sm:pl-4">
+							<a href="/functions/logout.php" class="inline-flex w-full justify-center rounded-md bg-red-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-red-500 sm:w-auto">Logout</a>
+							<button @click="logoutScreen = false" type="button" class="mt-3 inline-flex w-full justify-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 sm:ml-3 sm:mt-0 sm:w-auto">Cancel</button>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<!-- Profile edit modal -->
+		<div class="relative z-50" aria-labelledby="slide-over-title" role="dialog" aria-modal="true">
+			<!-- Background backdrop, show/hide based on slide-over state. -->
+			<div x-cloak class="fixed inset-0 bg-nbpurple-500 bg-opacity-75 transition-opacity" x-show="profileStore.dialogOpen" x-transition:enter="ease-in-out duration-500" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" x-transition:leave="ease-in-out duration-500" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0"></div>
+
+			<div x-cloak class="fixed inset-0 overflow-hidden" x-show="profileStore.dialogOpen" x-transition:enter="ease-in-out duration-500" x-transition:enter-start="opacity-0 translate-x-full" x-transition:enter-end="opacity-100 translate-x-0" x-transition:leave="ease-in-out duration-500" x-transition:leave-start="opacity-100 translate-x-0" x-transition:leave-end="opacity-0 translate-x-full">
+				<div class="absolute inset-0 overflow-hidden">
+					<div class="pointer-events-none fixed inset-y-0 right-0 flex max-w-full pl-10 sm:pl-16">
+						<div @click.outside="profileStore.closeDialog()" class="pointer-events-auto w-screen max-w-3xl">
+							<form class="flex h-full flex-col overflow-y-scroll bg-nbpurple-900 shadow-xl" @submit.prevent="await profileStore.updateProfileInfo()">
+								<div class="flex-1">
+									<!-- Header -->
+									<div class="bg-nbpurple-500 px-4 py-6 sm:px-6">
+										<div class="flex items-start justify-between space-x-3">
+											<div class="space-y-1">
+												<h2 class="text-base font-semibold leading-6 text-nbpurple-950" id="slide-over-title">Update Profile</h2>
+												<p class="text-sm text-nbpurple-100">Update your profile information below.</p>
+											</div>
+											<div class="flex h-7 items-center">
+												<button type="button" class="relative text-nbpurple-700 hover:text-nbpurple-900" @click="profileStore.closeDialog()">
+													<span class="absolute -inset-2.5"></span>
+													<span class="sr-only">Close panel</span>
+													<svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true">
+														<path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+													</svg>
+												</button>
+											</div>
+										</div>
+									</div>
+
+									<!-- Success/Error Messages -->
+									<div x-show="profileStore.dialogSuccessMessages.length" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 transform translate-y-4" x-transition:enter-end="opacity-100 transform translate-y-0" x-transition:leave="transition ease-in duration-300" x-transition:leave-start="opacity-100 transform translate-y-0" x-transition:leave-end="opacity-0 transform translate-y-4" class="mx-4 mb-4 bg-nostrpurple-500 text-nostrpurple-50 px-4 py-2 rounded-lg shadow-lg absolute top-5 right-2 z-10">
+										<template x-for="message in profileStore.dialogSuccessMessages">
+											<p x-text="message"></p>
+										</template>
+									</div>
+									<div x-show="profileStore.dialogError" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 transform translate-y-4" x-transition:enter-end="opacity-100 transform translate-y-0" x-transition:leave="transition ease-in duration-300" x-transition:leave-start="opacity-100 transform translate-y-0" x-transition:leave-end="opacity-0 transform translate-y-4" class="mx-4 mb-4 bg-red-500 text-white px-4 py-2 rounded-lg shadow-lg absolute top-5 right-2 z-10">
+										<template x-for="message in profileStore.dialogErrorMessages">
+											<p x-text="message"></p>
+										</template>
+									</div>
+
+									<!-- Divider container -->
+									<div class="space-y-6 py-6 sm:space-y-0 sm:divide-y sm:divide-nbpurple-200 sm:py-0">
+										<!-- Registered NPUB -->
+										<div class="space-y-2 px-4 grid sm:grid-cols-3 sm:gap-4 sm:space-y-0 sm:px-6 sm:py-3 min-w-0">
+											<div>
+												<p class="inline-block text-sm font-medium leading-6 text-nbpurple-200 sm:mt-1.5">Your NPUB</p>
+												<span :class="profileStore.profileInfo.npubVerified ? 'bg-nostrpurple-300 text-nostrpurple-900 ring-nostrpurple-200/10' : 'bg-red-100 text-red-600 ring-red-700/10'" class="inline-flex items-center gap-x-1.5 rounded-full px-1.5 py-0.5 text-xs font-medium border ring-1 ring-inset">
+													<svg x-show="profileStore.profileInfo.npubVerified" class="size-3 fill-nostrpurple-500" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+														<path fill-rule="evenodd" d="M15 8c0 .982-.472 1.854-1.202 2.402a2.995 2.995 0 0 1-.848 2.547 2.995 2.995 0 0 1-2.548.849A2.996 2.996 0 0 1 8 15a2.996 2.996 0 0 1-2.402-1.202 2.995 2.995 0 0 1-2.547-.848 2.995 2.995 0 0 1-.849-2.548A2.996 2.996 0 0 1 1 8c0-.982.472-1.854 1.202-2.402a2.995 2.995 0 0 1 .848-2.547 2.995 2.995 0 0 1 2.548-.849A2.995 2.995 0 0 1 8 1c.982 0 1.854.472 2.402 1.202a2.995 2.995 0 0 1 2.547.848c.695.695.978 1.645.849 2.548A2.996 2.996 0 0 1 15 8Zm-3.291-2.843a.75.75 0 0 1 .135 1.052l-4.25 5.5a.75.75 0 0 1-1.151.043l-2.25-2.5a.75.75 0 1 1 1.114-1.004l1.65 1.832 3.7-4.789a.75.75 0 0 1 1.052-.134Z" clip-rule="evenodd" />
+													</svg>
+													<svg x-show="!profileStore.profileInfo.npubVerified" class="size-3 fill-red-500" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+														<path fill-rule="evenodd" d="M3.05 3.05a7 7 0 1 1 9.9 9.9 7 7 0 0 1-9.9-9.9Zm1.627.566 7.707 7.707a5.501 5.501 0 0 0-7.707-7.707Zm6.646 8.768L3.616 4.677a5.501 5.501 0 0 0 7.707 7.707Z" clip-rule="evenodd" />
+													</svg>
+													<span x-text="profileStore.profileInfo.npubVerified ? 'Verified' : 'Unverified'"></span>
+												</span>
+											</div>
+											<div class="sm:col-span-2 overflow-x-hidden">
+												<p x-text="profileStore.profileInfo.npub" class="block w-full py-1.5 text-nbpurple-50 font-bold text-xs sm:text-sm sm:leading-6 truncate"></p>
+											</div>
+										</div>
+
+										<!-- Allow NOSTR login -->
+										<div x-show="profileStore.profileInfo.npubVerified" class="space-y-2 px-4 sm:grid sm:grid-cols-3 sm:gap-4 sm:space-y-0 sm:px-6 sm:py-5 items-center">
+											<div class="flex items-center space-x-4">
+												<span class="block text-sm font-medium leading-6 text-nbpurple-200" id="allow-nostr-login-label">Enable NOSTR Login</span>
+											</div>
+											<div class="sm:col-span-2">
+												<button @click="profileStore.profileInfo.allowNostrLogin = !profileStore.profileInfo.allowNostrLogin" type="button" :class="profileStore.profileInfo.allowNostrLogin ? 'bg-nbpurple-600' : 'bg-nbpurple-200'" class="relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-nbpurple-600 focus:ring-offset-2" role="switch" aria-checked="profileStore.profileInfo.allowNostrLogin" aria-labelledby="allow-nostr-login-label" aria-describedby="allow-nostr-login-label">
+													<span aria-hidden="true" :class="profileStore.profileInfo.allowNostrLogin ? 'translate-x-5' : 'translate-x-0'" class="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-nbpurple-50 shadow ring-0 transition duration-200 ease-in-out"></span>
+												</button>
+											</div>
+										</div>
+
+										<!-- Profile Picture URL -->
+										<div x-data="{ pfpError: false }" class="space-y-2 px-4 sm:grid sm:grid-cols-3 sm:gap-4 sm:space-y-0 sm:px-6 sm:py-5 items-center">
+											<div class="flex items-center space-x-4">
+												<label for="pfpUrl" class="block text-sm font-medium leading-6 text-nbpurple-200">Profile Picture URL</label>
+												<template x-if="profileStore.profileInfo.pfpUrl && !pfpError">
+													<img class="inline-block h-8 w-8 rounded-full object-cover" :src="profileStore.profileInfo.pfpUrl" :alt="'Profile picture for ' + profileStore.profileInfo.name" @error="pfpError = true" @load="pfpError = false">
+												</template>
+												<template x-if="!profileStore.profileInfo.pfpUrl || pfpError">
+													<svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="inline-block h-8 w-8 rounded-full text-nbpurple-400">
+														<path stroke-linecap="round" stroke-linejoin="round" d="M17.982 18.725A7.488 7.488 0 0 0 12 15.75a7.488 7.488 0 0 0-5.982 2.975m11.963 0a9 9 0 1 0-11.963 0m11.963 0A8.966 8.966 0 0 1 12 21a8.966 8.966 0 0 1-5.982-2.275M15 9.75a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+													</svg>
+												</template>
+											</div>
+											<div class="sm:col-span-2">
+												<input type="text" name="pfpUrl" id="pfpUrl" x-model="profileStore.profileInfo.pfpUrl" @input.debounce.500ms="pfpError = false" autocomplete="url" autocapitalize="off" placeholder="https://" class="block w-full rounded-md border-0 py-1.5 text-nbpurple-900 shadow-sm ring-1 ring-inset ring-nbpurple-300 placeholder:text-nbpurple-400 focus:ring-2 focus:ring-inset focus:ring-nbpurple-600 sm:text-sm sm:leading-6">
+											</div>
+										</div>
+
+										<!-- Name -->
+										<div class="space-y-2 px-4 sm:grid sm:grid-cols-3 sm:gap-4 sm:space-y-0 sm:px-6 sm:py-5">
+											<div>
+												<label for="name" class="block text-sm font-medium leading-6 text-nbpurple-200 sm:mt-1.5">Name</label>
+											</div>
+											<div class="sm:col-span-2">
+												<input type="text" name="name" id="name" x-model="profileStore.profileInfo.name" autocomplete="off" class="block w-full rounded-md border-0 py-1.5 text-nbpurple-900 shadow-sm ring-1 ring-inset ring-nbpurple-300 placeholder:text-nbpurple-400 focus:ring-2 focus:ring-inset focus:ring-nbpurple-600 sm:text-sm sm:leading-6">
+											</div>
+										</div>
+
+										<!-- Wallet -->
+										<div class="space-y-2 px-4 sm:grid sm:grid-cols-3 sm:gap-4 sm:space-y-0 sm:px-6 sm:py-5">
+											<div>
+												<label for="wallet" class="block text-sm font-medium leading-6 text-nbpurple-200 sm:mt-1.5">Wallet Address</label>
+											</div>
+											<div class="sm:col-span-2">
+												<input type="text" name="wallet" id="wallet" x-model="profileStore.profileInfo.wallet" autocomplete="off" class="block w-full rounded-md border-0 py-1.5 text-nbpurple-900 shadow-sm ring-1 ring-inset ring-nbpurple-300 placeholder:text-nbpurple-400 focus:ring-2 focus:ring-inset focus:ring-nbpurple-600 sm:text-sm sm:leading-6">
+											</div>
+										</div>
+
+										<!-- Action buttons -->
+										<div class="flex-shrink-0 border-t border-nbpurple-200 px-4 py-5 sm:px-6">
+											<div class="flex justify-end space-x-3">
+												<button type="button" class="rounded-md bg-nbpurple-100 px-3 py-2 text-sm font-semibold text-nbpurple-800 shadow-sm ring-1 ring-inset ring-nbpurple-300 hover:bg-nbpurple-50" @click="profileStore.closeDialog()">Cancel</button>
+												<button type="submit" class="inline-flex justify-center rounded-md bg-nbpurple-600 px-3 py-2 text-sm font-semibold text-nbpurple-50 shadow-sm hover:bg-nbpurple-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-nbpurple-600" :disabled="profileStore.dialogLoading">
+													<span x-show="!profileStore.dialogLoading">Save</span>
+													<span class="animate-pulse" x-show="profileStore.dialogLoading">Saving...</span>
+												</button>
+											</div>
+										</div>
+
+										<!-- Password -->
+										<div class="space-y-2 px-4 sm:grid sm:grid-cols-3 sm:gap-4 sm:space-y-0 sm:px-6 sm:py-5">
+											<div>
+												<h3 class="text-sm font-medium leading-6 text-nbpurple-200">Password</h3>
+											</div>
+											<div class="space-y-5 sm:col-span-2">
+												<div class="space-y-2">
+													<div>
+														<label for="current-password" class="block text-sm font-medium leading-6 text-nbpurple-200">Current Password</label>
+														<input type="password" name="current-password" id="current-password" x-ref="currentPassword" autocomplete="current-password" class="block w-full rounded-md border-0 py-1.5 text-nbpurple-900 shadow-sm ring-1 ring-inset ring-nbpurple-300 placeholder:text-nbpurple-400 focus:ring-2 focus:ring-inset focus:ring-nbpurple-600 sm:text-sm sm:leading-6">
+													</div>
+													<div>
+														<label for="new-password" class="block text-sm font-medium leading-6 text-nbpurple-200">New Password</label>
+														<input type="password" name="new-password" id="new-password" x-ref="newPassword" autocomplete="new-password" class="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-nbpurple-300 placeholder:text-nbpurple-400 focus:ring-2 focus:ring-inset focus:ring-nbpurple-600 sm:text-sm sm:leading-6">
+													</div>
+													<div>
+														<label for="confirm-password" class="block text-sm font-medium leading-6 text-nbpurple-200">Confirm Password</label>
+														<input type="password" name="confirm-password" id="confirm-password" x-ref="confirmPassword" autocomplete="new-password" class="block w-full rounded-md border-0 py-1.5 text-nbpurple-900 shadow-sm ring-1 ring-inset ring-nbpurple-300 placeholder:text-nbpurple-400 focus:ring-2 focus:ring-inset focus:ring-nbpurple-600 sm:text-sm sm:leading-6">
+													</div>
+												</div>
+												<button :diabled="profileStore.dialogLoading || !$refs.currentPassword?.value || !$refs.newPassword || !$refs.confirmPassword " type="button" class="rounded-md bg-nbpurple-200 px-3 py-2 text-sm font-semibold text-nbpurple-900 shadow-sm ring-1 ring-inset ring-nbpurple-300 hover:bg-nbpurple-50" @click.throttle.250ms="await profileStore.updatePassword($refs.currentPassword, $refs.newPassword, $refs.confirmPassword)">
+													<span>Update Password</span>
+												</button>
+											</div>
+										</div>
+									</div>
+								</div>
+
+							</form>
+						</div>
+					</div>
+				</div>
+			</div>
+
+		</div>
+
+		<!-- Toast notification -->
+		<div x-cloak x-show="showToast" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 transform translate-x-8" x-transition:enter-end="opacity-100 transform translate-x-0" x-transition:leave="transition ease-in duration-300" x-transition:leave-start="opacity-100 transform translate-x-0" x-transition:leave-end="opacity-0 transform translate-x-8" class="z-50 fixed top-6 right-6 bg-orange-500 text-white px-4 py-2 rounded-md flex items-center">
+			<span class="mr-2 text-xs">Link Copied</span>
+			<svg class="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+				<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+			</svg>
+		</div>
+
+	</main>
 
 </body>
 

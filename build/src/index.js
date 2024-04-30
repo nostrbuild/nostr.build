@@ -230,7 +230,7 @@ const uppy = new Uppy({
     formData: true,
     bundle: false,
     limit: 5,
-    timeout: 0, // remove timeout
+    timeout: 60 * 60 * 1000, // 1h timeout
     meta: {
       folderName: '', // Initialize folderName metadata
       folderHierarchy: [], // Initialize folderHierarchy metadata
@@ -238,7 +238,7 @@ const uppy = new Uppy({
   }, {
     // Override the default `limit` behavior
     limit: 0,
-    timeout: 0, // remove timeout
+    timeout: 60 * 60 * 1000, // 1h timeout
   })
   .on('upload-success', (file, response) => {
     if (Array.isArray(response.body)) {
