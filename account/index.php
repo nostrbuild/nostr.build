@@ -33,32 +33,6 @@ if ($perm->validatePermissionsLevelEqual(0)) {
 // - Add ability to specify API/client upload default folder (client upload)
 // - Allow user to verify their npub in profile edit dialog
 
-// DONE
-// - [x] Add media type icons
-// - [x] Add audio poster to the main view
-// - [x] Dialog compatible with all media types
-// - [x] Use axios and axios-retry for API requests
-// - [x] Update icons for loading of all supported media types
-// - [x] Add "Nostr Share" icon when media is shared
-// - [x] Add plumbing for tracking and deleting Nostr events associated with media
-// - [x] Reworked new folder dialog and fixed problem with form IDs
-// - [x] Remove the need for PHP embedded variables in the HTML code (where possible) and in JS code
-// - [x] Add "folder" SVG Icon with the first character of the folder name within the icon
-// - [x] Link all stores from the <body> tag and remove any redundant store definitions in the HTML
-// - [x] Added loading spinner for the page
-// - [x] Fix scroll-lock issue when dialog is open
-// - [x] Add ability to upload files via drag-and-drop and select file dialog
-// - [x] Add warning and option to delete a nostr event when deleting a media item
-// - [x] Enhance uploading experience, files are dynamically added to the list after upload
-// - [x] Add refresh button to update the media list
-// - [x] Add file import via URL
-// - [x] Add warning before user leaves page with unsaved changes
-// - [x] Add renew/upgrade subscription buttons
-// - [x] Add restrictions for the users with expired subscription
-// - [x] Put feature flags for all features that require them
-// - [x] Add all the menu items that exist in the legacy version
-
-
 $NBLogoSVG = <<<SVG
 <svg class="h-8 w-auto" id="a" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 33.4 39">
   <defs>
