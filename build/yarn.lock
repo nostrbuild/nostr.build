@@ -2047,41 +2047,6 @@ fastq@^1.6.0:
   dependencies:
     reusify "^1.0.4"
 
-filepond-plugin-file-metadata@^1.0.8:
-  version "1.0.8"
-  resolved "https://registry.yarnpkg.com/filepond-plugin-file-metadata/-/filepond-plugin-file-metadata-1.0.8.tgz#52ebc23618f89c916272280906f4d389c98a85f2"
-  integrity sha512-VjYbe8AwcBYQs1HO7J/vUPWUv5DQPSlq7Swu/x+3huGpfrNi5u5eRaV6BZE9wV8NvdAviqlTGfqqCeFCND/7NQ==
-
-filepond-plugin-file-validate-size@^2.2.8:
-  version "2.2.8"
-  resolved "https://registry.yarnpkg.com/filepond-plugin-file-validate-size/-/filepond-plugin-file-validate-size-2.2.8.tgz#2018c7e1110d7452cfd2a384725869786b8260f7"
-  integrity sha512-yzb8scATmkWqPTP7oKQz6L8WwJm6Xmgc/fuq6DFGRaLz0I7372BUvBsxagBk/hypMIjvieNzhggm33Y60x3rcw==
-
-filepond-plugin-file-validate-type@^1.2.9:
-  version "1.2.9"
-  resolved "https://registry.yarnpkg.com/filepond-plugin-file-validate-type/-/filepond-plugin-file-validate-type-1.2.9.tgz#84787c027354a459d91382e77adc9463ceb0182d"
-  integrity sha512-Tzv07aNdZvjUXDRA3XL16QMEvh6llDrXlcZ6W0eTHQ+taHaVg/JKJTFs/AViO+6ZcpPCcQStbhYEL2HoS+vldw==
-
-filepond-plugin-image-exif-orientation@^1.0.11:
-  version "1.0.11"
-  resolved "https://registry.yarnpkg.com/filepond-plugin-image-exif-orientation/-/filepond-plugin-image-exif-orientation-1.0.11.tgz#c46b522e8873e2ad5b9c7e2bbbe71176c9df58b2"
-  integrity sha512-hLBc12Fk6Zkj3L8mSAn+elugHOqT5rLUbgVXQQIQjMe0FsGjtpoxqeVR6jt4IWHGat2L9sFAgU2TGmd1mqosCg==
-
-filepond-plugin-image-filter@^1.0.1:
-  version "1.0.1"
-  resolved "https://registry.yarnpkg.com/filepond-plugin-image-filter/-/filepond-plugin-image-filter-1.0.1.tgz#d38d8d12a0137b1df4d7025dc0934aeaca24d5d4"
-  integrity sha512-IFwJDENGxeIyJBoyXWoP/y4AnI41ar+tpAobawcF8DtnkFWSwdDcR441eNDVVLyEXFdfFwUxa8RJY90P5qSXfA==
-
-filepond-plugin-image-preview@^4.6.12:
-  version "4.6.12"
-  resolved "https://registry.yarnpkg.com/filepond-plugin-image-preview/-/filepond-plugin-image-preview-4.6.12.tgz#adcff8be50f001e21ca8221a53c6870b63ebe0fe"
-  integrity sha512-Y8ETX5QVV0mbPB0586UH8AUmG9tZg8PuN5bdEAIlZVJFTct5ebViJ7+Am94/VhTPjLqZjBf1zmDq5JU6XRsZKw==
-
-filepond@^4.31.1:
-  version "4.31.1"
-  resolved "https://registry.yarnpkg.com/filepond/-/filepond-4.31.1.tgz#42550897ddf614ac03c5322e6b16bd6e9e98844c"
-  integrity sha512-yWYK91Ky72L2AG7BlI8Cb0UjvJz+DjuYdLN1JbkJg8qmoiZ9AU5b5MuOkHmExk/9jQ5R7tRT+H+b8wDiFEJlxQ==
-
 fill-range@^7.0.1:
   version "7.0.1"
   resolved "https://registry.yarnpkg.com/fill-range/-/fill-range-7.0.1.tgz#1919a6a7c75fe38b2c7c77e5198535da9acdda40"
