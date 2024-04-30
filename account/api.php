@@ -464,7 +464,7 @@ if (isset($_GET["action"])) {
 	} elseif ($_POST['action'] === 'move_to_folder') {
 		$imagesToMove = !empty($_POST['imagesToMove']) ? json_decode($_POST['imagesToMove']) : [];
 		$destinationFolderId = !empty($_POST['destinationFolderId']) ? $_POST['destinationFolderId'] : null;
-		if (empty($imagesToMove) || $destinationFolderId === null) {
+		if (empty($imagesToMove)) {
 			http_response_code(400);
 			echo json_encode(array("error" => "Missing required parameters"));
 			exit;
