@@ -201,6 +201,7 @@ $pageMenuContent = <<<HTML
 			</template>
 		</ul>
 		<!-- AI Studio submenu -->
+		<!--
 		<div x-data="{ AISubMenuExpand: menuStore.menuItemsAI.length === 1, isAI: menuStore.menuItemsAI.find(item=>item.name === menuStore.activeMenu) }" x-init="fileStore.fullWidth = !isAI" class="-mx-2 space-y-1 mt-1">
 			<button @click.throttle="AISubMenuExpand = !AISubMenuExpand" type="button" class="text-nbpurple-300 hover:text-nbpurple-50 hover:bg-nbpurple-800 flex items-center w-full text-left rounded-md p-2 gap-x-3 text-sm leading-6 font-semibold" aria-controls="sub-menu-ai" aria-expanded="AISubMenuExpand">
 				<svg class="h-6 w-6 shrink-0 text-nbpurple-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
@@ -224,6 +225,18 @@ $pageMenuContent = <<<HTML
 				</template>
 			</ul>
 		</div>
+-->
+		<ul x-data="{ isAI: menuStore.menuItemsAI.find(item=>item.name === menuStore.activeMenu) }" x-init="fileStore.fullWidth = !isAI" role="list" class="-mx-2 space-y-1">
+			<template x-for="item in menuStore.menuItemsAI" :key="item.name">
+				<li>
+					<a :href="item.route" :class="{ 'bg-nbpurple-800 text-nbpurple-50': menuStore.activeMenu === item.name, 'text-nbpurple-300 hover:text-nbpurple-50 hover:bg-nbpurple-800': menuStore.activeMenu !== item.name }" class="group flex gap-x-3 rounded-md p-2 text-sm leading-6 font-semibold" @click="menuStore.setActiveMenu(item.name); menuStore.mobileMenuOpen = false">
+						<svg aria-hidden="true" class="size-6 shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true" x-html="item.icon"></svg>
+						<span x-text="item.name"></span>
+						<span class="inline-flex items-center rounded-full bg-nbpurple-200 px-1.5 py-0.5 text-xs font-medium text-nbpurple-800 ring-1 ring-inset ring-nbpurple-700/10">New</span>
+					</a>
+				</li>
+			</template>
+		</ul>
 		<!-- External menu items -->
 		<ul role="list" class="-mx-2 space-y-1">
 			<template x-for="item in menuStore.externalMenuItems" :key="item.name">
@@ -376,7 +389,7 @@ HTML;
 	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 	<title>nostr.build account</title>
 
-	<script defer src="/scripts/dist/account-v2.js?v=47abc5dc22980eee4f548104338c5d0d"></script>
+	<script defer src="/scripts/dist/account-v2.js?v=a260a072aa8294f71d9e1ba19c5bb1ca"></script>
 	<link href="/scripts/dist/account-v2.css?v=b53dd90fe055a3de4cdc4c77295177dd" rel="stylesheet">
 
 	<link rel="icon" href="/assets/nb-logo-color-w.png" />

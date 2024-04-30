@@ -17,7 +17,7 @@ if (!$perm->isAdmin()) {
 
 global $link;
 
-Plans::init();
+//Plans::init();
 
 $promotions = new Promotions($link);
 
