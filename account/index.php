@@ -393,7 +393,7 @@ HTML;
 	<link href="/scripts/dist/account-v2.css?v=b53dd90fe055a3de4cdc4c77295177dd" rel="stylesheet">
 
 	<link rel="icon" href="/assets/nb-logo-color-w.png" />
-	<link href="/styles/twbuild.css?v=3b28521facf75996019ccba248bc75bb" rel="stylesheet">
+	<link href="/styles/twbuild.css?v=6b132929e5684f7222f17217e6ff5db9" rel="stylesheet">
 
 	<style>
 		[x-cloak] {
@@ -1744,6 +1744,18 @@ HTML;
 					<button type="button" class="z-10 absolute top-3 right-3 inline-flex items-center justify-center p-1 bg-black bg-opacity-50 rounded-full text-nbpurple-50 hover:text-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-nbpurple-500" @click="fileStore.closeModal()">
 						<svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
 							<path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
+						</svg>
+					</button>
+					<!-- Left arrow -->
+					<button type="button" class="z-10 absolute left-3 top-1/2 transform -translate-y-1/2 md:inline-flex items-center justify-center p-1 bg-black bg-opacity-50 rounded-full text-nbpurple-50 hover:text-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-nbpurple-500 hidden xl:block" @click="await fileStore.modalPrevious()">
+						<svg class="h-8 w-8" viewBox="0 0 20 20" fill="currentColor">
+							<path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd" />
+						</svg>
+					</button>
+					<!-- Right arrow -->
+					<button type="button" class="z-10 absolute right-3 top-1/2 transform -translate-y-1/2 md:inline-flex items-center justify-center p-1 bg-black bg-opacity-50 rounded-full text-nbpurple-50 hover:text-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-nbpurple-500 hidden xl:block" @click="await fileStore.modalNext()">
+						<svg class="h-8 w-8" viewBox="0 0 20 20" fill="currentColor">
+							<path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" />
 						</svg>
 					</button>
 					<!-- Image -->
