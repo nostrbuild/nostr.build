@@ -250,7 +250,7 @@ $pageMenuContent = <<<HTML
 				<ul x-cloak x-show="AdminSubMenuExpand" class="mt-1 px-2" id="sub-menu-ai">
 					<template x-for="item in menuStore.adminMenuItems" :key="item.name">
 						<li x-show="profileStore.profileInfo.allowed(item.allowed)">
-							<a :href="item.route" :class="{ 'bg-nbpurple-800 text-nbpurple-50': menuStore.activeMenu === item.name, 'text-nbpurple-300 hover:text-nbpurple-50 hover:bg-nbpurple-800': menuStore.activeMenu !== item.name }" class="group flex gap-x-3 rounded-md p-2 text-sm leading-6 font-semibold">
+							<a @click="window.location.href = item.route" :href="item.route" :class="{ 'bg-nbpurple-800 text-nbpurple-50': menuStore.activeMenu === item.name, 'text-nbpurple-300 hover:text-nbpurple-50 hover:bg-nbpurple-800': menuStore.activeMenu !== item.name }" class="group flex gap-x-3 rounded-md p-2 text-sm leading-6 font-semibold">
 								<svg x-show="item.icon.length > 0" aria-hidden="true" class="size-6 shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true" x-html="item.icon"></svg>
 								<span x-text="item.name"></span>
 							</a>
@@ -376,7 +376,7 @@ HTML;
 	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 	<title>nostr.build account</title>
 
-	<script defer src="/scripts/dist/account-v2.js?v=4b42e505aa72fad07d9711b62b5dc2ea"></script>
+	<script defer src="/scripts/dist/account-v2.js?v=a11f50ec53551d6162d5d541b21d00d4"></script>
 	<link href="/scripts/dist/account-v2.css?v=b53dd90fe055a3de4cdc4c77295177dd" rel="stylesheet">
 
 	<link rel="icon" href="/assets/nb-logo-color-w.png" />
