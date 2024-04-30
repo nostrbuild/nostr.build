@@ -393,7 +393,7 @@ HTML;
 	<link href="/scripts/dist/account-v2.css?v=b53dd90fe055a3de4cdc4c77295177dd" rel="stylesheet">
 
 	<link rel="icon" href="/assets/nb-logo-color-w.png" />
-	<link href="/styles/twbuild.css?v=88fba0465d458e1daffb61bec6d143ff" rel="stylesheet">
+	<link href="/styles/twbuild.css?v=3b28521facf75996019ccba248bc75bb" rel="stylesheet">
 
 	<style>
 		[x-cloak] {
@@ -812,13 +812,13 @@ HTML;
 									<input x-model="title" type="text" name="title" id="title" class="block w-full border-0 pt-2.5 text-sm text-nbpurple-800 font-medium placeholder:text-nbpurple-400 focus:ring-0 bg-nbpurple-50" placeholder="Title (name your creation)">
 					-->
 									<label for="prompt" class="sr-only">Prompt</label>
-									<textarea x-model="prompt" rows="3" name="prompt" id="prompt" class="block w-full resize-none border-0 py-0 pt-2 text-nbpurple-900 placeholder:text-nbpurple-400 focus:ring-0 sm:text-sm sm:leading-6 bg-nbpurple-50" placeholder="(prompt) ex.: purple ostrich surfing a big wave ..."></textarea>
+									<textarea x-model="prompt" rows="3" name="prompt" id="prompt" class="block w-full resize-none border-0 py-0 pt-2 text-nbpurple-900 placeholder:text-nbpurple-400 focus:ring-0 sm:text-sm sm:leading-6 bg-nbpurple-100" placeholder="(prompt) ex.: purple ostrich surfing a big wave ..."></textarea>
 
 									<!-- Spacer element to match the height of the toolbar -->
 									<div aria-hidden="true">
 										<div class="py-2">
 											<div class="py-px">
-												<div class="h-8"></div>
+												<div class="h-[2.1rem]"></div>
 											</div>
 										</div>
 									</div>
@@ -839,41 +839,41 @@ HTML;
 												<label id="listbox-label" class="sr-only">Change generative model</label>
 												<div class="relative">
 													<div class="inline-flex divide-x divide-nbpurple-700 rounded-md shadow-sm">
-														<div class="inline-flex items-center gap-x-1.5 rounded-l-md bg-nbpurple-600 px-3 py-2 text-white shadow-sm">
+														<div class="inline-flex items-center gap-x-1.5 rounded-l-md bg-nbpurple-600 px-3 py-2 text-nbpurple-50 shadow-sm">
 															<svg class="-ml-0.5 h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
 																<path fill-rule="evenodd" d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.05-.143z" clip-rule="evenodd" />
 															</svg>
 															<p class="sm:text-sm text-xs font-semibold" x-text="selectedModelTitle"></p>
 														</div>
-														<button type="button" class="inline-flex items-center rounded-l-none rounded-r-md bg-nbpurple-600 p-2 hover:bg-nbpurple-700 focus:outline-none focus:ring-2 focus:ring-nbpurple-600 focus:ring-offset-2 focus:ring-offset-gray-50" aria-haspopup="listbox" aria-expanded="true" aria-labelledby="listbox-label" @click="modelMenuOpen = !modelMenuOpen">
+														<button type="button" class="inline-flex items-center rounded-l-none rounded-r-md bg-nbpurple-600 p-2 hover:bg-nbpurple-700 focus:outline-none focus:ring-2 focus:ring-nbpurple-600 focus:ring-offset-2 focus:ring-offset-nbpurple-50" aria-haspopup="listbox" aria-expanded="true" aria-labelledby="listbox-label" @click="modelMenuOpen = !modelMenuOpen">
 															<span class="sr-only">Change generative model</span>
-															<svg class="h-5 w-5 text-white" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+															<svg class="h-5 w-5 text-nbpurple-50" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
 																<path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clip-rule="evenodd" />
 															</svg>
 														</button>
 													</div>
-													<ul id="models-listbox" x-cloak @click.outside="modelMenuOpen = false" x-show="modelMenuOpen" x-transition:enter="" x-transition:enter-start="" x-transition:enter-end="" x-transition:leave="transition ease-in duration-100" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0" class="absolute left-0 z-30 mt-2 sm:w-96 xs:w-72 w-64 origin-top-left divide-y divide-gray-200 overflow-hidden rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none" tabindex="-1" role="listbox" aria-labelledby="listbox-label" aria-activedescendant="listbox-option-0">
+													<ul id="models-listbox" x-cloak @click.outside="modelMenuOpen = false" x-show="modelMenuOpen" x-transition:enter="" x-transition:enter-start="" x-transition:enter-end="" x-transition:leave="transition ease-in duration-100" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0" class="absolute left-0 z-30 mt-2 sm:w-96 xs:w-72 w-64 origin-top-left divide-y divide-nbpurple-200 overflow-hidden rounded-md bg-nbpurple-500 shadow-lg ring-1 ring-nbpurple-900 ring-opacity-5 focus:outline-none" tabindex="-1" role="listbox" aria-labelledby="listbox-label" aria-activedescendant="listbox-option-0">
 														<template x-for="(option, index) in modelOptions" :key="option.value">
 															<li :class="{
-																						'bg-nbpurple-100': selectedModel === option.value,
-																						'text-gray-400 cursor-not-allowed': option.disabled,
-																						'hover:bg-nbpurple-100 text-gray-900 cursor-default': !option.disabled
+																						'bg-nbpurple-600 cursor-pointer': selectedModel === option.value,
+																						'text-nbpurple-200 cursor-not-allowed': option.disabled,
+																						'hover:bg-nbpurple-700 text-nbpurple-50 cursor-pointer': !option.disabled
 																					}" class="select-none p-4 text-sm" :id="'listbox-option-' + index" role="option" @click="if (!option.disabled) { selectedModel = option.value; selectedModelTitle = option.title; modelMenuOpen = false; }">
 																<div class="flex flex-col">
 																	<div class="flex justify-between">
 																		<div class="flex items-center">
 																			<p class="font-normal" x-text="option.title"></p>
-																			<a x-show="option.disabled" href="/plans/" class="ml-2 text-nbpurple-600 text-xs hover:underline">
+																			<a x-show="option.disabled" href="/plans/" class="ml-2 text-nbpurple-50 text-xs hover:underline">
 																				Upgrade to Advanced or Renew
 																			</a>
 																		</div>
-																		<span class="text-nbpurple-600" x-show="selectedModel === option.value">
+																		<span class="text-nbpurple-50" x-show="selectedModel === option.value">
 																			<svg class="size-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
 																				<path fill-rule="evenodd" d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.05-.143z" clip-rule="evenodd" />
 																			</svg>
 																		</span>
 																	</div>
-																	<p class="text-gray-500 leading-tight mt-2" x-text="option.description"></p>
+																	<p class="text-nbpurple-50 leading-tight mt-2" x-text="option.description"></p>
 																</div>
 															</li>
 														</template>
@@ -1139,7 +1139,7 @@ HTML;
 										<span class="text-xs -mt-[0.175] " x-text="events"></span>
 									</div>
 									<!-- /Nostr badge -->
-									<div class="relative group aspect-h-7 aspect-w-10 w-full overflow-hidden rounded-lg bg-black/50 focus-within:ring-2 focus-within:ring-indigo-500 focus-within:ring-offset-2 focus-within:ring-offset-gray-100">
+									<div class="relative group aspect-h-7 aspect-w-10 w-full overflow-hidden rounded-lg bg-black/50 focus-within:ring-2 focus-within:ring-nbpurple-500 focus-within:ring-offset-2 focus-within:ring-offset-nbpurple-100">
 										<!-- Loading placeholders -->
 										<template x-if="!file.loaded && file.mime.startsWith('image/') && !file.name.endsWith('.gif')">
 											<svg class="absolute inset-0 pointer-events-none object-cover group-hover:opacity-75 h-full w-full text-nbpurple-400 animate-pulse" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -1173,11 +1173,11 @@ HTML;
 										<!-- /Loading placeholders -->
 
 										<!-- Media actions -->
-										<div x-cloak x-show="showMediaActions" @click.outside="showMediaActions = false || fileStore.deleteConfirmation.isOpen || fileStore.shareMedia.isOpen || fileStore.moveToFolder.isOpen" class="absolute inset-0 object-contain bg-black/80 py-1 px-3 sm:py-2 z-10 flex flex-col">
+										<div x-cloak x-show="showMediaActions" @click.outside="showMediaActions = false || fileStore.deleteConfirmation.isOpen || fileStore.shareMedia.isOpen || fileStore.moveToFolder.isOpen" class="absolute inset-0 object-contain bg-black/80 py-1 px-3 sm:py-2 z-[9] flex flex-col">
 											<div class="m-auto w-5/6 grid gap-1 grid-cols-3 place-items-center">
 												<!-- Buttons -->
 												<!-- Delete button -->
-												<button x-data="{deleteClick: false}" @click="fileStore.deleteConfirmation.open(file.id)" class="p-1 bg-nbpurple-600/10 text-white rounded-md hover:bg-nbpurple-700/10 focus:outline-none focus:ring-2 focus:ring-nbpurple-500/10" aria-label="Delete media file">
+												<button x-data="{deleteClick: false}" @click="fileStore.deleteConfirmation.open(file.id)" class="p-1 bg-nbpurple-600/10 text-nbpurple-50 rounded-md hover:bg-nbpurple-700/10 focus:outline-none focus:ring-2 focus:ring-nbpurple-500/10" aria-label="Delete media file">
 													<svg x-show="!deleteClick" class="max-h-11 w-full inline-block" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true" x-transition:enter="transition-opacity duration-500" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100">
 														<path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
 													</svg>
@@ -1186,7 +1186,7 @@ HTML;
 													</svg>
 												</button>
 												<!-- Share button -->
-												<button x-cloak x-show="profileStore.profileInfo.isShareEligible" x-data="{shareClick: false}" @click="fileStore.shareMedia.open(file.id)" class="p-1 bg-nbpurple-600/10 text-white rounded-md hover:bg-nbpurple-700/10 focus:outline-none focus:ring-2 focus:ring-nbpurple-500/10" aria-label="Share media file">
+												<button x-cloak x-show="profileStore.profileInfo.isShareEligible" x-data="{shareClick: false}" @click="fileStore.shareMedia.open(file.id)" class="p-1 bg-nbpurple-600/10 text-nbpurple-50 rounded-md hover:bg-nbpurple-700/10 focus:outline-none focus:ring-2 focus:ring-nbpurple-500/10" aria-label="Share media file">
 													<svg x-show="!shareClick" class="max-h-11 w-full inline-block" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true" x-transition:enter="transition-opacity duration-500" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100">
 														<path stroke-linecap="round" stroke-linejoin="round" d="M7.5 7.5h-.75A2.25 2.25 0 0 0 4.5 9.75v7.5a2.25 2.25 0 0 0 2.25 2.25h7.5a2.25 2.25 0 0 0 2.25-2.25v-7.5a2.25 2.25 0 0 0-2.25-2.25h-.75m0-3-3-3m0 0-3 3m3-3v11.25m6-2.25h.75a2.25 2.25 0 0 1 2.25 2.25v7.5a2.25 2.25 0 0 1-2.25 2.25h-7.5a2.25 2.25 0 0 1-2.25-2.25v-.75" />
 													</svg>
@@ -1195,7 +1195,7 @@ HTML;
 													</svg>
 												</button>
 												<!-- Move button -->
-												<button x-data="{moveClick: false}" @click="fileStore.moveToFolder.open(file.id)" class="p-1 bg-nbpurple-600/10 text-white rounded-md hover:bg-nbpurple-700/10 focus:outline-none focus:ring-2 focus:ring-nbpurple-500/10" aria-label="Move media file to folder">
+												<button x-data="{moveClick: false}" @click="fileStore.moveToFolder.open(file.id)" class="p-1 bg-nbpurple-600/10 text-nbpurple-50 rounded-md hover:bg-nbpurple-700/10 focus:outline-none focus:ring-2 focus:ring-nbpurple-500/10" aria-label="Move media file to folder">
 													<svg x-show="!moveClick" class="max-h-11 w-full inline-block" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true" x-transition:enter="transition-opacity duration-500" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100">
 														<path stroke-linecap="round" stroke-linejoin="round" d="M2 9V5a2 2 0 0 1 2-2h3.9a2 2 0 0 1 1.69.9l.81 1.2a2 2 0 0 0 1.67.9H20a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-1" />
 														<path stroke-linecap="round" stroke-linejoin="round" d="M2 13h10" />
@@ -1206,7 +1206,7 @@ HTML;
 													</svg>
 												</button>
 												<!-- Copy link -->
-												<button x-data="{copyClick: false}" @click="fileStore.copyUrlToClipboard(file.url); copyClick = true; setTimeout(() => copyClick = false, 2000); showToast = true" class="p-1 sm:hidden bg-nbpurple-600/10 text-white rounded-md hover:bg-nbpurple-700/10 focus:outline-none focus:ring-2 focus:ring-nbpurple-500/10" aria-label="Copy image URL to clipboard">
+												<button x-data="{copyClick: false}" @click="fileStore.copyUrlToClipboard(file.url); copyClick = true; setTimeout(() => copyClick = false, 2000); showToast = true" class="p-1 sm:hidden bg-nbpurple-600/10 text-nbpurple-50 rounded-md hover:bg-nbpurple-700/10 focus:outline-none focus:ring-2 focus:ring-nbpurple-500/10" aria-label="Copy image URL to clipboard">
 													<svg x-show="!copyClick" class="max-h-11 w-full inline-block" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true" x-transition:enter="transition-opacity duration-500" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100">
 														<path stroke-linecap="round" stroke-linejoin="round" d="M11.35 3.836c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 0 0 .75-.75 2.25 2.25 0 0 0-.1-.664m-5.8 0A2.251 2.251 0 0 1 13.5 2.25H15c1.012 0 1.867.668 2.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m8.9-4.414c.376.023.75.05 1.124.08 1.131.094 1.976 1.057 1.976 2.192V16.5A2.25 2.25 0 0 1 18 18.75h-2.25m-7.5-10.5H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V18.75m-7.5-10.5h6.375c.621 0 1.125.504 1.125 1.125v9.375m-8.25-3 1.5 1.5 3-3.75" />
 													</svg>
@@ -1375,12 +1375,12 @@ HTML;
 
 		<!-- Delete confirmation window -->
 		<div x-cloak class="relative z-50" aria-labelledby="modal-title" role="dialog" aria-modal="true">
-			<div x-show="fileStore.deleteConfirmation.isOpen" x-transition:enter="ease-out duration-300" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" x-transition:leave="ease-in duration-200" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0" class="fixed inset-0 bg-nbpurple-500 bg-opacity-75 transition-opacity"></div>
+			<div x-show="fileStore.deleteConfirmation.isOpen" x-transition:enter="ease-out duration-300" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" x-transition:leave="ease-in duration-200" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0" class="fixed inset-0 bg-nbpurple-900 bg-opacity-75 transition-opacity"></div>
 
 			<div x-show="fileStore.deleteConfirmation.isOpen" x-transition:enter="ease-out duration-300" x-transition:enter-start="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95" x-transition:enter-end="opacity-100 translate-y-0 sm:scale-100" x-transition:leave="ease-in duration-200" x-transition:leave-start="opacity-100 translate-y-0 sm:scale-100" x-transition:leave-end="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95" class="fixed inset-0 z-50 overflow-y-auto">
 				<div class="flex min-h-screen items-end justify-center p-4 text-center sm:items-center sm:p-0">
-					<div @click.outside="!fileStore.deleteConfirmation.isLoading && fileStore.deleteConfirmation.close(true)" @keydown.escape="!fileStore.deleteConfirmation.isLoading && fileStore.deleteConfirmation.close(true)" class="relative transform overflow-hidden rounded-lg bg-nbpurple-50 text-left shadow-xl transition-all mb-24 sm:my-8 sm:w-full sm:max-w-lg">
-						<div class="bg-nbpurple-50 px-4 pb-4 pt-5 sm:p-6 sm:pb-4">
+					<div @click.outside="!fileStore.deleteConfirmation.isLoading && fileStore.deleteConfirmation.close(true)" @keydown.escape="!fileStore.deleteConfirmation.isLoading && fileStore.deleteConfirmation.close(true)" class="relative transform overflow-hidden rounded-lg bg-nbpurple-700 text-left shadow-xl transition-all mb-24 sm:my-8 sm:w-full sm:max-w-lg">
+						<div class="bg-nbpurple-700 px-4 pb-4 pt-5 sm:p-6 sm:pb-4">
 							<div class="sm:flex sm:items-start">
 								<div class="mx-auto flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-red-100 sm:mx-0 sm:h-10 sm:w-10">
 									<svg class="size-6 text-red-600" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
@@ -1388,14 +1388,14 @@ HTML;
 									</svg>
 								</div>
 								<div class="mt-3 text-center sm:ml-4 sm:mt-0 sm:text-left">
-									<h3 class="text-base font-semibold leading-6 text-gray-900" id="modal-title">Confirm Delete</h3>
+									<h3 class="text-base font-semibold leading-6 text-nbpurple-50" id="modal-title">Confirm Delete</h3>
 									<div class="mt-2">
-										<p class="text-sm text-gray-500">
+										<p class="text-sm text-nbpurple-100">
 											Are you sure you want to delete the selected <span class="font-bold" x-text="fileStore.deleteConfirmation.selectedFiles.length"></span> file(s)? This action cannot be undone.
 										</p>
 										<!-- List of selected media -->
 										<div class="flex items-center justify-center">
-											<div class="isolate flex -space-x-2 overflow-hidden pl-3 py-2">
+											<div class="isolate flex -space-x-2 overflow-hidden pl-3 pr-1 py-2">
 												<template x-for="(file, index) in (fileStore.deleteConfirmation.selectedFiles.length > 5 ? fileStore.deleteConfirmation.selectedFiles.slice(0, 5) : fileStore.deleteConfirmation.selectedFiles)" :key="file.id">
 													<div>
 														<img x-show="file.mime.startsWith('image/')" :class="'relative z-' + (50 - index * 10)" class="inline-block w-12 h-12 object-cover rounded-full ring-2 ring-white" :src="file.thumb" :alt="file.name">
@@ -1422,13 +1422,13 @@ HTML;
 										<!-- /List of selected media -->
 										<!-- Nostr shared warning -->
 										<div x-show="fileStore.deleteConfirmation.selectedFiles.some(file => file.associated_notes)" class="mt-3">
-											<p class="text-sm text-red-500">Note: Some of the selected media have been shared on Nostr.</p>
+											<p class="text-sm text-red-100">Note: Some of the selected media have been shared on Nostr.</p>
 											<!-- TODO: List of shared notes, ability to see them, and delete them -->
 										</div>
 										<!-- Nostr shared warning -->
 										<!-- Notice about deletion -->
 										<div class="mt-3">
-											<p class="text-sm text-red-500">Note: Deleting media won't immediately remove it from browser/client caches, other proxies, especially if it has been already publicly shared.</p>
+											<p class="text-sm text-red-100">Note: Deleting media won't immediately remove it from browser/client caches, other proxies, especially if it has been already publicly shared.</p>
 										</div>
 										<!-- Error message -->
 										<div x-cloak x-show="fileStore.deleteConfirmation.isError" class="mt-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
@@ -1439,7 +1439,7 @@ HTML;
 								</div>
 							</div>
 						</div>
-						<div class="bg-nbpurple-50 px-4 py-3 gap-3 flex flex-row-reverse sm:px-6">
+						<div class="bg-nbpurple-700 px-4 py-3 gap-3 flex flex-row-reverse sm:px-6">
 							<button :disabled="fileStore.deleteConfirmation.isLoading" @click="fileStore.confirmDelete()" type="button" class="mt-3 inline-flex w-full justify-center rounded-md bg-red-600 px-4 py-2 text-base font-medium text-white shadow-sm hover:bg-red-500 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">
 								<svg x-show="fileStore.deleteConfirmation.isLoading" class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
 									<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
@@ -1447,7 +1447,7 @@ HTML;
 								</svg>
 								Delete
 							</button>
-							<button :disabled="fileStore.deleteConfirmation.isLoading" @click="fileStore.deleteConfirmation.close(true)" type="button" class="mt-3 inline-flex w-full justify-center rounded-md bg-white px-4 py-2 text-base font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-nbpurple-500 focus:ring-offset-2 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">Cancel</button>
+							<button :disabled="fileStore.deleteConfirmation.isLoading" @click="fileStore.deleteConfirmation.close(true)" type="button" class="mt-3 inline-flex w-full justify-center rounded-md bg-nbpurple-200 px-4 py-2 text-base font-medium text-nbpurple-700 shadow-sm hover:bg-nbpurple-50 focus:outline-none focus:ring-2 focus:ring-nbpurple-500 focus:ring-offset-2 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">Cancel</button>
 						</div>
 					</div>
 				</div>
@@ -1457,24 +1457,24 @@ HTML;
 		<!-- Share window -->
 		<template x-if="profileStore.profileInfo.isShareEligible">
 			<div x-cloak class="relative z-50" aria-labelledby="modal-title" role="dialog" aria-modal="true">
-				<div x-show="fileStore.shareMedia.isOpen" x-transition:enter="ease-out duration-300" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" x-transition:leave="ease-in duration-200" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0" class="fixed inset-0 bg-nbpurple-500 bg-opacity-75 transition-opacity"></div>
+				<div x-show="fileStore.shareMedia.isOpen" x-transition:enter="ease-out duration-300" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" x-transition:leave="ease-in duration-200" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0" class="fixed inset-0 bg-nbpurple-900 bg-opacity-75 transition-opacity"></div>
 
 				<div x-show="fileStore.shareMedia.isOpen" x-transition:enter="ease-out duration-300" x-transition:enter-start="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95" x-transition:enter-end="opacity-100 translate-y-0 sm:scale-100" x-transition:leave="ease-in duration-200" x-transition:leave-start="opacity-100 translate-y-0 sm:scale-100" x-transition:leave-end="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95" class="fixed inset-0 z-50 overflow-y-auto">
 					<div class="flex min-h-screen items-end justify-center p-4 text-center sm:items-center sm:p-0">
-						<div @click.outside="!fileStore.shareMedia.isLoading && fileStore.shareMedia.close(true)" @keydown.escape="!fileStore.shareMedia.isLoading && fileStore.shareMedia.close(true)" class="relative transform overflow-hidden rounded-lg bg-nbpurple-50 text-left shadow-xl transition-all mb-24 sm:my-8 w-full max-w-lg">
-							<div class="bg-nbpurple-50 px-4 pb-4 pt-5 sm:p-6 sm:pb-4">
+						<div @click.outside="!fileStore.shareMedia.isLoading && fileStore.shareMedia.close(true)" @keydown.escape="!fileStore.shareMedia.isLoading && fileStore.shareMedia.close(true)" class="relative transform overflow-hidden rounded-lg bg-nbpurple-700 text-left shadow-xl transition-all mb-24 sm:my-8 w-full max-w-lg">
+							<div class="bg-nbpurple-700 px-4 pb-4 pt-5 sm:p-6 sm:pb-4">
 								<div class="sm:flex sm:items-start">
 									<div class="mx-auto flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-nbpurple-100 sm:mx-0 sm:h-10 sm:w-10">
-										<svg class="size-6 text-nbpurple-600" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+										<svg class="size-6 text-nbpurple-900" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
 											<path stroke-linecap="round" stroke-linejoin="round" d="M7.5 7.5h-.75A2.25 2.25 0 0 0 4.5 9.75v7.5a2.25 2.25 0 0 0 2.25 2.25h7.5a2.25 2.25 0 0 0 2.25-2.25v-7.5a2.25 2.25 0 0 0-2.25-2.25h-.75m0-3-3-3m0 0-3 3m3-3v11.25m6-2.25h.75a2.25 2.25 0 0 1 2.25 2.25v7.5a2.25 2.25 0 0 1-2.25 2.25h-7.5a2.25 2.25 0 0 1-2.25-2.25v-.75" />
 										</svg>
 									</div>
 									<div class="mt-3 text-center sm:ml-4 sm:mt-0 sm:text-left">
-										<h3 class="text-base font-semibold leading-6 text-gray-900" id="modal-title">Share Media</h3>
+										<h3 class="text-base font-semibold leading-6 text-nbpurple-50" id="modal-title">Share Media</h3>
 										<div class="mt-2">
 											<!-- List of selected media -->
 											<div class="flex items-center justify-center">
-												<div class="isolate flex -space-x-2 overflow-hidden pl-3 py-2">
+												<div class="isolate flex -space-x-2 overflow-hidden pl-3 pr-1 py-2">
 													<template x-for="(file, index) in (fileStore.shareMedia.selectedFiles.length > 5 ? fileStore.shareMedia.selectedFiles.slice(0, 5) : fileStore.shareMedia.selectedFiles)" :key="file.id">
 														<div>
 															<img x-show="file.mime.startsWith('image/')" :class="'relative z-' + (50 - index * 10)" class="inline-block w-12 h-12 object-cover rounded-full ring-2 ring-white" :src="file.thumb" :alt="file.name">
@@ -1526,8 +1526,8 @@ HTML;
 														<span aria-hidden="true" :class="enabled ? 'translate-x-5' : 'translate-x-0'" class="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-nbpurple-50 shadow ring-0 transition duration-200 ease-in-out"></span>
 													</button>
 													<span class="ml-4 text-sm" id="creator-page-share-single">
-														<span class="font-medium text-nbpurple-900">Share on Creators Page</span>
-														<a x-show="!supported" href="/plans/" class="ml-2 text-nbpurple-600 text-xs hover:underline">
+														<span class="font-medium text-nbpurple-100">Share on Creators Page</span>
+														<a x-show="!supported" href="/plans/" class="ml-2 text-nbpurple-300 text-xs hover:underline">
 															Upgrade to Creator+
 														</a>
 													</span>
@@ -1554,7 +1554,7 @@ HTML;
 									</div>
 								</div>
 							</div>
-							<div class="bg-nbpurple-50 px-4 py-3 gap-3 justify-center sm:justify-normal flex flex-row-reverse sm:px-6">
+							<div class="bg-nbpurple-700 px-4 py-3 gap-3 justify-center sm:justify-normal flex flex-row-reverse sm:px-6">
 								<button @click="fileStore.shareMedia.close()" :disabled="fileStore.shareMedia.isLoading" type="button" class="mt-3 inline-flex w-1/2 justify-center rounded-md bg-nbpurple-500 px-4 py-2 text-base font-medium text-nbpurple-50 shadow-sm hover:bg-nbpurple-200 focus:outline-none focus:ring-2 focus:ring-nbpurple-500 focus:ring-offset-2 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">
 									<svg x-show="fileStore.shareMedia.isLoading" class="animate-spin -ml-1 mr-3 h-5 w-5 text-nbpurple-50" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
 										<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
@@ -1575,15 +1575,15 @@ HTML;
 		<!-- Move to folder modal -->
 		<div x-cloak class="relative z-50" aria-labelledby="modal-title" role="dialog" aria-modal="true">
 			<!-- Background overlay -->
-			<div x-show="fileStore.moveToFolder.isOpen" x-transition:enter="ease-out duration-300" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" x-transition:leave="ease-in duration-200" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0" class="fixed inset-0 bg-nbpurple-500 bg-opacity-75 transition-opacity"></div>
+			<div x-show="fileStore.moveToFolder.isOpen" x-transition:enter="ease-out duration-300" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" x-transition:leave="ease-in duration-200" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0" class="fixed inset-0 bg-nbpurple-900 bg-opacity-75 transition-opacity"></div>
 			<!-- Modal content -->
 			<div x-show="fileStore.moveToFolder.isOpen" x-transition:enter="ease-out duration-300" x-transition:enter-start="opacity-0 translate-y-0 sm:-translate-y-4" x-transition:enter-end="opacity-100 translate-y-0 sm:translate-y-0 sm:scale-100" x-transition:leave="ease-in duration-200" x-transition:leave-start="opacity-100 translate-y-0 sm:translate-y-0 sm:scale-100" x-transition:leave-end="opacity-0 translate-y-0 sm:-translate-y-4 sm:scale-95" class="fixed inset-0 z-50 overflow-y-auto">
 				<div class="flex min-h-screen items-end justify-center p-4 text-center sm:items-center sm:p-0">
-					<div @click.outside="!fileStore.moveToFolder.isLoading && fileStore.moveToFolder.close(true)" @keydown.escape="!fileStore.moveToFolder.isLoading && fileStore.moveToFolder.close(true)" class="relative transform overflow-hidden rounded-lg bg-nbpurple-50 text-left shadow-xl transition-all min-h-[50vh] max-h-[80vh] my-8 mb-24 w-full sm:max-w-lg flex flex-col">
-						<div class="bg-nbpurple-50 px-4 pt-5 pb-4 sm:p-6 sm:pb-4 overflow-y-auto flex-grow">
+					<div @click.outside="!fileStore.moveToFolder.isLoading && fileStore.moveToFolder.close(true)" @keydown.escape="!fileStore.moveToFolder.isLoading && fileStore.moveToFolder.close(true)" class="relative transform overflow-hidden rounded-lg bg-nbpurple-700 text-left shadow-xl transition-all min-h-[50vh] max-h-[80vh] my-8 mb-24 w-full sm:max-w-lg flex flex-col">
+						<div class="bg-nbpurple-700 px-4 pt-5 pb-4 sm:p-6 sm:pb-4 overflow-y-auto flex-grow">
 							<!-- List of selected media -->
 							<div class="flex items-center justify-center">
-								<div class="isolate flex -space-x-2 overflow-hidden pl-3 py-2">
+								<div class="isolate flex -space-x-2 overflow-hidden pl-3 pr-1 py-2">
 									<template x-for="(file, index) in (fileStore.moveToFolder.selectedFiles.length > 5 ? fileStore.moveToFolder.selectedFiles.slice(0, 5) : fileStore.moveToFolder.selectedFiles)" :key="file.id">
 										<div>
 											<img x-show="file.mime.startsWith('image/')" :class="'relative z-' + (50 - index * 10)" class="inline-block w-12 h-12 object-cover rounded-full ring-2 ring-white" :src="file.thumb" :alt="file.name">
@@ -1611,7 +1611,7 @@ HTML;
 							<div class="sm:flex sm:items-start">
 								<div class="mt-3 text-center sm:mt-0 sm:text-left w-full">
 									<div class="mt-2 flex items-center">
-										<label for="combobox" class="block text-sm font-medium leading-6 text-gray-900 mr-2">Select Folder</label>
+										<label for="combobox" class="block text-sm font-medium leading-6 text-nbpurple-50 mr-2">Select Folder</label>
 										<div class="relative w-full z-auto">
 											<input id="combobox" type="text" x-model="fileStore.moveToFolder.selectedFolderName" @input="fileStore.moveToFolder.searchTerm = $event.target.value; fileStore.moveToFolder.isDropdownOpen = true" @click="fileStore.moveToFolder.toggleDropdown()" @click.away="fileStore.moveToFolder.isDropdownOpen = false" class="w-full rounded-md border-0 bg-nbpurple-50 py-1.5 pl-3 pr-12 text-nbpurple-900 shadow-sm ring-1 ring-inset ring-nbpurple-300 focus:ring-2 focus:ring-inset focus:ring-nbpurple-600 sm:text-sm sm:leading-6" role="combobox" aria-controls="options" :aria-expanded="fileStore.moveToFolder.isDropdownOpen.toString()">
 											<button type="button" @click.stop="fileStore.moveToFolder.toggleDropdown()" class="absolute inset-y-0 right-0 flex items-center rounded-r-md px-2 focus:outline-none">
@@ -1638,7 +1638,7 @@ HTML;
 								</div>
 							</div>
 						</div>
-						<div class="bg-nbpurple-50 px-4 py-3 sm:px-6 sm:flex sm:flex-wrap sm:justify-end">
+						<div class="bg-nbpurple-700 px-4 py-3 sm:px-6 sm:flex sm:flex-wrap sm:justify-end">
 							<button x-data="{
                     folderSelected: false,
                     init() {
@@ -1648,10 +1648,10 @@ HTML;
                     },
                     getSelectedCount() { return fileStore.moveToFolder.selectedFiles.length; },
                     isValidFolderSelected() { return fileStore.moveToFolder.destinationFolderId !== null; }
-                  }" x-show="!fileStore.moveToFolder.isLoading" @click="fileStore.moveToFolderConfirm()" type="button" :disabled="!folderSelected || fileStore.moveToFolder.isLoading" :class="{ 'opacity-50 cursor-not-allowed': !folderSelected }" class="inline-flex justify-center rounded-md bg-nbpurple-600 px-4 py-2 text-base font-medium text-nbpurple-50 shadow-sm hover:bg-nbpurple-700 focus:outline-none focus:ring-2 focus:ring-nbpurple-500 focus:ring-offset-2 sm:order-1 sm:ml-3 sm:w-auto sm:text-sm">
+                  }" x-show="!fileStore.moveToFolder.isLoading" @click="fileStore.moveToFolderConfirm()" type="button" :disabled="!folderSelected || fileStore.moveToFolder.isLoading" :class="{ 'opacity-50 cursor-not-allowed': !folderSelected }" class="inline-flex justify-center rounded-md bg-nbpurple-500 px-4 py-2 text-base font-medium text-nbpurple-50 shadow-sm hover:bg-nbpurple-600 focus:outline-none focus:ring-2 focus:ring-nbpurple-500 focus:ring-offset-2 sm:order-1 sm:ml-3 sm:w-auto sm:text-sm">
 								Move&nbsp;<span x-text="getSelectedCount()"></span>&nbsp;file(s) to folder
 							</button>
-							<button x-show="fileStore.moveToFolder.isLoading" type="button" class="inline-flex justify-center rounded-md bg-nbpurple-600 px-4 py-2 text-base font-medium text-nbpurple-50 shadow-sm hover:bg-nbpurple-700 focus:outline-none focus:ring-2 focus:ring-nbpurple-500 focus:ring-offset-2 sm:order-1 sm:ml-3 sm:w-auto sm:text-sm" disabled>
+							<button x-show="fileStore.moveToFolder.isLoading" type="button" class="inline-flex justify-center rounded-md bg-nbpurple-600 px-4 py-2 text-base font-medium text-nbpurple-50 shadow-sm hover:bg-nbpurple-600 focus:outline-none focus:ring-2 focus:ring-nbpurple-500 focus:ring-offset-2 sm:order-1 sm:ml-3 sm:w-auto sm:text-sm" disabled>
 								<svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-nbpurple-50" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
 									<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
 									<path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
@@ -1798,27 +1798,27 @@ HTML;
 
 		<!-- Folder deletion confirmation modal -->
 		<div x-cloak class="relative z-50" aria-labelledby="modal-title" role="dialog" aria-modal="true">
-			<div x-show="menuStore.showDeleteFolderModal" x-transition:enter="ease-out duration-300" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" x-transition:leave="ease-in duration-200" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0" class="fixed inset-0 bg-nbpurple-500 bg-opacity-75 transition-opacity"></div>
+			<div x-show="menuStore.showDeleteFolderModal" x-transition:enter="ease-out duration-300" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" x-transition:leave="ease-in duration-200" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0" class="fixed inset-0 bg-nbpurple-900 bg-opacity-75 transition-opacity"></div>
 
 			<div x-show="menuStore.showDeleteFolderModal" x-transition:enter="ease-out duration-300" x-transition:enter-start="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95" x-transition:enter-end="opacity-100 translate-y-0 sm:scale-100" x-transition:leave="ease-in duration-200" x-transition:leave-start="opacity-100 translate-y-0 sm:scale-100" x-transition:leave-end="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95" class="fixed inset-0 z-50 overflow-y-auto">
 				<div class="flex min-h-screen items-end justify-center p-4 text-center sm:items-center sm:p-0">
-					<div @click.outside="!menuStore.isDeletingFolders && menuStore.closeDeleteFolderModal()" @keydown.escape="!menuStore.isDeletingFolders && menuStore.closeDeleteFolderModal()" class="relative transform overflow-hidden rounded-lg bg-nbpurple-50 text-left shadow-xl transition-all mb-24 sm:my-8 sm:w-full sm:max-w-lg">
-						<div class="bg-nbpurple-50 px-4 pb-4 pt-5 sm:p-6 sm:pb-4">
+					<div @click.outside="!menuStore.isDeletingFolders && menuStore.closeDeleteFolderModal()" @keydown.escape="!menuStore.isDeletingFolders && menuStore.closeDeleteFolderModal()" class="relative transform overflow-hidden rounded-lg bg-nbpurple-700 text-left shadow-xl transition-all mb-24 sm:my-8 sm:w-full sm:max-w-lg">
+						<div class="bg-nbpurple-700 px-4 pb-4 pt-5 sm:p-6 sm:pb-4">
 							<div class="sm:flex sm:items-start">
-								<div class="mx-auto flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-red-100 sm:mx-0 sm:h-10 sm:w-10">
-									<svg class="size-6 text-red-600" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+								<div class="mx-auto flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-red-200 sm:mx-0 sm:h-10 sm:w-10">
+									<svg class="size-6 text-red-700" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
 										<path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
 									</svg>
 								</div>
 								<div class="mt-3 text-center sm:ml-4 sm:mt-0 sm:text-left">
-									<h3 class="text-base font-semibold leading-6 text-gray-900" id="modal-title">Confirm Delete</h3>
+									<h3 class="text-base font-semibold leading-6 text-nbpurple-50" id="modal-title">Confirm Delete</h3>
 									<div class="mt-2">
-										<p class="text-sm text-gray-500">
+										<p class="text-sm text-nbpurple-100">
 											Are you sure you want to delete the selected <span class="font-bold" x-text="menuStore.foldersToDeleteIds.length"></span> folder(s)? This action cannot be undone. <span class="font-bold">Deleting a folder will NOT delete the media inside it, and will move them to the main folder instead.</span>
 										</p>
 										<!-- List of selected folders -->
 										<div class="mt-4">
-											<ul role="list" class="list-disc space-y-2 pl-5 text-sm">
+											<ul role="list" class="list-disc space-y-2 pl-5 text-sm text-nbpurple-50">
 												<template x-for="folder in menuStore.foldersToDelete">
 													<li x-text="folder.name" class="truncate"></li>
 												</template>
@@ -1829,15 +1829,15 @@ HTML;
 								</div>
 							</div>
 						</div>
-						<div class="bg-nbpurple-50 px-4 py-3 gap-3 flex flex-row-reverse sm:px-6">
+						<div class="bg-nbpurple-700 px-4 py-3 gap-3 flex flex-row-reverse sm:px-6">
 							<button :disabled="menuStore.isDeletingFolders" @click="menuStore.deleteFoldersConfirm()" type="button" class="mt-3 inline-flex w-full justify-center rounded-md bg-red-600 px-4 py-2 text-base font-medium text-white shadow-sm hover:bg-red-500 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">
-								<svg x-show="menuStore.isDeletingFolders" class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+								<svg x-show="menuStore.isDeletingFolders" class="animate-spin -ml-1 mr-3 h-5 w-5 text-nbpurple-50" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
 									<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
 									<path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
 								</svg>
 								Delete
 							</button>
-							<button :disabled="menuStore.isDeletingFolders" @click="menuStore.closeDeleteFolderModal()" type="button" class="mt-3 inline-flex w-full justify-center rounded-md bg-white px-4 py-2 text-base font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-nbpurple-500 focus:ring-offset-2 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">Cancel</button>
+							<button :disabled="menuStore.isDeletingFolders" @click="menuStore.closeDeleteFolderModal()" type="button" class="mt-3 inline-flex w-full justify-center rounded-md bg-nbpurple-50 px-4 py-2 text-base font-medium text-nbpurple-700 shadow-sm hover:bg-nbpurple-50 focus:outline-none focus:ring-2 focus:ring-nbpurple-500 focus:ring-offset-2 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">Cancel</button>
 						</div>
 					</div>
 				</div>
@@ -1847,14 +1847,14 @@ HTML;
 		<!-- Nostr Share modal -->
 		<template x-if="profileStore.profileInfo.isNostrShareEligible">
 			<div x-cloak class="relative z-50" aria-labelledby="modal-title" role="dialog" aria-modal="true">
-				<div x-show="nostrStore.share.isOpen" x-transition:enter="ease-out duration-300" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" x-transition:leave="ease-in duration-200" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0" class="fixed inset-0 bg-nbpurple-500 bg-opacity-75 transition-opacity"></div>
+				<div x-show="nostrStore.share.isOpen" x-transition:enter="ease-out duration-300" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" x-transition:leave="ease-in duration-200" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0" class="fixed inset-0 bg-nbpurple-900 bg-opacity-75 transition-opacity"></div>
 
 				<div x-show="nostrStore.share.isOpen" x-transition:enter="ease-out duration-300" x-transition:enter-start="opacity-0 translate-y-4" x-transition:enter-end="opacity-100 translate-y-0" x-transition:leave="ease-in duration-200" x-transition:leave-start="opacity-100 translate-y-0" x-transition:leave-end="opacity-0 translate-y-4" class="fixed inset-0 z-50 overflow-y-auto">
 					<div class="flex min-h-screen items-end justify-center p-4 text-center">
-						<div @click.outside="!nostrStore.share.isLoading && nostrStore.share.close(true)" @keydown.escape="!nostrStore.share.isLoading && nostrStore.share.close(true)" class="relative transform overflow-hidden rounded-lg bg-nostrpurple-50 text-left shadow-xl transition-all mb-24 w-full max-w-xl">
-							<div class="bg-nostrpurple-50 px-4 pb-4 pt-5">
+						<div @click.outside="!nostrStore.share.isLoading && nostrStore.share.close(true)" @keydown.escape="!nostrStore.share.isLoading && nostrStore.share.close(true)" class="relative transform overflow-hidden rounded-lg bg-nostrpurple-700 text-left shadow-xl transition-all mb-24 w-full max-w-xl">
+							<div class="bg-nostrpurple-700 px-4 pb-4 pt-5">
 								<div class="">
-									<div class="mx-auto flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-nostrpurple-100">
+									<div class="mx-auto flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-nostrpurple-200">
 										<svg class="size-8" fill="none" viewBox="0 0 256 256" stroke-width="1.5" stroke="currentColor">
 											<circle cx="137.9" cy="99" fill="#fff" r="12.1" />
 											<path d="M210.8 115.9c0-47.3-27.7-68.7-64.4-68.7-16.4 0-31 4.4-42.4 12.5-3.8 2.7-9 .1-9-4.5 0-3.1-2.5-5.7-5.7-5.7H57.7c-3.1 0-5.7 2.5-5.7 5.7v144c0 3.1 2.5 5.7 5.7 5.7h33.7c3.1 0 5.6-2.5 5.6-5.6v-8.4c0-62.8-33.2-109.8-.4-116 30-5.7 64.1-3 64.5 20.1 0 2 .3 8 8.6 11.2 5 2 12.6 2.6 22.6 2.4 0 0 9.1-.7 9.1 8.5 0 11.5-20.4 10.7-20.4 10.7-6.7.3-22.6-1.5-31.7 1.2-4.8 1.5-9 4.2-11.5 9.1-4.2 8.3-6.2 26.5-6.5 45.5v15.5c0 3.1 2.5 5.7 5.7 5.7h68c3.1 0 5.7-2.5 5.7-5.7v-83.2z" fill="#fff" />
@@ -1862,7 +1862,7 @@ HTML;
 										</svg>
 									</div>
 									<div class="w-full mt-3 text-center">
-										<h3 class="text-base font-semibold leading-6 text-gray-900" id="modal-title">Share on Nostr</h3>
+										<h3 class="text-base font-semibold leading-6 text-nbpurple-50" id="modal-title">Share on Nostr</h3>
 										<div class="mt-2">
 											<!-- Profile -->
 											<div class="group block flex-shrink-0">
@@ -1871,10 +1871,10 @@ HTML;
 														<img class="size-9 rounded-full object-cover" :src="profileStore.profileInfo.pfpUrl" :alt="profileStore.profileInfo.name">
 													</div>
 													<div class="ml-3 text-left overflow-hidden">
-														<p class="text-sm font-medium text-nostrpurple-700 group-hover:text-nostrpurple-900 truncate">
+														<p class="text-sm font-medium text-nostrpurple-100 group-hover:text-nostrpurple-200 truncate">
 															<span class="inline-block max-w-full truncate" x-text="profileStore.profileInfo.name">Anon</span>
 														</p>
-														<p class="text-xs font-medium text-nostrpurple-500 group-hover:text-nostrpurple-700 truncate">
+														<p class="text-xs font-medium text-nostrpurple-50 group-hover:text-nostrpurple-100 truncate">
 															<span class="inline-block max-w-full truncate" x-text="nostrStore.share.isOpen && abbreviateBech32(await nostrStore.nostrGetBech32Npub())">npub1...</span>
 														</p>
 													</div>
@@ -1884,7 +1884,7 @@ HTML;
 											<div class="w-full">
 												<label for="nostr-comment" class="sr-only">Add your note</label>
 												<div class="mt-2">
-													<textarea x-model="nostrStore.share.note" rows="4" name="nostr-comment" id="nostr-comment" class="block w-full rounded-md border-0 py-1.5 text-nostrpurple-900 shadow-sm ring-1 ring-inset ring-nostrpurple-300 placeholder:text-nostrpurple-400 focus:ring-2 focus:ring-inset focus:ring-nostrpurple-600"></textarea>
+													<textarea x-model="nostrStore.share.note" rows="4" name="nostr-comment" id="nostr-comment" class="block w-full rounded-md border-0 py-1.5 bg-nostrpurple-600 text-nostrpurple-50 shadow-sm ring-1 ring-inset ring-nostrpurple-300 placeholder:text-nostrpurple-400 focus:ring-2 focus:ring-inset focus:ring-nostrpurple-600"></textarea>
 												</div>
 											</div>
 											<!-- List of selected media -->
@@ -1920,7 +1920,7 @@ HTML;
 									</div>
 								</div>
 							</div>
-							<div class="bg-nostrpurple-50 -mt-2 px-4 pb-3 pt-0 gap-3 flex flex-row-reverse">
+							<div class="bg-nostrpurple-700 -mt-2 px-4 pb-3 pt-0 gap-3 flex flex-row-reverse">
 								<button :disabled="nostrStore.share.isLoading || nostrStore.share.isCriticalError" @click="await nostrStore.share.send()" type="button" class="mt-3 inline-flex w-full justify-center rounded-md bg-nostrpurple-600 px-4 py-2 text-base font-medium text-nostrpurple-50 shadow-sm hover:bg-nostrpurple-500 focus:outline-none focus:ring-2 focus:ring-nostrpurple-500 focus:ring-offset-2 disabled:bg-nostrpurple-300 disabled:cursor-not-allowed">
 									<svg x-show="nostrStore.share.isLoading" class="animate-spin -ml-1 mr-3 h-5 w-5 text-nostrpurple-50" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
 										<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
@@ -1938,27 +1938,27 @@ HTML;
 
 		<!-- Logout confirmation modal -->
 		<div x-show="logoutScreen" x-cloak class="relative z-50" aria-labelledby="modal-title" role="dialog" aria-modal="true">
-			<div x-show="logoutScreen" x-transition:enter="ease-out duration-300" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" x-transition:leave="ease-in duration-200" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0" class="fixed inset-0 bg-nbpurple-500 bg-opacity-75 transition-opacity"></div>
+			<div x-show="logoutScreen" x-transition:enter="ease-out duration-300" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" x-transition:leave="ease-in duration-200" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0" class="fixed inset-0 bg-nbpurple-900 bg-opacity-75 transition-opacity"></div>
 
 			<div x-show="logoutScreen" class="fixed inset-0 z-10 w-screen overflow-y-auto">
 				<div class="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
-					<div @click.outside="logoutScreen = false" x-show="logoutScreen" x-transition:enter="ease-out duration-300" x-transition:enter-start="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95" x-transition:enter-end="opacity-100 translate-y-0 sm:scale-100" x-transition:leave="ease-in duration-200" x-transition:leave-start="opacity-100 translate-y-0 sm:scale-100" x-transition:leave-end="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95" class="relative transform overflow-hidden rounded-lg bg-white px-4 pb-4 pt-5 text-left shadow-xl transition-all mb-20 sm:my-8 sm:w-full sm:max-w-lg sm:p-6">
+					<div @click.outside="logoutScreen = false" x-show="logoutScreen" x-transition:enter="ease-out duration-300" x-transition:enter-start="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95" x-transition:enter-end="opacity-100 translate-y-0 sm:scale-100" x-transition:leave="ease-in duration-200" x-transition:leave-start="opacity-100 translate-y-0 sm:scale-100" x-transition:leave-end="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95" class="relative transform overflow-hidden rounded-lg bg-nbpurple-700 px-4 pb-4 pt-5 text-left shadow-xl transition-all mb-20 sm:my-8 sm:w-full sm:max-w-lg sm:p-6">
 						<div class="sm:flex sm:items-start">
 							<div class="mx-auto flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-red-100 sm:mx-0 sm:h-10 sm:w-10">
-								<svg class="h-6 w-6 text-red-600" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true">
+								<svg class="h-6 w-6 text-red-700" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true">
 									<path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
 								</svg>
 							</div>
 							<div class="mt-3 text-center sm:ml-4 sm:mt-0 sm:text-left">
-								<h3 class="text-base font-semibold leading-6 text-gray-900" id="modal-title">Logout</h3>
+								<h3 class="text-base font-semibold leading-6 text-nbpurple-50" id="modal-title">Logout</h3>
 								<div class="mt-2">
-									<p class="text-sm text-gray-500">Are you sure you want to logout?</p>
+									<p class="text-sm text-nbpurple-100">Are you sure you want to logout?</p>
 								</div>
 							</div>
 						</div>
 						<div class="mt-5 sm:ml-10 sm:mt-4 sm:flex sm:pl-4">
-							<a href="/functions/logout.php" class="inline-flex w-full justify-center rounded-md bg-red-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-red-500 sm:w-auto">Logout</a>
-							<button @click="logoutScreen = false" type="button" class="mt-3 inline-flex w-full justify-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 sm:ml-3 sm:mt-0 sm:w-auto">Cancel</button>
+							<a href="/functions/logout.php" class="inline-flex w-full justify-center rounded-md bg-red-700 px-3 py-2 text-sm font-semibold text-nbpurple-50 shadow-sm hover:bg-red-500 sm:w-auto">Logout</a>
+							<button @click="logoutScreen = false" type="button" class="mt-3 inline-flex w-full justify-center rounded-md bg-nbpurple-300 px-3 py-2 text-sm font-semibold text-nbpurple-900 shadow-sm ring-1 ring-inset ring-nbpurple-300 hover:bg-nbpurple-400 sm:ml-3 sm:mt-0 sm:w-auto">Cancel</button>
 						</div>
 					</div>
 				</div>
@@ -1968,7 +1968,7 @@ HTML;
 		<!-- Profile edit modal -->
 		<div class="relative z-50" aria-labelledby="slide-over-title" role="dialog" aria-modal="true">
 			<!-- Background backdrop, show/hide based on slide-over state. -->
-			<div x-cloak class="fixed inset-0 bg-nbpurple-500 bg-opacity-75 transition-opacity" x-show="profileStore.dialogOpen" x-transition:enter="ease-in-out duration-500" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" x-transition:leave="ease-in-out duration-500" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0"></div>
+			<div x-cloak class="fixed inset-0 bg-nbpurple-900 bg-opacity-75 transition-opacity" x-show="profileStore.dialogOpen" x-transition:enter="ease-in-out duration-500" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" x-transition:leave="ease-in-out duration-500" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0"></div>
 
 			<div x-cloak class="fixed inset-0 overflow-hidden" x-show="profileStore.dialogOpen" x-transition:enter="ease-in-out duration-500" x-transition:enter-start="opacity-0 translate-x-full" x-transition:enter-end="opacity-100 translate-x-0" x-transition:leave="ease-in-out duration-500" x-transition:leave-start="opacity-100 translate-x-0" x-transition:leave-end="opacity-0 translate-x-full">
 				<div class="absolute inset-0 overflow-hidden">
@@ -2054,7 +2054,7 @@ HTML;
 												</template>
 											</div>
 											<div class="sm:col-span-2">
-												<input type="text" name="pfpUrl" id="pfpUrl" x-model="profileStore.profileInfo.pfpUrl" @input.debounce.500ms="pfpError = false" autocomplete="url" autocapitalize="off" placeholder="https://" class="block w-full rounded-md border-0 py-1.5 text-nbpurple-900 shadow-sm ring-1 ring-inset ring-nbpurple-300 placeholder:text-nbpurple-400 focus:ring-2 focus:ring-inset focus:ring-nbpurple-600 sm:text-sm sm:leading-6">
+												<input type="text" name="pfpUrl" id="pfpUrl" x-model="profileStore.profileInfo.pfpUrl" @input.debounce.500ms="pfpError = false" autocomplete="url" autocapitalize="off" placeholder="https://" class="block w-full rounded-md border-0 py-1.5 bg-nbpurple-600 text-nbpurple-100 font-medium shadow-sm ring-1 ring-inset ring-nbpurple-200 placeholder:text-nbpurple-400 focus:ring-2 focus:ring-inset focus:ring-nbpurple-600 sm:text-sm sm:leading-6">
 											</div>
 										</div>
 
@@ -2064,7 +2064,7 @@ HTML;
 												<label for="name" class="block text-sm font-medium leading-6 text-nbpurple-200 sm:mt-1.5">Name</label>
 											</div>
 											<div class="sm:col-span-2">
-												<input type="text" name="name" id="name" x-model="profileStore.profileInfo.name" autocomplete="off" class="block w-full rounded-md border-0 py-1.5 text-nbpurple-900 shadow-sm ring-1 ring-inset ring-nbpurple-300 placeholder:text-nbpurple-400 focus:ring-2 focus:ring-inset focus:ring-nbpurple-600 sm:text-sm sm:leading-6">
+												<input type="text" name="name" id="name" x-model="profileStore.profileInfo.name" autocomplete="off" class="block w-full rounded-md border-0 py-1.5 bg-nbpurple-600 text-nbpurple-100 font-medium shadow-sm ring-1 ring-inset ring-nbpurple-300 placeholder:text-nbpurple-400 focus:ring-2 focus:ring-inset focus:ring-nbpurple-600 sm:text-sm sm:leading-6">
 											</div>
 										</div>
 
@@ -2074,7 +2074,7 @@ HTML;
 												<label for="wallet" class="block text-sm font-medium leading-6 text-nbpurple-200 sm:mt-1.5">Wallet Address</label>
 											</div>
 											<div class="sm:col-span-2">
-												<input type="text" name="wallet" id="wallet" x-model="profileStore.profileInfo.wallet" autocomplete="off" class="block w-full rounded-md border-0 py-1.5 text-nbpurple-900 shadow-sm ring-1 ring-inset ring-nbpurple-300 placeholder:text-nbpurple-400 focus:ring-2 focus:ring-inset focus:ring-nbpurple-600 sm:text-sm sm:leading-6">
+												<input type="text" name="wallet" id="wallet" x-model="profileStore.profileInfo.wallet" autocomplete="off" class="block w-full rounded-md border-0 py-1.5 bg-nbpurple-600 text-nbpurple-100 font-medium shadow-sm ring-1 ring-inset ring-nbpurple-300 placeholder:text-nbpurple-400 focus:ring-2 focus:ring-inset focus:ring-nbpurple-600 sm:text-sm sm:leading-6">
 											</div>
 										</div>
 
@@ -2098,15 +2098,15 @@ HTML;
 												<div class="space-y-2">
 													<div>
 														<label for="current-password" class="block text-sm font-medium leading-6 text-nbpurple-200">Current Password</label>
-														<input type="password" name="current-password" id="current-password" x-ref="currentPassword" autocomplete="current-password" class="block w-full rounded-md border-0 py-1.5 text-nbpurple-900 shadow-sm ring-1 ring-inset ring-nbpurple-300 placeholder:text-nbpurple-400 focus:ring-2 focus:ring-inset focus:ring-nbpurple-600 sm:text-sm sm:leading-6">
+														<input type="password" name="current-password" id="current-password" x-ref="currentPassword" autocomplete="current-password" class="block w-full rounded-md border-0 py-1.5 bg-nbpurple-600 text-nbpurple-100 font-medium shadow-sm ring-1 ring-inset ring-nbpurple-300 placeholder:text-nbpurple-400 focus:ring-2 focus:ring-inset focus:ring-nbpurple-600 sm:text-sm sm:leading-6">
 													</div>
 													<div>
 														<label for="new-password" class="block text-sm font-medium leading-6 text-nbpurple-200">New Password</label>
-														<input type="password" name="new-password" id="new-password" x-ref="newPassword" autocomplete="new-password" class="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-nbpurple-300 placeholder:text-nbpurple-400 focus:ring-2 focus:ring-inset focus:ring-nbpurple-600 sm:text-sm sm:leading-6">
+														<input type="password" name="new-password" id="new-password" x-ref="newPassword" autocomplete="new-password" class="block w-full rounded-md border-0 py-1.5 bg-nbpurple-600 text-nbpurple-100 font-medium shadow-sm ring-1 ring-inset ring-nbpurple-300 placeholder:text-nbpurple-400 focus:ring-2 focus:ring-inset focus:ring-nbpurple-600 sm:text-sm sm:leading-6">
 													</div>
 													<div>
 														<label for="confirm-password" class="block text-sm font-medium leading-6 text-nbpurple-200">Confirm Password</label>
-														<input type="password" name="confirm-password" id="confirm-password" x-ref="confirmPassword" autocomplete="new-password" class="block w-full rounded-md border-0 py-1.5 text-nbpurple-900 shadow-sm ring-1 ring-inset ring-nbpurple-300 placeholder:text-nbpurple-400 focus:ring-2 focus:ring-inset focus:ring-nbpurple-600 sm:text-sm sm:leading-6">
+														<input type="password" name="confirm-password" id="confirm-password" x-ref="confirmPassword" autocomplete="new-password" class="block w-full rounded-md border-0 py-1.5 bg-nbpurple-600 text-nbpurple-100 font-medium shadow-sm ring-1 ring-inset ring-nbpurple-300 placeholder:text-nbpurple-400 focus:ring-2 focus:ring-inset focus:ring-nbpurple-600 sm:text-sm sm:leading-6">
 													</div>
 												</div>
 												<button :diabled="profileStore.dialogLoading || !$refs.currentPassword?.value || !$refs.newPassword || !$refs.confirmPassword " type="button" class="rounded-md bg-nbpurple-200 px-3 py-2 text-sm font-semibold text-nbpurple-900 shadow-sm ring-1 ring-inset ring-nbpurple-300 hover:bg-nbpurple-50" @click.throttle.250ms="await profileStore.updatePassword($refs.currentPassword, $refs.newPassword, $refs.confirmPassword)">
