@@ -342,9 +342,11 @@ $pageMenuContent = <<<HTML
 								if(menuStore.activeFolder === folder.name) return;
                 const mediaId = event.dataTransfer.getData('text/plain');
 								if(mediaId) {
-									await fileStore.moveItemsToFolder(mediaId, folder.id);
+									const draggedElement = document.getElementById('media_' + mediaId);
+									draggedElement.classList.add('opacity-50');
+									fileStore.moveItemsToFolder(mediaId, folder.id).then(() => draggedElement.classList.remove('opacity-50'));
 								}
-            " x-on:dragover.prevent="adding = true" x-on:dragleave.prevent="adding = false" x-data="{ adding: false }" x-on:drop="adding = false">
+            " x-on:dragover.prevent="adding = true; event.dataTransfer.dropEffect = 'move';" x-on:dragleave.prevent="adding = false" x-data="{ adding: false }" x-on:drop="adding = false">
 					<div class="flex justify-between" x-transition:enter="transition-opacity ease-linear duration-500" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" x-transition:leave="transition-opacity ease-linear duration-300" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0">
 						<a :href="folder.route" :class="{ 'bg-nbpurple-800 text-nbpurple-50': menuStore.activeFolder === folder.name, 'text-nbpurple-300 hover:text-nbpurple-50 hover:bg-nbpurple-800': menuStore.activeFolder !== folder.name, 'bg-nbpurple-700 text-nbpurple-50 scale-105': adding && menuStore.activeFolder !== folder.name }" class="w-full group flex gap-x-3 rounded-md p-2 text-sm leading-6 font-semibold" @click.prevent="menuStore.setActiveFolder(folder.name); menuStore.mobileMenuOpen = false; menuStore.disableDeleteFolderButtons()">
 							<!--
@@ -410,7 +412,6 @@ HTML;
 		[x-cloak] {
 			display: none !important;
 		}
-
 
 		/* More of Uppy styles */
 		[data-uppy-theme=dark] .uppy-ProviderBrowser-viewType--list {
@@ -1104,8 +1105,7 @@ HTML;
 								</li>
 							</template>
 							<template x-for="file in fileStore.files" :key="file.id">
-								<li :id="file.id" draggable="true" x-on:dragend="dragging = false" 
-									x-on:dragstart.self="
+								<li :id="file.id" draggable="true" x-on:dragend="dragging = false" x-on:dragstart.self="
 											dragging = true;
 											event.dataTransfer.effectAllowed='move';
 											event.dataTransfer.setData('text/plain', event.target.id);
