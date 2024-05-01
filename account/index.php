@@ -338,9 +338,15 @@ $pageMenuContent = <<<HTML
 			</li>
 			<!-- /New Folder Form -->
 			<template x-for="folder in menuStore.folders" :key="folder.name">
-				<li>
+				<li x-on:drop.prevent="
+								if(menuStore.activeFolder === folder.name) return;
+                const mediaId = event.dataTransfer.getData('text/plain');
+								if(mediaId) {
+									await fileStore.moveItemsToFolder(mediaId, folder.id);
+								}
+            " x-on:dragover.prevent="adding = true" x-on:dragleave.prevent="adding = false" x-data="{ adding: false }" x-on:drop="adding = false">
 					<div class="flex justify-between" x-transition:enter="transition-opacity ease-linear duration-500" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" x-transition:leave="transition-opacity ease-linear duration-300" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0">
-						<a :href="folder.route" :class="{ 'bg-nbpurple-800 text-nbpurple-50': menuStore.activeFolder === folder.name, 'text-nbpurple-300 hover:text-nbpurple-50 hover:bg-nbpurple-800': menuStore.activeFolder !== folder.name }" class="w-full group flex gap-x-3 rounded-md p-2 text-sm leading-6 font-semibold" @click.prevent="menuStore.setActiveFolder(folder.name); menuStore.mobileMenuOpen = false; menuStore.disableDeleteFolderButtons()">
+						<a :href="folder.route" :class="{ 'bg-nbpurple-800 text-nbpurple-50': menuStore.activeFolder === folder.name, 'text-nbpurple-300 hover:text-nbpurple-50 hover:bg-nbpurple-800': menuStore.activeFolder !== folder.name, 'bg-nbpurple-700 text-nbpurple-50 scale-105': adding && menuStore.activeFolder !== folder.name }" class="w-full group flex gap-x-3 rounded-md p-2 text-sm leading-6 font-semibold" @click.prevent="menuStore.setActiveFolder(folder.name); menuStore.mobileMenuOpen = false; menuStore.disableDeleteFolderButtons()">
 							<!--
 							<span class="flex size-6 shrink-0 items-center justify-center rounded-lg border border-nbpurple-700 bg-nbpurple-800 text-[0.625rem] font-medium text-nbpurple-300 group-hover:text-nbpurple-50" x-text="folder.icon"></span>
 							-->
@@ -393,7 +399,7 @@ HTML;
 	<link href="/scripts/dist/account-v2.css?v=b53dd90fe055a3de4cdc4c77295177dd" rel="stylesheet">
 
 	<link rel="icon" href="/assets/nb-logo-color-w.png" />
-	<link href="/styles/twbuild.css?v=6b132929e5684f7222f17217e6ff5db9" rel="stylesheet">
+	<link href="/styles/twbuild.css?v=4956094bf4cd9f1db4a6309483214be6" rel="stylesheet">
 
 	<!-- Pre-connect and DNS prefetch -->
 	<link rel="preconnect" href="https://i.nostr.build" crossorigin>
@@ -1098,7 +1104,12 @@ HTML;
 								</li>
 							</template>
 							<template x-for="file in fileStore.files" :key="file.id">
-								<li :id="file.id" class="relative" x-data="{ showMediaActions: false }">
+								<li :id="file.id" draggable="true" x-on:dragend="dragging = false" 
+									x-on:dragstart.self="
+											dragging = true;
+											event.dataTransfer.effectAllowed='move';
+											event.dataTransfer.setData('text/plain', event.target.id);
+									" :class="{ 'opacity-50 drop-shadow-xl': dragging }" class="relative" x-data="{ showMediaActions: false, dragging: false }">
 									<!-- Media type badge -->
 									<div x-show="file.mime.startsWith('image/') && !file.mime.endsWith('/gif')" class="z-10 absolute -top-3 -right-3 size-6 bg-nbpurple-600 text-white text-xs font-semibold rounded-full flex items-center justify-center">
 										<svg stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="size-5">
@@ -1237,12 +1248,12 @@ HTML;
 														$el.srcset = file.srcset;
 														$el.sizes = file.sizes;});
 														if (file.loadMore && !fileStore.loading && !fileStore.loadingMoreFiles) setTimeout(async () => {await fileStore.loadMoreFiles()}, 0);
-													  " @load="file.loaded = true" @error="file.loaded = true, file.loadError" :data-src="file.thumb" :data-srcset="file.srcset" :data-sizes="file.sizes" :alt="file.name" :width="file.width" :height="file.height" loading="eager" class="transition-opacity duration-300 ease-in pointer-events-none object-contain group-hover:opacity-75" x-cloak x-transition:enter="transition-opacity ease-in duration-1000" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" />
+													  " :id="'media_' + file.id" @load="file.loaded = true" @error="file.loaded = true, file.loadError" :data-src="file.thumb" :data-srcset="file.srcset" :data-sizes="file.sizes" :alt="file.name" :width="file.width" :height="file.height" loading="eager" class="transition-opacity duration-300 ease-in pointer-events-none object-contain group-hover:opacity-75" x-cloak x-transition:enter="transition-opacity ease-in duration-1000" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" />
 										</template>
 
 										<!-- Video -->
 										<template x-if="file.mime.startsWith('video/')">
-											<video crossorigin="anonymous" x-intersect:enter.once.margin.500px="$nextTick(async () => {
+											<video :id="'media_' + file.id" crossorigin="anonymous" x-intersect:enter.once.margin.500px="$nextTick(async () => {
 														$el.src = file.url;
 														$el.load();
 														if (file.loadMore && !fileStore.loading && !fileStore.loadingMoreFiles) fileStore.loadMoreFiles();
@@ -1258,7 +1269,7 @@ HTML;
 										<!-- Audio -->
 										<template x-if="file.mime.startsWith('audio/')">
 											<!-- Default poster -->
-											<img src="https://cdn.nostr.build/assets/audio/jpg/audio-wave@0.5x.jpg" :alt="'Poster for ' + file.name" @load="file.loaded = true" loading="eager" class="pointer-events-none object-cover group-hover:opacity-75" />
+											<img :id="'media_' + file.id" src="https://cdn.nostr.build/assets/audio/jpg/audio-wave@0.5x.jpg" :alt="'Poster for ' + file.name" @load="file.loaded = true" loading="eager" class="pointer-events-none object-cover group-hover:opacity-75" />
 										</template>
 
 										<button @click="fileStore.openModal(file)" type="button" :class="{'hidden pointer-events-none': showMediaActions}" class="absolute inset-0 focus:outline-none">
