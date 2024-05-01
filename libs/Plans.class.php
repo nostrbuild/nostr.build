@@ -228,7 +228,7 @@ class Plans
         price: self::$originalPrices[self::PROFESSIONAL],
         features: [
           '10GB of private storage',
-          'View All 1.5M+ free media',
+          'Free Media Gallery of 1.5M+ items',
           'Add/Delete your media',
           'Global CDN',
         ],
