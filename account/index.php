@@ -389,11 +389,16 @@ HTML;
 	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 	<title>nostr.build account</title>
 
-	<script defer src="/scripts/dist/account-v2.js?v=a260a072aa8294f71d9e1ba19c5bb1ca"></script>
+	<script defer src="/scripts/dist/account-v2.js?v=66a9ed83d45749881a248190dba31d42"></script>
 	<link href="/scripts/dist/account-v2.css?v=b53dd90fe055a3de4cdc4c77295177dd" rel="stylesheet">
 
 	<link rel="icon" href="/assets/nb-logo-color-w.png" />
 	<link href="/styles/twbuild.css?v=6b132929e5684f7222f17217e6ff5db9" rel="stylesheet">
+
+	<!-- Pre-connect and DNS prefetch -->
+	<link rel="preconnect" href="https://i.nostr.build" crossorigin>
+	<link rel="preconnect" href="https://v.nostr.build" crossorigin>
+	<link rel="preconnect" href="https://cdn.nostr.build" crossorigin>
 
 	<style>
 		[x-cloak] {
@@ -1232,7 +1237,7 @@ HTML;
 														$el.srcset = file.srcset;
 														$el.sizes = file.sizes;});
 														if (file.loadMore && !fileStore.loading && !fileStore.loadingMoreFiles) setTimeout(async () => {await fileStore.loadMoreFiles()}, 0);
-													  " @load="file.loaded = true" @error="file.loaded = true, file.loadError" :data-src="file.thumb" :data-srcset="file.srcset" :data-sizes="file.sizes" :alt="file.name" :width="file.width" :height="file.height" loading="lazy" class="transition-opacity duration-300 ease-in pointer-events-none object-contain group-hover:opacity-75" x-cloak x-transition:enter="transition-opacity ease-in duration-1000" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" />
+													  " @load="file.loaded = true" @error="file.loaded = true, file.loadError" :data-src="file.thumb" :data-srcset="file.srcset" :data-sizes="file.sizes" :alt="file.name" :width="file.width" :height="file.height" loading="eager" class="transition-opacity duration-300 ease-in pointer-events-none object-contain group-hover:opacity-75" x-cloak x-transition:enter="transition-opacity ease-in duration-1000" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" />
 										</template>
 
 										<!-- Video -->
