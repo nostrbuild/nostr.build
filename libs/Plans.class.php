@@ -228,9 +228,10 @@ class Plans
         price: self::$originalPrices[self::PROFESSIONAL],
         features: [
           '10GB of private storage',
-          'Free Media Gallery of 1.5M+ items',
-          'Add/Delete your media',
-          'Global CDN',
+          'Free Media Gallery, 1.5M+ items',
+          'Add/Move/Delete your media',
+          'Share media direct to Nostr',
+          'Global, lightning fast CDN',
         ],
         currency: 'sats',
         remainingDays: $remainingDays,
@@ -251,7 +252,7 @@ class Plans
         features: [
           '20GB of private storage',
           'AI Studio Access',
-          '<a class="ref_link" target="_blank" href="https://nostr.build/creators/">Host on nostr.build page</a></b>',
+          '<a class="ref_link" target="_blank" href="https://nostr.build/creators/">Host a Creators page</a></b>',
           'S3 backup for all media',
           'All Professional features',
         ],
