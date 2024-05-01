@@ -216,6 +216,10 @@ function importMediaFromURL(string $url, string $folder = '', string $title = ''
 
 	// Return the AI generated image metadata
 	$fileData = $upload->getUploadedFiles();
+	// If result is empty, return an error
+	if (empty($fileData)) {
+		throw new Exception("Failed to import media from URL");
+	}
 
 	// Construct returned data
 	$resolutionToWidth = [
