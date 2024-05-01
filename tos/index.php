@@ -27,10 +27,9 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/functions/session.php';
 		<?php include $_SERVER['DOCUMENT_ROOT'] . '/components/mainnav.php'; ?>
 	</header>
 	<main>
-		<h2>NOSTR.BUILD</h2>
 		<h1>Terms of Service</h1>
 		<h3>Overview</h3>
-		<h4>Effective December 24, 2022</h4>
+		<h4>Effective May 1, 2024</h4>
 		<p>
 			Using our website, api or any connected apps (Damus, Amethyst, NoStrudel, Coracle, Snort, Iris, etc.) to do anything other than access the links to this "Terms" page or accessing any
 			page of our website other than our home page and this "Terms" page constitutes your consent to these terms of use
@@ -43,36 +42,34 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/functions/session.php';
 			neutral arbitrator and not to sue in court in front of a judge or jury.
 			Please see the arbitration section below for details. Our community rules These Terms of Use are our contract with
 			you. We also have community rules, developed thanks to input from the nostr.build community, that serve as rules
-			for using nostr.build publicly. Stuff not to do If someone else
-			might own the copyright to it, don't upload it. Don't upload gore, "hate speech" (i.e. demeaning race, gender,
+			for using nostr.build publicly.</br> 
+			Stuff not to do If someone else might own the copyright to it, don't upload it. Don't upload gore, "hate speech" (i.e. demeaning race, gender,
 			age, religious or sexual orientation, etc.), or material that is threatening, harassing, defamatory, or that
-			encourages violence or crime. Don't upload illegal content such as child
+			encourages violence or crime. This includes any kind of human or animal abuse. Don't upload illegal content such as child
 			porn or nonconsensual ("revenge") porn. Don't hotlink to adult content or to file-sharing, gambling, torrent,
 			warez, or nostr.build rip-off sites. Don't impersonate someone else. Also, don't use nostr.build to host image
 			libraries you link to from elsewhere, content for your website,
-			advertising, avatars, or anything else that turns us into your content delivery network. If you do – and we will
-			be the judge – or if you do anything illegal, in addition to any other legal rights we may have, we will ban you
+			advertising, avatars, or anything else that turns us into your content delivery network. If you do, and we will
+			be the judge, or if you do anything illegal, in addition to any other legal rights we may have, we will ban you
 			along with the site you're hotlinking from, delete all your
-			media, report you to the authorities if necessary, and prevent you from viewing any media hosted on nostr.build.
-			We mean it. Stuff to do, please Please have tons of fun! That's what nostr.build is all about. If something isn't
-			fun -- if you see anything on our site that shouldn't be there
-			because it violates our policies, is illegal (e.g. revenge porn or child porn), or for some other reason, please
-			let us know by emailing us at admin@nostr.build, or directly on nostr.
+			media, report you to the authorities if necessary, and prevent you from viewing any media hosted on nostr.build. Do not use nostr.build for any type of illegal money transmission.</br>
+			-- if you see anything on our site that shouldn't be there because it violates our policies, is illegal (e.g. revenge porn, child porn, animal cruelity), or for some other reason, please
+			let us know by emailing us at admin@nostr.build, or DM us directly on nostr.
 		</p>
 		<h4>About Media you upload</h4>
 		<p>
-			You can upload media anonymously and share them online with only the people you choose to share them with. If you
-			upload using nostr's free service, they may be featured in the gallery or View All section. If you share an image
+			You can upload media and share it online with only the people you choose to share it with. If you
+			upload using nostr's free service, your media may be featured in the Free View or Free Media Gallery section. If you share an image
 			publicly with nostr, Facebook, Twitter, Digg, Reddit, etc.,
-			then it may also end up in the View All or Gallery section.
-			* You can not upload any type of illegal media, it will be taken down, reported and investigated
-			* You can not upload images of someone without their permission or use others in a derogatory way 
-			* Do not abuse this service in any way. We are offering a free service dedicated to improving the freedom of speech. 
-			If there are any questions or issues please reach out to us
+			then it may also end up in the Free View or Free Media Gallery section. </br>
+			* You can not upload any type of illegal media, it will be taken down, reported and investigated </br>
+			* You can not upload images of someone without their permission or use others in a derogatory way </br>
+			* Do not abuse this service in any way. We are offering a free service dedicated to improving the freedom of speech. </br>
+			If there are any questions or issues please reach out to us at <a href="mailto:admin@nostr.build">admin@nostr.build</a>
 		</p>
 		<h4>Details</h4>
 		<p>
-			12/24/2022 Intellectual Property By uploading a file or other content or by making a comment, you represent and
+			15/1/2024 Intellectual Property By uploading a file or other content or by making a comment, you represent and
 			warrant to us that (1) doing so does not violate or infringe anyone else's rights; and (2) you created the file or
 			other content you are uploading, or otherwise have sufficient
 			intellectual property rights to upload the material consistent with these terms. With regard to any file or
@@ -122,7 +119,8 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/functions/session.php';
 			counter-notice, that won't count toward being a repeat
 			infringer.) Keep in mind that we reserve the right to remove any content at any time whether or not it infringes
 			or violates any of our policies. Use of Trademark Any uses of our name, trademarks, and logos must follow our
-			Trademark Use Policy. Agreement to Arbitrate and Class Action Waiver
+			Trademark Use Policy.</p>br> 
+			Agreement to Arbitrate and Class Action Waiver
 			You and we agree to resolve any and all disputes with binding individual arbitration before a single arbitrator
 			appointed by the American Arbitration Association ("AAA") under the Federal Arbitration Act ("FAA") and not to sue
 			in court in front of a judge or jury. The neutral arbitrator will
@@ -162,7 +160,8 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/functions/session.php';
 			remedies (such as a request for a public injunction remedy, in which case the arbitrator issues an award on
 			liability and individual relief before a court considers that request). Otherwise, if any other part of this
 			section is found to be unenforceable, the remainder will remain in effect
-			(with an arbitration award issued before any court proceeding begins). Disclaimer of Warranties, Limitations of
+			(with an arbitration award issued before any court proceeding begins).</br> 
+			Disclaimer of Warranties, Limitations of
 			Remedies, Indemnity Although of course we strive to make nostr.build as dependable as possible, nostr.build's
 			services are provided on an AS IS – WITH ALL FAULTS basis. Your use of
 			our service is entirely at your own risk. We do not guarantee the availability of our service at any given time,
@@ -185,8 +184,8 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/functions/session.php';
 			ALL LOSS, LIABILITY, CLAIMS, DAMAGES AND EXPENSES, INCLUDING
 			REASONABLE ATTORNEY FEES, ARISING OUT OF OR RELATED TO YOUR VIOLATION OF THESE TERMS, YOUR INFRINGEMENT OF ANY
 			THIRD PARTY'S RIGHTS, AND ANY HARM CAUSED TO ANY THIRD PARTY AS A RESULT OF YOUR UPLOADING OF FILES, COMMENTS, OR
-			ANYTHING ELSE TO OUR SERVERS. Miscellaneous "nostr.build" or "we"
-			refers to nostr.build, Inc., a Delaware corporation, and its successors and assigns. "You" refers to any person
+			ANYTHING ELSE TO OUR SERVERS.</br> 
+			Miscellaneous "nostr.build" or "we" refers to nostr.build and NMLH LLC., a California LLC, and its successors and assigns. "You" refers to any person
 			who has consented to these terms or has become contractually bound to them, whether such person is identified or
 			not at the time. These terms are governed by California law,
 			excluding its conflicts of law principles, and if there is a lawsuit between you and nostr.build, jurisdiction and
@@ -197,14 +196,14 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/functions/session.php';
 			use of nostr.build's services even after you discontinue using
 			them. We may revise these terms from time to time without notice. Whenever we do so, we will so indicate by
 			changing the version date at the top. Any changes apply as of the time they are posted. nostr.build is not meant
-			for use by children under age 13; if your child is younger than 13
-			please allow him or her to use it only under your supervision. Parental control protections (such as computer
+			for use by people under age 18; if you are younger than 18
+			please allow him or her to use it only under adult supervision. Parental control protections (such as computer
 			hardware, software, or filtering services) are commercially available that may assist you in limiting access to
 			material that is harmful to minors. See e.g.
 			www.toptenreviews.com/software/security/best-internet-filter-software.
 		</p>
+		<a href="https://www.dmca.com/compliance/nostr.build" title="DMCA Compliance information for nostr.build"><img src="https://www.dmca.com/img/dmca-compliant-grayscale.png" alt="DMCA compliant image" /></a>
 	</main>
 	<?php include $_SERVER['DOCUMENT_ROOT'] . '/components/footer.php'; ?>
 </body>
-
 </html>
