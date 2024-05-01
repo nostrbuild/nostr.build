@@ -87,7 +87,7 @@ $userStorageRemaining = $userOverLimit ? 0 : $userStorageLimit - $storageUsed;
 	<link href="/styles/twbuild.css?v=6b132929e5684f7222f17217e6ff5db9" rel="stylesheet">
 	<link rel="icon" href="/assets/primo_nostr.png" />
 
-	<script defer src="/scripts/dist/index.js?v=c1ca98999d680cf799af4485c5291cf6"></script>
+	<script defer src="/scripts/dist/index.js?v=c629bcbbd198233225c1c4db7deedbff"></script>
 	<script defer src="/scripts/fw/alpinejs-intersect.min.js?v=e6545f3f0a314d90d9a1442ff104eab9"></script>
 	<script defer src="/scripts/fw/alpinejs.min.js?v=34fbe266eb872c1a396b8bf9022b7105"></script>
 	<script defer src="/scripts/fw/htmx.min.js?v=0dc2b5da8a531cecfa8100af6cec8d61"></script>
