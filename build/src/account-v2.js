@@ -21,11 +21,9 @@ import Alpine from 'alpinejs';
 
 import intersect from '@alpinejs/intersect';
 import focus from '@alpinejs/focus';
-import anchor from '@alpinejs/anchor';
 
 Alpine.plugin(focus);
 Alpine.plugin(intersect);
-Alpine.plugin(anchor);
 
 window.Alpine = Alpine;
 

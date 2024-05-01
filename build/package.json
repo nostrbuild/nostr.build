@@ -14,7 +14,6 @@
   "author": "Fishcake",
   "license": "MIT",
   "dependencies": {
-    "@alpinejs/anchor": "^3.13.10",
     "@alpinejs/focus": "^3.13.10",
     "@alpinejs/intersect": "^3.13.10",
     "@headlessui/tailwindcss": "^0.2.0",
