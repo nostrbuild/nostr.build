@@ -17,7 +17,7 @@ if (!$perm->isAdmin()) {
 
 global $link;
 
-Plans::init();
+//Plans::init();
 
 $promotions = new Promotions($link);
 
@@ -72,7 +72,7 @@ $past_promotions = $promotions->getPastPromotions();
 
 <head>
   <title>Manage Promotions</title>
-  <link rel="stylesheet" href="/styles/twbuild.css?v=f95e0de5bb8bee21a45d018b0f54aa4c" />
+  <link rel="stylesheet" href="/styles/twbuild.css?v=6b132929e5684f7222f17217e6ff5db9" />
 </head>
 
 <body class="bg-gray-100">

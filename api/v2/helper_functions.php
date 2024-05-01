@@ -70,14 +70,49 @@ function createSuccessResponse($data): array
     return [];
   }
 
+  $resolutionToWidth = [
+    "240p"  => "426",
+    "360p"  => "640",
+    "480p"  => "854",
+    "720p"  => "1280",
+    "1080p" => "1920",
+  ];
   $tmp = [];
   foreach ($data as $file) {
+    // Construct file object to be used in the response for the interface update
+    // Construct returned data
+
+    $fileData = [
+      "id" => $file['id'],
+      "flag" => 0, // Not shared by default
+      "name" => $file['name'],
+      "mime" => $file['mime'],
+      "url" => $file['url'],
+      "thumb" => $file['thumbnail'],
+      "size" => $file['size'],
+      "sizes" => '(max-width: 426px) 100vw, (max-width: 640px) 100vw, (max-width: 854px) 100vw, (max-width: 1280px) 50vw, 33vw',
+      "srcset" => implode(", ", array_map(function ($resolution) use ($file, $resolutionToWidth) {
+        return htmlspecialchars($file['responsive'][$resolution] . " {$resolutionToWidth[$resolution]}w");
+      }, array_keys($file['responsive']))),
+      "width" => $file['dimensions']['width'],
+      "height" => $file['dimensions']['height'],
+      "blurhash" => $file['blurhash'],
+      "sha256_hash" => $file['original_sha256'],
+      "created_at" => date('Y-m-d H:i:s'),
+      "title" => $file['title'] ?? '',
+      "ai_prompt" => $file['ai_prompt'] ?? '',
+      "loaded" => false,
+      "show" => true,
+      "associated_notes" => null,
+    ];
+
     $tmp[] = [
       "id" => $file['sha256'],
       "url" => $file['url'],
       "name" => $file['name'],
       "type" => $file['mime'],
       "size" => $file['size'],
+      "fileData" => $fileData,
     ];
   }
   return count($tmp) == 1 ? $tmp[0] : $tmp;
