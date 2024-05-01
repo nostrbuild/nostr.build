@@ -251,7 +251,7 @@ class Plans
         price: self::$originalPrices[self::CREATOR],
         features: [
           '20GB of private storage',
-          'AI Studio Access',
+          'AI Studio (Text-to-Image)',
           '<a class="ref_link" target="_blank" href="https://nostr.build/creators/">Host a Creators page</a></b>',
           'S3 backup for all media',
           'All Professional features',
