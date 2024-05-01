@@ -119,7 +119,7 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/functions/session.php';
 			counter-notice, that won't count toward being a repeat
 			infringer.) Keep in mind that we reserve the right to remove any content at any time whether or not it infringes
 			or violates any of our policies. Use of Trademark Any uses of our name, trademarks, and logos must follow our
-			Trademark Use Policy.</p>br> 
+			Trademark Use Policy.</br>
 			Agreement to Arbitrate and Class Action Waiver
 			You and we agree to resolve any and all disputes with binding individual arbitration before a single arbitrator
 			appointed by the American Arbitration Association ("AAA") under the Federal Arbitration Act ("FAA") and not to sue
