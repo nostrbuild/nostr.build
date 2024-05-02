@@ -107,12 +107,12 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
   // Validate usernpub
   $usernpub = trim($_POST["usernpub"]);
-  if (empty($_SESSION['npub_verified'])) {
+  if (empty($_SESSION['signup_npub_verified'])) {
     $account_create_error = "Please verify your npub1 public key.";
   } elseif (
     !empty($usernpub) &&
-    !empty($_SESSION['npub_verified']) &&
-    $_SESSION['npub_verified'] != $usernpub
+    !empty($_SESSION['signup_npub_verified']) &&
+    $_SESSION['signup_npub_verified'] != $usernpub
   ) {
     $account_create_error = "The npub1 public key you entered does not match the one you verified. Please enter the correct public key.";
   } elseif (empty($usernpub)) {
@@ -142,14 +142,16 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
   }
 
   // Check input errors before inserting in database
+  error_log("Creating account for $usernpub");
   if (empty($account_create_error)) {
     try {
       $account = new Account($usernpub, $link);
       if ($account->accountExists()) {
         $account_create_error = 'This npub1 public key is already in use. Please enter a different public key.';
       } else {
-        $npubVerifiedFlag = $_SESSION['npub_verified'] === $usernpub ? 1 : 0;
+        $npubVerifiedFlag = $_SESSION['signup_npub_verified'] === $usernpub ? 1 : 0;
         $enableNostrLoginFlag = 1; // Always enable Nostr login for new signups
+        error_log("Creating account for $usernpub: $npubVerifiedFlag, $enableNostrLoginFlag");
         if (!$npubVerifiedFlag) {
           $account_create_error = "The npub1 public key you entered does not match the one you verified. Please enter the correct public key.";
         } else {
@@ -173,6 +175,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $_SESSION['purchase_npub'] = $usernpub;
   } else {
     // Encountered an error, display it in the form and stay on the same step
+    error_log($account_create_error);
+    error_log("Failed to create an account for $usernpub");
     $step = 2;
     $_SESSION['purchase_step'] = $step;
   }
@@ -397,7 +401,7 @@ SVG;
           <?php
           // Only applicable to new users, otherwise the step is skipped
           $userNpub = $_SESSION['purchase_npub'] ?? null;
-          $userNpubVerified = $_SESSION['npub_verified'] ?? null;
+          $userNpubVerified = $_SESSION['signup_npub_verified'] ?? null;
           $userPfp = $_SESSION['ppic'] ?? null;
           $userNpub = $_SESSION['usernpub'] ?? null;
           $userNym = $_SESSION['nym'] ?? null;

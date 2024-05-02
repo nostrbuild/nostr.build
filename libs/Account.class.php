@@ -368,6 +368,7 @@ class Account
     if ($this->accountExists()) {
       throw new DuplicateUserException("User with npub $this->npub already exists");
     }
+    error_log("Creating account for npub: $this->npub, level: $level, npub_verified: $npub_verified, allow_npub_login: $allow_npub_login");
 
     try {
       $accountLevel = AccountLevel::from($level);

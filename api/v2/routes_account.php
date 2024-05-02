@@ -324,6 +324,7 @@ $app->group('/account', function (RouteCollectorProxy $group) {
           } catch (\Exception $e) {
             error_log('Error updating DB for npub verification: ' . $e->getMessage());
           }
+          $_SESSION['signup_npub_verified'] = $npub;
           $_SESSION['npub_verified'] = $npub;
           error_log('Npub verified: ' . $npub);
           return jsonResponse($response, 'success', 'Account exists', new stdClass(), 200);
@@ -361,6 +362,7 @@ $app->group('/account', function (RouteCollectorProxy $group) {
       $accountVerified = $request->getAttribute('npub_login_allowed') || false;
       if (!empty($npub) && (!$accountExists || !$accountVerified)) {
         // Return a 200 response when npub is verified but account does not exist
+        $_SESSION['signup_npub_verified'] = $npub;
         $_SESSION['npub_verified'] = $npub;
         return jsonResponse($response, 'success', 'Account exists', new stdClass(), 200);
       } elseif (!empty($npub) && $accountExists && $accountVerified) {
