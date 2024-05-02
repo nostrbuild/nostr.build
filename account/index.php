@@ -30,7 +30,6 @@ if ($perm->validatePermissionsLevelEqual(0)) {
 //   - Allow cascading deletion of media that is shared on a Nostr post, based on the note (TBD)
 //   - [Depends on] Implement simple "Trash" folder for deleted media and disable serving it to the public (TBD)
 
-// - Add ability to specify API/client upload default folder (client upload)
 // - Allow user to verify their npub in profile edit dialog
 
 $NBLogoSVG = <<<SVG
