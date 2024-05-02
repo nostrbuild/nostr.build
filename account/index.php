@@ -410,7 +410,7 @@ HTML;
 	<link href="/scripts/dist/account-v2.css?v=b53dd90fe055a3de4cdc4c77295177dd" rel="stylesheet">
 
 	<link rel="icon" href="/assets/nb-logo-color-w.png" />
-	<link href="/styles/twbuild.css?v=829f6b719ea7b01c11a4252d6d6c2fc4" rel="stylesheet">
+	<link href="/styles/twbuild.css?v=7e64909872e8f93fd9159fb10eae9532" rel="stylesheet">
 
 	<!-- Pre-connect and DNS prefetch -->
 	<link rel="preconnect" href="https://i.nostr.build" crossorigin>
@@ -1207,36 +1207,39 @@ HTML;
 									</div>
 									<!-- /Nostr badge -->
 									<div class="relative group aspect-h-7 aspect-w-10 w-full overflow-hidden rounded-lg bg-black/50 focus-within:ring-2 focus-within:ring-nbpurple-500 focus-within:ring-offset-2 focus-within:ring-offset-nbpurple-100">
+
 										<!-- Loading placeholders -->
-										<template x-if="!file.loaded && file.mime.startsWith('image/') && !file.name.endsWith('.gif')">
-											<svg class="absolute inset-0 pointer-events-none object-cover group-hover:opacity-75 h-full w-full text-nbpurple-400 animate-pulse" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-												<rect width="18" height="18" x="3" y="3" rx="2" ry="2" />
-												<circle cx="9" cy="9" r="2" />
-												<path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21" />
-											</svg>
-										</template>
+										<div :id="'placeholders_' + file.id">
+											<template x-if="!file.loaded && file.mime.startsWith('image/') && !file.name.endsWith('.gif')">
+												<svg class="absolute inset-0 pointer-events-none object-cover group-hover:opacity-75 h-full w-full text-nbpurple-400 animate-pulse" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+													<rect width="18" height="18" x="3" y="3" rx="2" ry="2" />
+													<circle cx="9" cy="9" r="2" />
+													<path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21" />
+												</svg>
+											</template>
 
-										<template x-if="!file.loaded && file.mime.startsWith('image/') && file.name.endsWith('.gif')">
-											<svg class="absolute inset-0 pointer-events-none object-cover group-hover:opacity-75 h-full w-full text-nbpurple-400 animate-pulse" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-												<path d="m11 16-5 5" />
-												<path d="M11 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v6.5" />
-												<path d="M15.765 22a.5.5 0 0 1-.765-.424V13.38a.5.5 0 0 1 .765-.424l5.878 3.674a1 1 0 0 1 0 1.696z" />
-												<circle cx="9" cy="9" r="2" />
-											</svg>
-										</template>
+											<template x-if="!file.loaded && file.mime.startsWith('image/') && file.name.endsWith('.gif')">
+												<svg class="absolute inset-0 pointer-events-none object-cover group-hover:opacity-75 h-full w-full text-nbpurple-400 animate-pulse" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+													<path d="m11 16-5 5" />
+													<path d="M11 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v6.5" />
+													<path d="M15.765 22a.5.5 0 0 1-.765-.424V13.38a.5.5 0 0 1 .765-.424l5.878 3.674a1 1 0 0 1 0 1.696z" />
+													<circle cx="9" cy="9" r="2" />
+												</svg>
+											</template>
 
-										<template x-if="!file.loaded && file.mime.startsWith('video/')">
-											<svg class="absolute inset-0 pointer-events-none object-cover group-hover:opacity-75 h-full w-full text-nbpurple-400 animate-pulse" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-												<path d="m16 13 5.223 3.482a.5.5 0 0 0 .777-.416V7.87a.5.5 0 0 0-.752-.432L16 10.5" />
-												<rect x="2" y="6" width="14" height="12" rx="2" />
-											</svg>
-										</template>
+											<template x-if="!file.loaded && file.mime.startsWith('video/')">
+												<svg class="absolute inset-0 pointer-events-none object-cover group-hover:opacity-75 h-full w-full text-nbpurple-400 animate-pulse" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+													<path d="m16 13 5.223 3.482a.5.5 0 0 0 .777-.416V7.87a.5.5 0 0 0-.752-.432L16 10.5" />
+													<rect x="2" y="6" width="14" height="12" rx="2" />
+												</svg>
+											</template>
 
-										<template x-if="!file.loaded && file.mime.startsWith('audio/')">
-											<svg class="absolute inset-0 pointer-events-none object-cover group-hover:opacity-75 h-full w-full text-nbpurple-400 animate-pulse" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-												<path d="M3 14h3a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-7a9 9 0 0 1 18 0v7a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3" />
-											</svg>
-										</template>
+											<template x-if="!file.loaded && file.mime.startsWith('audio/')">
+												<svg class="absolute inset-0 pointer-events-none object-cover group-hover:opacity-75 h-full w-full text-nbpurple-400 animate-pulse" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+													<path d="M3 14h3a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-7a9 9 0 0 1 18 0v7a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3" />
+												</svg>
+											</template>
+										</div>
 										<!-- /Loading placeholders -->
 
 										<!-- Media actions -->
@@ -1294,21 +1297,23 @@ HTML;
 
 										<!-- Image -->
 										<template x-if="file.mime.startsWith('image/')">
-											<img x-intersect:enter.once.margin.550px="$nextTick(async () => {
+											<img x-intersect:enter.once.margin.1000px="
 														$el.src = file.thumb;
 														$el.srcset = file.srcset;
-														$el.sizes = file.sizes;});
+														$el.sizes = file.sizes;
+														$el.width = file.width;
+														$el.height = file.height;
 														if (file.loadMore && !fileStore.loading && !fileStore.loadingMoreFiles) setTimeout(async () => {await fileStore.loadMoreFiles()}, 0);
-													  " :id="'media_' + file.id" @load="file.loaded = true" @error="file.loaded = true, file.loadError" :data-src="file.thumb" :data-srcset="file.srcset" :data-sizes="file.sizes" :alt="file.name" :width="file.width" :height="file.height" loading="eager" class="transition-opacity duration-300 ease-in pointer-events-none object-contain group-hover:opacity-75" x-cloak x-transition:enter="transition-opacity ease-in duration-1000" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" />
+													  " :id="'media_' + file.id" @load="file.loaded = true; document.getElementById('placeholders_' + file.id)?.remove();" @error="file.loaded = true, file.loadError" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=" :alt="file.name" :width="file.width" :height="file.height" loading="eager" class="transition-opacity duration-300 ease-in pointer-events-none object-contain group-hover:opacity-75" />
 										</template>
 
 										<!-- Video -->
 										<template x-if="file.mime.startsWith('video/')">
-											<video :id="'media_' + file.id" crossorigin="anonymous" x-intersect:enter.once.margin.500px="$nextTick(async () => {
+											<video :id="'media_' + file.id" crossorigin="anonymous" x-intersect:enter.once.margin.500px="
 														$el.src = file.url;
 														$el.load();
 														if (file.loadMore && !fileStore.loading && !fileStore.loadingMoreFiles) fileStore.loadMoreFiles();
-													})" @loadedmetadata="file.loaded = true" playsinline preload="none" class="pointer-events-none object-cover" x-cloak x-transition:enter="transition-opacity ease-in duration-1000" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100">
+													" @loadedmetadata="file.loaded = true; document.getElementById('placeholders_' + file.id)?.remove();" playsinline preload="none" class="pointer-events-none object-cover">
 												<source :data-src="file.url" type="video/mp4">
 												<p>
 													Your browser does not support the video tag.
@@ -1320,7 +1325,7 @@ HTML;
 										<!-- Audio -->
 										<template x-if="file.mime.startsWith('audio/')">
 											<!-- Default poster -->
-											<img :id="'media_' + file.id" src="https://cdn.nostr.build/assets/audio/jpg/audio-wave@0.5x.jpg" :alt="'Poster for ' + file.name" @load="file.loaded = true" loading="eager" class="pointer-events-none object-cover group-hover:opacity-75" />
+											<img :id="'media_' + file.id" src="https://cdn.nostr.build/assets/audio/jpg/audio-wave@0.5x.jpg" :alt="'Poster for ' + file.name" @load="file.loaded = true; document.getElementById('placeholders_' + file.id)?.remove();" loading="eager" class="pointer-events-none object-cover group-hover:opacity-75" />
 										</template>
 
 										<button @click="fileStore.openModal(file)" type="button" :class="{'hidden pointer-events-none': showMediaActions}" class="absolute inset-0 focus:outline-none">
