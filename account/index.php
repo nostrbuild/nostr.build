@@ -1298,13 +1298,11 @@ HTML;
 										<!-- Image -->
 										<template x-if="file.mime.startsWith('image/')">
 											<img x-intersect.once.margin.1024px="
-														$el.src = file.thumb;
-														$el.srcset = file.srcset;
-														$el.sizes = file.sizes;
-														$el.width = file.width;
-														$el.height = file.height;
-														if (file.loadMore && !fileStore.loading && !fileStore.loadingMoreFiles) setTimeout(async () => {await fileStore.loadMoreFiles()}, 0);
-													  " :id="'media_' + file.id" @load="file.loaded = true; document.getElementById('placeholders_' + file.id)?.remove();" @error="file.loaded = true, file.loadError" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=" :alt="file.name" :width="file.width" :height="file.height" loading="eager" class="transition-opacity duration-300 ease-in pointer-events-none object-contain group-hover:opacity-75" />
+												$el.src=file.thumb;
+												$el.srcset=file.srcset;
+												$el.sizes=file.sizes;
+												if (file.loadMore && !fileStore.loading && !fileStore.loadingMoreFiles) setTimeout(async () => {await fileStore.loadMoreFiles()}, 0);
+												" :id="'media_' + file.id" @load="$el.classList.remove('opacity-0'); file.loaded = true; document.getElementById('placeholders_' + file.id)?.remove();" @error="file.loaded = true, file.loadError" :data-src="file.thumb" :alt="file.name" :width="file.width" :height="file.height" loading="eager" class="opacity-0 transition-opacity duration-500 ease-in pointer-events-none object-contain group-hover:opacity-75" />
 										</template>
 
 										<!-- Video -->
