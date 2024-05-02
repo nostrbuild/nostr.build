@@ -1297,7 +1297,7 @@ HTML;
 
 										<!-- Image -->
 										<template x-if="file.mime.startsWith('image/')">
-											<img x-intersect:enter.once.margin.1000px="
+											<img x-intersect.once.margin.1024px="
 														$el.src = file.thumb;
 														$el.srcset = file.srcset;
 														$el.sizes = file.sizes;
@@ -1309,7 +1309,7 @@ HTML;
 
 										<!-- Video -->
 										<template x-if="file.mime.startsWith('video/')">
-											<video :id="'media_' + file.id" crossorigin="anonymous" x-intersect:enter.once.margin.500px="
+											<video :id="'media_' + file.id" crossorigin="anonymous" x-intersect.once.margin.1024px="
 														$el.src = file.url;
 														$el.load();
 														if (file.loadMore && !fileStore.loading && !fileStore.loadingMoreFiles) fileStore.loadMoreFiles();
