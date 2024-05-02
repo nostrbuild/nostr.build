@@ -39,6 +39,7 @@ class NostrAuthMiddleware implements MiddlewareInterface
 
     $npub = null; // Initialize as null
     $accountUploadEligible = true;  // Assume the account is eligible by default
+    $accountDefaultFolder = null; // Initialize as null
 
     try {
       // Initialize NostrAuthHandler
@@ -49,6 +50,9 @@ class NostrAuthMiddleware implements MiddlewareInterface
 
       // Initialize Account class
       $account = new Account($npub, $link);
+
+      // Get default folder for the account, if it is set
+      $accountDefaultFolder = $account->getDefaultFolder() ?? null;
 
       if ($account->isAccountValid()) {
         // Calculate projected upload size and check if user has enough storage
@@ -139,6 +143,7 @@ class NostrAuthMiddleware implements MiddlewareInterface
     // Lastly, add the npub to the request attributes
     $request = $request->withAttribute('npub', $npub);
     $request = $request->withAttribute('account_upload_eligible', $accountUploadEligible);
+    $request = $request->withAttribute('account_default_folder', $accountDefaultFolder);
     $response = $handler->handle($request);
 
     return $response;

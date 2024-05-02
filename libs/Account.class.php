@@ -554,36 +554,42 @@ class Account
   */
   /**
    * Summary of updateAccount
-   * @param string $password
-   * @param string $pbkdf2_password
-   * @param string $nym
-   * @param string $wallet
-   * @param string $ppic
-   * @param string $paid
-   * @param int $acctlevel
-   * @param string $flag
-   * @param array $accflags
-   * @param string $plan_start_date
-   * @param string $plan_until_date
+   * @param string|null $password
+   * @param string|null $pbkdf2_password
+   * @param string|null $nym
+   * @param string|null $wallet
+   * @param string|null $ppic
+   * @param string|null $paid
+   * @param int|null $acctlevel
+   * @param string|null $flag
+   * @param array|null $accflags
+   * @param string|null $plan_start_date
+   * @param string|null $plan_until_date
+   * @param string|null $last_notification_date
+   * @param int|null $npub_verified
+   * @param int|null $allow_npub_login
+   * @param string|null $subscription_period
+   * @param string|null $default_folder
    * @throws \Exception
    * @return void
    */
   public function updateAccount(
-    string $password = null,
-    string $pbkdf2_password = null,
-    string $nym = null,
-    string $wallet = null,
-    string $ppic = null,
-    string $paid = null,
-    int $acctlevel = null,
-    string $flag = null,
-    array $accflags = null,
-    string $plan_start_date = null,
-    string $plan_until_date = null,
-    string $last_notification_date = null,
-    int $npub_verified = null,
-    int $allow_npub_login = null,
-    string $subscription_period = null
+    ?string $password = null,
+    ?string $pbkdf2_password = null,
+    ?string $nym = null,
+    ?string $wallet = null,
+    ?string $ppic = null,
+    ?string $paid = null,
+    ?int $acctlevel = null,
+    ?string $flag = null,
+    ?array $accflags = null,
+    ?string $plan_start_date = null,
+    ?string $plan_until_date = null,
+    ?string $last_notification_date = null,
+    ?int $npub_verified = null,
+    ?int $allow_npub_login = null,
+    ?string $subscription_period = null,
+    ?string $default_folder = null
   ) {
     $updates = [
       'password' => $password,
@@ -601,6 +607,7 @@ class Account
       'npub_verified' => $npub_verified,
       'allow_npub_login' => $allow_npub_login,
       'subscription_period' => $subscription_period,
+      'default_folder' => $default_folder
     ];
 
     $sql = "UPDATE users SET ";
@@ -818,6 +825,11 @@ class Account
     $accountLevel = $this->account['acctlevel'];
     $accountAddonStorage = $this->getAccountAdditionStorage();
     return SiteConfig::getStorageLimit($accountLevel, $accountAddonStorage) ?? 0; // Default to 0 if level not found
+  }
+
+  public function getDefaultFolder(): string
+  {
+    return $this->account['default_folder'] ?? '';
   }
 
   /**

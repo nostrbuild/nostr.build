@@ -406,11 +406,11 @@ HTML;
 	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 	<title>nostr.build account</title>
 
-	<script defer src="/scripts/dist/account-v2.js?v=66a9ed83d45749881a248190dba31d42"></script>
+	<script defer src="/scripts/dist/account-v2.js?v=a1603c8a262da48a4ea056c1a1460a7d"></script>
 	<link href="/scripts/dist/account-v2.css?v=b53dd90fe055a3de4cdc4c77295177dd" rel="stylesheet">
 
 	<link rel="icon" href="/assets/nb-logo-color-w.png" />
-	<link href="/styles/twbuild.css?v=7e64909872e8f93fd9159fb10eae9532" rel="stylesheet">
+	<link href="/styles/twbuild.css?v=c87d32e1ec2d6caad30c91d4ee963309" rel="stylesheet">
 
 	<!-- Pre-connect and DNS prefetch -->
 	<link rel="preconnect" href="https://i.nostr.build" crossorigin>
@@ -2157,6 +2157,41 @@ HTML;
 											</div>
 											<div class="sm:col-span-2">
 												<input type="text" name="wallet" id="wallet" x-model="profileStore.profileInfo.wallet" autocomplete="off" class="block w-full rounded-md border-0 py-1.5 bg-nbpurple-600 text-nbpurple-100 font-medium shadow-sm ring-1 ring-inset ring-nbpurple-300 placeholder:text-nbpurple-400 focus:ring-2 focus:ring-inset focus:ring-nbpurple-600 sm:text-sm sm:leading-6">
+											</div>
+										</div>
+
+										<!-- Default Folder -->
+										<div x-effect="selected = menuStore.getFolderObjByName(profileStore.profileInfo.defaultFolder) || menuStore.folders.find(folder => folder.id === 0)" x-data="{ 
+													open: false, 
+													selected: {},
+													setDefaultFolder(folder) {
+														profileStore.profileInfo.defaultFolder = folder.id === 0 ? '' : folder.name;
+													}
+												}" class="space-y-2 px-4 sm:grid sm:grid-cols-3 sm:gap-4 sm:space-y-0 sm:px-6 sm:py-5">
+											<div>
+												<label id="listbox-label" for="wallet" class="block text-sm font-medium leading-6 text-nbpurple-200 sm:mt-1.5">Default Folder</label>
+											</div>
+											<div class="relative sm:col-span-2">
+												<button type="button" @click="open = !open" :aria-expanded="open" aria-haspopup="listbox" aria-labelledby="listbox-label" class="relative w-full cursor-default rounded-md bg-nbpurple-600 text-nbpurple-100 py-1.5 pl-3 pr-10 text-left shadow-sm ring-1 ring-inset ring-nbpurple-300 focus:outline-none focus:ring-2 focus:ring-nbpurple-600 sm:text-sm sm:leading-6">
+													<span class="block truncate" x-text="selected ? selected.name : 'Select default folder'"></span>
+													<span class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2">
+														<svg class="h-5 w-5 text-nbpurple-200" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+															<path fill-rule="evenodd" d="M10 3a.75.75 0 01.55.24l3.25 3.5a.75.75 0 11-1.1 1.02L10 4.852 7.3 7.76a.75.75 0 01-1.1-1.02l3.25-3.5A.75.75 0 0110 3zm-3.76 9.2a.75.75 0 011.06.04l2.7 2.908 2.7-2.908a.75.75 0 111.1 1.02l-3.25 3.5a.75.75 0 01-1.1 0l-3.25-3.5a.75.75 0 01.04-1.06z" clip-rule="evenodd" />
+														</svg>
+													</span>
+												</button>
+												<ul x-show="open" @click.outside="open = false" class="absolute z-10 mt-1 max-h-60 w-full overflow-auto rounded-md bg-nbpurple-600 py-1 text-base shadow-lg ring-1 ring-nbpurple-950 ring-opacity-5 focus:outline-none sm:text-sm" tabindex="-1" role="listbox" aria-labelledby="listbox-label" :aria-activedescendant="selected ? 'listbox-option-' + selected.id : null">
+													<template x-for="folder in menuStore.folders" :key="folder.id">
+														<li :id="'listbox-option-' + folder.id" role="option" @click="setDefaultFolder(folder); open = false;" :class="{ 'bg-nbpurple-700 text-nbpurple-50': folder === selected, 'text-nbpurple-200': folder !== selected }" class="hover:bg-nbpurple-700 relative cursor-default select-none py-2 pl-3 pr-9">
+															<span x-text="folder.name" :class="{ 'font-semibold': folder === selected, 'font-normal': folder !== selected }" class="block truncate"></span>
+															<span x-show="folder === selected" :class="{ 'text-nbpurple-50': folder === selected, 'text-nbpurple-200': folder !== selected }" class="absolute inset-y-0 right-0 flex items-center pr-4">
+																<svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+																	<path fill-rule="evenodd" d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.05-.143z" clip-rule="evenodd" />
+																</svg>
+															</span>
+														</li>
+													</template>
+												</ul>
 											</div>
 										</div>
 

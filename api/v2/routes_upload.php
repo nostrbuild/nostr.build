@@ -200,11 +200,15 @@ $app->group('/upload', function (RouteCollectorProxy $group) {
     // NIP-98 handling
     $npub = $request->getAttribute('npub');
     $accountUploadEligible = $request->getAttribute('account_upload_eligible');
+    $accountDefaultFolder = $request->getAttribute('account_default_folder');
     $factory = $this->get('multimediaUploadFactory');
 
     if (null !== $npub) {
       error_log('npub: ' . $npub . ' uploading files');
       $upload = $factory->create($accountUploadEligible, $npub);
+      if (!empty($accountDefaultFolder)) {
+        $upload->setDefaultFolderName($accountDefaultFolder);
+      }
     } else {
       error_log('Unauthenticated upload of files');
       $upload = $factory->create();
@@ -278,11 +282,15 @@ $app->group('/upload', function (RouteCollectorProxy $group) {
     // NIP-98 handling
     $npub = $request->getAttribute('npub');
     $accountUploadEligible = $request->getAttribute('account_upload_eligible');
+    $accountDefaultFolder = $request->getAttribute('account_default_folder');
     $factory = $this->get('multimediaUploadFactory');
 
     if (null !== $npub) {
       error_log('npub: ' . $npub . ' uploading from URL: ' . $data['url']);
       $upload = $factory->create($accountUploadEligible, $npub);
+      if (!empty($accountDefaultFolder)) {
+        $upload->setDefaultFolderName($accountDefaultFolder);
+      }
     } else {
       error_log('Unauthenticated upload from URL: ' . $data['url']);
       $upload = $factory->create();

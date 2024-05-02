@@ -49,12 +49,16 @@ $app->group('/nip96', function (RouteCollectorProxy $group) {
     // NIP-98 handling
     $npub = $request->getAttribute('npub');
     $accountUploadEligible = $request->getAttribute('account_upload_eligible');
+    $accountDefaultFolder = $request->getAttribute('account_default_folder');
     $factory = $this->get('multimediaUploadFactory');
 
     if (null !== $npub) {
       // Nip-98 authentication is required for our implementation of nip-96
       error_log('npub: ' . $npub . ' uploading files');
       $upload = $factory->create($accountUploadEligible, $npub);
+      if(!empty($accountDefaultFolder)) {
+        $upload->setDefaultFolderName($accountDefaultFolder);
+      }
     } else {
       error_log('Upload unauthorized');
       // Reject with unauthorized error

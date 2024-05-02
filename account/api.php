@@ -267,6 +267,7 @@ function getAccountData(): array
 		"npub" => $info['usernpub'],
 		"pfpUrl" => $info['ppic'],
 		"wallet" => $info['wallet'],
+		"defaultFolder" => $info['default_folder'] ?? "",
 		"allowNostrLogin" => $info['allow_npub_login'],
 		"npubVerified" => $info['npub_verified'],
 		"accountLevel" => $info['acctlevel'],
@@ -623,12 +624,14 @@ if (isset($_GET["action"])) {
 			"pfpUrl" => !empty($_POST['pfpUrl']) ? $_POST['pfpUrl'] : null,
 			"wallet" => !empty($_POST['wallet']) ? $_POST['wallet'] : null,
 			"allowNostrLogin" => !empty($_POST['allowNostrLogin']) ? $_POST['allowNostrLogin'] === 'true' : false,
+			"defaultFolder" => !empty($_POST['defaultFolder']) ? $_POST['defaultFolder'] : null,
 		];
 		try {
 			$account->updateAccount(
 				nym: $profileData['name'] ?? null,
 				ppic: $profileData['pfpUrl'] ?? null,
 				wallet: $profileData['wallet'] ?? null,
+				default_folder: $profileData['defaultFolder'] ?? null,
 			);
 			$account->allowNpubLogin($profileData['allowNostrLogin']);
 			$data = getAccountData();

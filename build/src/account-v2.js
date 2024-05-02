@@ -319,6 +319,7 @@ Alpine.store('profileStore', {
     npub: '',
     pfpUrl: '',
     wallet: '',
+    defaultFolder: '',
     allowNostrLogin: undefined,
     npubVerified: undefined,
     accountLevel: 0,
@@ -519,6 +520,7 @@ Alpine.store('profileStore', {
       name: this.profileInfo.name,
       pfpUrl: this.profileInfo.pfpUrl,
       wallet: this.profileInfo.wallet,
+      defaultFolder: this.profileInfo.defaultFolder,
       allowNostrLogin: this.profileInfo.allowNostrLogin,
     };
 
@@ -658,6 +660,7 @@ Alpine.store('profileStore', {
     this.profileInfo.npub = data.npub;
     this.profileInfo.pfpUrl = data.pfpUrl;
     this.profileInfo.wallet = data.wallet;
+    this.profileInfo.defaultFolder = data.defaultFolder;
     this.profileInfo.allowNostrLogin = data.allowNostrLogin === 1;
     this.profileInfo.npubVerified = data.npubVerified === 1;
     this.profileInfo.accountLevel = data.accountLevel;
@@ -1020,6 +1023,12 @@ Alpine.store('menuStore', {
     allowDelete: false
   },
   ],
+  getFolderObjByName(folderName) {
+    return this.folders.find(folder => folder.name === folderName);
+  },
+  getFolderNameById(folderId) {
+    return this.folders.find(folder => folder.id === folderId)?.name;
+  },
   setActiveMenuFromHash() {
     const params = new URLSearchParams(window.location.hash.slice(1));
     const menu = params.get('p');
