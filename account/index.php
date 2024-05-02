@@ -1122,40 +1122,43 @@ HTML;
 											dragging = true;
 											event.dataTransfer.effectAllowed='move';
 											event.dataTransfer.setData('text/plain', event.target.id);
-											const mediaElement = document.getElementById('media_' + file.id);
-											if (mediaElement) {
-												const dragImage = document.createElement('div');
-												dragImage.id = 'drag-image';
-												dragImage.classList.add('z-50', 'fixed', 'pointer-events-none', 'opacity-90', 'drop-shadow-xl', 'object-cover', 'rounded-lg', 'overflow-hidden', 'max-h-24', 'max-w-24');
+											const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+											if (!isSafari) {
+												const mediaElement = document.getElementById('media_' + file.id);
+												if (mediaElement) {
+													const dragImage = document.createElement('div');
+													dragImage.id = 'drag-image';
+													dragImage.classList.add('z-50', 'fixed', 'pointer-events-none', 'opacity-90', 'drop-shadow-xl', 'object-cover', 'rounded-lg', 'overflow-hidden', 'max-h-24', 'max-w-24');
 
-												if (mediaElement.tagName === 'IMG') {
-													const imgElement = document.createElement('img');
-													imgElement.src = mediaElement.src;
-													imgElement.classList.add('w-full', 'h-full', 'object-contain');
-													dragImage.appendChild(imgElement);
-												} else if (mediaElement.tagName === 'VIDEO') {
-													const videoElement = document.createElement('video');
-													videoElement.src = mediaElement.src;
-													videoElement.classList.add('w-full', 'h-full', 'object-contain');
-													videoElement.poster = mediaElement.poster;
-													videoElement.autoplay = false;
-													videoElement.muted = true;
-													dragImage.appendChild(videoElement);
+													if (mediaElement.tagName === 'IMG') {
+														const imgElement = document.createElement('img');
+														imgElement.src = mediaElement.src;
+														imgElement.classList.add('w-full', 'h-full', 'object-contain');
+														dragImage.appendChild(imgElement);
+													} else if (mediaElement.tagName === 'VIDEO') {
+														const videoElement = document.createElement('video');
+														videoElement.src = mediaElement.src;
+														videoElement.classList.add('w-full', 'h-full', 'object-contain');
+														videoElement.poster = mediaElement.poster;
+														videoElement.autoplay = false;
+														videoElement.muted = true;
+														dragImage.appendChild(videoElement);
+													}
+
+													document.body.appendChild(dragImage);
+
+													const updateDragImagePosition = (e) => {
+														const offsetX = mediaElement.clientWidth * 0.25; // Adjust the horizontal offset
+														const offsetY = mediaElement.clientHeight * 0.25; // Adjust the vertical offset
+														dragImage.style.left = (e.clientX - offsetX) + 'px';
+														dragImage.style.top = (e.clientY - offsetY) + 'px';
+													};
+
+													updateDragImagePosition(event);
+													document.addEventListener('dragover', updateDragImagePosition);
+
+													event.dataTransfer.setDragImage(new Image(), 0, 0);
 												}
-
-												document.body.appendChild(dragImage);
-
-												const updateDragImagePosition = (e) => {
-													const offsetX = mediaElement.clientWidth * 0.25; // Adjust the horizontal offset
-													const offsetY = mediaElement.clientHeight * 0.25; // Adjust the vertical offset
-													dragImage.style.left = (e.clientX - offsetX) + 'px';
-													dragImage.style.top = (e.clientY - offsetY) + 'px';
-												};
-
-												updateDragImagePosition(event);
-												document.addEventListener('dragover', updateDragImagePosition);
-
-												event.dataTransfer.setDragImage(new Image(), 0, 0);
 											}
 									" :class="{ 'opacity-50 drop-shadow-xl': dragging }" class="relative" x-data="{ showMediaActions: false, dragging: false }">
 									<!-- Media type badge -->
