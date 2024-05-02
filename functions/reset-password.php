@@ -52,7 +52,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Reset Password</title>
-    <link href="/styles/twbuild.css?v=829f6b719ea7b01c11a4252d6d6c2fc4" rel="stylesheet">
+    <link href="/styles/twbuild.css?v=7e64909872e8f93fd9159fb10eae9532" rel="stylesheet">
 </head>
 
 <body class="bg-gray-100 font-sans">
