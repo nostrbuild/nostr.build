@@ -410,7 +410,7 @@ HTML;
 	<link href="/scripts/dist/account-v2.css?v=b53dd90fe055a3de4cdc4c77295177dd" rel="stylesheet">
 
 	<link rel="icon" href="/assets/nb-logo-color-w.png" />
-	<link href="/styles/twbuild.css?v=4956094bf4cd9f1db4a6309483214be6" rel="stylesheet">
+	<link href="/styles/twbuild.css?v=829f6b719ea7b01c11a4252d6d6c2fc4" rel="stylesheet">
 
 	<!-- Pre-connect and DNS prefetch -->
 	<link rel="preconnect" href="https://i.nostr.build" crossorigin>
@@ -1114,10 +1114,49 @@ HTML;
 								</li>
 							</template>
 							<template x-for="file in fileStore.files" :key="file.id">
-								<li :id="file.id" draggable="true" x-on:dragend="dragging = false" x-on:dragstart.self="
+								<li :id="file.id" draggable="true" x-on:dragend="
+										dragging = false;
+										const dragImage = document.getElementById('drag-image');
+										if (dragImage) dragImage.remove();
+										" x-on:dragstart.self="
 											dragging = true;
 											event.dataTransfer.effectAllowed='move';
 											event.dataTransfer.setData('text/plain', event.target.id);
+											const mediaElement = document.getElementById('media_' + file.id);
+											if (mediaElement) {
+												const dragImage = document.createElement('div');
+												dragImage.id = 'drag-image';
+												dragImage.classList.add('z-50', 'fixed', 'pointer-events-none', 'opacity-90', 'drop-shadow-xl', 'object-cover', 'rounded-lg', 'overflow-hidden', 'max-h-24', 'max-w-24');
+
+												if (mediaElement.tagName === 'IMG') {
+													const imgElement = document.createElement('img');
+													imgElement.src = mediaElement.src;
+													imgElement.classList.add('w-full', 'h-full', 'object-contain');
+													dragImage.appendChild(imgElement);
+												} else if (mediaElement.tagName === 'VIDEO') {
+													const videoElement = document.createElement('video');
+													videoElement.src = mediaElement.src;
+													videoElement.classList.add('w-full', 'h-full', 'object-contain');
+													videoElement.poster = mediaElement.poster;
+													videoElement.autoplay = false;
+													videoElement.muted = true;
+													dragImage.appendChild(videoElement);
+												}
+
+												document.body.appendChild(dragImage);
+
+												const updateDragImagePosition = (e) => {
+													const offsetX = mediaElement.clientWidth * 0.25; // Adjust the horizontal offset
+													const offsetY = mediaElement.clientHeight * 0.25; // Adjust the vertical offset
+													dragImage.style.left = (e.clientX - offsetX) + 'px';
+													dragImage.style.top = (e.clientY - offsetY) + 'px';
+												};
+
+												updateDragImagePosition(event);
+												document.addEventListener('dragover', updateDragImagePosition);
+
+												event.dataTransfer.setDragImage(new Image(), 0, 0);
+											}
 									" :class="{ 'opacity-50 drop-shadow-xl': dragging }" class="relative" x-data="{ showMediaActions: false, dragging: false }">
 									<!-- Media type badge -->
 									<div x-show="file.mime.startsWith('image/') && !file.mime.endsWith('/gif')" class="z-10 absolute -top-3 -right-3 size-6 bg-nbpurple-600 text-white text-xs font-semibold rounded-full flex items-center justify-center">
