@@ -405,7 +405,7 @@ HTML;
 	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 	<title>nostr.build account</title>
 
-	<script defer src="/scripts/dist/account-v2.js?v=a1603c8a262da48a4ea056c1a1460a7d"></script>
+	<script defer src="/scripts/dist/account-v2.js?v=357dff248a71eb29f16ebd49caba08bd"></script>
 	<link href="/scripts/dist/account-v2.css?v=b53dd90fe055a3de4cdc4c77295177dd" rel="stylesheet">
 
 	<link rel="icon" href="/assets/nb-logo-color-w.png" />
@@ -1080,7 +1080,38 @@ HTML;
 					<!-- /File upload area -->
 					<!-- File actions -->
 					<!-- Activity feed content -->
-					<div class="p-4" x-effect="if (fileStore.files.length === 0) await fileStore.fetchFiles(menuStore.activeFolder)">
+					<div x-data="{
+						/* TODO: Implement drag and drop to upload
+							init() {
+								$el.addEventListener('dragover', (event) => {
+									event.preventDefault();
+									//event.stopPropagation();
+									event.dataTransfer.dropEffect = 'copy';
+								});
+
+								$el.addEventListener('drop', (event) => {
+									event.preventDefault();
+									event.stopPropagation();
+									const files = Array.from(event.dataTransfer.files);
+									this.addFilesToUppy(files);
+								});
+							},
+							addFilesToUppy(files) {
+								files.forEach((file) => {
+									try {
+										uppyStore.instance.addFile({
+											source: 'drop',
+											name: file.name,
+											type: file.type,
+											data: file,
+										});
+									} catch (error) {
+										console.log('Error adding file to Uppy');
+									}
+								});
+							}
+							*/
+						}" class="p-4" x-effect="if (fileStore.files.length === 0) await fileStore.fetchFiles(menuStore.activeFolder)">
 						<ul role="list" :class="fileStore.fullWidth ? 'lg:grid-cols-4 md:grid-cols-3' : 'md:grid-cols-2'" class="grid grid-cols-2 gap-x-4 gap-y-8 md:gap-x-4 xl:gap-x-6">
 							<template x-if="fileStore.loading || !menuStore.activeFolder">
 								<li class="col-span-full relative">
