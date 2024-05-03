@@ -409,7 +409,7 @@ HTML;
 	<link href="/scripts/dist/account-v2.css?v=b53dd90fe055a3de4cdc4c77295177dd" rel="stylesheet">
 
 	<link rel="icon" href="/assets/nb-logo-color-w.png" />
-	<link href="/styles/twbuild.css?v=c87d32e1ec2d6caad30c91d4ee963309" rel="stylesheet">
+	<link href="/styles/twbuild.css?v=a2b7fa1f077749f4074a96906ff07816" rel="stylesheet">
 
 	<!-- Pre-connect and DNS prefetch -->
 	<link rel="preconnect" href="https://i.nostr.build" crossorigin>
@@ -719,14 +719,14 @@ HTML;
 						<div class="absolute left-full top-0 flex w-16 justify-center pt-5">
 							<button type="button" class="-m-2.5 p-2.5" @click="menuStore.mobileMenuOpen = false">
 								<span class="sr-only">Close sidebar</span>
-								<svg class="size-6 text-white" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true">
+								<svg class="size-6 text-nbpurple-50" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true">
 									<path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
 								</svg>
 							</button>
 						</div>
 
 						<!-- Sidebar component -->
-						<div class="flex grow flex-col gap-y-5 overflow-y-auto bg-nbpurple-900 px-6 ring-1 ring-white/10" @click.outside="menuStore.mobileMenuOpen = false; menuStore.disableDeleteFolderButtons()" @keydown.escape="menuStore.mobileMenuOpen = false; menuStore.disableDeleteFolderButtons()">
+						<div class="flex grow flex-col gap-y-5 overflow-y-auto bg-nbpurple-900 px-6 ring-1 ring-nbpurple-50/10" @click.outside="menuStore.mobileMenuOpen = false; menuStore.disableDeleteFolderButtons()" @keydown.escape="menuStore.mobileMenuOpen = false; menuStore.disableDeleteFolderButtons()">
 							<div class="flex h-16 shrink-0 items-center -mb-5">
 								<?= $NBLogoSVG ?>
 								<span class="text-nbpurple-50 font-semibold ml-4" x-text="profileStore.profileInfo.planName + ' Account'"></span>
@@ -747,7 +747,7 @@ HTML;
 			<!-- Static sidebar for desktop -->
 			<div class="hidden xl:fixed xl:inset-y-0 xl:z-50 xl:flex xl:w-72 xl:flex-col">
 				<!-- Sidebar component, swap this element with another sidebar if you like -->
-				<div class="flex grow flex-col gap-y-5 overflow-y-auto bg-nbpurple-900/10 px-6 ring-1 ring-white/5">
+				<div class="flex grow flex-col gap-y-5 overflow-y-auto bg-nbpurple-900/10 px-6 ring-1 ring-nbpurple-50/5">
 					<div class="flex h-16 shrink-0 items-center -mb-5">
 						<?= $NBLogoSVG ?>
 						<span class="text-nbpurple-50 font-semibold ml-4" x-text="profileStore.profileInfo.planName + ' Account'"></span>
@@ -765,8 +765,8 @@ HTML;
 
 			<div class="xl:pl-72">
 				<!-- Sticky search header -->
-				<div class="sticky top-0 z-40 flex h-16 shrink-0 items-center gap-x-6 border-b border-white/5 bg-nbpurple-900 px-4 shadow-sm sm:px-6 lg:px-8">
-					<button type="button" class="-m-2.5 p-2.5 text-white xl:hidden" @click="menuStore.mobileMenuOpen = true">
+				<div class="sticky top-0 z-40 flex h-16 shrink-0 items-center gap-x-6 border-b border-nbpurple-50/5 bg-nbpurple-900 px-4 shadow-sm sm:px-6 lg:px-8">
+					<button type="button" class="-m-2.5 p-2.5 text-nbpurple-50 xl:hidden" @click="menuStore.mobileMenuOpen = true">
 						<span class="sr-only">Open sidebar</span>
 						<svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
 							<path fill-rule="evenodd" d="M2 4.75A.75.75 0 012.75 4h14.5a.75.75 0 010 1.5H2.75A.75.75 0 012 4.75zM2 10a.75.75 0 01.75-.75h14.5a.75.75 0 010 1.5H2.75A.75.75 0 012 10zm0 5.25a.75.75 0 01.75-.75h14.5a.75.75 0 010 1.5H2.75a.75.75 0 01-.75-.75z" clip-rule="evenodd" />
@@ -904,7 +904,7 @@ HTML;
 											</div>
 										</div>
 										<div class="flex-shrink-0">
-											<button @click="await GAI.generateImage(title, prompt, selectedModel)" type="button" class="inline-flex items-center rounded-md bg-nbpurple-600 px-3 py-2 sm:text-sm text-xs h-9 font-semibold text-white shadow-sm hover:bg-nbpurple-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-nbpurple-600 disabled:bg-nbpurple-400" :disabled="prompt.trim() === '' || GAI.ImageLoading === true">Generate</button>
+											<button @click="await GAI.generateImage(title, prompt, selectedModel)" type="button" class="inline-flex items-center rounded-md bg-nbpurple-600 px-3 py-2 sm:text-sm text-xs h-9 font-semibold text-nbpurple-50 shadow-sm hover:bg-nbpurple-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-nbpurple-600 disabled:bg-nbpurple-400" :disabled="prompt.trim() === '' || GAI.ImageLoading === true">Generate</button>
 										</div>
 									</div>
 								</div>
@@ -963,7 +963,7 @@ HTML;
 								<p class="text-nbpurple-200 text-center text-md">Your plan does not include AI Features or subscription expired/storage full.</p>
 								<!-- Upgrade button -->
 								<div class="flex justify-center mt-4">
-									<a href="/plans/" class="inline-flex items-center rounded-md bg-nbpurple-600 px-3 py-2 sm:text-sm text-xs h-9 font-semibold text-white shadow-sm hover:bg-nbpurple-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-nbpurple-600">Upgrade or Renew</a>
+									<a href="/plans/" class="inline-flex items-center rounded-md bg-nbpurple-600 px-3 py-2 sm:text-sm text-xs h-9 font-semibold text-nbpurple-50 shadow-sm hover:bg-nbpurple-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-nbpurple-600">Upgrade or Renew</a>
 								</div>
 							</div>
 						</div>
@@ -1192,14 +1192,14 @@ HTML;
 											}
 									" :class="{ 'opacity-50 drop-shadow-xl': dragging }" class="relative" x-data="{ showMediaActions: false, dragging: false }">
 									<!-- Media type badge -->
-									<div x-show="file.mime.startsWith('image/') && !file.mime.endsWith('/gif')" class="z-10 absolute -top-3 -right-3 size-6 bg-nbpurple-600 text-white text-xs font-semibold rounded-full flex items-center justify-center">
+									<div x-show="file.mime.startsWith('image/') && !file.mime.endsWith('/gif')" class="z-10 absolute -top-3 -right-3 size-6 bg-nbpurple-600 text-nbpurple-50 text-xs font-semibold rounded-full flex items-center justify-center">
 										<svg stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="size-5">
 											<rect width="18" height="18" x="3" y="3" rx="2" ry="2" />
 											<circle cx="9" cy="9" r="2" />
 											<path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21" />
 										</svg>
 									</div>
-									<div x-show="file.mime.endsWith('/gif')" class="z-10 absolute -top-3 -right-3 size-6 bg-nbpurple-600 text-white text-xs font-semibold rounded-full flex items-center justify-center">
+									<div x-show="file.mime.endsWith('/gif')" class="z-10 absolute -top-3 -right-3 size-6 bg-nbpurple-600 text-nbpurple-50 text-xs font-semibold rounded-full flex items-center justify-center">
 										<svg stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="size-5">
 											<path d="m11 16-5 5" />
 											<path d="M11 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v6.5" />
@@ -1207,13 +1207,13 @@ HTML;
 											<circle cx="9" cy="9" r="2" />
 										</svg>
 									</div>
-									<div x-show="file.mime.startsWith('video/')" class="z-10 absolute -top-3 -right-3 size-6 bg-nbpurple-600 text-white text-xs font-semibold rounded-full flex items-center justify-center">
+									<div x-show="file.mime.startsWith('video/')" class="z-10 absolute -top-3 -right-3 size-6 bg-nbpurple-600 text-nbpurple-50 text-xs font-semibold rounded-full flex items-center justify-center">
 										<svg stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="size-5">
 											<path d="m16 13 5.223 3.482a.5.5 0 0 0 .777-.416V7.87a.5.5 0 0 0-.752-.432L16 10.5" />
 											<rect x="2" y="6" width="14" height="12" rx="2" />
 										</svg>
 									</div>
-									<div x-show="file.mime.startsWith('audio/')" class="z-10 absolute -top-3 -right-3 size-6 bg-nbpurple-600 text-white text-xs font-semibold rounded-full flex items-center justify-center">
+									<div x-show="file.mime.startsWith('audio/')" class="z-10 absolute -top-3 -right-3 size-6 bg-nbpurple-600 text-nbpurple-50 text-xs font-semibold rounded-full flex items-center justify-center">
 										<svg stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="size-5">
 											<path d="M3 14h3a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-7a9 9 0 0 1 18 0v7a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3" />
 										</svg>
@@ -1228,7 +1228,7 @@ HTML;
 									</div>
 									<!-- /Creators page badge -->
 									<!-- Nostr badge -->
-									<div x-data="{ events: 0 }" x-effect="events = file.associated_notes?.split(',')?.length || 0" x-show="events" class="cursor-pointer hover:animate-[wiggle_1s_ease-in-out_infinite] z-10 absolute py-1 h-auto top-4 -right-3 size-6 bg-nbpurple-600 text-white text-xs font-semibold rounded-full flex flex-col items-center justify-center">
+									<div x-data="{ events: 0 }" x-effect="events = file.associated_notes?.split(',')?.length || 0" x-show="events" class="cursor-pointer hover:animate-[wiggle_1s_ease-in-out_infinite] z-10 absolute py-1 h-auto top-4 -right-3 size-6 bg-nbpurple-600 text-nbpurple-50 text-xs font-semibold rounded-full flex flex-col items-center justify-center">
 										<svg class="size-5" stroke="currentColor" fill="currentColor" viewBox="0 0 256 256" xmlns="http://www.w3.org/2000/svg">
 											<circle cx="137.9" cy="99" fill="#fff" r="12.1" />
 											<path d="M210.8 115.9c0-47.3-27.7-68.7-64.4-68.7-16.4 0-31 4.4-42.4 12.5-3.8 2.7-9 .1-9-4.5 0-3.1-2.5-5.7-5.7-5.7H57.7c-3.1 0-5.7 2.5-5.7 5.7v144c0 3.1 2.5 5.7 5.7 5.7h33.7c3.1 0 5.6-2.5 5.6-5.6v-8.4c0-62.8-33.2-109.8-.4-116 30-5.7 64.1-3 64.5 20.1 0 2 .3 8 8.6 11.2 5 2 12.6 2.6 22.6 2.4 0 0 9.1-.7 9.1 8.5 0 11.5-20.4 10.7-20.4 10.7-6.7.3-22.6-1.5-31.7 1.2-4.8 1.5-9 4.2-11.5 9.1-4.2 8.3-6.2 26.5-6.5 45.5v15.5c0 3.1 2.5 5.7 5.7 5.7h68c3.1 0 5.7-2.5 5.7-5.7v-83.2z" fill="#fff" />
@@ -1498,14 +1498,14 @@ HTML;
 											<div class="isolate flex -space-x-2 overflow-hidden pl-3 pr-1 py-2">
 												<template x-for="(file, index) in (fileStore.deleteConfirmation.selectedFiles.length > 5 ? fileStore.deleteConfirmation.selectedFiles.slice(0, 5) : fileStore.deleteConfirmation.selectedFiles)" :key="file.id">
 													<div>
-														<img x-show="file.mime.startsWith('image/')" :class="'relative z-' + (50 - index * 10)" class="inline-block w-12 h-12 object-cover rounded-full ring-2 ring-white" :src="file.thumb" :alt="file.name">
-														<div x-show="file.mime.startsWith('video/')" :class="'relative z-' + (50 - index * 10)" class="size-12 object-cover rounded-full ring-2 ring-white bg-nbpurple-500 text-nbpurple-50 flex items-center justify-center">
+														<img x-show="file.mime.startsWith('image/')" :class="'relative z-' + (50 - index * 10)" class="inline-block w-12 h-12 object-cover rounded-full ring-2 ring-nbpurple-50" :src="file.thumb" :alt="file.name">
+														<div x-show="file.mime.startsWith('video/')" :class="'relative z-' + (50 - index * 10)" class="size-12 object-cover rounded-full ring-2 ring-nbpurple-50 bg-nbpurple-500 text-nbpurple-50 flex items-center justify-center">
 															<svg stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="size-8">
 																<path d="m16 13 5.223 3.482a.5.5 0 0 0 .777-.416V7.87a.5.5 0 0 0-.752-.432L16 10.5" />
 																<rect x="2" y="6" width="14" height="12" rx="2" />
 															</svg>
 														</div>
-														<div x-show="file.mime.startsWith('audio/')" :class="'relative z-' + (50 - index * 10)" class="size-12 object-cover rounded-full ring-2 ring-white bg-nbpurple-500 text-nbpurple-50 flex items-center justify-center">
+														<div x-show="file.mime.startsWith('audio/')" :class="'relative z-' + (50 - index * 10)" class="size-12 object-cover rounded-full ring-2 ring-nbpurple-50 bg-nbpurple-500 text-nbpurple-50 flex items-center justify-center">
 															<svg stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="size-8">
 																<path d="M3 14h3a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-7a9 9 0 0 1 18 0v7a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3" />
 															</svg>
@@ -1513,7 +1513,7 @@ HTML;
 													</div>
 												</template>
 												<template x-if="fileStore.deleteConfirmation.selectedFiles.length > 5">
-													<div class="relative z-0 inline-flex items-center justify-center w-12 h-12 rounded-full bg-nbpurple-600 text-white ring-2 ring-white">
+													<div class="relative z-0 inline-flex items-center justify-center w-12 h-12 rounded-full bg-nbpurple-600 text-nbpurple-50 ring-2 ring-nbpurple-50">
 														<span class="text-xs xs:text-sm font-medium">+<span x-text="fileStore.deleteConfirmation.selectedFiles.length - 5"></span></span>
 													</div>
 												</template>
@@ -1540,8 +1540,8 @@ HTML;
 							</div>
 						</div>
 						<div class="bg-nbpurple-700 px-4 py-3 gap-3 flex flex-row-reverse sm:px-6">
-							<button :disabled="fileStore.deleteConfirmation.isLoading" @click="fileStore.confirmDelete()" type="button" class="mt-3 inline-flex w-full justify-center rounded-md bg-red-600 px-4 py-2 text-base font-medium text-white shadow-sm hover:bg-red-500 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">
-								<svg x-show="fileStore.deleteConfirmation.isLoading" class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+							<button :disabled="fileStore.deleteConfirmation.isLoading" @click="fileStore.confirmDelete()" type="button" class="mt-3 inline-flex w-full justify-center rounded-md bg-red-600 px-4 py-2 text-base font-medium text-nbpurple-50 shadow-sm hover:bg-red-500 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">
+								<svg x-show="fileStore.deleteConfirmation.isLoading" class="animate-spin -ml-1 mr-3 h-5 w-5 text-nbpurple-50" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
 									<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
 									<path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
 								</svg>
@@ -1577,14 +1577,14 @@ HTML;
 												<div class="isolate flex -space-x-2 overflow-hidden pl-3 pr-1 py-2">
 													<template x-for="(file, index) in (fileStore.shareMedia.selectedFiles.length > 5 ? fileStore.shareMedia.selectedFiles.slice(0, 5) : fileStore.shareMedia.selectedFiles)" :key="file.id">
 														<div>
-															<img x-show="file.mime.startsWith('image/')" :class="'relative z-' + (50 - index * 10)" class="inline-block w-12 h-12 object-cover rounded-full ring-2 ring-white" :src="file.thumb" :alt="file.name">
-															<div x-show="file.mime.startsWith('video/')" :class="'relative z-' + (50 - index * 10)" class="size-12 object-cover rounded-full ring-2 ring-white bg-nbpurple-500 text-nbpurple-50 flex items-center justify-center">
+															<img x-show="file.mime.startsWith('image/')" :class="'relative z-' + (50 - index * 10)" class="inline-block w-12 h-12 object-cover rounded-full ring-2 ring-nbpurple-50" :src="file.thumb" :alt="file.name">
+															<div x-show="file.mime.startsWith('video/')" :class="'relative z-' + (50 - index * 10)" class="size-12 object-cover rounded-full ring-2 ring-nbpurple-50 bg-nbpurple-500 text-nbpurple-50 flex items-center justify-center">
 																<svg stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="size-8">
 																	<path d="m16 13 5.223 3.482a.5.5 0 0 0 .777-.416V7.87a.5.5 0 0 0-.752-.432L16 10.5" />
 																	<rect x="2" y="6" width="14" height="12" rx="2" />
 																</svg>
 															</div>
-															<div x-show="file.mime.startsWith('audio/')" :class="'relative z-' + (50 - index * 10)" class="size-12 object-cover rounded-full ring-2 ring-white bg-nbpurple-500 text-nbpurple-50 flex items-center justify-center">
+															<div x-show="file.mime.startsWith('audio/')" :class="'relative z-' + (50 - index * 10)" class="size-12 object-cover rounded-full ring-2 ring-nbpurple-50 bg-nbpurple-500 text-nbpurple-50 flex items-center justify-center">
 																<svg stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="size-8">
 																	<path d="M3 14h3a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-7a9 9 0 0 1 18 0v7a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3" />
 																</svg>
@@ -1592,7 +1592,7 @@ HTML;
 														</div>
 													</template>
 													<template x-if="fileStore.shareMedia.selectedFiles.length > 5">
-														<div class="relative z-0 inline-flex items-center justify-center w-12 h-12 rounded-full bg-nbpurple-600 text-white ring-2 ring-white">
+														<div class="relative z-0 inline-flex items-center justify-center w-12 h-12 rounded-full bg-nbpurple-600 text-nbpurple-50 ring-2 ring-nbpurple-50">
 															<span class="text-xs xs:text-sm font-medium">+<span x-text="fileStore.shareMedia.selectedFiles.length - 5"></span></span>
 														</div>
 													</template>
@@ -1686,14 +1686,14 @@ HTML;
 								<div class="isolate flex -space-x-2 overflow-hidden pl-3 pr-1 py-2">
 									<template x-for="(file, index) in (fileStore.moveToFolder.selectedFiles.length > 5 ? fileStore.moveToFolder.selectedFiles.slice(0, 5) : fileStore.moveToFolder.selectedFiles)" :key="file.id">
 										<div>
-											<img x-show="file.mime.startsWith('image/')" :class="'relative z-' + (50 - index * 10)" class="inline-block w-12 h-12 object-cover rounded-full ring-2 ring-white" :src="file.thumb" :alt="file.name">
-											<div x-show="file.mime.startsWith('video/')" :class="'relative z-' + (50 - index * 10)" class="size-12 object-cover rounded-full ring-2 ring-white bg-nbpurple-500 text-nbpurple-50 flex items-center justify-center">
+											<img x-show="file.mime.startsWith('image/')" :class="'relative z-' + (50 - index * 10)" class="inline-block w-12 h-12 object-cover rounded-full ring-2 ring-nbpurple-50" :src="file.thumb" :alt="file.name">
+											<div x-show="file.mime.startsWith('video/')" :class="'relative z-' + (50 - index * 10)" class="size-12 object-cover rounded-full ring-2 ring-nbpurple-50 bg-nbpurple-500 text-nbpurple-50 flex items-center justify-center">
 												<svg stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="size-8">
 													<path d="m16 13 5.223 3.482a.5.5 0 0 0 .777-.416V7.87a.5.5 0 0 0-.752-.432L16 10.5" />
 													<rect x="2" y="6" width="14" height="12" rx="2" />
 												</svg>
 											</div>
-											<div x-show="file.mime.startsWith('audio/')" :class="'relative z-' + (50 - index * 10)" class="size-12 object-cover rounded-full ring-2 ring-white bg-nbpurple-500 text-nbpurple-50 flex items-center justify-center">
+											<div x-show="file.mime.startsWith('audio/')" :class="'relative z-' + (50 - index * 10)" class="size-12 object-cover rounded-full ring-2 ring-nbpurple-50 bg-nbpurple-500 text-nbpurple-50 flex items-center justify-center">
 												<svg stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="size-8">
 													<path d="M3 14h3a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-7a9 9 0 0 1 18 0v7a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3" />
 												</svg>
@@ -1701,7 +1701,7 @@ HTML;
 										</div>
 									</template>
 									<template x-if="fileStore.moveToFolder.selectedFiles.length > 5">
-										<div class="relative z-0 inline-flex items-center justify-center w-12 h-12 rounded-full bg-nbpurple-600 text-white ring-2 ring-white">
+										<div class="relative z-0 inline-flex items-center justify-center w-12 h-12 rounded-full bg-nbpurple-600 text-nbpurple-50 ring-2 ring-nbpurple-50">
 											<span class="text-xs xs:text-sm font-medium">+<span x-text="fileStore.moveToFolder.selectedFiles.length - 5"></span></span>
 										</div>
 									</template>
@@ -1721,7 +1721,7 @@ HTML;
 											</button>
 											<ul x-show="fileStore.moveToFolder.isDropdownOpen" @click.away="fileStore.moveToFolder.isDropdownOpen = false" class="absolute z-10 mt-1 max-h-40 w-full overflow-auto rounded-md bg-nbpurple-50 py-1 text-base shadow-lg ring-1 ring-nbpurple-950 ring-opacity-5 focus:outline-none sm:text-sm" id="options" role="listbox">
 												<template x-for="folder in menuStore.folders.filter(f => f.name.toLowerCase().includes(fileStore.moveToFolder.searchTerm.toLowerCase()))">
-													<li class="relative cursor-default select-none py-2 pl-3 pr-9 text-gray-900" :id="'option-' + folder.id" role="option" @click="fileStore.moveToFolder.destinationFolderId = folder.id; fileStore.moveToFolder.selectedFolderName = folder.name; fileStore.moveToFolder.isDropdownOpen = false; fileStore.moveToFolder.searchTerm = ''" @mouseenter="fileStore.moveToFolder.hoveredFolder = folder.id" @mouseleave="fileStore.moveToFolder.hoveredFolder = null" :class="{ 'bg-nbpurple-600 text-nbpurple-50': folder.id === fileStore.moveToFolder.hoveredFolder, 'text-nbpurple-900': folder.id !== fileStore.moveToFolder.hoveredFolder }">
+													<li class="relative cursor-default select-none py-2 pl-3 pr-9 text-nbpurple-900" :id="'option-' + folder.id" role="option" @click="fileStore.moveToFolder.destinationFolderId = folder.id; fileStore.moveToFolder.selectedFolderName = folder.name; fileStore.moveToFolder.isDropdownOpen = false; fileStore.moveToFolder.searchTerm = ''" @mouseenter="fileStore.moveToFolder.hoveredFolder = folder.id" @mouseleave="fileStore.moveToFolder.hoveredFolder = null" :class="{ 'bg-nbpurple-600 text-nbpurple-50': folder.id === fileStore.moveToFolder.hoveredFolder, 'text-nbpurple-900': folder.id !== fileStore.moveToFolder.hoveredFolder }">
 														<div class="flex">
 															<span x-text="folder.name" class="truncate" :class="{ 'font-semibold': folder.id === fileStore.moveToFolder.destinationFolderId }"></span>
 														</div>
@@ -1841,19 +1841,19 @@ HTML;
 						}
 					}" @wheel.passive="handleScroll($event)" @keydown.escape="fileStore.closeModal()" @keydown.down="await fileStore.modalNext()" @keydown.right="await fileStore.modalNext()" @keydown.up="await fileStore.modalPrevious()" @keydown.left="await fileStore.modalPrevious()" @touchstart.passive="handleTouchStart(event)" @touchmove.passive="await handleTouchMove(event)" @touchend.passive="handleTouchEnd(event)" class="flex flex-col h-svh">
 				<div class="flex-grow flex items-center justify-center">
-					<button type="button" class="z-10 absolute top-3 right-3 inline-flex items-center justify-center p-1 bg-black bg-opacity-50 rounded-full text-nbpurple-50 hover:text-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-nbpurple-500" @click="fileStore.closeModal()">
+					<button type="button" class="z-10 absolute top-3 right-3 inline-flex items-center justify-center p-1 bg-black bg-opacity-50 rounded-full text-nbpurple-50 hover:text-nbpurple-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-nbpurple-500" @click="fileStore.closeModal()">
 						<svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
 							<path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
 						</svg>
 					</button>
 					<!-- Left arrow -->
-					<button type="button" class="z-10 absolute left-3 top-1/2 transform -translate-y-1/2 md:inline-flex items-center justify-center p-1 bg-black bg-opacity-50 rounded-full text-nbpurple-50 hover:text-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-nbpurple-500 hidden xl:block" @click="await fileStore.modalPrevious()">
+					<button type="button" class="z-10 absolute left-3 top-1/2 transform -translate-y-1/2 md:inline-flex items-center justify-center p-1 bg-black bg-opacity-50 rounded-full text-nbpurple-50 hover:text-nbpurple-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-nbpurple-500 hidden xl:block" @click="await fileStore.modalPrevious()">
 						<svg class="h-8 w-8" viewBox="0 0 20 20" fill="currentColor">
 							<path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd" />
 						</svg>
 					</button>
 					<!-- Right arrow -->
-					<button type="button" class="z-10 absolute right-3 top-1/2 transform -translate-y-1/2 md:inline-flex items-center justify-center p-1 bg-black bg-opacity-50 rounded-full text-nbpurple-50 hover:text-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-nbpurple-500 hidden xl:block" @click="await fileStore.modalNext()">
+					<button type="button" class="z-10 absolute right-3 top-1/2 transform -translate-y-1/2 md:inline-flex items-center justify-center p-1 bg-black bg-opacity-50 rounded-full text-nbpurple-50 hover:text-nbpurple-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-nbpurple-500 hidden xl:block" @click="await fileStore.modalNext()">
 						<svg class="h-8 w-8" viewBox="0 0 20 20" fill="currentColor">
 							<path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" />
 						</svg>
@@ -1942,7 +1942,7 @@ HTML;
 							</div>
 						</div>
 						<div class="bg-nbpurple-700 px-4 py-3 gap-3 flex flex-row-reverse sm:px-6">
-							<button :disabled="menuStore.isDeletingFolders" @click="menuStore.deleteFoldersConfirm()" type="button" class="mt-3 inline-flex w-full justify-center rounded-md bg-red-600 px-4 py-2 text-base font-medium text-white shadow-sm hover:bg-red-500 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">
+							<button :disabled="menuStore.isDeletingFolders" @click="menuStore.deleteFoldersConfirm()" type="button" class="mt-3 inline-flex w-full justify-center rounded-md bg-red-600 px-4 py-2 text-base font-medium text-nbpurple-50 shadow-sm hover:bg-red-500 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">
 								<svg x-show="menuStore.isDeletingFolders" class="animate-spin -ml-1 mr-3 h-5 w-5 text-nbpurple-50" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
 									<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
 									<path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
@@ -2113,7 +2113,7 @@ HTML;
 											<p x-text="message"></p>
 										</template>
 									</div>
-									<div x-show="profileStore.dialogError" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 transform translate-y-4" x-transition:enter-end="opacity-100 transform translate-y-0" x-transition:leave="transition ease-in duration-300" x-transition:leave-start="opacity-100 transform translate-y-0" x-transition:leave-end="opacity-0 transform translate-y-4" class="mx-4 mb-4 bg-red-500 text-white px-4 py-2 rounded-lg shadow-lg absolute top-5 right-2 z-10">
+									<div x-show="profileStore.dialogError" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 transform translate-y-4" x-transition:enter-end="opacity-100 transform translate-y-0" x-transition:leave="transition ease-in duration-300" x-transition:leave-start="opacity-100 transform translate-y-0" x-transition:leave-end="opacity-0 transform translate-y-4" class="mx-4 mb-4 bg-red-500 text-nbpurple-50 px-4 py-2 rounded-lg shadow-lg absolute top-5 right-2 z-10">
 										<template x-for="message in profileStore.dialogErrorMessages">
 											<p x-text="message"></p>
 										</template>
@@ -2273,7 +2273,7 @@ HTML;
 		</div>
 
 		<!-- Toast notification -->
-		<div x-cloak x-show="showToast" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 transform translate-x-8" x-transition:enter-end="opacity-100 transform translate-x-0" x-transition:leave="transition ease-in duration-300" x-transition:leave-start="opacity-100 transform translate-x-0" x-transition:leave-end="opacity-0 transform translate-x-8" class="z-50 fixed top-6 right-6 bg-orange-500 text-white px-4 py-2 rounded-md flex items-center">
+		<div x-cloak x-show="showToast" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 transform translate-x-8" x-transition:enter-end="opacity-100 transform translate-x-0" x-transition:leave="transition ease-in duration-300" x-transition:leave-start="opacity-100 transform translate-x-0" x-transition:leave-end="opacity-0 transform translate-x-8" class="z-50 fixed top-6 right-6 bg-orange-500 text-nbpurple-50 px-4 py-2 rounded-md flex items-center">
 			<span class="mr-2 text-xs">Link Copied</span>
 			<svg class="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
 				<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
