@@ -186,11 +186,58 @@ function getAndStoreAIGeneratedImage(string $model, string $prompt, string $titl
 	// Close the cURL handle
 	curl_close($ch);
 
-	$responseJson = json_decode($response, true);
-	$aiImageURL = $responseJson['URL'];
+	// Depending on the returned HTTP status code, handle the response
+	$httpCode = curl_getinfo($ch, CURLINFO_RESPONSE_CODE);
+	$contentType = curl_getinfo($ch, CURLINFO_CONTENT_TYPE);
+	if ($httpCode !== 200 && $contentType === 'application/json') {
+		$responseJson = json_decode($response, true);
+		throw new Exception("AI Image generation failed: HTTP {$httpCode} - {$responseJson['message']}");
+	}
+
+	// If we get image/png content type, store it in temporary file
+	$tempFile = generateUniqueFilename("ai_image_", sys_get_temp_dir());
+	if ($contentType === 'image/png') {
+		file_put_contents($tempFile, $response);
+	} else {
+		throw new Exception("AI Image generation failed: Unexpected content type: {$contentType}");
+	}
 
 	// Import the generate image and return the metadata
-	return importMediaFromURL($aiImageURL, "AI: Generated Images", $title, $prompt);
+	//return importMediaFromURL($aiImageURL, "AI: Generated Images", $title, $prompt);
+	$upload = new MultimediaUpload($link, $s3, true, $_SESSION['usernpub']);
+	$upload->setDefaultFolderName("AI: Generated Images");
+	$aiImages[] = [
+		'input_name' => 'ai_image',
+		'name' => basename($tempFile),
+		'type' => 'image/png',
+		'tmp_name' => realpath($tempFile),
+		'error' => UPLOAD_ERR_OK, // No error
+		'size' => filesize($tempFile),
+		'title' => $title ?? '',
+		'ai_prompt' => $prompt ?? '',
+	];
+
+	$upload->setRawFiles($aiImages);
+
+	// Upload the file
+	try {
+		[$status, $code, $message] = $upload->uploadFiles();
+		if (!$status) {
+			throw new Exception("Failed to upload AI generated image: {$message} {$code}");
+		}
+	} catch (Exception $e) {
+		error_log($e->getMessage());
+		throw $e;
+	}
+
+	// Return the AI generated image metadata
+	$fileData = $upload->getUploadedFiles();
+	// If result is empty, return an error
+	if (empty($fileData)) {
+		throw new Exception("Failed to import media from URL");
+	}
+
+	return getReturnFilesArray($fileData);
 }
 
 function importMediaFromURL(string $url, string $folder = '', string $title = '', string $prompt = ''): array
@@ -221,7 +268,11 @@ function importMediaFromURL(string $url, string $folder = '', string $title = ''
 		throw new Exception("Failed to import media from URL");
 	}
 
-	// Construct returned data
+	return getReturnFilesArray($fileData);
+}
+
+function getReturnFilesArray($fileData)
+{
 	$resolutionToWidth = [
 		"240p"  => "426",
 		"360p"  => "640",
@@ -229,6 +280,7 @@ function importMediaFromURL(string $url, string $folder = '', string $title = ''
 		"720p"  => "1280",
 		"1080p" => "1920",
 	];
+	// Construct returned data
 	$res = [
 		"id" => $fileData[0]['id'],
 		"flag" => 0, // Not shared by default
@@ -253,7 +305,6 @@ function importMediaFromURL(string $url, string $folder = '', string $title = ''
 		"associated_notes" => null,
 	];
 
-	error_log("Imported URL: " . json_encode($res));
 	return $res;
 }
 
@@ -343,7 +394,7 @@ if (isset($_GET["action"])) {
 	// Handle AI image generation
 	if ($_POST['action'] == "generate_ai_image") {
 		// Check if account is expired
-		if ($daysRemaining <= 0 || $account->getRemainingStorageSpace() <= 0){
+		if ($daysRemaining <= 0 || $account->getRemainingStorageSpace() <= 0) {
 			http_response_code(403);
 			echo json_encode(array("error" => "Your account has expired"));
 			$link->close();

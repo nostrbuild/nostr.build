@@ -239,6 +239,11 @@ class MultimediaUpload
     $this->filesArray = $this->restructureFilesArray($files, $tempDirectory);
   }
 
+  public function setRawFiles(array $files): void
+  {
+    $this->filesArray = $files;
+  }
+
   /**
    * Summary of setPsrFiles
    * @param array $files
@@ -1551,8 +1556,8 @@ class MultimediaUpload
     $folder_name = $folder_name ?? $this->defaultFolderName;
     if (
       (!empty($this->uppyMetadata['folderHierarchy']) &&
-      is_array($this->uppyMetadata['folderHierarchy']) &&
-      count($this->uppyMetadata['folderHierarchy']) > 0) ||
+        is_array($this->uppyMetadata['folderHierarchy']) &&
+        count($this->uppyMetadata['folderHierarchy']) > 0) ||
       !empty($this->defaultFolderName)
     ) {
       // We have a folder hierarchy, so we need to find the folder ID
