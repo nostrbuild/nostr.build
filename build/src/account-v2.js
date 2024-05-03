@@ -1985,6 +1985,18 @@ Alpine.store('uppyStore', {
           return false; // Exclude the file
         }
 
+        // Prevent SVG files from being uploaded
+        if (currentFile.type === 'image/svg+xml' || currentFile.name.endsWith('.svg')) {
+          this.instance.info(`Skipping file ${currentFile.name} because SVG files are not allowed`, 'error', 500);
+          return false; // Exclude the file
+        }
+
+        // Prevent PSD files from being uploaded
+        if (currentFile.type === 'image/vnd.adobe.photoshop' || currentFile.name.endsWith('.psd')) {
+          this.instance.info(`Skipping file ${currentFile.name} because PSD files are not allowed`, 'error', 500);
+          return false; // Exclude the file
+        }
+
         return true; // Include the file
       },
     })
