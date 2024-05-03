@@ -1301,7 +1301,7 @@ HTML;
 												$el.srcset=file.srcset;
 												$el.sizes=file.sizes;
 												if (file.loadMore && !fileStore.loading && !fileStore.loadingMoreFiles) setTimeout(async () => {await fileStore.loadMoreFiles()}, 0);
-												" :id="'media_' + file.id" @load="$el.classList.remove('opacity-0'); file.loaded = true; document.getElementById('placeholders_' + file.id)?.remove();" @error="file.loaded = true, file.loadError" :data-src="file.thumb" :alt="file.name" :width="file.width" :height="file.height" loading="eager" class="opacity-0 transition-opacity duration-500 ease-in pointer-events-none object-contain group-hover:opacity-75" />
+												" :id="'media_' + file.id" @load="$el.classList.remove('opacity-0'); file.loaded = true;" @error="file.loaded = true, file.loadError" :data-src="file.thumb" :alt="file.name" :width="file.width" :height="file.height" loading="eager" class="opacity-0 transition-opacity duration-500 ease-in pointer-events-none object-contain group-hover:opacity-75" />
 										</template>
 
 										<!-- Video -->
@@ -1310,7 +1310,7 @@ HTML;
 														$el.src = file.url;
 														$el.load();
 														if (file.loadMore && !fileStore.loading && !fileStore.loadingMoreFiles) fileStore.loadMoreFiles();
-													" @loadedmetadata="file.loaded = true; document.getElementById('placeholders_' + file.id)?.remove();" playsinline preload="none" class="pointer-events-none object-cover">
+													" @loadedmetadata="file.loaded = true;" playsinline preload="none" class="pointer-events-none object-cover">
 												<source :data-src="file.url" type="video/mp4">
 												<p>
 													Your browser does not support the video tag.
@@ -1322,7 +1322,7 @@ HTML;
 										<!-- Audio -->
 										<template x-if="file.mime.startsWith('audio/')">
 											<!-- Default poster -->
-											<img :id="'media_' + file.id" src="https://cdn.nostr.build/assets/audio/jpg/audio-wave@0.5x.jpg" :alt="'Poster for ' + file.name" @load="file.loaded = true; document.getElementById('placeholders_' + file.id)?.remove();" loading="eager" class="pointer-events-none object-cover group-hover:opacity-75" />
+											<img :id="'media_' + file.id" src="https://cdn.nostr.build/assets/audio/jpg/audio-wave@0.5x.jpg" :alt="'Poster for ' + file.name" @load="file.loaded = true;" loading="eager" class="pointer-events-none object-cover group-hover:opacity-75" />
 										</template>
 
 										<button @click="fileStore.openModal(file)" type="button" :class="{'hidden pointer-events-none': showMediaActions}" class="absolute inset-0 focus:outline-none">
