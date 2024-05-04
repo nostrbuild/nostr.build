@@ -1325,6 +1325,80 @@ Alpine.store('fileStore', {
   filesById: {},
   loading: false,
   fullWidth: false,
+  Files: {
+    files: [],
+    filesById: new Map(),
+    filesByName: new Map(),
+
+    get files() {
+      return this.files;
+    },
+
+    get filesById() {
+      return this.filesById;
+    },
+
+    get filesByName() {
+      return this.filesByName;
+    },
+
+    set files(files) {
+      this.files = [...files];
+      this.updateMaps();
+    },
+
+    updateMaps() {
+      this.filesById = new Map(this.files.map(file => [file.id, file]));
+      this.filesByName = new Map(this.files.map(file => [file.name, file]));
+    },
+
+    addFile(file, position = 'bottom') {
+      if (!this.filesById.has(file.id)) {
+        if (position === 'top') {
+          this.files.unshift(file);
+        } else {
+          this.files.push(file);
+        }
+        this.addFileToMaps(file);
+      }
+    },
+
+    addFiles(newFiles, position = 'bottom') {
+      const uniqueFiles = newFiles.filter(file => !this.filesById.has(file.id));
+      if (position === 'top') {
+        this.files.unshift(...uniqueFiles);
+      } else {
+        this.files.push(...uniqueFiles);
+      }
+      uniqueFiles.forEach(file => this.addFileToMaps(file));
+    },
+
+    addFileToMaps(file) {
+      this.filesById.set(file.id, file);
+      this.filesByName.set(file.name, file);
+    },
+
+    removeFile(file) {
+      const index = this.files.findIndex(f => f.id === file.id);
+      if (index !== -1) {
+        this.files.splice(index, 1);
+        this.removeFileFromMaps(file);
+      }
+    },
+
+    removeFileFromMaps(file) {
+      this.filesById.delete(file.id);
+      this.filesByName.delete(file.name);
+    },
+
+    getFileByName(name) {
+      return this.filesByName.get(name);
+    },
+
+    getFileById(id) {
+      return this.filesById.get(id);
+    }
+  },
   moveToFolder: {
     isOpen: false,
     isLoading: false,
