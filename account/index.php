@@ -409,7 +409,7 @@ HTML;
 	<link href="/scripts/dist/account-v2.css?v=b53dd90fe055a3de4cdc4c77295177dd" rel="stylesheet">
 
 	<link rel="icon" href="/assets/nb-logo-color-w.png" />
-	<link href="/styles/twbuild.css?v=404eff1cd815ac9115e1325ccf66ea0d" rel="stylesheet">
+	<link href="/styles/twbuild.css?v=b8bef668fad08557ef0c4910fab8394a" rel="stylesheet">
 
 	<!-- Pre-connect and DNS prefetch -->
 	<link rel="preconnect" href="https://i.nostr.build" crossorigin>
@@ -1228,16 +1228,15 @@ HTML;
 									</div>
 									<!-- /Creators page badge -->
 									<!-- Nostr badge -->
-									<div x-data="{ events: 0 }" x-effect="events = file.associated_notes?.split(',')?.length || 0" x-show="events" class="cursor-pointer hover:animate-[wiggle_1s_ease-in-out_infinite] z-10 absolute py-1 h-auto top-2 -left-3 size-6 bg-nbpurple-600 text-nbpurple-50 text-xs font-semibold rounded-full flex flex-col items-center justify-center">
+									<div x-data="{ events: 0 }" x-effect="events = file.associated_notes?.split(',')?.length || 0" x-show="events" class="cursor-pointer hover:animate-[wiggle_1s_ease-in-out_infinite] absolute bottom-[3.35rem] left-1.5 z-10 py-1 size-6 bg-nbpurple-600 text-nbpurple-50 text-xs font-semibold rounded-full flex flex-col items-center justify-center opacity-75 h-fit w-fit">
 										<svg class="size-5" stroke="currentColor" fill="currentColor" viewBox="0 0 256 256" xmlns="http://www.w3.org/2000/svg">
 											<circle cx="137.9" cy="99" fill="#fff" r="12.1" />
 											<path d="M210.8 115.9c0-47.3-27.7-68.7-64.4-68.7-16.4 0-31 4.4-42.4 12.5-3.8 2.7-9 .1-9-4.5 0-3.1-2.5-5.7-5.7-5.7H57.7c-3.1 0-5.7 2.5-5.7 5.7v144c0 3.1 2.5 5.7 5.7 5.7h33.7c3.1 0 5.6-2.5 5.6-5.6v-8.4c0-62.8-33.2-109.8-.4-116 30-5.7 64.1-3 64.5 20.1 0 2 .3 8 8.6 11.2 5 2 12.6 2.6 22.6 2.4 0 0 9.1-.7 9.1 8.5 0 11.5-20.4 10.7-20.4 10.7-6.7.3-22.6-1.5-31.7 1.2-4.8 1.5-9 4.2-11.5 9.1-4.2 8.3-6.2 26.5-6.5 45.5v15.5c0 3.1 2.5 5.7 5.7 5.7h68c3.1 0 5.7-2.5 5.7-5.7v-83.2z" fill="#fff" />
 										</svg>
-										<span class="text-xs -mt-[0.175] " x-text="events"></span>
+										<span class="text-xs -mt-[0.175]" x-text="events"></span>
 									</div>
 									<!-- /Nostr badge -->
 									<div class="relative group aspect-h-7 aspect-w-10 w-full overflow-hidden rounded-lg bg-black/50 focus-within:ring-2 focus-within:ring-nbpurple-500 focus-within:ring-offset-2 focus-within:ring-offset-nbpurple-100">
-
 										<!-- Loading placeholders -->
 										<div :id="'placeholders_' + file.id">
 											<template x-if="!file.loaded && file.mime.startsWith('image/') && !file.name.endsWith('.gif')">
