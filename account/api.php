@@ -402,14 +402,24 @@ if (isset($_GET["action"])) {
 		}
 		// Check if the user has permission to generate AI images
 		// TODO: Implement per model permissions
-		if (!$perm->validatePermissionsLevelAny(1, 10, 99)) {
+		if (!$perm->validatePermissionsLevelAny(2, 1, 10, 99)) {
 			http_response_code(403);
 			echo json_encode(array("error" => "You do not have permission to generate AI images"));
 			$link->close();
 			exit;
 		}
-		// Check if the user has permissions for specific models
-		$advancedModels = ["@cf/bytedance/stable-diffusion-xl-lightning", "@cf/stabilityai/stable-diffusion-xl-base-1.0"];
+		// Check for Creators Account Models access
+		$creatorsModels = ["@cf/bytedance/stable-diffusion-xl-lightning"];
+		if (isset($_POST['model']) && in_array($_POST['model'], $creatorsModels)) {
+			if (!$perm->validatePermissionsLevelAny(1, 10, 99)) {
+				http_response_code(403);
+				echo json_encode(array("error" => "You do not have permission to generate AI images using the {$_POST['model']} model"));
+				$link->close();
+				exit;
+			}
+		}
+		// Check for Advanced Models access
+		$advancedModels = ["@cf/stabilityai/stable-diffusion-xl-base-1.0"];
 		if (isset($_POST['model']) && in_array($_POST['model'], $advancedModels)) {
 			if (!$perm->validatePermissionsLevelAny(10, 99)) {
 				http_response_code(403);

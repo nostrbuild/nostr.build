@@ -393,18 +393,18 @@ Alpine.store('profileStore', {
     // Feature flags. This is enforced on the server side, the following only provides the client side checks
     // AI Studio
     get isAIStudioEligible() {
-      return [1, 10, 99].includes(this.accountLevel) &&
+      return [2, 1, 10, 99].includes(this.accountLevel) &&
         !this.accountExpired && !this.storageOverLimit;
     },
     // AI Studio Models
     // Dream Shaper
     get isAIDreamShaperEligible() {
-      return [1, 10, 99].includes(this.accountLevel) && this.isAIStudioEligible &&
+      return [2, 1, 10, 99].includes(this.accountLevel) && this.isAIStudioEligible &&
         !this.accountExpired && !this.storageOverLimit;
     },
     // SDXL-Lightning
     get isAISDXLLightningEligible() {
-      return [10, 99].includes(this.accountLevel) && this.isAIStudioEligible &&
+      return [1, 10, 99].includes(this.accountLevel) && this.isAIStudioEligible &&
         !this.accountExpired && !this.storageOverLimit;
     },
     // Stable Diffusion
@@ -1322,6 +1322,7 @@ Alpine.store('menuStore', {
 
 Alpine.store('fileStore', {
   files: [],
+  filesById: {},
   loading: false,
   fullWidth: false,
   moveToFolder: {
@@ -1676,6 +1677,9 @@ Alpine.store('fileStore', {
             return;
           }
           this.files = [...this.files, ...data];
+          // Set this.filesById for faster lookup using Map
+          this.filesById = new Map(this.files.map(file => [file.id, file]));
+
           this.fileFetchHasMore = data.length === this.fileFetchLimit;
           this.fileFetchStart += data.length;
         } else {
@@ -1692,6 +1696,9 @@ Alpine.store('fileStore', {
 
           // Replace this.files with the updated data array
           this.files = data;
+          // Set this.filesById for faster lookup using Map
+          this.filesById = new Map(this.files.map(file => [file.id, file]));
+
           const expectedLength = fetchLimit;
           this.fileFetchHasMore = data.length === expectedLength;
           this.fileFetchStart = data.length;
@@ -1742,6 +1749,7 @@ Alpine.store('fileStore', {
   },
   resetFetchFilesState() {
     this.files = [];
+    this.filesById = {};
     this.fileFetchStart = 0;
     this.fileFetchHasMore = true;
     this.lastFetchedFolder = '';
@@ -2138,7 +2146,6 @@ Alpine.store('uppyStore', {
       })
       .on('progress', (progress) => {
         // progress: integer (total progress percentage)
-        console.log(progress);
         this.mainDialog.uploadProgress = progress + '%';
       });
     console.log('Uppy instance created:', el.id);
