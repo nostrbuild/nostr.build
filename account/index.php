@@ -1156,7 +1156,7 @@ HTML;
 										if (!isSafari) {
 											const mediaElement = document.getElementById('badge_' + file.id);
 											if (mediaElement) {
-												const visibleSvg = mediaElement.querySelector('[x-show]:not([hidden])');
+												const visibleSvg = Array.from(mediaElement.children).find(svg => svg.style.display !== 'none');
 												if (visibleSvg) {
 													const dragImage = document.createElement('div');
 													dragImage.id = 'drag-image';
@@ -1164,6 +1164,8 @@ HTML;
 													
 													const svgClone = visibleSvg.cloneNode(true);
 													svgClone.removeAttribute('x-show');
+													svgClone.removeAttribute('hidden');
+													svgClone.removeAttribute('class');
 													svgClone.classList.add('w-24', 'h-24');
 													dragImage.appendChild(svgClone);
 													
