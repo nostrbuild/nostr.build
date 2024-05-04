@@ -884,7 +884,7 @@ HTML;
 																		<div class="flex items-center">
 																			<p class="font-normal" x-text="option.title"></p>
 																			<a x-show="option.disabled" href="/plans/" class="ml-2 text-nbpurple-50 text-xs hover:underline">
-																				Upgrade to Advanced or Renew
+																				Upgrade or Renew
 																			</a>
 																		</div>
 																		<span class="text-nbpurple-50" x-show="selectedModel === option.value">
