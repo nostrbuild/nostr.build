@@ -405,11 +405,11 @@ HTML;
 	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 	<title>nostr.build account</title>
 
-	<script defer src="/scripts/dist/account-v2.js?v=ca8d846b2b9407fa3b343062ad2a6b6c"></script>
+	<script defer src="/scripts/dist/account-v2.js?v=6c0b872218db0cb47c37885f6059ffa5"></script>
 	<link href="/scripts/dist/account-v2.css?v=b53dd90fe055a3de4cdc4c77295177dd" rel="stylesheet">
 
 	<link rel="icon" href="/assets/nb-logo-color-w.png" />
-	<link href="/styles/twbuild.css?v=aca4c92eb6c66e2007d9d11803f92184" rel="stylesheet">
+	<link href="/styles/twbuild.css?v=404eff1cd815ac9115e1325ccf66ea0d" rel="stylesheet">
 
 	<!-- Pre-connect and DNS prefetch -->
 	<link rel="preconnect" href="https://i.nostr.build" crossorigin>
@@ -1192,14 +1192,14 @@ HTML;
 											}
 									" :class="{ 'opacity-50 drop-shadow-xl': dragging }" class="relative" x-data="{ showMediaActions: false, dragging: false }">
 									<!-- Media type badge -->
-									<div x-show="file.mime.startsWith('image/') && !file.mime.endsWith('/gif')" class="z-10 absolute -top-3 -right-3 size-6 bg-nbpurple-600 text-nbpurple-50 text-xs font-semibold rounded-full flex items-center justify-center">
+									<div x-show="file.mime.startsWith('image/') && !file.mime.endsWith('/gif')" class="z-10 absolute top-1.5 right-1.5 size-8 bg-nbpurple-600 text-nbpurple-50 text-xs font-semibold rounded-full flex items-center justify-center opacity-75">
 										<svg stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="size-5">
 											<rect width="18" height="18" x="3" y="3" rx="2" ry="2" />
 											<circle cx="9" cy="9" r="2" />
 											<path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21" />
 										</svg>
 									</div>
-									<div x-show="file.mime.endsWith('/gif')" class="z-10 absolute -top-3 -right-3 size-6 bg-nbpurple-600 text-nbpurple-50 text-xs font-semibold rounded-full flex items-center justify-center">
+									<div x-show="file.mime.endsWith('/gif')" class="z-10 absolute top-1.5 right-1.5 size-8 bg-nbpurple-600 text-nbpurple-50 text-xs font-semibold rounded-full flex items-center justify-center opacity-75">
 										<svg stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="size-5">
 											<path d="m11 16-5 5" />
 											<path d="M11 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v6.5" />
@@ -1207,13 +1207,13 @@ HTML;
 											<circle cx="9" cy="9" r="2" />
 										</svg>
 									</div>
-									<div x-show="file.mime.startsWith('video/')" class="z-10 absolute -top-3 -right-3 size-6 bg-nbpurple-600 text-nbpurple-50 text-xs font-semibold rounded-full flex items-center justify-center">
+									<div x-show="file.mime.startsWith('video/')" class="z-10 absolute top-1.5 right-1.5 size-8 bg-nbpurple-600 text-nbpurple-50 text-xs font-semibold rounded-full flex items-center justify-center opacity-75">
 										<svg stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="size-5">
 											<path d="m16 13 5.223 3.482a.5.5 0 0 0 .777-.416V7.87a.5.5 0 0 0-.752-.432L16 10.5" />
 											<rect x="2" y="6" width="14" height="12" rx="2" />
 										</svg>
 									</div>
-									<div x-show="file.mime.startsWith('audio/')" class="z-10 absolute -top-3 -right-3 size-6 bg-nbpurple-600 text-nbpurple-50 text-xs font-semibold rounded-full flex items-center justify-center">
+									<div x-show="file.mime.startsWith('audio/')" class="z-10 absolute top-1.5 right-1.5 size-8 bg-nbpurple-600 text-nbpurple-50 text-xs font-semibold rounded-full flex items-center justify-center opacity-75">
 										<svg stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="size-5">
 											<path d="M3 14h3a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-7a9 9 0 0 1 18 0v7a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3" />
 										</svg>
@@ -1228,7 +1228,7 @@ HTML;
 									</div>
 									<!-- /Creators page badge -->
 									<!-- Nostr badge -->
-									<div x-data="{ events: 0 }" x-effect="events = file.associated_notes?.split(',')?.length || 0" x-show="events" class="cursor-pointer hover:animate-[wiggle_1s_ease-in-out_infinite] z-10 absolute py-1 h-auto top-4 -right-3 size-6 bg-nbpurple-600 text-nbpurple-50 text-xs font-semibold rounded-full flex flex-col items-center justify-center">
+									<div x-data="{ events: 0 }" x-effect="events = file.associated_notes?.split(',')?.length || 0" x-show="events" class="cursor-pointer hover:animate-[wiggle_1s_ease-in-out_infinite] z-10 absolute py-1 h-auto top-2 -left-3 size-6 bg-nbpurple-600 text-nbpurple-50 text-xs font-semibold rounded-full flex flex-col items-center justify-center">
 										<svg class="size-5" stroke="currentColor" fill="currentColor" viewBox="0 0 256 256" xmlns="http://www.w3.org/2000/svg">
 											<circle cx="137.9" cy="99" fill="#fff" r="12.1" />
 											<path d="M210.8 115.9c0-47.3-27.7-68.7-64.4-68.7-16.4 0-31 4.4-42.4 12.5-3.8 2.7-9 .1-9-4.5 0-3.1-2.5-5.7-5.7-5.7H57.7c-3.1 0-5.7 2.5-5.7 5.7v144c0 3.1 2.5 5.7 5.7 5.7h33.7c3.1 0 5.6-2.5 5.6-5.6v-8.4c0-62.8-33.2-109.8-.4-116 30-5.7 64.1-3 64.5 20.1 0 2 .3 8 8.6 11.2 5 2 12.6 2.6 22.6 2.4 0 0 9.1-.7 9.1 8.5 0 11.5-20.4 10.7-20.4 10.7-6.7.3-22.6-1.5-31.7 1.2-4.8 1.5-9 4.2-11.5 9.1-4.2 8.3-6.2 26.5-6.5 45.5v15.5c0 3.1 2.5 5.7 5.7 5.7h68c3.1 0 5.7-2.5 5.7-5.7v-83.2z" fill="#fff" />
