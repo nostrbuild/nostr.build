@@ -409,7 +409,7 @@ HTML;
 	<link href="/scripts/dist/account-v2.css?v=b53dd90fe055a3de4cdc4c77295177dd" rel="stylesheet">
 
 	<link rel="icon" href="/assets/nb-logo-color-w.png" />
-	<link href="/styles/twbuild.css?v=b8bef668fad08557ef0c4910fab8394a" rel="stylesheet">
+	<link href="/styles/twbuild.css?v=1df679982c1989431d31b17cbe5569b0" rel="stylesheet">
 
 	<!-- Pre-connect and DNS prefetch -->
 	<link rel="preconnect" href="https://i.nostr.build" crossorigin>
@@ -1149,72 +1149,59 @@ HTML;
 										const dragImage = document.getElementById('drag-image');
 										if (dragImage) dragImage.remove();
 										" x-on:dragstart.self="
-											dragging = true;
-											event.dataTransfer.effectAllowed='move';
-											event.dataTransfer.setData('text/plain', event.target.id);
-											const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
-											if (!isSafari) {
-												const mediaElement = document.getElementById('media_' + file.id);
-												if (mediaElement) {
+										dragging = true;
+										event.dataTransfer.effectAllowed='move';
+										event.dataTransfer.setData('text/plain', event.target.id);
+										const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+										if (!isSafari) {
+											const mediaElement = document.getElementById('badge_' + file.id);
+											if (mediaElement) {
+												const visibleSvg = mediaElement.querySelector('[x-show]:not([hidden])');
+												if (visibleSvg) {
 													const dragImage = document.createElement('div');
 													dragImage.id = 'drag-image';
-													dragImage.classList.add('z-50', 'fixed', 'pointer-events-none', 'opacity-90', 'drop-shadow-xl', 'object-cover', 'rounded-lg', 'overflow-hidden', 'max-h-24', 'max-w-24');
-
-													if (mediaElement.tagName === 'IMG') {
-														const imgElement = document.createElement('img');
-														imgElement.src = mediaElement.src;
-														imgElement.classList.add('w-full', 'h-full', 'object-contain');
-														dragImage.appendChild(imgElement);
-													} else if (mediaElement.tagName === 'VIDEO') {
-														const videoElement = document.createElement('video');
-														videoElement.src = mediaElement.src;
-														videoElement.classList.add('w-full', 'h-full', 'object-contain');
-														videoElement.poster = mediaElement.poster;
-														videoElement.autoplay = false;
-														videoElement.muted = true;
-														dragImage.appendChild(videoElement);
-													}
-
+													dragImage.classList.add('w-24', 'h-24', 'object-cover', 'text-nbpurple-50', 'bg-nbpurple-600', 'z-50', 'fixed', 'pointer-events-none', 'opacity-85', 'drop-shadow-xl', 'rounded-lg', 'overflow-hidden', 'cursor-grabbing');
+													
+													const svgClone = visibleSvg.cloneNode(true);
+													svgClone.removeAttribute('x-show');
+													svgClone.classList.add('w-24', 'h-24');
+													dragImage.appendChild(svgClone);
+													
 													document.body.appendChild(dragImage);
-
+													
 													const updateDragImagePosition = (e) => {
-														const offsetX = mediaElement.clientWidth * 0.25; // Adjust the horizontal offset
-														const offsetY = mediaElement.clientHeight * 0.25; // Adjust the vertical offset
+														const offsetX = 12; // Adjust the horizontal offset
+														const offsetY = 12; // Adjust the vertical offset
 														dragImage.style.left = (e.clientX - offsetX) + 'px';
 														dragImage.style.top = (e.clientY - offsetY) + 'px';
 													};
-
+													
 													updateDragImagePosition(event);
 													document.addEventListener('dragover', updateDragImagePosition);
-
+													
 													event.dataTransfer.setDragImage(new Image(), 0, 0);
 												}
 											}
+										}
 									" :class="{ 'opacity-50 drop-shadow-xl': dragging }" class="relative" x-data="{ showMediaActions: false, dragging: false }">
 									<!-- Media type badge -->
-									<div x-show="file.mime.startsWith('image/') && !file.mime.endsWith('/gif')" class="z-10 absolute top-1.5 right-1.5 size-8 bg-nbpurple-600 text-nbpurple-50 text-xs font-semibold rounded-full flex items-center justify-center opacity-75">
-										<svg stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="size-5">
+									<div :id="'badge_' + file.id" class="z-10 absolute top-1.5 right-1.5 size-8 bg-nbpurple-600 text-nbpurple-50 text-xs font-semibold rounded-full flex items-center justify-center opacity-75">
+										<svg x-show="file.mime.startsWith('image/') && !file.mime.endsWith('/gif')" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="size-5">
 											<rect width="18" height="18" x="3" y="3" rx="2" ry="2" />
 											<circle cx="9" cy="9" r="2" />
 											<path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21" />
 										</svg>
-									</div>
-									<div x-show="file.mime.endsWith('/gif')" class="z-10 absolute top-1.5 right-1.5 size-8 bg-nbpurple-600 text-nbpurple-50 text-xs font-semibold rounded-full flex items-center justify-center opacity-75">
-										<svg stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="size-5">
+										<svg x-show="file.mime.endsWith('/gif')" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="size-5">
 											<path d="m11 16-5 5" />
 											<path d="M11 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v6.5" />
 											<path d="M15.765 22a.5.5 0 0 1-.765-.424V13.38a.5.5 0 0 1 .765-.424l5.878 3.674a1 1 0 0 1 0 1.696z" />
 											<circle cx="9" cy="9" r="2" />
 										</svg>
-									</div>
-									<div x-show="file.mime.startsWith('video/')" class="z-10 absolute top-1.5 right-1.5 size-8 bg-nbpurple-600 text-nbpurple-50 text-xs font-semibold rounded-full flex items-center justify-center opacity-75">
-										<svg stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="size-5">
+										<svg x-show="file.mime.startsWith('video/')" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="size-5">
 											<path d="m16 13 5.223 3.482a.5.5 0 0 0 .777-.416V7.87a.5.5 0 0 0-.752-.432L16 10.5" />
 											<rect x="2" y="6" width="14" height="12" rx="2" />
 										</svg>
-									</div>
-									<div x-show="file.mime.startsWith('audio/')" class="z-10 absolute top-1.5 right-1.5 size-8 bg-nbpurple-600 text-nbpurple-50 text-xs font-semibold rounded-full flex items-center justify-center opacity-75">
-										<svg stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="size-5">
+										<svg x-show="file.mime.startsWith('audio/')" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="size-5">
 											<path d="M3 14h3a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-7a9 9 0 0 1 18 0v7a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3" />
 										</svg>
 									</div>
