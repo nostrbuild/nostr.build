@@ -6,6 +6,7 @@ import XHRUpload from '@uppy/xhr-upload';
 //import Compressor from '@uppy/compressor';
 //import ImageEditor from '@uppy/image-editor';
 import Webcam from '@uppy/webcam';
+import DropTarget from '@uppy/drop-target';
 
 
 import '@uppy/core/dist/style.min.css';
@@ -13,6 +14,8 @@ import '@uppy/dashboard/dist/style.min.css';
 //import '@uppy/audio/dist/style.min.css';
 //import '@uppy/image-editor/dist/style.min.css';
 import '@uppy/webcam/dist/style.min.css';
+import '@uppy/drop-target/dist/style.css';
+
 
 import { lock, unlock, clearBodyLocks } from 'tua-body-scroll-lock';
 import axios, { all } from 'axios';
@@ -2016,6 +2019,7 @@ Alpine.store('uppyStore', {
   instance: null,
   // Dialog state
   mainDialog: {
+    dialogEl: null,
     isOpen: false,
     isLoading: false,
     uploadProgress: null,
@@ -2071,7 +2075,9 @@ Alpine.store('uppyStore', {
       return this.currentFiles.filter(file => file.folder === folderName);
     }
   },
-  instantiateUppy(el) {
+  instantiateUppy(el, dropTarget, onDropCallback, onDragOverCallback, onDragLeaveCallback) {
+    this.mainDialog.dialogEl = el;
+    console.log('Instantiating Uppy...');
     // Stores
     const menuStore = Alpine.store('menuStore');
     const fileStore = Alpine.store('fileStore');
@@ -2143,6 +2149,24 @@ Alpine.store('uppyStore', {
           folderHierarchy: [], // Initialize folderHierarchy metadata
         },
       })
+      .use(DropTarget, {
+        target: dropTarget,
+        onDragLeave: (event) => {
+          if (typeof onDragLeaveCallback === 'function') {
+            onDragLeaveCallback(event);
+          }
+        },
+        onDragOver: (event) => {
+          if (typeof onDragOverCallback === 'function') {
+            onDragOverCallback(event);
+          }
+        },
+        onDrop: (event) => {
+          if (typeof onDropCallback === 'function') {
+            onDropCallback(event);
+          }
+        }
+      })
       .on('upload-success', (file, response) => {
         if (Array.isArray(response.body)) {
           const fileResponse = response.body.find(f => f.id === file.id);
@@ -2204,6 +2228,21 @@ Alpine.store('uppyStore', {
           folderHierarchy = folderPathParts.length > 1 ? folderPathParts.slice(0, -1) : [defaultFolder];
           folderName = folderHierarchy.length > 0 ? folderHierarchy[folderHierarchy.length - 1] : defaultFolder;
           this.mainDialog.uploadFolder = folderName;
+          // Add folder to the folder list if not already present
+          const folderExists = menuStore.folders.some(folder => folder.name === folderName);
+          if (!folderExists) {
+            const folder = {
+              id: folderName,
+              name: folderName,
+              icon: folderName.substring(0, 1).toUpperCase(),
+              route: '#',
+              allowDelete: false
+            };
+            // Add the folder to the folders list
+            menuStore.folders.push(folder);
+            // Sort the folders list
+            menuStore.folders = menuStore.folders.sort((a, b) => a.name.localeCompare(b.name));
+          }
         } else {
           this.mainDialog.uploadFolder = defaultFolder;
         }

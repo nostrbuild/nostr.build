@@ -405,8 +405,8 @@ HTML;
 	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 	<title>nostr.build account</title>
 
-	<script defer src="/scripts/dist/account-v2.js?v=99ae3ffdea82219eef4138404f034ec4"></script>
-	<link href="/scripts/dist/account-v2.css?v=b53dd90fe055a3de4cdc4c77295177dd" rel="stylesheet">
+	<script defer src="/scripts/dist/account-v2.js?v=f0f98040b1410cc57826eed0af61244b"></script>
+	<link href="/scripts/dist/account-v2.css?v=dbfaad81a558216cc1207acd10bc90b1" rel="stylesheet">
 
 	<link rel="icon" href="/assets/nb-logo-color-w.png" />
 	<link href="/styles/twbuild.css?v=52f84be5d831ea188a9925a83190aac5" rel="stylesheet">
@@ -422,6 +422,29 @@ HTML;
 		}
 
 		/* More of Uppy styles */
+		.uppy-is-drag-over::after {
+			position: fixed;
+			top: 0.5rem;
+			right: 0.5rem;
+			bottom: 0.5rem;
+			left: 0.5rem;
+			z-index: 9999;
+			background-color: color(display-p3 0.275 0.247 0.576/0.75);
+			border: 0.1rem dashed color(display-p3 0.141 0.125 0.294/1);
+			content: 'Drop here to upload';
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			font-size: 2rem;
+			font-weight: bold;
+			color: #E4E2F3;
+			background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="%23E4E2F3" class="w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" d="M12 16.5V9.75m0 0 3 3m-3-3-3 3M6.75 19.5a4.5 4.5 0 0 1-1.41-8.775 5.25 5.25 0 0 1 10.233-2.33 3 3 0 0 1 3.758 3.848A3.752 3.752 0 0 1 18 19.5H6.75Z" /></svg>');
+			background-repeat: no-repeat;
+			background-position: center 60%;
+			background-size: 3rem;
+			padding-top: 4rem;
+		}
+
 		[data-uppy-theme=dark] .uppy-ProviderBrowser-viewType--list {
 			background-color: #302B64;
 		}
@@ -684,22 +707,42 @@ HTML;
 
 </head>
 
-<body x-data="{
-	showToast: false,
-	logoutScreen: false,
-	// Stores
-	menuStore: $store.menuStore,
-	fileStore: $store.fileStore,
-	GAI: $store.GAI,
-	profileStore: $store.profileStore,
-	nostrStore: $store.nostrStore,
-	uppyStore: $store.uppyStore,
-	urlImportStore: $store.urlImportStore,
-	}" x-init="if (!menuStore.foldersFetched) await menuStore.fetchFolders(); $watch('showToast', value => {
-		if (value) {
-			setTimeout(() => showToast = false, 2000);
-		}
-	})" class="h-full">
+<body id="drop-target" x-data="{
+showToast: false,
+logoutScreen: false,
+// Stores
+menuStore: $store.menuStore,
+fileStore: $store.fileStore,
+GAI: $store.GAI,
+profileStore: $store.profileStore,
+nostrStore: $store.nostrStore,
+uppyStore: $store.uppyStore,
+urlImportStore: $store.urlImportStore,
+isDraggingOver: false,
+selfDraggable: false,
+dragOverCB(event) {
+	if (this.selfDraggable) return;
+	event.preventDefault();
+	event.stopPropagation();
+	this.isDraggingOver = true;
+},
+dragLeaveCB(event) {
+	if (this.selfDraggable) return;
+	event.preventDefault();
+	event.stopPropagation();
+	this.isDraggingOver = false;
+},
+onDropCB(event) {
+	if (this.selfDraggable) return;
+	event.preventDefault();
+	event.stopPropagation();
+	this.isDraggingOver = false;
+},
+}" x-init="if (!menuStore.foldersFetched) await menuStore.fetchFolders(); $watch('showToast', value => {
+	if (value) {
+		setTimeout(() => showToast = false, 2000);
+	}
+})" class="h-full">
 	<!-- Big loading spinner -->
 	<div x-show="!menuStore.alpineInitiated || !menuStore.menuStoreInitiated || !profileStore.profileDataInitialized" id="bls-screen" class="flex flex-col fixed inset-0 z-[9999] items-center justify-center bg-gradient-to-tr from-nbpurple-950 to-nbpurple-800 bg-fixed bg-no-repeat bg-cover" x-transition:enter="transition ease-out duration-500" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" x-transition:leave="transition ease-in duration-500" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0">
 		<svg class="animate-spin size-1/4 text-nbpurple-100" fill="none" viewBox="0 0 24 24">
@@ -787,17 +830,17 @@ HTML;
 					<!-- notification bell -->
 					<div class="flex items-center gap-x-4 relative">
 						<!--
-						<button type="button" class="p-2.5 text-nbpurple-50">
-							<span class="sr-only">Notifications</span>
-							<svg :class="{ 'animate-[wiggle_1s_ease-in-out_infinite]': false }" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-								<path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 0 0 5.454-1.31A8.967 8.967 0 0 1 18 9.75V9A6 6 0 0 0 6 9v.75a8.967 8.967 0 0 1-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 0 1-5.714 0m5.714 0a3 3 0 1 1-5.714 0" />
-							</svg>
+					<button type="button" class="p-2.5 text-nbpurple-50">
+						<span class="sr-only">Notifications</span>
+						<svg :class="{ 'animate-[wiggle_1s_ease-in-out_infinite]': false }" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+							<path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 0 0 5.454-1.31A8.967 8.967 0 0 1 18 9.75V9A6 6 0 0 0 6 9v.75a8.967 8.967 0 0 1-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 0 1-5.714 0m5.714 0a3 3 0 1 1-5.714 0" />
+						</svg>
 -->
 						<!--
-							<span x-cloak class="animate-ping absolute top-2 right-2.5 block h-1 w-1 rounded-full ring-2 ring-nbpurple-400 bg-nbpurple-600"></span>
-							-->
+						<span x-cloak class="animate-ping absolute top-2 right-2.5 block h-1 w-1 rounded-full ring-2 ring-nbpurple-400 bg-nbpurple-600"></span>
+						-->
 						<!--
-						</button>
+					</button>
 -->
 						<!-- Refresh folder content button -->
 						<button :disabled="loading" @click="loading = true; fileStore.refreshFoldersAfterFetch = true; fileStore.fetchFiles(menuStore.activeFolder, true).finally(() => setTimeout(() => { loading = false}, 1000))" type="button" class="p-2 text-nbpurple-100" x-data="{ loading: false }">
@@ -828,9 +871,9 @@ HTML;
 								<!-- Form fields -->
 								<div class="overflow-hidden rounded-lg border border-nbpurple-300 shadow-sm focus-within:border-nbpurple-500 focus-within:ring-1 focus-within:ring-nbpurple-500">
 									<!--
-									<label for="title" class="sr-only">Title</label>
-									<input x-model="title" type="text" name="title" id="title" class="block w-full border-0 pt-2.5 text-sm text-nbpurple-800 font-medium placeholder:text-nbpurple-400 focus:ring-0 bg-nbpurple-50" placeholder="Title (name your creation)">
-					-->
+								<label for="title" class="sr-only">Title</label>
+								<input x-model="title" type="text" name="title" id="title" class="block w-full border-0 pt-2.5 text-sm text-nbpurple-800 font-medium placeholder:text-nbpurple-400 focus:ring-0 bg-nbpurple-50" placeholder="Title (name your creation)">
+				-->
 									<label for="prompt" class="sr-only">Prompt</label>
 									<textarea x-model="prompt" rows="3" name="prompt" id="prompt" class="block w-full resize-none border-0 py-0 pt-2 text-nbpurple-900 placeholder:text-nbpurple-400 focus:ring-0 sm:text-sm sm:leading-6 bg-nbpurple-100" placeholder="(prompt) ex.: purple ostrich surfing a big wave ..."></textarea>
 
@@ -848,14 +891,14 @@ HTML;
 									<div class="flex items-center justify-between space-x-3 border-t border-nbpurple-200 px-2 py-2 sm:px-3">
 										<div class="flex">
 											<div x-data="{
-																		modelMenuOpen: false,
-																		selectedModelTitle: 'Dream Shaper',
-																		modelOptions: [
-																			{ value: '@cf/lykon/dreamshaper-8-lcm', title: 'Dream Shaper', description: 'Stable Diffusion model that has been fine-tuned to be better at photorealism without sacrificing range.', disabled: !profileStore.profileInfo.isAIDreamShaperEligible },
-																			{ value: '@cf/bytedance/stable-diffusion-xl-lightning', title: 'SDXL-Lightning', description: 'SDXL-Lightning is a lightning-fast text-to-image generation model. It can generate high-quality 1024px images in a few steps.', disabled: !profileStore.profileInfo.isAISDXLLightningEligible },
-																			{ value: '@cf/stabilityai/stable-diffusion-xl-base-1.0', title: 'Stable Diffusion', description: 'Diffusion-based text-to-image generative model by Stability AI. Generates and modify images based on text prompts.', disabled: !profileStore.profileInfo.isAISDiffusionEligible },
-																		]
-																	}">
+																	modelMenuOpen: false,
+																	selectedModelTitle: 'Dream Shaper',
+																	modelOptions: [
+																		{ value: '@cf/lykon/dreamshaper-8-lcm', title: 'Dream Shaper', description: 'Stable Diffusion model that has been fine-tuned to be better at photorealism without sacrificing range.', disabled: !profileStore.profileInfo.isAIDreamShaperEligible },
+																		{ value: '@cf/bytedance/stable-diffusion-xl-lightning', title: 'SDXL-Lightning', description: 'SDXL-Lightning is a lightning-fast text-to-image generation model. It can generate high-quality 1024px images in a few steps.', disabled: !profileStore.profileInfo.isAISDXLLightningEligible },
+																		{ value: '@cf/stabilityai/stable-diffusion-xl-base-1.0', title: 'Stable Diffusion', description: 'Diffusion-based text-to-image generative model by Stability AI. Generates and modify images based on text prompts.', disabled: !profileStore.profileInfo.isAISDiffusionEligible },
+																	]
+																}">
 												<label id="listbox-label" class="sr-only">Change generative model</label>
 												<div class="relative">
 													<div class="inline-flex divide-x divide-nbpurple-700 rounded-md shadow-sm">
@@ -875,10 +918,10 @@ HTML;
 													<ul id="models-listbox" x-cloak @click.outside="modelMenuOpen = false" x-show="modelMenuOpen" x-transition:enter="" x-transition:enter-start="" x-transition:enter-end="" x-transition:leave="transition ease-in duration-100" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0" class="absolute left-0 z-30 mt-2 sm:w-96 xs:w-72 w-64 origin-top-left divide-y divide-nbpurple-200 overflow-hidden rounded-md bg-nbpurple-500 shadow-lg ring-1 ring-nbpurple-900 ring-opacity-5 focus:outline-none" tabindex="-1" role="listbox" aria-labelledby="listbox-label" aria-activedescendant="listbox-option-0">
 														<template x-for="(option, index) in modelOptions" :key="option.value">
 															<li :class="{
-																						'bg-nbpurple-600 cursor-pointer': selectedModel === option.value,
-																						'text-nbpurple-200 cursor-not-allowed': option.disabled,
-																						'hover:bg-nbpurple-700 text-nbpurple-50 cursor-pointer': !option.disabled
-																					}" class="select-none p-4 text-sm" :id="'listbox-option-' + index" role="option" @click="if (!option.disabled) { selectedModel = option.value; selectedModelTitle = option.title; modelMenuOpen = false; }">
+																					'bg-nbpurple-600 cursor-pointer': selectedModel === option.value,
+																					'text-nbpurple-200 cursor-not-allowed': option.disabled,
+																					'hover:bg-nbpurple-700 text-nbpurple-50 cursor-pointer': !option.disabled
+																				}" class="select-none p-4 text-sm" :id="'listbox-option-' + index" role="option" @click="if (!option.disabled) { selectedModel = option.value; selectedModelTitle = option.title; modelMenuOpen = false; }">
 																<div class="flex flex-col">
 																	<div class="flex justify-between">
 																		<div class="flex items-center">
@@ -999,13 +1042,13 @@ HTML;
 					<div class="z-20 sticky top-16 lg:top-0 bg-nbpurple-900/75 py-2 px-4 md:px-4 align-middle flex items-center justify-between backdrop-filter backdrop-blur-md">
 						<!-- Refresh folder content button -->
 						<!--
-						<button :disabled="loading" @click="loading = true; fileStore.fetchFiles(menuStore.activeFolder, true).finally(() => setTimeout(() => { loading = false}, 1000))" type="button" class="mr-3 inline-flex items-center rounded-md bg-nbpurple-600 px-3 py-2 text-xs font-semibold text-nbpurple-50 shadow-sm hover:bg-nbpurple-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-nbpurple-600" x-data="{ loading: false }">
-							<svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" :class="{'animate-spin': loading}" class="size-4">
-								<path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99" />
-							</svg>
-							<span class="hidden sm:inline-block sm:ml-1"> Refresh</span>
-						</button>
-			-->
+					<button :disabled="loading" @click="loading = true; fileStore.fetchFiles(menuStore.activeFolder, true).finally(() => setTimeout(() => { loading = false}, 1000))" type="button" class="mr-3 inline-flex items-center rounded-md bg-nbpurple-600 px-3 py-2 text-xs font-semibold text-nbpurple-50 shadow-sm hover:bg-nbpurple-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-nbpurple-600" x-data="{ loading: false }">
+						<svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" :class="{'animate-spin': loading}" class="size-4">
+							<path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99" />
+						</svg>
+						<span class="hidden sm:inline-block sm:ml-1"> Refresh</span>
+					</button>
+		-->
 						<h3 class="text-sm sm:text-base font-semibold leading-6 text-nbpurple-100" x-text="menuStore.activeFolder"></h3>
 						<div class="flex ml-4 mt-0 transition-all">
 							<!-- Upload button -->
@@ -1073,45 +1116,15 @@ HTML;
 							</div>
 						</div>
 						<!-- File upload (Uppy) -->
-						<div x-init="uppyStore.instantiateUppy($el)" class="mt-2 rounded-lg border border-dashed border-nbpurple-50/25 py-1 w-full h-full max-h-[40svh] overflow-y-scroll overflow-visible">
+						<div x-init="uppyStore.instantiateUppy($el, '#drop-target', onDropCB, dragOverCB, dragLeaveCB)" class="mt-2 rounded-lg border border-dashed border-nbpurple-50/25 py-1 w-full h-full max-h-[40svh] overflow-y-scroll overflow-visible">
 							<!-- Uppy component -->
 						</div>
 					</div>
 					<!-- /File upload area -->
 					<!-- File actions -->
 					<!-- Activity feed content -->
-					<div x-data="{
-						/* TODO: Implement drag and drop to upload
-							init() {
-								$el.addEventListener('dragover', (event) => {
-									event.preventDefault();
-									//event.stopPropagation();
-									event.dataTransfer.dropEffect = 'copy';
-								});
-
-								$el.addEventListener('drop', (event) => {
-									event.preventDefault();
-									event.stopPropagation();
-									const files = Array.from(event.dataTransfer.files);
-									this.addFilesToUppy(files);
-								});
-							},
-							addFilesToUppy(files) {
-								files.forEach((file) => {
-									try {
-										uppyStore.instance.addFile({
-											source: 'drop',
-											name: file.name,
-											type: file.type,
-											data: file,
-										});
-									} catch (error) {
-										console.log('Error adding file to Uppy');
-									}
-								});
-							}
-							*/
-						}" class="p-4">
+					<div class="p-4">
+						<!-- /Dragover screen -->
 						<ul role="list" :class="fileStore.fullWidth ? 'lg:grid-cols-4 md:grid-cols-3' : 'md:grid-cols-2'" class="grid grid-cols-2 gap-x-4 gap-y-8 md:gap-x-4 xl:gap-x-6">
 							<template x-if="fileStore.loading || !menuStore.activeFolder">
 								<li class="col-span-full relative">
@@ -1148,7 +1161,9 @@ HTML;
 										dragging = false;
 										const dragImage = document.getElementById('drag-image');
 										if (dragImage) dragImage.remove();
+										selfDraggable = false;
 										" x-on:dragstart.self="
+										selfDraggable = true;
 										dragging = true;
 										event.dataTransfer.effectAllowed='move';
 										event.dataTransfer.setData('text/plain', event.target.id);
