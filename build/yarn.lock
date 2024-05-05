@@ -1112,15 +1112,15 @@
 
 "@uppy/drag-drop@^3.1.0":
   version "3.1.0"
-  resolved "https://registry.npmjs.org/@uppy/drag-drop/-/drag-drop-3.1.0.tgz"
+  resolved "https://registry.yarnpkg.com/@uppy/drag-drop/-/drag-drop-3.1.0.tgz#f4554f8083df6d539df648de8ae41065e3bcd028"
   integrity sha512-9TINGQ9R5xmu7rvd3MpxNv/E6W28VkmSDhl91l8IOcxCU44psctuvgt57TB5ArLKfICljDBJzs/6dCU38U1CuA==
   dependencies:
     "@uppy/utils" "^5.7.5"
     preact "^10.5.13"
 
-"@uppy/drop-target@^2.0.5", "@uppy/drop-target@^2.1.0":
+"@uppy/drop-target@^2.1.0":
   version "2.1.0"
-  resolved "https://registry.npmjs.org/@uppy/drop-target/-/drop-target-2.1.0.tgz"
+  resolved "https://registry.yarnpkg.com/@uppy/drop-target/-/drop-target-2.1.0.tgz#a21af10fae35a5ab5c2c844b04d279045a27f438"
   integrity sha512-s05stmY2u6BK0X7c/jMAxnTigUj08ccesoD9kmkkfPZh+J0icgokJa+P/KwwAiPAyReBoJSS1ZBzjHjuAM0v9Q==
   dependencies:
     "@uppy/utils" "^5.9.0"
