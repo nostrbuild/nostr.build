@@ -2387,6 +2387,14 @@ Alpine.store('uppyStore', {
           file.uppy.errorMessage = '';
           file.uppy.errorResponse = null;
         });
+      })
+      .on('thumbnail:generated', (file, preview) => {
+        // This depends on Dashboard plugin
+        // Update the file preview in the fileStore
+        const fileData = this.mainDialog.getFileById(file.id);
+        if (fileData) {
+          fileData.uppy.preview = preview;
+        }
       });
     console.log('Uppy instance created:', el.id);
     // Dynamic note

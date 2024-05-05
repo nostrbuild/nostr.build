@@ -405,7 +405,7 @@ HTML;
 	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 	<title>nostr.build account</title>
 
-	<script defer src="/scripts/dist/account-v2.js?v=f0f98040b1410cc57826eed0af61244b"></script>
+	<script defer src="/scripts/dist/account-v2.js?v=30ac350b638142cc3cf30dd388d100b2"></script>
 	<link href="/scripts/dist/account-v2.css?v=dbfaad81a558216cc1207acd10bc90b1" rel="stylesheet">
 
 	<link rel="icon" href="/assets/nb-logo-color-w.png" />
@@ -1291,7 +1291,7 @@ onDropCB(event) {
 
 											<!-- Uppy progress -->
 											<template x-if="!file.loaded && file.mime.startsWith('uppy/')">
-												<svg :class="{ 'animate-pulse': file?.uppy?.uploadError }" class="absolute inset-0 pointer-events-none object-cover group-hover:opacity-75 h-full w-full" viewBox="0 0 192 192">
+												<svg :class="{ 'animate-pulse': file?.uppy?.uploadError }" class="absolute z-10 inset-0 pointer-events-none object-cover h-full w-full" viewBox="0 0 192 192">
 													<circle class="text-nbpurple-50" stroke-width="15" stroke="currentColor" fill="transparent" r="70" cx="96" cy="96" />
 													<circle class="text-nbpurple-500" stroke-width="15" stroke="currentColor" fill="transparent" r="70" cx="96" cy="96" :stroke-dasharray="440" :stroke-dashoffset="440 - (440 * (file?.uppy?.progress || 0) / 100)" transform="rotate(-90 96 96)" />
 												</svg>
@@ -1351,6 +1351,11 @@ onDropCB(event) {
 											</div>
 										</div>
 										<!-- /Media actions -->
+
+										<!-- Uppy Preview -->
+										<template x-if="file.mime.startsWith('uppy/') && file.uppy.preview">
+											<img :id="'uppy_preview_' + file.id" :src="file?.uppy?.preview" alt="Upload Preview" loading="eager" class="opacity-50 pointer-events-none object-contain" />
+										</template>
 
 										<!-- Image -->
 										<template x-if="file.mime.startsWith('image/')">
