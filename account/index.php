@@ -405,11 +405,11 @@ HTML;
 	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 	<title>nostr.build account</title>
 
-	<script defer src="/scripts/dist/account-v2.js?v=6c0b872218db0cb47c37885f6059ffa5"></script>
+	<script defer src="/scripts/dist/account-v2.js?v=99ae3ffdea82219eef4138404f034ec4"></script>
 	<link href="/scripts/dist/account-v2.css?v=b53dd90fe055a3de4cdc4c77295177dd" rel="stylesheet">
 
 	<link rel="icon" href="/assets/nb-logo-color-w.png" />
-	<link href="/styles/twbuild.css?v=1df679982c1989431d31b17cbe5569b0" rel="stylesheet">
+	<link href="/styles/twbuild.css?v=52f84be5d831ea188a9925a83190aac5" rel="stylesheet">
 
 	<!-- Pre-connect and DNS prefetch -->
 	<link rel="preconnect" href="https://i.nostr.build" crossorigin>
@@ -1111,7 +1111,7 @@ HTML;
 								});
 							}
 							*/
-						}" class="p-4" x-effect="if (fileStore.files.length === 0) await fileStore.fetchFiles(menuStore.activeFolder)">
+						}" class="p-4">
 						<ul role="list" :class="fileStore.fullWidth ? 'lg:grid-cols-4 md:grid-cols-3' : 'md:grid-cols-2'" class="grid grid-cols-2 gap-x-4 gap-y-8 md:gap-x-4 xl:gap-x-6">
 							<template x-if="fileStore.loading || !menuStore.activeFolder">
 								<li class="col-span-full relative">
@@ -1144,7 +1144,7 @@ HTML;
 								</li>
 							</template>
 							<template x-for="file in fileStore.files" :key="file.id">
-								<li :id="file.id" draggable="true" x-on:dragend="
+								<li :id="file.id" :draggable="!file?.uppy" x-on:dragend="
 										dragging = false;
 										const dragImage = document.getElementById('drag-image');
 										if (dragImage) dragImage.remove();
@@ -1206,6 +1206,12 @@ HTML;
 										<svg x-show="file.mime.startsWith('audio/')" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="size-5">
 											<path d="M3 14h3a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-7a9 9 0 0 1 18 0v7a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3" />
 										</svg>
+										<svg x-show="file.mime.startsWith('uppy/')" class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+											<path d="M10.3 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v10l-3.1-3.1a2 2 0 0 0-2.814.014L6 21" />
+											<path d="m14 19.5 3-3 3 3" />
+											<path d="M17 22v-5.5" />
+											<circle cx="9" cy="9" r="2" />
+										</svg>
 									</div>
 									<!-- /Media type badge -->
 									<!-- Creators page badge -->
@@ -1226,6 +1232,16 @@ HTML;
 									</div>
 									<!-- /Nostr badge -->
 									<div class="relative group aspect-h-7 aspect-w-10 w-full overflow-hidden rounded-lg bg-black/50 focus-within:ring-2 focus-within:ring-nbpurple-500 focus-within:ring-offset-2 focus-within:ring-offset-nbpurple-100">
+										<!-- Uppy progress -->
+										<template x-if="file?.uppy">
+											<div class="z-10 absolute inset-0 flex items-center justify-center">
+												<div class="relative w-full h-full">
+													<span class="absolute inset-0 flex items-center justify-center text-nbpurple-50" :style="{ fontSize: (Math.min(Math.max(24, Math.min($el.offsetWidth, $el.offsetHeight) * (file?.uppy?.uploadError ? 0.15 : 0.2)), 200)) + 'px' }">
+														<span x-text="file?.uppy?.uploadError ? 'Error' : `${file?.uppy?.progress || '0'}%`"></span>
+													</span>
+												</div>
+											</div>
+										</template>
 										<!-- Loading placeholders -->
 										<div :id="'placeholders_' + file.id">
 											<template x-if="!file.loaded && file.mime.startsWith('image/') && !file.name.endsWith('.gif')">
@@ -1255,6 +1271,14 @@ HTML;
 											<template x-if="!file.loaded && file.mime.startsWith('audio/')">
 												<svg class="absolute inset-0 pointer-events-none object-cover group-hover:opacity-75 h-full w-full text-nbpurple-400 animate-pulse" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
 													<path d="M3 14h3a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-7a9 9 0 0 1 18 0v7a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3" />
+												</svg>
+											</template>
+
+											<!-- Uppy progress -->
+											<template x-if="!file.loaded && file.mime.startsWith('uppy/')">
+												<svg :class="{ 'animate-pulse': file?.uppy?.uploadError }" class="absolute inset-0 pointer-events-none object-cover group-hover:opacity-75 h-full w-full" viewBox="0 0 192 192">
+													<circle class="text-nbpurple-50" stroke-width="15" stroke="currentColor" fill="transparent" r="70" cx="96" cy="96" />
+													<circle class="text-nbpurple-500" stroke-width="15" stroke="currentColor" fill="transparent" r="70" cx="96" cy="96" :stroke-dasharray="440" :stroke-dashoffset="440 - (440 * (file?.uppy?.progress || 0) / 100)" transform="rotate(-90 96 96)" />
 												</svg>
 											</template>
 										</div>
@@ -1329,7 +1353,7 @@ HTML;
 														$el.src = file.url;
 														$el.load();
 														if (file.loadMore && !fileStore.loading && !fileStore.loadingMoreFiles) fileStore.loadMoreFiles();
-													" @loadedmetadata="file.loaded = true;" playsinline preload="none" class="pointer-events-none object-cover">
+													" @loadedmetadata="file.loaded = true;" @error="setTimeout(()=>{$el.load()}, 5000)" playsinline preload="none" class="pointer-events-none object-cover">
 												<source :data-src="file.url" type="video/mp4">
 												<p>
 													Your browser does not support the video tag.
@@ -1344,64 +1368,91 @@ HTML;
 											<img :id="'media_' + file.id" src="https://cdn.nostr.build/assets/audio/jpg/audio-wave@0.5x.jpg" :alt="'Poster for ' + file.name" @load="file.loaded = true;" loading="eager" class="pointer-events-none object-cover group-hover:opacity-75" />
 										</template>
 
-										<button @click="fileStore.openModal(file)" type="button" :class="{'hidden pointer-events-none': showMediaActions}" class="absolute inset-0 focus:outline-none">
-											<span class="sr-only" x-text="'View details for ' + file.name"></span>
-											<div class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-80 transition-opacity duration-300">
-												<svg x-show="file.mime.startsWith('image/')" class="size-1/3 text-nbpurple-50" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-													<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7" />
-												</svg>
-												<svg x-show="file.mime.startsWith('video/')" class="size-1/3 text-nbpurple-50" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-													<path d="m16 13 5.223 3.482a.5.5 0 0 0 .777-.416V7.87a.5.5 0 0 0-.752-.432L16 10.5" />
-													<rect x="2" y="6" width="14" height="12" rx="2" />
-												</svg>
-												<svg x-show="file.mime.startsWith('audio/')" class="size-1/3 text-nbpurple-50" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-													<path d="M3 14h3a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-7a9 9 0 0 1 18 0v7a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3" />
-												</svg>
+										<template x-if="!file.uppy">
+											<button @click="fileStore.openModal(file)" type="button" :class="{'hidden pointer-events-none': showMediaActions}" class="absolute inset-0 focus:outline-none">
+												<span class="sr-only" x-text="'View details for ' + file.name"></span>
+												<div class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-80 transition-opacity duration-300">
+													<svg x-show="file.mime.startsWith('image/')" class="size-1/3 text-nbpurple-50" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+														<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7" />
+													</svg>
+													<svg x-show="file.mime.startsWith('video/')" class="size-1/3 text-nbpurple-50" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+														<path d="m16 13 5.223 3.482a.5.5 0 0 0 .777-.416V7.87a.5.5 0 0 0-.752-.432L16 10.5" />
+														<rect x="2" y="6" width="14" height="12" rx="2" />
+													</svg>
+													<svg x-show="file.mime.startsWith('audio/')" class="size-1/3 text-nbpurple-50" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+														<path d="M3 14h3a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-7a9 9 0 0 1 18 0v7a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3" />
+													</svg>
+												</div>
+											</button>
+										</template>
+									</div>
+									<template x-if="!file.uppy">
+										<div class="flex justify-between items-center">
+											<div>
+												<p class="pointer-events-none mt-2 block truncate text-sm font-medium text-nbpurple-300" x-text="file.name"></p>
+												<p class="pointer-events-none block text-sm font-medium text-nbpurple-500" x-text="formatBytes(file.size)"></p>
 											</div>
-										</button>
-									</div>
-									<div class="flex justify-between items-center">
-										<div>
-											<p class="pointer-events-none mt-2 block truncate text-sm font-medium text-nbpurple-300" x-text="file.name"></p>
-											<p class="pointer-events-none block text-sm font-medium text-nbpurple-500" x-text="formatBytes(file.size)"></p>
+											<!-- Normal actions -->
+											<div x-show="!multiSelect" x-data="{copyClick: false}">
+												<!-- Nostr Share -->
+												<button x-cloak x-show="profileStore.profileInfo.isNostrShareEligible" @click="nostrStore.share.open(file.id)" class="hidden xs:inline-block ring-1 ring-nostrpurple-400 mt-2 px-2 py-1 bg-nostrpurple-500 text-nostrpurple-50 rounded-md hover:bg-nostrpurple-400 focus:outline-none focus:ring-2 focus:ring-nostrpurple-300 shadow-sm hover:shadow-nostrpurple-100" aria-label="Share image on Nostr">
+													<svg aria-hidden="true" class="size-6 inline-block" stroke="currentColor" fill="currentColor" viewBox="0 0 256 256" xmlns="http://www.w3.org/2000/svg">
+														<circle cx="137.9" cy="99" fill="#fff" r="12.1" />
+														<path d="M210.8 115.9c0-47.3-27.7-68.7-64.4-68.7-16.4 0-31 4.4-42.4 12.5-3.8 2.7-9 .1-9-4.5 0-3.1-2.5-5.7-5.7-5.7H57.7c-3.1 0-5.7 2.5-5.7 5.7v144c0 3.1 2.5 5.7 5.7 5.7h33.7c3.1 0 5.6-2.5 5.6-5.6v-8.4c0-62.8-33.2-109.8-.4-116 30-5.7 64.1-3 64.5 20.1 0 2 .3 8 8.6 11.2 5 2 12.6 2.6 22.6 2.4 0 0 9.1-.7 9.1 8.5 0 11.5-20.4 10.7-20.4 10.7-6.7.3-22.6-1.5-31.7 1.2-4.8 1.5-9 4.2-11.5 9.1-4.2 8.3-6.2 26.5-6.5 45.5v15.5c0 3.1 2.5 5.7 5.7 5.7h68c3.1 0 5.7-2.5 5.7-5.7v-83.2z" fill="#fff" />
+													</svg>
+												</button>
+												<!-- Copy link -->
+												<button @click="copyUrlToClipboard(file.url); copyClick = true; setTimeout(() => copyClick = false, 2000); showToast = true" class="hidden sm:inline-block mt-2 px-2 py-1 bg-nbpurple-600 text-nbpurple-50 rounded-md hover:bg-nbpurple-700 focus:outline-none focus:ring-2 focus:ring-nbpurple-500" aria-label="Copy image URL to clipboard">
+													<svg x-show="!copyClick" class="size-6 inline-block" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true" x-transition:enter="transition-opacity duration-500" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100">
+														<path stroke-linecap="round" stroke-linejoin="round" d="M11.35 3.836c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 0 0 .75-.75 2.25 2.25 0 0 0-.1-.664m-5.8 0A2.251 2.251 0 0 1 13.5 2.25H15c1.012 0 1.867.668 2.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m8.9-4.414c.376.023.75.05 1.124.08 1.131.094 1.976 1.057 1.976 2.192V16.5A2.25 2.25 0 0 1 18 18.75h-2.25m-7.5-10.5H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V18.75m-7.5-10.5h6.375c.621 0 1.125.504 1.125 1.125v9.375m-8.25-3 1.5 1.5 3-3.75" />
+													</svg>
+													<svg x-cloak x-show="copyClick" class="animate-[pulse_3s_ease-in-out_infinite] size-6 inline-block" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true" x-transition:enter="transition-opacity duration-500" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100">
+														<path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" />
+													</svg>
+												</button>
+												<!-- Media actions -->
+												<button @click="showMediaActions = !showMediaActions" class="mt-2 px-2 py-1 bg-nbpurple-600 text-nbpurple-50 rounded-md hover:bg-nbpurple-700 focus:outline-none focus:ring-2 focus:ring-nbpurple-500" aria-label="Show media actions">
+													<svg class="size-6 inline-block text-nbpurple-50" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+														<path stroke-linecap="round" stroke-linejoin="round" d="M8.625 12a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0H8.25m4.125 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0H12m4.125 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0h-.375M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+													</svg>
+												</button>
+											</div>
+											<!-- Multi-select -->
+											<div x-cloak x-show="multiSelect">
+												<button @click="toggleSelected(file.id)" type="button" :class="{ 'bg-nbpurple-600 p-1.5 text-nbpurple-50 hover:bg-nbpurple-500': isSelected(file.id), 'text-nbpurple-600 p-1.5 bg-nbpurple-50 hover:bg-nbpurple-200': !isSelected(file.id) }" class="rounded-full p-1.5 shadow-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-nbpurple-600">
+													<svg x-show="!isSelected(file.id)" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+														<path d="M10.75 4.75a.75.75 0 00-1.5 0v4.5h-4.5a.75.75 0 000 1.5h4.5v4.5a.75.75 0 001.5 0v-4.5h4.5a.75.75 0 000-1.5h-4.5v-4.5z" />
+													</svg>
+													<svg x-show="isSelected(file.id)" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+														<path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" />
+													</svg>
+												</button>
+											</div>
 										</div>
-										<!-- Normal actions -->
-										<div x-show="!multiSelect" x-data="{copyClick: false}">
-											<!-- Nostr Share -->
-											<button x-cloak x-show="profileStore.profileInfo.isNostrShareEligible" @click="nostrStore.share.open(file.id)" class="hidden xs:inline-block ring-1 ring-nostrpurple-400 mt-2 px-2 py-1 bg-nostrpurple-500 text-nostrpurple-50 rounded-md hover:bg-nostrpurple-400 focus:outline-none focus:ring-2 focus:ring-nostrpurple-300 shadow-sm hover:shadow-nostrpurple-100" aria-label="Share image on Nostr">
-												<svg aria-hidden="true" class="size-6 inline-block" stroke="currentColor" fill="currentColor" viewBox="0 0 256 256" xmlns="http://www.w3.org/2000/svg">
-													<circle cx="137.9" cy="99" fill="#fff" r="12.1" />
-													<path d="M210.8 115.9c0-47.3-27.7-68.7-64.4-68.7-16.4 0-31 4.4-42.4 12.5-3.8 2.7-9 .1-9-4.5 0-3.1-2.5-5.7-5.7-5.7H57.7c-3.1 0-5.7 2.5-5.7 5.7v144c0 3.1 2.5 5.7 5.7 5.7h33.7c3.1 0 5.6-2.5 5.6-5.6v-8.4c0-62.8-33.2-109.8-.4-116 30-5.7 64.1-3 64.5 20.1 0 2 .3 8 8.6 11.2 5 2 12.6 2.6 22.6 2.4 0 0 9.1-.7 9.1 8.5 0 11.5-20.4 10.7-20.4 10.7-6.7.3-22.6-1.5-31.7 1.2-4.8 1.5-9 4.2-11.5 9.1-4.2 8.3-6.2 26.5-6.5 45.5v15.5c0 3.1 2.5 5.7 5.7 5.7h68c3.1 0 5.7-2.5 5.7-5.7v-83.2z" fill="#fff" />
-												</svg>
-											</button>
-											<!-- Copy link -->
-											<button @click="copyUrlToClipboard(file.url); copyClick = true; setTimeout(() => copyClick = false, 2000); showToast = true" class="hidden sm:inline-block mt-2 px-2 py-1 bg-nbpurple-600 text-nbpurple-50 rounded-md hover:bg-nbpurple-700 focus:outline-none focus:ring-2 focus:ring-nbpurple-500" aria-label="Copy image URL to clipboard">
-												<svg x-show="!copyClick" class="size-6 inline-block" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true" x-transition:enter="transition-opacity duration-500" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100">
-													<path stroke-linecap="round" stroke-linejoin="round" d="M11.35 3.836c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 0 0 .75-.75 2.25 2.25 0 0 0-.1-.664m-5.8 0A2.251 2.251 0 0 1 13.5 2.25H15c1.012 0 1.867.668 2.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m8.9-4.414c.376.023.75.05 1.124.08 1.131.094 1.976 1.057 1.976 2.192V16.5A2.25 2.25 0 0 1 18 18.75h-2.25m-7.5-10.5H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V18.75m-7.5-10.5h6.375c.621 0 1.125.504 1.125 1.125v9.375m-8.25-3 1.5 1.5 3-3.75" />
-												</svg>
-												<svg x-cloak x-show="copyClick" class="animate-[pulse_3s_ease-in-out_infinite] size-6 inline-block" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true" x-transition:enter="transition-opacity duration-500" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100">
-													<path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" />
-												</svg>
-											</button>
-											<!-- Media actions -->
-											<button @click="showMediaActions = !showMediaActions" class="mt-2 px-2 py-1 bg-nbpurple-600 text-nbpurple-50 rounded-md hover:bg-nbpurple-700 focus:outline-none focus:ring-2 focus:ring-nbpurple-500" aria-label="Show media actions">
-												<svg class="size-6 inline-block text-nbpurple-50" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-													<path stroke-linecap="round" stroke-linejoin="round" d="M8.625 12a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0H8.25m4.125 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0H12m4.125 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0h-.375M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
-												</svg>
-											</button>
+									</template>
+									<!-- Uppy status -->
+									<template x-if="file.uppy">
+										<div class="flex justify-between items-center">
+											<div class="overflow-x-clip overflow-ellipsis">
+												<p :class="{'animate-pulse': file.uppy?.progress >= 100 && !file.uppy.uploadError }" class="pointer-events-none mt-2 truncate block text-xs font-medium text-nbpurple-200" x-text="file.uppy?.progress < 100 ? file.name : file.uppy.uploadError ? file.uppy.errorMessage : 'Processing...'"></p>
+												<p class="pointer-events-none block text-xs font-medium text-nbpurple-300"><span x-text="formatBytes(file.uppy.bytesUploaded)"></span> of <span x-text="formatBytes(file.size)"></span> uploaded.</p>
+											</div>
+											<div>
+												<!-- Uppy Upload Cancel -->
+												<button x-show="!file.uppy.uploadError" @click="uppyStore.instance.removeFile(file.id)" type="button" class="mt-2 px-2 py-1 bg-nbpurple-600 text-nbpurple-50 rounded-md hover:bg-nbpurple-700 focus:outline-none focus:ring-2 focus:ring-nbpurple-500" aria-label="Cancel upload">
+													<svg class="size-6" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+														<path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
+													</svg>
+												</button>
+												<!-- Uppy Upload Retry -->
+												<button x-show="file.uppy.uploadError" @click="uppyStore.instance.retryUpload(file.id)" type="button" class="mt-2 px-2 py-1 bg-nbpurple-600 text-nbpurple-50 rounded-md hover:bg-nbpurple-700 focus:outline-none focus:ring-2 focus:ring-nbpurple-500" aria-label="Retry upload">
+													<svg class="size-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+														<path stroke-linecap="round" stroke-linejoin="round" d="M19.5 12c0-1.232-.046-2.453-.138-3.662a4.006 4.006 0 0 0-3.7-3.7 48.678 48.678 0 0 0-7.324 0 4.006 4.006 0 0 0-3.7 3.7c-.017.22-.032.441-.046.662M19.5 12l3-3m-3 3-3-3m-12 3c0 1.232.046 2.453.138 3.662a4.006 4.006 0 0 0 3.7 3.7 48.656 48.656 0 0 0 7.324 0 4.006 4.006 0 0 0 3.7-3.7c.017-.22.032-.441.046-.662M4.5 12l3 3m-3-3-3 3" />
+													</svg>
+												</button>
+											</div>
 										</div>
-										<!-- Multi-select -->
-										<div x-cloak x-show="multiSelect">
-											<button @click="toggleSelected(file.id)" type="button" :class="{ 'bg-nbpurple-600 p-1.5 text-nbpurple-50 hover:bg-nbpurple-500': isSelected(file.id), 'text-nbpurple-600 p-1.5 bg-nbpurple-50 hover:bg-nbpurple-200': !isSelected(file.id) }" class="rounded-full p-1.5 shadow-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-nbpurple-600">
-												<svg x-show="!isSelected(file.id)" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-													<path d="M10.75 4.75a.75.75 0 00-1.5 0v4.5h-4.5a.75.75 0 000 1.5h4.5v4.5a.75.75 0 001.5 0v-4.5h4.5a.75.75 0 000-1.5h-4.5v-4.5z" />
-												</svg>
-												<svg x-show="isSelected(file.id)" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
-													<path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" />
-												</svg>
-											</button>
-										</div>
-									</div>
+									</template>
 								</li>
 							</template>
 							<li x-cloak x-show="fileStore.files.length > 0 && (fileStore.loadingMoreFiles || fileStore.fileFetchHasMore)" class="col-span-full relative">
