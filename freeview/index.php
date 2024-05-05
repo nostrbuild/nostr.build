@@ -33,7 +33,7 @@ $sql = match ($view_type) {
 	<link rel="stylesheet" href="/styles/index.css?v=7ff4472e93e9719e0eac60b75646b485" />
 	<link rel="stylesheet" href="/styles/profile.css?v=ded26f9ac31e7492f67e6da9c95a14e2" />
 	<link rel="stylesheet" href="/styles/header.css?v=19cde718a50bd676387bbe7e9e24c639" />
-	<link rel="stylesheet" href="/styles/twbuild.css?v=1df679982c1989431d31b17cbe5569b0" />
+	<link rel="stylesheet" href="/styles/twbuild.css?v=52f84be5d831ea188a9925a83190aac5" />
 	<link rel="icon" href="/assets/0.png">
 
 	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/lightgallery/2.7.2/css/lightgallery-bundle.min.css" integrity="sha512-nUqPe0+ak577sKSMThGcKJauRI7ENhKC2FQAOOmdyCYSrUh0GnwLsZNYqwilpMmplN+3nO3zso8CWUgu33BDag==" crossorigin="anonymous" referrerpolicy="no-referrer" />
