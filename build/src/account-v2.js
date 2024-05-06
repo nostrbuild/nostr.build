@@ -35,13 +35,13 @@ window.Alpine = Alpine;
 //import 'vidstack/player/styles/default/layouts/audio.css';
 //import { VidstackPlayer, VidstackPlayerLayout } from 'vidstack/global/player';
 
-window.getApiFetcher = function (baseUrl, contentType = 'multipart/form-data') {
+window.getApiFetcher = function (baseUrl, contentType = 'multipart/form-data', timeout = 30000) {
   const api = axios.create({
     baseURL: baseUrl,
     headers: {
       'Content-Type': contentType,
     },
-    timeout: 30000,
+    timeout: timeout,
   });
 
   axiosRetry(api, {
@@ -1987,7 +1987,7 @@ Alpine.store('urlImportStore', {
       folder: importToHomeFolder ? '' : folderName,
     };
 
-    const api = getApiFetcher(apiUrl, 'multipart/form-data');
+    const api = getApiFetcher(apiUrl, 'multipart/form-data', (60000 * 5)); // 5 minutes timeout
 
     return api.post('', formData)
       .then(response => response.data)
