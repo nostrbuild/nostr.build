@@ -1060,6 +1060,8 @@ Alpine.store('menuStore', {
     this.activeFolder = folderName;
     updateHashURL(folderName);
     console.log('Active folder set:', folderName);
+    // Reset filter
+    fileStore.currentFilter = 'all';
     fileStore.fetchFiles(folderName, true).then(() => {
       // Update the folder stats
       this.refreshFoldersStats();
@@ -1688,13 +1690,13 @@ Alpine.store('fileStore', {
         console.error('Error deleting image:', error);
       });
   },
+  // Filter: "all", "images", "videos", "audio", 'gifs'
   currentFilter: 'all',
-  getFilteredFiles() {
-    if (this.currentFilter === 'all') {
-      return this.files;
-    }
-    return this.files.filter(file => file.mime.startsWith(this.currentFilter));
+  setFilter(filter) {
+    this.currentFilter = filter;
+    this.fetchFiles(this.lastFetchedFolder, true);
   },
+  filterMenuOpen: false,
   fileFetchStart: 0,
   fileFetchLimit: 48,
   fileFetchHasMore: true,
@@ -1734,6 +1736,7 @@ Alpine.store('fileStore', {
       folder: folder,
       start: refresh ? 0 : this.fileFetchStart,
       limit: fetchLimit,
+      filter: this.currentFilter,
     };
     //console.log('Fetching files:', params);
 

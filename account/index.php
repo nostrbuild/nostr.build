@@ -405,11 +405,11 @@ HTML;
 	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 	<title>nostr.build account</title>
 
-	<script defer src="/scripts/dist/account-v2.js?v=30ac350b638142cc3cf30dd388d100b2"></script>
+	<script defer src="/scripts/dist/account-v2.js?v=99c3306f95973bf848812d79dd84537a"></script>
 	<link href="/scripts/dist/account-v2.css?v=dbfaad81a558216cc1207acd10bc90b1" rel="stylesheet">
 
 	<link rel="icon" href="/assets/nb-logo-color-w.png" />
-	<link href="/styles/twbuild.css?v=52f84be5d831ea188a9925a83190aac5" rel="stylesheet">
+	<link href="/styles/twbuild.css?v=b617d55187911373875c5f167f7df860" rel="stylesheet">
 
 	<!-- Pre-connect and DNS prefetch -->
 	<link rel="preconnect" href="https://i.nostr.build" crossorigin>
@@ -1072,6 +1072,28 @@ onDropCB(event) {
 								</svg>
 								<span class="hidden xs:inline-block xs:ml-1" x-text="multiSelect ? 'Cancel' : 'Select'"></span>
 							</button>
+							<!-- Filter button -->
+							<div class="relative inline-block text-left">
+								<div>
+									<button @click="fileStore.filterMenuOpen = !fileStore.filterMenuOpen; uppyStore.mainDialog.isOpen = false" type="button" :class="fileStore.currentFilter === 'all' ? 'bg-nbpurple-600' : 'bg-nborange-700'" class="ml-3 inline-flex items-center rounded-md px-3 py-2 text-xs font-semibold text-nbpurple-50 shadow-sm hover:bg-nbpurple-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-nbpurple-600" id="filter-button" aria-expanded="true" aria-haspopup="true">
+										<svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+											<polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
+										</svg>
+										<span class="hidden xs:inline-block xs:ml-1" x-text="fileStore.currentFilter.charAt(0).toUpperCase() + fileStore.currentFilter.slice(1)"></span>
+									</button>
+								</div>
+								<div x-cloak x-show="fileStore.filterMenuOpen" @click.away="fileStore.filterMenuOpen = false" class="absolute right-0 z-[21] mt-2 w-56 origin-top-right rounded-md bg-nbpurple-500 shadow-lg ring-1 ring-nbpurple-950 ring-opacity-5 focus:outline-none" role="menu" aria-orientation="vertical" aria-labelledby="filter-button" tabindex="-1">
+									<div class="py-1" role="none">
+										<a href="#" @click="fileStore.setFilter('all'); fileStore.filterMenuOpen = false" :class="fileStore.currentFilter === 'all' ? 'bg-nbpurple-600 text-nbpurple-50' : 'text-nbpurple-50 hover:bg-nbpurple-700'" class="block px-4 py-2 text-sm" role="menuitem" tabindex="-1" id="filter-item-all">All media</a>
+										<a href="#" @click="fileStore.setFilter('images'); fileStore.filterMenuOpen = false" :class="fileStore.currentFilter === 'images' ? 'bg-nbpurple-600 text-nbpurple-50' : 'text-nbpurple-50 hover:bg-nbpurple-700'" class="block px-4 py-2 text-sm" role="menuitem" tabindex="-1" id="filter-item-images">Images</a>
+										<a href="#" @click="fileStore.setFilter('gifs'); fileStore.filterMenuOpen = false" :class="fileStore.currentFilter === 'gifs' ? 'bg-nbpurple-600 text-nbpurple-50' : 'text-nbpurple-50 hover:bg-nbpurple-700'" class="block px-4 py-2 text-sm" role="menuitem" tabindex="-1" id="filter-item-gifs">GIFs</a>
+										<a href="#" @click="fileStore.setFilter('videos'); fileStore.filterMenuOpen = false" :class="fileStore.currentFilter === 'videos' ? 'bg-nbpurple-600 text-nbpurple-50' : 'text-nbpurple-50 hover:bg-nbpurple-700'" class="block px-4 py-2 text-sm" role="menuitem" tabindex="-1" id="filter-item-videos">Videos</a>
+										<a href="#" @click="fileStore.setFilter('audio'); fileStore.filterMenuOpen = false" :class="fileStore.currentFilter === 'audio' ? 'bg-nbpurple-600 text-nbpurple-50' : 'text-nbpurple-50 hover:bg-nbpurple-700'" class="block px-4 py-2 text-sm" role="menuitem" tabindex="-1" id="filter-item-audio">Audio</a>
+									</div>
+								</div>
+							</div>
+							<!--
+			-->
 						</div>
 					</div>
 					<!-- /Floating bar -->
