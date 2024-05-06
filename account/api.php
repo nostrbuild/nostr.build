@@ -57,7 +57,7 @@ if ($daysRemaining <= 0) {
 $s3 = new S3Service($awsConfig);
 
 
-function listImagesByFolderName($folderName, $link, $start = null, $limit = null)
+function listImagesByFolderName($folderName, $link, $start = null, $limit = null, $filter = null)
 {
 	error_log("listImagesByFolderName: " . $folderName);
 	$folders = new UsersImagesFolders($link);
@@ -68,7 +68,7 @@ function listImagesByFolderName($folderName, $link, $start = null, $limit = null
 	} else {
 		$folderId = null;
 	}
-	$imgArray = $images->getFiles($_SESSION['usernpub'], $folderId, $start, $limit);
+	$imgArray = $images->getFiles($_SESSION['usernpub'], $folderId, $start, $limit, $filter);
 
 	$jsonArray = array();
 
@@ -340,8 +340,15 @@ if (isset($_GET["action"])) {
 	if ($action == "list_files" && isset($_GET["folder"]) && !empty($_GET["folder"])) {
 		$start = isset($_GET["start"]) ? intval($_GET["start"]) : null;
 		$limit = isset($_GET["limit"]) ? intval($_GET["limit"]) : null;
+		$filter = isset($_GET["filter"]) ? $_GET["filter"] : null;
+		// Check if the filter one of the allowed values
+		if ($filter !== null && !in_array($filter, ["all", "images", "videos", "audio", 'gifs'])) {
+			http_response_code(400);
+			echo json_encode(array("error" => "Invalid filter value"));
+			exit;
+		}
 		// List all files in the user's account
-		$files = listImagesByFolderName($_GET["folder"], $link, $start, $limit);
+		$files = listImagesByFolderName($_GET["folder"], $link, $start, $limit, $filter);
 		http_response_code(200);
 		echo json_encode($files);
 	} else if ($action == "list_folders") {

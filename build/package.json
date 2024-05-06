@@ -23,7 +23,7 @@
     "@uppy/audio": "^1.1.8",
     "@uppy/core": "^3.10.1",
     "@uppy/dashboard": "^3.8.1",
-    "@uppy/drop-target": "^2.0.5",
+    "@uppy/drop-target": "^2.1.0",
     "@uppy/golden-retriever": "^3.2.0",
     "@uppy/url": "^3.6.0",
     "@uppy/webcam": "^3.4.0",

@@ -75,8 +75,21 @@ class UsersImages extends DatabaseTable
    * @param mixed $folderId
    * @return array
    */
-  public function getFiles(string $npub, ?int $folderId = null, ?int $start = null, ?int $limit = null): array
+  public function getFiles(string $npub, ?int $folderId = null, ?int $start = null, ?int $limit = null, ?string $filter = null): array
   {
+    // Filter: "all", "images", "videos", "audio", 'gifs'
+    $filter_sql = '';
+    if ($filter === "all") {
+      $filter_sql = "";
+    } elseif ($filter === "images") {
+      $filter_sql = "AND (ui.mime_type LIKE 'image%' AND ui.mime_type != 'image/gif')";
+    } elseif ($filter === "videos") {
+      $filter_sql = "AND ui.mime_type LIKE 'video%'";
+    } elseif ($filter === "audio") {
+      $filter_sql = "AND ui.mime_type LIKE 'audio%'";
+    } elseif ($filter === "gifs") {
+      $filter_sql = "AND ui.mime_type = 'image/gif'";
+    }
     $sql_nostr = "
     SELECT 
         ui.*,
@@ -89,32 +102,13 @@ class UsersImages extends DatabaseTable
         ((? IS NULL AND ui.folder_id IS NULL) OR ui.folder_id = ?)
         AND ui.usernpub = ?
         AND ui.image != 'https://nostr.build/p/Folder.png'
+        {$filter_sql}
     GROUP BY
         ui.id
     ORDER BY 
         ui.created_at DESC
     ";
-    $sql = "
-    SELECT
-      ui.id,
-      ui.image,
-      ui.flag,
-      ui.created_at,
-      ui.file_size,
-      ui.folder_id,
-      ui.media_width,
-      ui.media_height,
-      ui.blurhash,
-      ui.mime_type,
-      ui.sha256_hash,
-      ui.title,
-      ui.ai_prompt
-    FROM {$this->tableName} ui
-    WHERE ((? IS NULL AND ui.folder_id IS NULL) OR ui.folder_id = ?)
-    AND ui.usernpub = ?
-    AND ui.image != 'https://nostr.build/p/Folder.png'
-    ORDER BY ui.created_at DESC
-    ";
+
     // Decide the SQL based on presence of start and limit
     if ($start !== null && $limit !== null) {
       $sql_nostr .= "LIMIT ?, ?";

@@ -10,7 +10,8 @@
         "php-di/php-di": "^7.0",
         "toshy/bunnynet-php": "^3.0",
         "btcpayserver/btcpayserver-greenfield-php": "^2.3",
-        "guzzlehttp/guzzle": "^7.7"
+        "guzzlehttp/guzzle": "^7.7",
+        "guzzlehttp/promises": "^2.0"
     },
     "require-dev": {
         "uma/secp256k1-nostr": "^0.1.1"

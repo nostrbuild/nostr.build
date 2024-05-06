@@ -6,6 +6,7 @@ import XHRUpload from '@uppy/xhr-upload';
 //import Compressor from '@uppy/compressor';
 //import ImageEditor from '@uppy/image-editor';
 import Webcam from '@uppy/webcam';
+import DropTarget from '@uppy/drop-target';
 
 
 import '@uppy/core/dist/style.min.css';
@@ -13,6 +14,8 @@ import '@uppy/dashboard/dist/style.min.css';
 //import '@uppy/audio/dist/style.min.css';
 //import '@uppy/image-editor/dist/style.min.css';
 import '@uppy/webcam/dist/style.min.css';
+import '@uppy/drop-target/dist/style.css';
+
 
 import { lock, unlock, clearBodyLocks } from 'tua-body-scroll-lock';
 import axios, { all } from 'axios';
@@ -1049,13 +1052,20 @@ Alpine.store('menuStore', {
     }
     // Deal with fileStore
     const fileStore = Alpine.store('fileStore');
+    const uppyStore = Alpine.store('uppyStore');
     // Close upload dialog
-    Alpine.store('uppyStore').mainDialog.close();
+    uppyStore.mainDialog.close();
     // Clear the files list
     fileStore.files = [];
     this.activeFolder = folderName;
     updateHashURL(folderName);
     console.log('Active folder set:', folderName);
+    // Reset filter
+    fileStore.currentFilter = 'all';
+    fileStore.fetchFiles(folderName, true).then(() => {
+      // Update the folder stats
+      this.refreshFoldersStats();
+    });
   },
   foldersFetched: false,
   async fetchFolders() {
@@ -1680,13 +1690,13 @@ Alpine.store('fileStore', {
         console.error('Error deleting image:', error);
       });
   },
+  // Filter: "all", "images", "videos", "audio", 'gifs'
   currentFilter: 'all',
-  getFilteredFiles() {
-    if (this.currentFilter === 'all') {
-      return this.files;
-    }
-    return this.files.filter(file => file.mime.startsWith(this.currentFilter));
+  setFilter(filter) {
+    this.currentFilter = filter;
+    this.fetchFiles(this.lastFetchedFolder, true);
   },
+  filterMenuOpen: false,
   fileFetchStart: 0,
   fileFetchLimit: 48,
   fileFetchHasMore: true,
@@ -1695,6 +1705,7 @@ Alpine.store('fileStore', {
   refreshFoldersAfterFetch: false,
   async fetchFiles(folder, refresh = false) {
     //console.log('Fetching files:', folder, start, limit, refresh);
+    const uppyStore = Alpine.store('uppyStore');
 
     if (!folder) {
       this.resetFetchFilesState();
@@ -1725,6 +1736,7 @@ Alpine.store('fileStore', {
       folder: folder,
       start: refresh ? 0 : this.fileFetchStart,
       limit: fetchLimit,
+      filter: this.currentFilter,
     };
     //console.log('Fetching files:', params);
 
@@ -1750,9 +1762,7 @@ Alpine.store('fileStore', {
             await this.fetchFiles(folder, true);
             return;
           }
-          this.files = [...this.files, ...data];
-          // Set this.filesById for faster lookup using Map
-          this.filesById = new Map(this.files.map(file => [file.id, file]));
+          this.files = [...uppyStore.mainDialog.getFilesInFolder(folder) ?? [], ...this.files, ...data];
 
           this.fileFetchHasMore = data.length === this.fileFetchLimit;
           this.fileFetchStart += data.length;
@@ -1769,9 +1779,7 @@ Alpine.store('fileStore', {
           });
 
           // Replace this.files with the updated data array
-          this.files = data;
-          // Set this.filesById for faster lookup using Map
-          this.filesById = new Map(this.files.map(file => [file.id, file]));
+          this.files = [...uppyStore.mainDialog.getFilesInFolder(folder) ?? [], ...data];
 
           const expectedLength = fetchLimit;
           this.fileFetchHasMore = data.length === expectedLength;
@@ -2014,6 +2022,7 @@ Alpine.store('uppyStore', {
   instance: null,
   // Dialog state
   mainDialog: {
+    dialogEl: null,
     isOpen: false,
     isLoading: false,
     uploadProgress: null,
@@ -2036,9 +2045,42 @@ Alpine.store('uppyStore', {
     },
     toggle() {
       this.isOpen ? this.close() : this.open();
+    },
+    currentFiles: [],
+    currentFilesById: new Map(),
+    addFile(file) {
+      this.currentFiles.unshift(file);
+      // Update currentFilesById Map
+      if (this.currentFilesById.has(file.id)) {
+        this.currentFilesById.set(file.id, file);
+      } else {
+        this.currentFilesById = new Map([...this.currentFilesById, [file.id, file]]);
+      }
+    },
+    removeFile(fileId) {
+      const index = this.currentFiles.findIndex(f => f.id === fileId);
+      if (index !== -1) {
+        this.currentFiles.splice(index, 1);
+        // Update currentFilesById Map
+        this.currentFilesById.delete(fileId);
+      }
+    },
+    getFileById(fileId) {
+      return this.currentFilesById.get(fileId);
+    },
+    clearFiles() {
+      this.currentFiles = [];
+      this.currentFilesById = new Map();
+    },
+    getFilesInFolder(folderName) {
+      // Check for default home folder
+      folderName = Alpine.store('menuStore').folders.find(folder => folder.name === folderName).id === 0 ? '' : folderName;
+      return this.currentFiles.filter(file => file.folder === folderName);
     }
   },
-  instantiateUppy(el) {
+  instantiateUppy(el, dropTarget, onDropCallback, onDragOverCallback, onDragLeaveCallback) {
+    this.mainDialog.dialogEl = el;
+    console.log('Instantiating Uppy...');
     // Stores
     const menuStore = Alpine.store('menuStore');
     const fileStore = Alpine.store('fileStore');
@@ -2104,14 +2146,29 @@ Alpine.store('uppyStore', {
         formData: true,
         bundle: false,
         limit: 3,
-        timeout: 0,
+        timeout: 0, // Unlimited timeout
         meta: {
           folderName: '', // Initialize folderName metadata
           folderHierarchy: [], // Initialize folderHierarchy metadata
         },
-      }, {
-        // Override the default `limit` behavior
-        timeout: 0,
+      })
+      .use(DropTarget, {
+        target: dropTarget,
+        onDragLeave: (event) => {
+          if (typeof onDragLeaveCallback === 'function') {
+            onDragLeaveCallback(event);
+          }
+        },
+        onDragOver: (event) => {
+          if (typeof onDragOverCallback === 'function') {
+            onDragOverCallback(event);
+          }
+        },
+        onDrop: (event) => {
+          if (typeof onDropCallback === 'function') {
+            onDropCallback(event);
+          }
+        }
       })
       .on('upload-success', (file, response) => {
         if (Array.isArray(response.body)) {
@@ -2133,7 +2190,6 @@ Alpine.store('uppyStore', {
       })
       .on('upload-success', (file, response) => {
         console.log('Upload result:', response);
-        // Remove the file from the Uppy instance
         // Set uploadComplete state for the file
         file.progress.uploadComplete = true;
         //this.instance.removeFile(file.id);
@@ -2142,10 +2198,20 @@ Alpine.store('uppyStore', {
         // Get folderName from uppy file metadata
         const folderName = JSON.parse(file.meta.folderName);
         // Check if folderName is default home folder
-        const isInHomeFolder = menuStore.folders.find(folder => folder.name === menuStore.activeFolder).id === 0;
+        const fileFolderName = file.meta.folderName === '' ? menuStore.folders.find(folder => folder.id === 0).name : folderName;
         // Inject file into the fileStore files array if activeFolder matches 
-        if (menuStore.activeFolder === this.mainDialog.uploadFolder || (isInHomeFolder && folderName === '')) {
-          fileStore.injectFile(fd);
+        if (menuStore.activeFolder === fileFolderName) {
+          // Remove the file from the currentUploads
+          this.mainDialog.removeFile(file.id);
+          // Remove the file with file.id from the fileStore.files array
+          fileStore.files = fileStore.files.filter(f => f.id !== file.id);
+          // Inject fd into the fileStore.files array if it doesn't exist
+          if (!fileStore.files.some(f => f.id === fd.id)) {
+            fileStore.injectFile(fd);
+          }
+        } else {
+          // Remove the file from the currentUploads
+          this.mainDialog.removeFile(file.id);
         }
       })
       .on('file-added', (file) => {
@@ -2165,6 +2231,21 @@ Alpine.store('uppyStore', {
           folderHierarchy = folderPathParts.length > 1 ? folderPathParts.slice(0, -1) : [defaultFolder];
           folderName = folderHierarchy.length > 0 ? folderHierarchy[folderHierarchy.length - 1] : defaultFolder;
           this.mainDialog.uploadFolder = folderName;
+          // Add folder to the folder list if not already present
+          const folderExists = menuStore.folders.some(folder => folder.name === folderName);
+          if (!folderExists) {
+            const folder = {
+              id: folderName,
+              name: folderName,
+              icon: folderName.substring(0, 1).toUpperCase(),
+              route: '#',
+              allowDelete: false
+            };
+            // Add the folder to the folders list
+            menuStore.folders.push(folder);
+            // Sort the folders list
+            menuStore.folders = menuStore.folders.sort((a, b) => a.name.localeCompare(b.name));
+          }
         } else {
           this.mainDialog.uploadFolder = defaultFolder;
         }
@@ -2174,6 +2255,28 @@ Alpine.store('uppyStore', {
           folderName: JSON.stringify(folderName),
           folderHierarchy: JSON.stringify(folderHierarchy),
         });
+        console.log('File added:', file);
+        const currentFile = {
+          id: file.id,
+          name: file.name,
+          mime: 'uppy/upload',
+          size: file.size,
+          loaded: false,
+          folder: folderName,
+          uppy: {
+            uploadComplete: false,
+            uploadError: false,
+            errorMessage: '',
+            errorResponse: null,
+            progress: 0,
+            bytesUploaded: 0,
+          },
+        };
+        // Add the file to the currentUploads
+        this.mainDialog.addFile(currentFile);
+        if (folderName === defaultFolder) {
+          fileStore.injectFile(currentFile);
+        }
       })
       .on('upload', (data) => {
         console.log('Upload started:', data);
@@ -2197,10 +2300,13 @@ Alpine.store('uppyStore', {
           this.mainDialog.close();
           // Clear progress
           this.mainDialog.uploadProgress = null;
+          // Clear currentFiles
+          this.mainDialog.clearFiles();
         } else {
           // Remove successful uploads
           result.successful.forEach(file => {
             this.instance.removeFile(file.id);
+            this.mainDialog.removeFile(file.id);
           });
           // Open the dialog
           this.mainDialog.open();
@@ -2221,6 +2327,77 @@ Alpine.store('uppyStore', {
       .on('progress', (progress) => {
         // progress: integer (total progress percentage)
         this.mainDialog.uploadProgress = progress + '%';
+      })
+      .on('upload-progress', (file, progress) => {
+        // Update the file progress in the fileStore
+        const fileData = this.mainDialog.getFileById(file.id);
+        const fileProgress = progress.bytesUploaded / progress.bytesTotal;
+        if (fileData) {
+          fileData.uppy.progress = Math.round(fileProgress * 100);
+          fileData.uppy.bytesUploaded = progress.bytesUploaded;
+        }
+      })
+      .on('upload-error', (file, error, response) => {
+        console.log('error with file:', file.id);
+        console.log('error message:', error);
+        console.log('error response:', response);
+        // Find the file in the fileStore and mark it as errored
+        const fileData = this.mainDialog.getFileById(file.id);
+        if (fileData) {
+          fileData.uppy.uploadError = true;
+          fileData.uppy.errorMessage = error.message;
+          fileData.uppy.errorResponse = response;
+        }
+      })
+      .on('info-visible', () => {
+        const { info } = this.instance.getState();
+        // info: {
+        //  isHidden: false,
+        //  type: 'error',
+        //  message: 'Failed to upload',
+        //  details: 'Error description'
+        // }
+        console.log(`Info: ${info.type} ${info.message} ${info.details}`);
+      })
+      .on('file-removed', (file) => {
+        console.log('File removed:', file);
+        // Remove the file from the fileStore
+        this.mainDialog.removeFile(file.id);
+        // Remove file from the fileStore
+        fileStore.files = fileStore.files.filter(f => f.id !== file.id);
+        // If no more files in uppy reset prgress and close the dialog
+        if (this.instance.getFiles().length === 0) {
+          this.mainDialog.uploadProgress = null;
+          this.mainDialog.isLoading = false;
+          this.mainDialog.clearFiles();
+        }
+      })
+      .on('upload-retry', (fileId) => {
+        console.log('Retrying upload:', fileId);
+        // Reset the uploadError state
+        const fileData = this.mainDialog.getFileById(fileId);
+        if (fileData) {
+          fileData.uppy.uploadError = false;
+          fileData.uppy.errorMessage = '';
+          fileData.uppy.errorResponse = null;
+        }
+      })
+      .on('retry-all', () => {
+        console.log('Retrying all uploads');
+        // Reset the uploadError state for all files
+        this.mainDialog.currentFiles.forEach(file => {
+          file.uppy.uploadError = false;
+          file.uppy.errorMessage = '';
+          file.uppy.errorResponse = null;
+        });
+      })
+      .on('thumbnail:generated', (file, preview) => {
+        // This depends on Dashboard plugin
+        // Update the file preview in the fileStore
+        const fileData = this.mainDialog.getFileById(file.id);
+        if (fileData) {
+          fileData.uppy.preview = preview;
+        }
       });
     console.log('Uppy instance created:', el.id);
     // Dynamic note
