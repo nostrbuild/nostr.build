@@ -313,6 +313,17 @@ $app->group('/upload', function (RouteCollectorProxy $group) {
     }
   })->add(new NostrAuthMiddleware());
 
+  // Route to get the user's upload limit based on their account type
+  $group->get('/limit', function (Request $request, Response $response) {
+    try {
+      $uploadLimitInBytes = $request->getAttribute('upload_limit_in_bytes');
+
+      return jsonResponse($response, 'success', 'Upload limit retrieved successfully', ['limit' => $uploadLimitInBytes], 200);
+    } catch (\Exception $e) {
+      return jsonResponse($response, 'error', 'Failed to retrieve upload limit: ' . $e->getMessage(), new stdClass(), 500);
+    }
+  })->add(new NostrAuthMiddleware());
+
   $group->get('/ping', function (Request $request, Response $response) {
     $response->getBody()->write('pong');
     return $response;

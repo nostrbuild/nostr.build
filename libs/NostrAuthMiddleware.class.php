@@ -4,6 +4,7 @@ require_once __DIR__ . '/../config.php';
 require_once __DIR__ . '/NostrAuthHandler.class.php';
 require_once __DIR__ . '/Account.class.php';
 require_once __DIR__ . '/NostrClient.class.php';
+require_once __DIR__ . '/../SiteConfig.php';
 
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
@@ -40,6 +41,7 @@ class NostrAuthMiddleware implements MiddlewareInterface
     $npub = null; // Initialize as null
     $accountUploadEligible = true;  // Assume the account is eligible by default
     $accountDefaultFolder = null; // Initialize as null
+    $uploadLimitInBytes = SiteConfig::FREE_UPLOAD_LIMIT; // Default to free upload limit
 
     try {
       // Initialize NostrAuthHandler
@@ -72,6 +74,8 @@ class NostrAuthMiddleware implements MiddlewareInterface
           $accountUploadEligible = false;
         } else {
           error_log('User ' . $npub . ' has sufficient storage space to upload the file:' . $account->getRemainingStorageSpace() . ' bytes');
+          // Set the upload limit to the remaining storage space
+          $uploadLimitInBytes = $account->getRemainingStorageSpace();
         }
 
         // Validate account expiration
@@ -144,6 +148,8 @@ class NostrAuthMiddleware implements MiddlewareInterface
     $request = $request->withAttribute('npub', $npub);
     $request = $request->withAttribute('account_upload_eligible', $accountUploadEligible);
     $request = $request->withAttribute('account_default_folder', $accountDefaultFolder);
+    // Set the upload limit in bytes
+    $request = $request->withAttribute('upload_limit_in_bytes', $uploadLimitInBytes);
     $response = $handler->handle($request);
 
     return $response;
