@@ -1698,7 +1698,7 @@ Alpine.store('fileStore', {
   },
   filterMenuOpen: false,
   fileFetchStart: 0,
-  fileFetchLimit: 48,
+  fileFetchLimit: 36,
   fileFetchHasMore: true,
   lastFetchedFolder: '',
   loadingMoreFiles: false,
