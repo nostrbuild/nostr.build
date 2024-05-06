@@ -18,6 +18,7 @@ if (!$perm->isAdmin()) {
 global $link;
 
 //Plans::init();
+Plans::getInstance();
 
 $promotions = new Promotions($link);
 
