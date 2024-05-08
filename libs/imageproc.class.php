@@ -92,6 +92,11 @@ class ImageProcessor
    * @var 
    */
   private static $supportedFormats;
+  /**
+   * Summary of isOversize
+   * @var bool indicates if the image is oversize
+   */
+  private $isOversize = false;
 
   /**
    * Summary of __construct
@@ -106,6 +111,9 @@ class ImageProcessor
 
     $this->imagePath = $imagePath;
     $this->imagick = new Imagick(realpath($imagePath));
+    $width = $this->imagick->getImageWidth();
+    $height = $this->imagick->getImageHeight();
+    $this->isOversize = $width > 4096 || $height > 4096;
 
     if (!self::isSupported($this->imagick->getImageFormat())) {
       throw new InvalidArgumentException("Image format not supported: {$this->imagick->getImageFormat()}");
@@ -132,6 +140,9 @@ class ImageProcessor
    */
   public function reduceQuality($quality): self
   {
+    if ($this->isOversize) {
+      return $this;
+    }
     $this->imagick->setImageCompressionQuality($quality);
 
     // the image quality is changed, we should unset saved flag
@@ -397,6 +408,11 @@ class ImageProcessor
    */
   public function stripImageMetadata(): self
   {
+    // Do nothing for formats that don't support metadata
+    $imageFormat = strtolower($this->imagick->getImageFormat());
+    if ($imageFormat !== 'jpeg' || $imageFormat !== 'heic' || $imageFormat !== 'heif' || $imageFormat !== 'webp' || $imageFormat !== 'tiff') {
+      return $this;
+    }
     // Save the ICC profile if one exists
     $iccProfile = null;
     try {
@@ -473,6 +489,11 @@ class ImageProcessor
     if ($imageFormat === 'gif') {
       return $this;
     }
+    // Get image dimensions and return if over 4096x4096 pixels for PNG
+    if ($imageFormat === 'png' && $this->isOversize) {
+      return $this;
+    }
+
     if (!$this->isSaved) {
       throw new RuntimeException("Please call save() method before optimizeImage");
     }
@@ -540,6 +561,10 @@ class ImageProcessor
    */
   public function calculateBlurhash(int $xComponent = 4, int $yComponent = 3, $resizeWidth = 40, $resizeHeight = 30): string
   {
+    // Return generic blurhash if image is oversize
+    if ($this->isOversize) {
+      return "LEHV6nWB2yk8pyo0adR*.7kCMdnj";
+    }
     // Re-init Imagick to avoid errors
     $this->reinitializeImagick();
     // Clone the current imagick instance to not affect the original image
@@ -547,9 +572,6 @@ class ImageProcessor
 
     // Resize the image to a smaller size for faster processing
     $imagick->resizeImage($resizeWidth, $resizeHeight, Imagick::FILTER_TRIANGLE, 1);
-
-    $width = $imagick->getImageWidth();
-    $height = $imagick->getImageHeight();
 
     $pixels = [];
     $iterator = $imagick->getPixelIterator();
