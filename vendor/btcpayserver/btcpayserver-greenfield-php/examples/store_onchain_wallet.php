@@ -32,6 +32,21 @@ class StoreOnChainWallets
         }
     }
 
+    public function createStoreOnChainWallet()
+    {
+        $cryptoCode = 'BTC';
+
+        try {
+            $client = new StoreOnChainWallet($this->host, $this->apiKey);
+            var_dump($client->createStoreOnchainWallet(
+                $this->storeId,
+                $cryptoCode
+            ));
+        } catch (\Throwable $e) {
+            echo "Error: " . $e->getMessage();
+        }
+    }
+
     public function getStoreOnChainWalletFeeRate()
     {
         $cryptoCode = 'BTC';
@@ -171,3 +186,4 @@ $store = new StoreOnChainWallets();
 $store->getStoreOnChainWalletTransactions();
 //$store->getStoreOnChainWalletTransaction();
 //$store->getStoreOnChainWalletUTXOs();
+//$store->createStoreOnChainWallet();

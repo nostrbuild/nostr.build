@@ -7,6 +7,7 @@ namespace BTCPayServer\Client;
 use BTCPayServer\Result\InvoiceCheckoutHTML;
 use BTCPayServer\Result\LanguageCodeList;
 use BTCPayServer\Result\PermissionMetadata;
+use BTCPayServer\Result\RateSourceList;
 
 class Miscellaneous extends AbstractClient
 {
@@ -62,6 +63,23 @@ class Miscellaneous extends AbstractClient
 
         if ($response->getStatus() === 200) {
             return new InvoiceCheckoutHTML(
+                json_decode($response->getBody(), true, 512, JSON_THROW_ON_ERROR)
+            );
+        } else {
+            throw $this->getExceptionByStatusCode($method, $url, $response);
+        }
+    }
+
+    public function getRateSources(): RateSourceList
+    {
+        $url = $this->getBaseUrl() . '/misc/rate-sources';
+        $headers = $this->getRequestHeaders();
+        $method = 'GET';
+
+        $response = $this->getHttpClient()->request($method, $url, $headers);
+
+        if ($response->getStatus() === 200) {
+            return new RateSourceList(
                 json_decode($response->getBody(), true, 512, JSON_THROW_ON_ERROR)
             );
         } else {

@@ -2,6 +2,34 @@
 
 All notable changes to `image-optimizer` will be documented in this file
 
+## 1.7.3 - 2024-05-03
+
+### What's Changed
+
+* Bump stefanzweifel/git-auto-commit-action from 4 to 5 by @dependabot in https://github.com/spatie/image-optimizer/pull/203
+* Fix OptimizerChainFactory's missing config processor by @0xb4lint in https://github.com/spatie/image-optimizer/pull/216
+* Fix the bug related to Deserialization of Untrusted Data by @Sonicrrrr in https://github.com/spatie/image-optimizer/pull/211
+
+### New Contributors
+
+* @Sonicrrrr made their first contribution in https://github.com/spatie/image-optimizer/pull/211
+
+**Full Changelog**: https://github.com/spatie/image-optimizer/compare/1.7.2...1.7.3
+
+## 1.7.2 - 2023-11-03
+
+### What's Changed
+
+- Bump actions/checkout from 3 to 4 by @dependabot in https://github.com/spatie/image-optimizer/pull/202
+- Add PHP 8.2 to the GitHub CI test matrix by @javiereguiluz in https://github.com/spatie/image-optimizer/pull/207
+- Allow using Symfony 7 packages by @javiereguiluz in https://github.com/spatie/image-optimizer/pull/206
+
+### New Contributors
+
+- @javiereguiluz made their first contribution in https://github.com/spatie/image-optimizer/pull/207
+
+**Full Changelog**: https://github.com/spatie/image-optimizer/compare/1.7.1...1.7.2
+
 ## 1.7.1 - 2023-07-27
 
 ### What's Changed

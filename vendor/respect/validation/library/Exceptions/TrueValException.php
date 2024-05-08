@@ -1,12 +1,8 @@
 <?php
 
 /*
- * This file is part of Respect/Validation.
- *
- * (c) Alexandre Gomes Gaigalas <alganet@gmail.com>
- *
- * For the full copyright and license information, please view the LICENSE file
- * that was distributed with this source code.
+ * Copyright (c) Alexandre Gomes Gaigalas <alganet@gmail.com>
+ * SPDX-License-Identifier: MIT
  */
 
 declare(strict_types=1);
@@ -26,10 +22,10 @@ final class TrueValException extends ValidationException
      */
     protected $defaultTemplates = [
         self::MODE_DEFAULT => [
-            self::STANDARD => '{{name}} is not considered as "True"',
+            self::STANDARD => '{{name}} must evaluate to `true`',
         ],
         self::MODE_NEGATIVE => [
-            self::STANDARD => '{{name}} is considered as "True"',
+            self::STANDARD => '{{name}} must not evaluate to `true`',
         ],
     ];
 }

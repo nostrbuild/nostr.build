@@ -59,7 +59,7 @@ class User extends AbstractClient
 
         $response = $this->getHttpClient()->request($method, $url, $headers, $body);
 
-        if ($response->getStatus() === 200) {
+        if ($response->getStatus() === 201) {
             return new ResultUser(
                 json_decode($response->getBody(), true, 512, JSON_THROW_ON_ERROR)
             );

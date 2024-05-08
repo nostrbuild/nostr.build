@@ -7,6 +7,7 @@ namespace BTCPayServer\Client;
 use BTCPayServer\Result\Invoice as ResultInvoice;
 use BTCPayServer\Result\InvoiceList;
 use BTCPayServer\Result\InvoicePaymentMethod;
+use BTCPayServer\Result\PullPayment as ResultPullPayment;
 use BTCPayServer\Util\PreciseNumber;
 
 class Invoice extends AbstractClient
@@ -136,7 +137,7 @@ class Invoice extends AbstractClient
             }
         }
 
-        // Clean URL
+        // Clean URL.
         $url = rtrim($url, '&');
         $url = rtrim($url, '?');
 
@@ -159,7 +160,8 @@ class Invoice extends AbstractClient
     public function getPaymentMethods(string $storeId, string $invoiceId): array
     {
         $method = 'GET';
-        $url = $this->getApiUrl() . 'stores/' . urlencode($storeId) . '/invoices/' . urlencode($invoiceId) . '/payment-methods';
+        $url = $this->getApiUrl() . 'stores/' . urlencode($storeId) . '/invoices/'
+            . urlencode($invoiceId) . '/payment-methods';
         $headers = $this->getRequestHeaders();
         $response = $this->getHttpClient()->request($method, $url, $headers);
 
@@ -181,11 +183,15 @@ class Invoice extends AbstractClient
         }
     }
 
+    /**
+     * Mark an invoice status.
+     *
+     * @see https://docs.btcpayserver.org/API/Greenfield/v1/#operation/Invoices_MarkInvoiceStatus
+     * @throws \JsonException
+     */
     public function markInvoiceStatus(string $storeId, string $invoiceId, string $markAs): ResultInvoice
     {
-        $url = $this->getApiUrl() . 'stores/' . urlencode(
-            $storeId
-        ) . '/invoices/' . urlencode($invoiceId) . '/status';
+        $url = $this->getApiUrl() . 'stores/' . urlencode($storeId) . '/invoices/' . urlencode($invoiceId) . '/status';
         $headers = $this->getRequestHeaders();
         $method = 'POST';
 
@@ -200,6 +206,51 @@ class Invoice extends AbstractClient
 
         if ($response->getStatus() === 200) {
             return new ResultInvoice(
+                json_decode($response->getBody(), true, 512, JSON_THROW_ON_ERROR)
+            );
+        } else {
+            throw $this->getExceptionByStatusCode($method, $url, $response);
+        }
+    }
+
+    /**
+     * Refund an invoice.
+     *
+     * @see https://docs.btcpayserver.org/API/Greenfield/v1/#operation/Invoices_Refund
+     * @throws \JsonException
+     */
+    public function refundInvoice(
+        string $storeId,
+        string $invoiceId,
+        ?string $refundVariant = 'CurrentRate',
+        ?string $paymentMethod = 'BTC',
+        ?string $name = null,
+        ?string $description = null,
+        ?float $subtractPercentage = 0.0,
+        ?PreciseNumber $customAmount = null,
+        ?string $customCurrency = null
+    ): ResultPullPayment {
+        $url = $this->getApiUrl() . 'stores/' . urlencode($storeId) . '/invoices/' . urlencode($invoiceId) . '/refund';
+        $headers = $this->getRequestHeaders();
+        $method = 'POST';
+
+        $body = json_encode(
+            [
+                'name' => $name,
+                'description' => $description,
+                'paymentMethod' => $paymentMethod,
+                'refundVariant' => $refundVariant,
+                'subtractPercentage' => $subtractPercentage,
+                'customAmount' => $customAmount?->__toString(),
+                'customCurrency' => $customCurrency
+            ],
+            JSON_THROW_ON_ERROR
+        );
+
+        $response = $this->getHttpClient()->request($method, $url, $headers, $body);
+
+        if ($response->getStatus() === 200) {
+            return new ResultPullPayment(
                 json_decode($response->getBody(), true, 512, JSON_THROW_ON_ERROR)
             );
         } else {

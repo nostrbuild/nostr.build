@@ -1,18 +1,19 @@
 <?php
 
 /*
- * This file is part of Respect/Validation.
- *
- * (c) Alexandre Gomes Gaigalas <alganet@gmail.com>
- *
- * For the full copyright and license information, please view the LICENSE file
- * that was distributed with this source code.
+ * Copyright (c) Alexandre Gomes Gaigalas <alganet@gmail.com>
+ * SPDX-License-Identifier: MIT
  */
 
 declare(strict_types=1);
 
 namespace Respect\Validation\Rules;
 
+use libphonenumber\NumberParseException;
+use libphonenumber\PhoneNumberUtil;
+use Respect\Validation\Exceptions\ComponentException;
+
+use function class_exists;
 use function is_scalar;
 use function preg_match;
 use function sprintf;
@@ -20,10 +21,9 @@ use function sprintf;
 /**
  * Validates whether the input is a valid phone number.
  *
- * Validates a valid 7, 10, 11 digit phone number (North America, Europe and
- * most Asian and Middle East countries), supporting country and area codes (in
- * dot,space or dashed notations)
+ * Validates an international or country-specific telephone number
  *
+ * @author Alexandre Gomes Gaigalas <alganet@gmail.com>
  * @author Danilo Correa <danilosilva87@gmail.com>
  * @author Graham Campbell <graham@mineuk.com>
  * @author Henrique Moody <henriquemoody@gmail.com>
@@ -31,15 +31,50 @@ use function sprintf;
 final class Phone extends AbstractRule
 {
     /**
-     * {@inheritDoc}
+     * @var ?string
      */
+    private $countryCode;
+
+    public function __construct(?string $countryCode = null)
+    {
+        $this->countryCode = $countryCode;
+        if ($countryCode === null) {
+            return;
+        }
+
+        if (!(new CountryCode())->validate($countryCode)) {
+            throw new ComponentException(sprintf('Invalid country code %s', $countryCode));
+        }
+
+        if (!class_exists(PhoneNumberUtil::class)) {
+            throw new ComponentException('The phone validator requires giggsey/libphonenumber-for-php');
+        }
+    }
+
     public function validate($input): bool
     {
         if (!is_scalar($input)) {
             return false;
         }
 
-        return preg_match($this->getPregFormat(), (string) $input) > 0;
+        if ($this->countryCode === null) {
+            return preg_match($this->getPregFormat(), (string) $input) > 0;
+        }
+
+        return $this->isValidRegionalPhoneNumber((string) $input, $this->countryCode);
+    }
+
+    private function isValidRegionalPhoneNumber(string $input, string $countryCode): bool
+    {
+        try {
+            $phoneNumberUtil = PhoneNumberUtil::getInstance();
+            $phoneNumberObject = $phoneNumberUtil->parse($input, $countryCode);
+
+            return $phoneNumberUtil->getRegionCodeForNumber($phoneNumberObject) === $countryCode;
+        } catch (NumberParseException) {
+        }
+
+        return false;
     }
 
     private function getPregFormat(): string
@@ -48,7 +83,7 @@ final class Phone extends AbstractRule
             '/^\+?(%1$s)? ?(?(?=\()(\(%2$s\) ?%3$s)|([. -]?(%2$s[. -]*)?%3$s))$/',
             '\d{0,3}',
             '\d{1,3}',
-            '((\d{3,5})[. -]?(\d{4})|(\d{2}[. -]?){4})'
+            '((\d{3,5})[. -]?(\d{2}[. -]?\d{2})|(\d{2}[. -]?){4})'
         );
     }
 }

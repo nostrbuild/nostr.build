@@ -113,7 +113,7 @@ class PullPayments
 
     public function approvePayout()
     {
-        $payoutId ='';
+        $payoutId = '';
         try {
             $client = new PullPayment($this->host, $this->apiKey);
             var_dump($client->approvePayout(

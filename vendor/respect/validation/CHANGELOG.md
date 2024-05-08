@@ -1,5 +1,32 @@
 # Changes in Respect\Validation 2.x
 
+## 2.3
+
+Versioning Changes:
+
+ - Dropped support for PHP 8.0 and below.
+ - Updated dev dependencies
+
+Deprecations:
+
+ - Symfony façade validators are no longer supported and were
+   removed.
+
+Fixes:
+
+ - `KeySet` now reports which extra keys are causing the rule to fail.
+ - Ensure empty strings are never a valid currency code
+ - Do not hide messages on EachException
+ - Dot not throw exception when validating an uninitialized property
+
+Changes:
+
+ - You can no longer wrap `KeySet` in `Not`.
+ - `Phone` now uses `giggsey/libphonenumber-for-php`, this package needs
+   to be installed if you want to use this validator.
+ - `Phone` now supports the parameter `$countryCode` to validate phones
+   of a specific country.
+
 ## 2.2.4
 
 Meta:

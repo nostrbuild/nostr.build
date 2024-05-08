@@ -51,7 +51,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>nostr.build Profile Settings</title>
-    <link href="/styles/twbuild.css?v=b617d55187911373875c5f167f7df860" rel="stylesheet">
+    <link href="/styles/twbuild.css?v=b570d4fe61ed84c679494a5c2b6ecd6f" rel="stylesheet">
 </head>
 
 <body class="bg-gray-100 text-sm text-gray-800">

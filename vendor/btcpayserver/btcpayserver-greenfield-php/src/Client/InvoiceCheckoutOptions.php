@@ -170,7 +170,7 @@ class InvoiceCheckoutOptions
 
             $lastIndex = strrpos($k, $separator);
             if ($lastIndex !== false) {
-                $k = substr($k, $lastIndex +1);
+                $k = substr($k, $lastIndex + 1);
             }
             $array[$k] = $v;
         }

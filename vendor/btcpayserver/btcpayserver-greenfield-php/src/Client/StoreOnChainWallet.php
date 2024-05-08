@@ -35,6 +35,50 @@ class StoreOnChainWallet extends AbstractClient
         }
     }
 
+    public function createStoreOnChainWallet(
+        string $storeId,
+        string $cryptoCode,
+        ?string $existingMnemonic = null,
+        ?string $passphrase = null,
+        int $accountNumber = 0,
+        bool $savePrivateKeys = false,
+        bool $importKeysToRPC = false,
+        string $wordList = 'English',
+        int $wordCount = 12,
+        string $scriptPubKeyType = 'Segwit'
+    ): ResultStoreOnChainWallet {
+        $url = $this->getApiUrl() . 'stores/' .
+          urlencode($storeId) . '/payment-methods/onchain/' .
+          urlencode($cryptoCode) . '/generate';
+
+        $headers = $this->getRequestHeaders();
+        $method = 'POST';
+
+        $body = json_encode(
+            [
+              'existingMnemonic' => $existingMnemonic,
+              'passphrase' => $passphrase,
+              'accountNumber' => $accountNumber,
+              'savePrivateKeys' => $savePrivateKeys,
+              'importKeysToRPC' => $importKeysToRPC,
+              'wordList' => $wordList,
+              'wordCount' => $wordCount,
+              'scriptPubKeyType' => $scriptPubKeyType
+            ],
+            JSON_THROW_ON_ERROR
+        );
+
+        $response = $this->getHttpClient()->request($method, $url, $headers, $body);
+
+        if ($response->getStatus() === 200) {
+            return new ResultStoreOnChainWallet(
+                json_decode($response->getBody(), true, 512, JSON_THROW_ON_ERROR)
+            );
+        } else {
+            throw $this->getExceptionByStatusCode($method, $url, $response);
+        }
+    }
+
     public function getStoreOnChainWalletFeeRate(
         string $storeId,
         string $cryptoCode,
