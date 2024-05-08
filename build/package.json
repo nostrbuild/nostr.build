@@ -7,7 +7,7 @@
   "scripts": {
     "clean": "rm -r dist/",
     "watch": "parcel watch",
-    "build": "parcel build src/*.js && npx tailwindcss -o ../styles/twbuild.css --minify && npm run update-versions",
+    "build": "parcel build --detailed-report 10 src/*.js && npx tailwindcss -o ../styles/twbuild.css --minify && npm run update-versions",
     "postinstall": "node fix-imports.js",
     "update-versions": "/usr/bin/env python3 bump_css_js_version.py"
   },
