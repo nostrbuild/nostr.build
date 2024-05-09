@@ -57,7 +57,7 @@
       "name": "Advanced",
       "is_nip98_required": true,
       "url": "https://nostr.build/plans/",
-      "max_byte_size": 53687091200,
+      "max_byte_size": 107374182400,
       "file_expiration": [0, 0],
       "media_transformations": {
         "image": [
