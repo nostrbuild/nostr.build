@@ -10,7 +10,6 @@ The new user sign-up will be a 4-step process:
 // Include config, session, and Permission class files
 
 require_once $_SERVER['DOCUMENT_ROOT'] . '/config.php';
-require_once $_SERVER['DOCUMENT_ROOT'] . '/functions/session.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/permissions.class.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/BTCPayClient.class.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/Plans.class.php';
@@ -477,7 +476,7 @@ SVG;
               <?php endif; ?>
             </form>
           </div>
-          <script src="/scripts/dist/signup.js?v=c89e80df73bb0d4fcbd7df7a79e37254"></script>
+          <script src="/scripts/dist/signup.js?v=d6a487c435188eced2cbbdfbd680e59f"></script>
           <script>
             document.addEventListener('DOMContentLoaded', (event) => {
               // Check if NIP-07 extension is installed and enable NIP-07 login

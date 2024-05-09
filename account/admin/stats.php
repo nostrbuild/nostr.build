@@ -1,7 +1,6 @@
 <?php
 
 require_once($_SERVER['DOCUMENT_ROOT'] . '/config.php');
-require_once($_SERVER['DOCUMENT_ROOT'] . '/functions/session.php');
 require_once($_SERVER['DOCUMENT_ROOT'] . '/libs/permissions.class.php');
 
 // Create new Permission object

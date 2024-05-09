@@ -1,6 +1,5 @@
 <?php
 require_once $_SERVER['DOCUMENT_ROOT'] . "/config.php";
-require_once $_SERVER['DOCUMENT_ROOT'] . "/functions/session.php";
 require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/permissions.class.php';
 
 $perm = new Permission();
@@ -421,7 +420,7 @@ HTML;
 	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 	<title>nostr.build account</title>
 
-	<script defer src="/scripts/dist/account-v2.js?v=fa73d418ddc7970e196d99e532dd417d"></script>
+	<script defer src="/scripts/dist/account-v2.js?v=a29ff997e59a5297bf1ebac90c75dae5"></script>
 	<link href="/scripts/dist/account-v2.css?v=dbfaad81a558216cc1207acd10bc90b1" rel="stylesheet">
 
 	<link rel="icon" href="/assets/nb-logo-color-w.png" />

@@ -1,6 +1,5 @@
 <?php
 require_once $_SERVER['DOCUMENT_ROOT'] . '/config.php';
-require_once $_SERVER['DOCUMENT_ROOT'] . '/functions/session.php';
 
 /**
  * Usage:
@@ -28,8 +27,8 @@ class Permission
 
   function __construct()
   {
-    if (!isset($_SESSION) || session_status() === PHP_SESSION_NONE)
-      session_start();
+    #if (!isset($_SESSION) || session_status() === PHP_SESSION_NONE)
+    #  session_start(); # Done in php.ini
     $this->isLoggedIn = isset($_SESSION["loggedin"]) && $_SESSION["loggedin"] === true;
     $this->userLevel = $this->isLoggedIn ? $_SESSION["acctlevel"] : null;
     $this->accFlags = $this->isLoggedIn && isset($_SESSION["accflags"]) ? $_SESSION["accflags"] : null;

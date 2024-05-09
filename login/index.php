@@ -1,7 +1,6 @@
 <?php
 // Include config, session, and Permission class files
 require_once $_SERVER['DOCUMENT_ROOT'] . '/config.php';
-require_once $_SERVER['DOCUMENT_ROOT'] . '/functions/session.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/permissions.class.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/Account.class.php';
 
@@ -219,7 +218,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         </div>
     </main>
     <?php include $_SERVER['DOCUMENT_ROOT'] . '/components/footer.php'; ?>
-    <script src="/scripts/dist/login.js?v=1ab7bf89567fcbc32b90643c2b5a1476"></script>
+    <script src="/scripts/dist/login.js?v=53bf0d38602ca6868d80e24b9c944226"></script>
     <script>
         document.addEventListener('DOMContentLoaded', (event) => {
             let closeButton = document.querySelector(".close");

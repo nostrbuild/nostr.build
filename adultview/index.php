@@ -4,7 +4,6 @@ require_once __DIR__ . '/../vendor/autoload.php';
 use kornrunner\Blurhash\Blurhash;
 // Include config, session, and Permission class files
 require_once $_SERVER['DOCUMENT_ROOT'] . '/config.php';
-require_once $_SERVER['DOCUMENT_ROOT'] . '/functions/session.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/permissions.class.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/components/pagination.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/SiteConfig.php';

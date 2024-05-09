@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 require_once $_SERVER['DOCUMENT_ROOT'] . '/config.php';
-require_once $_SERVER['DOCUMENT_ROOT'] . '/functions/session.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/BTCPayClient.class.php';
 require_once __DIR__ . '/Account.class.php';
 
