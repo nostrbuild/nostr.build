@@ -198,9 +198,6 @@ SVG;
   <link rel="stylesheet" href="/styles/signup.css?v=8878cbf7163f77b3a4fb9b30804c73ca" />
   <link rel="icon" href="/assets/primo_nostr.png" />
   <script defer src="/scripts/fw/alpinejs.min.js?v=34fbe266eb872c1a396b8bf9022b7105"></script>
-  <!--
-  <script defer src="/scripts/fw/htmx.min.js?v=0dc2b5da8a531cecfa8100af6cec8d61"></script>
-  -->
   <style>
     [x-cloak] {
       display: none !important;
