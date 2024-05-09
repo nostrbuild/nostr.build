@@ -21,6 +21,7 @@ header('Content-Type: application/json');
 
 if (!$perm->validateLoggedin()  || !isset($_SESSION["usernpub"])) {
 	// Return error message
+	http_response_code(401);
 	echo json_encode(array("error" => "You are not logged in"));
 	$link->close();
 	exit;
