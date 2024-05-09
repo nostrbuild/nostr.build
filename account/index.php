@@ -424,7 +424,7 @@ HTML;
 	<link href="/scripts/dist/account-v2.css?v=dbfaad81a558216cc1207acd10bc90b1" rel="stylesheet">
 
 	<link rel="icon" href="/assets/nb-logo-color-w.png" />
-	<link href="/styles/twbuild.css?v=b570d4fe61ed84c679494a5c2b6ecd6f" rel="stylesheet">
+	<link href="/styles/twbuild.css?v=3645e0d57e0d4fcea1f8c40cf80f92e6" rel="stylesheet">
 
 	<!-- Pre-connect and DNS prefetch -->
 	<link rel="preconnect" href="https://i.nostr.build" crossorigin>
