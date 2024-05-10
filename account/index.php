@@ -370,8 +370,8 @@ $pageMenuContent = <<<HTML
 									});
 								}
             " x-on:dragover.prevent="adding = true; event.dataTransfer.dropEffect = 'move';" x-on:dragleave.prevent="adding = false" x-data="{ adding: false }" x-on:drop="adding = false">
-					<div class="flex justify-between" x-transition:enter="transition-opacity ease-linear duration-500" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" x-transition:leave="transition-opacity ease-linear duration-300" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0">
-						<a :href="folder.route" :class="{ 'bg-nbpurple-800 text-nbpurple-50': menuStore.activeFolder === folder.name, 'text-nbpurple-300 hover:text-nbpurple-50 hover:bg-nbpurple-800': menuStore.activeFolder !== folder.name, 'bg-nbpurple-700 text-nbpurple-50 scale-105': adding && menuStore.activeFolder !== folder.name }" class="w-full group flex gap-x-3 rounded-md p-2 text-sm leading-6 font-semibold" @click.prevent="menuStore.setActiveFolder(folder.name); menuStore.mobileMenuOpen = false; menuStore.disableDeleteFolderButtons()">
+					<div class="flex justify-between w-full" x-transition:enter="transition-opacity ease-linear duration-500" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" x-transition:leave="transition-opacity ease-linear duration-300" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0">
+						<a :href="folder.route" :class="{ 'bg-nbpurple-800 text-nbpurple-50': menuStore.activeFolder === folder.name, 'text-nbpurple-300 hover:text-nbpurple-50 hover:bg-nbpurple-800': menuStore.activeFolder !== folder.name, 'bg-nbpurple-700 text-nbpurple-50 scale-105': adding && menuStore.activeFolder !== folder.name }" class="w-full truncate group flex gap-x-3 rounded-md p-2 text-sm leading-6 font-semibold" @click.prevent="menuStore.setActiveFolder(folder.name); menuStore.mobileMenuOpen = false; menuStore.disableDeleteFolderButtons()">
 							<!--
 							<span class="flex size-6 shrink-0 items-center justify-center rounded-lg border border-nbpurple-700 bg-nbpurple-800 text-[0.625rem] font-medium text-nbpurple-300 group-hover:text-nbpurple-50" x-text="folder.icon"></span>
 							-->
@@ -420,7 +420,7 @@ HTML;
 	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 	<title>nostr.build account</title>
 
-	<script defer src="/scripts/dist/account-v2.js?v=75eb9e4606185c0b167d8f72dbf2b80e"></script>
+	<script defer src="/scripts/dist/account-v2.js?v=3ef77fb3323e1ccee6cbd2c3e3139b48"></script>
 	<link href="/scripts/dist/account-v2.css?v=dbfaad81a558216cc1207acd10bc90b1" rel="stylesheet">
 
 	<link rel="icon" href="/assets/nb-logo-color-w.png" />
