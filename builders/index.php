@@ -416,7 +416,6 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/config.php';
 	</main>
 
 	<?php include $_SERVER['DOCUMENT_ROOT'] . '/components/footer.php'; ?>
-	<script src="/scripts/index.js?v=04d160e3f0cdd9cd006b26a57f0d727f"></script>
 </body>
 
 </html>
