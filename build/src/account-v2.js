@@ -264,7 +264,8 @@ document.addEventListener('alpine:init', () => {
 });
 document.addEventListener('alpine:initialized', () => {
   console.log('Alpine initialized');
-  Alpine.store('menuStore').alpineInitiated = true;
+  const menuStore = Alpine.store('menuStore');
+  menuStore.alpineInitiated = true;
 })
 const apiUrl = `https://${window.location.hostname}/account/api.php`;
 
@@ -285,8 +286,8 @@ function getUpdatedHashLink(f, p) {
 
 function getHashParams() {
   const params = new URLSearchParams(window.location.hash.slice(1));
-  const folder = params.get('f');
-  const page = params.get('p');
+  const folder = decodeURIComponent(params.get('f'));
+  const page = decodeURIComponent(params.get('p'));
   return {
     folder,
     page
