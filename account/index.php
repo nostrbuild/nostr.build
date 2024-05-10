@@ -420,7 +420,7 @@ HTML;
 	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 	<title>nostr.build account</title>
 
-	<script defer src="/scripts/dist/account-v2.js?v=a29ff997e59a5297bf1ebac90c75dae5"></script>
+	<script defer src="/scripts/dist/account-v2.js?v=75eb9e4606185c0b167d8f72dbf2b80e"></script>
 	<link href="/scripts/dist/account-v2.css?v=dbfaad81a558216cc1207acd10bc90b1" rel="stylesheet">
 
 	<link rel="icon" href="/assets/nb-logo-color-w.png" />
