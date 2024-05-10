@@ -1,420 +1,3 @@
-<?php
-/*
-require_once $_SERVER['DOCUMENT_ROOT'] . "/config.php";
-require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/permissions.class.php';
-
-$perm = new Permission();
-
-if (!$perm->validateLoggedin()  || empty($_SESSION["usernpub"])) {
-	header("Location: /login");
-	$link->close();
-	exit;
-}
-
-// Redirect to the /plans page if the user does not have a subscription
-if ($perm->validatePermissionsLevelEqual(0)) {
-	header("Location: /plans/");
-	$link->close();
-	exit;
-}
-*/
-
-// TODO:
-// - Add simple notification for any important messages
-// - Add scheduled nostr posts
-// - Use VidStack video/audio player for media playback
-// - Use file.show attribute to hide deleted files for the purposes of Trash folder (an idea). Will require deletion from CDN (potentially)
-// - Add ability to delete Nostr post when deleting media that is shared
-//   - Warn the user (done)
-//   - Add switch to trigger deletion of Nostr post (TBD)
-//   - Decide how to treat notes that thave other media shared on them (TBD)
-//   - Allow cascading deletion of media that is shared on a Nostr post, based on the note (TBD)
-//   - [Depends on] Implement simple "Trash" folder for deleted media and disable serving it to the public (TBD)
-
-// - Allow user to verify their npub in profile edit dialog
-// - Add logout functionality within the page itself and using the api
-// - Add login functionality within the page itself and using the api
-
-$NBLogoSVG = <<<SVG
-<svg class="h-8 w-auto" id="a" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 33.4 39">
-  <defs>
-    <linearGradient id="b" x1="8.25" y1="-326.6" x2="8.25" y2="-297.6" gradientTransform="translate(0 336.6)" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#9b4399"/>
-      <stop offset="1" stop-color="#3d1e56"/>
-      <stop offset="1" stop-color="#231815"/>
-    </linearGradient>
-    <style>
-      .e{stroke-width:0;fill:#fff}
-    </style>
-  </defs>
-  <path d="M16.7 0 .1 9.8l16.6 9.7 16.5-9.7L16.7 0Z" style="fill:#70429a;stroke-width:0"/>
-  <path class="e" d="m16.7 1.7-4.6 2.6v10.8l4.6 2.7 4.6-2.7V9.7l4.5-2.6-9.1-5.4Zm-3 6.3c-1.23-.11-1.13-1.98.1-2 1.3 0 1.27 2.09 0 2m6.8 1.3L16.8 7l3.8-2.3L24.3 7l-3.7 2.3Z"/>
-  <path d="M0 10v19.3L16.5 39V19.7L0 10Z" style="fill:url(#b);stroke-width:0"/>
-  <path class="e" d="m14.4 35.2-3-1.8v-.9L5.1 21.8l-.8-.4v8L2 28.1V13.8l3 1.7v1l6.2 10.7.8.4v-8l2.3 1.3.1 14.3Z"/>
-  <path d="M16.8 19.7V39l16.6-9.7V10l-16.6 9.7Z" style="stroke-width:0;fill:#3d1e56"/>
-  <path class="e" d="M31.3 16.4 29 15.1l-10 5.8v14.3L29.7 29l1.6-2.7v-3.6l-1.6-.9 1.6-2.7v-2.7Zm-2.5 9.9-1.1 2-6.5 3.8v-4.5l6.5-3.8 1.2.7-.1 1.8Zm0-6.3-1 2-6.5 3.8v-4.4l6.5-3.8 1.2.6-.2 1.8Z"/>
-</svg>
-SVG;
-
-$pageMenuContent = <<<HTML
-<ul role="list" class="flex flex-1 flex-col gap-y-7" x-data="{ pfpError: false }" x-init="menuStore.setActiveMenuFromHash()" @click.away="!menuStore.showDeleteFolderModal && menuStore.disableDeleteFolderButtons()" x-effect="pfpError = !profileStore.profileInfo.pfpUrl">
-
-	<!-- Profile -->
-	<ul role="list" class="-mx-2 space-y-1">
-		<li>
-			<div class="flex items-center justify-between">
-				<div class="flex items-center gap-x-4">
-					<!-- PFP -->
-					<template x-if="profileStore.profileInfo.pfpUrl && !pfpError">
-						<img class="size-8 rounded-full bg-nbpurple-800 object-cover" :src="profileStore.profileInfo.pfpUrl" :alt="'Profile picture for ' + profileStore.profileInfo.name" @error="pfpError = true" @load="pfpError = false">
-					</template>
-					<template x-if="!profileStore.profileInfo.pfpUrl || pfpError">
-						<svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="inline-block size-8 rounded-full text-nbpurple-400">
-							<path stroke-linecap="round" stroke-linejoin="round" d="M17.982 18.725A7.488 7.488 0 0 0 12 15.75a7.488 7.488 0 0 0-5.982 2.975m11.963 0a9 9 0 1 0-11.963 0m11.963 0A8.966 8.966 0 0 1 12 21a8.966 8.966 0 0 1-5.982-2.275M15 9.75a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
-						</svg>
-					</template>
-					<!-- /PFP -->
-					<div>
-						<span class="block text-sm font-semibold leading-tight text-nbpurple-50" x-text="profileStore.profileInfo.getNameDisplay()"></span>
-						<span class="block text-xs font-semibold leading-tight text-nbpurple-50" x-text="profileStore.profileInfo.getNpubDisplay()"></span>
-					</div>
-				</div>
-				<div class="flex items-center">
-					<button @click.prevent="profileStore.openDialog(); menuStore.mobileMenuOpen = false; menuStore.disableDeleteFolderButtons(); " class="text-sm font-semibold leading-6 text-nbpurple-50 hover:bg-nbpurple-800 p-1.5 rounded-md">
-						<!--
-						<svg aria-hidden="true" class="size-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-							<path stroke-linecap="round" stroke-linejoin="round" d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.325.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 0 1 1.37.49l1.296 2.247a1.125 1.125 0 0 1-.26 1.431l-1.003.827c-.293.241-.438.613-.43.992a7.723 7.723 0 0 1 0 .255c-.008.378.137.75.43.991l1.004.827c.424.35.534.955.26 1.43l-1.298 2.247a1.125 1.125 0 0 1-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.47 6.47 0 0 1-.22.128c-.331.183-.581.495-.644.869l-.213 1.281c-.09.543-.56.94-1.11.94h-2.594c-.55 0-1.019-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 0 1-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 0 1-1.369-.49l-1.297-2.247a1.125 1.125 0 0 1 .26-1.431l1.004-.827c.292-.24.437-.613.43-.991a6.932 6.932 0 0 1 0-.255c.007-.38-.138-.751-.43-.992l-1.004-.827a1.125 1.125 0 0 1-.26-1.43l1.297-2.247a1.125 1.125 0 0 1 1.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.086.22-.128.332-.183.582-.495.644-.869l.214-1.28Z" />
-							<path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
-						</svg>
--->
-						<svg aria-hidden="true" class="size-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-							<path d="M2 21a8 8 0 0 1 10.434-7.62" />
-							<circle cx="10" cy="8" r="5" />
-							<circle cx="18" cy="18" r="3" />
-							<path d="m19.5 14.3-.4.9" />
-							<path d="m16.9 20.8-.4.9" />
-							<path d="m21.7 19.5-.9-.4" />
-							<path d="m15.2 16.9-.9-.4" />
-							<path d="m21.7 16.5-.9.4" />
-							<path d="m15.2 19.1-.9.4" />
-							<path d="m19.5 21.7-.4-.9" />
-							<path d="m16.9 15.2-.4-.9" />
-						</svg>
-						<span class="sr-only">Profile Settings</span>
-					</button>
-					<button @click.prevent="logoutScreen = true" class="text-sm font-semibold leading-6 text-nbpurple-50 hover:bg-nbpurple-800 p-1.5 rounded-md">
-						<svg aria-hidden="true" class="size-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
-							<path stroke-linecap="round" stroke-linejoin="round" d="M8.25 9V5.25A2.25 2.25 0 0 1 10.5 3h6a2.25 2.25 0 0 1 2.25 2.25v13.5A2.25 2.25 0 0 1 16.5 21h-6a2.25 2.25 0 0 1-2.25-2.25V15M12 9l3 3m0 0-3 3m3-3H2.25" />
-						</svg>
-						<span class="sr-only">Logout</span>
-					</button>
-				</div>
-			</div>
-		</li>
-	</ul>
-	<!-- /Profile -->
-	<!-- Sidebar widgets -->
-	<li>
-		<ul role="list" class="-mx-2 space-y-1">
-			<!-- Storage Usage Widget -->
-			<li>
-				<div class="flex items-center justify-between">
-					<div class="flex items-center">
-						<svg aria-hidden="true" class="size-5 text-nbpurple-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
-						</svg>
-						<span class="ml-2 text-sm font-medium text-nbpurple-300">Usage</span>
-					</div>
-					<div class="text-sm font-medium text-nbpurple-300" x-text="formatBytes(profileStore.profileInfo.storageUsed) + ' / ' + profileStore.profileInfo.totalStorageLimit"></div>
-				</div>
-				<div class="mt-2 w-full bg-nbpurple-200 rounded-full h-2">
-					<div class="bg-nbpurple-600 h-2 rounded-full" :style="'width: ' + (profileStore.profileInfo.getStorageRatio().toFixed(2) * 100) + '%'"></div>
-				</div>
-			</li>
-			<!-- /Storage Usage Widget -->
-			<!-- Remaining Days Widget -->
-			<li>
-				<div class="flex items-center justify-between">
-					<div class="flex items-center">
-						<svg aria-hidden="true" class="size-5 text-nbpurple-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-						</svg>
-						<span class="ml-2 text-sm font-medium text-nbpurple-300">Remaining Days</span>
-					</div>
-					<div class="text-sm font-medium text-nbpurple-300" x-text="profileStore.profileInfo.remainingDays"></div>
-				</div>
-			</li>
-			<!-- /Remaining Days Widget -->
-			<!-- File statistics -->
-			<li>
-				<div class="flex items-center justify-between">
-					<div class="flex items-center">
-						<svg aria-hidden="true" class="size-5 text-nbpurple-300" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-							<path stroke-linecap="round" stroke-linejoin="round" d="M10.5 6a7.5 7.5 0 1 0 7.5 7.5h-7.5V6Z" />
-							<path stroke-linecap="round" stroke-linejoin="round" d="M13.5 10.5H21A7.5 7.5 0 0 0 13.5 3v7.5Z" />
-						</svg>
-						<span class="ml-2 text-sm font-medium text-nbpurple-300" x-text="'Media(' + menuStore.formatNumberInThousands(menuStore.fileStats.totalFiles) + ')'"></span>
-					</div>
-					<div class="flex items-center space-x-2">
-						<div class="flex items-center">
-							<svg aria-hidden="true" class="size-4 text-nbpurple-300" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-								<path stroke-linecap="round" stroke-linejoin="round" d="M12.75 8.25v7.5m6-7.5h-3V12m0 0v3.75m0-3.75H18M9.75 9.348c-1.03-1.464-2.698-1.464-3.728 0-1.03 1.465-1.03 3.84 0 5.304 1.03 1.464 2.699 1.464 3.728 0V12h-1.5M4.5 19.5h15a2.25 2.25 0 0 0 2.25-2.25V6.75A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25v10.5A2.25 2.25 0 0 0 4.5 19.5Z" />
-							</svg>
-							<span class="ml-1 text-sm font-medium text-nbpurple-300" x-text="menuStore.formatNumberInThousands(menuStore.fileStats.totalGifs)"></span>
-						</div>
-						<div class="flex items-center">
-							<svg aria-hidden="true" class="size-4 text-nbpurple-300" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-							</svg>
-							<span class="ml-1 text-sm font-medium text-nbpurple-300" x-text="menuStore.formatNumberInThousands(menuStore.fileStats.totalImages)"></span>
-						</div>
-						<div class="flex items-center">
-							<svg aria-hidden="true" class="size-4 text-nbpurple-300" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
-							</svg>
-							<span class="ml-1 text-sm font-medium text-nbpurple-300" x-text="menuStore.formatNumberInThousands(menuStore.fileStats.totalVideos)"></span>
-						</div>
-					</div>
-				</div>
-			</li>
-			<!-- /File statistics -->
-			<!-- Creators Page Shares -->
-			<li x-cloak x-show="profileStore.profileInfo.isCreatorsPageEligible">
-				<div class="flex items-center justify-between">
-					<div class="flex items-center cursor-copy" @click="navigator.clipboard.writeText(profileStore.profileInfo.creatorPageLink); showToast = true">
-						<svg aria-hidden="true" class="size-4 text-nbpurple-300" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-							<path stroke-linecap="round" stroke-linejoin="round" d="M9.53 16.122a3 3 0 0 0-5.78 1.128 2.25 2.25 0 0 1-2.4 2.245 4.5 4.5 0 0 0 8.4-2.245c0-.399-.078-.78-.22-1.128Zm0 0a15.998 15.998 0 0 0 3.388-1.62m-5.043-.025a15.994 15.994 0 0 1 1.622-3.395m3.42 3.42a15.995 15.995 0 0 0 4.764-4.648l3.876-5.814a1.151 1.151 0 0 0-1.597-1.597L14.146 6.32a15.996 15.996 0 0 0-4.649 4.763m3.42 3.42a6.776 6.776 0 0 0-3.42-3.42" />
-						</svg>
-						<span class="ml-2 text-sm font-medium text-nbpurple-300">Creators Page</span>
-						<svg aria-hidden="true" class="ml-1 size-4 text-nbpurple-300" viewBox="0 0 20 20" fill="currentColor">
-							<path fill-rule="evenodd" d="M15.988 3.012A2.25 2.25 0 0 1 18 5.25v6.5A2.25 2.25 0 0 1 15.75 14H13.5v-3.379a3 3 0 0 0-.879-2.121l-3.12-3.121a3 3 0 0 0-1.402-.791 2.252 2.252 0 0 1 1.913-1.576A2.25 2.25 0 0 1 12.25 1h1.5a2.25 2.25 0 0 1 2.238 2.012ZM11.5 3.25a.75.75 0 0 1 .75-.75h1.5a.75.75 0 0 1 .75.75v.25h-3v-.25Z" clip-rule="evenodd" />
-							<path d="M3.5 6A1.5 1.5 0 0 0 2 7.5v9A1.5 1.5 0 0 0 3.5 18h7a1.5 1.5 0 0 0 1.5-1.5v-5.879a1.5 1.5 0 0 0-.44-1.06L8.44 6.439A1.5 1.5 0 0 0 7.378 6H3.5Z" />
-						</svg>
-					</div>
-					<a class="flex items-center cursor-pointer" :href="profileStore.profileInfo.creatorPageLink">
-						<svg aria-hidden="true" class="size-4 text-nbpurple-300" viewBox="0 0 20 20" fill="currentColor">
-							<path d="M12.232 4.232a2.5 2.5 0 0 1 3.536 3.536l-1.225 1.224a.75.75 0 0 0 1.061 1.06l1.224-1.224a4 4 0 0 0-5.656-5.656l-3 3a4 4 0 0 0 .225 5.865.75.75 0 0 0 .977-1.138 2.5 2.5 0 0 1-.142-3.667l3-3Z" />
-							<path d="M11.603 7.963a.75.75 0 0 0-.977 1.138 2.5 2.5 0 0 1 .142 3.667l-3 3a2.5 2.5 0 0 1-3.536-3.536l1.225-1.224a.75.75 0 0 0-1.061-1.06l-1.224 1.224a4 4 0 1 0 5.656 5.656l3-3a4 4 0 0 0-.225-5.865Z" />
-						</svg>
-						<span class="ml-1 text-sm font-medium text-nbpurple-300" x-text="menuStore.formatNumberInThousands(menuStore.fileStats.creatorCount)"></span>
-					</a>
-				</div>
-			</li>
-			<!-- /Creators Page Shares -->
-		</ul>
-	</li>
-	<!-- /Sidebar widgets -->
-	<!-- Menu items -->
-	<li>
-		<!-- Top-level menu items -->
-		<ul role="list" class="-mx-2 space-y-1">
-			<template x-for="item in menuStore.menuItems" :key="item.name">
-				<li>
-					<a :href="item.route" :class="{ 'bg-nbpurple-800 text-nbpurple-50': menuStore.activeMenu === item.name, 'text-nbpurple-300 hover:text-nbpurple-50 hover:bg-nbpurple-800': menuStore.activeMenu !== item.name }" class="group flex gap-x-3 rounded-md p-2 text-sm leading-6 font-semibold" @click="menuStore.setActiveMenu(item.name); menuStore.mobileMenuOpen = false">
-						<svg aria-hidden="true" class="size-6 shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true" x-html="item.icon"></svg>
-						<span x-text="item.name"></span>
-					</a>
-				</li>
-			</template>
-		</ul>
-		<!-- AI Studio submenu -->
-		<!--
-		<div x-data="{ AISubMenuExpand: menuStore.menuItemsAI.length === 1, isAI: menuStore.menuItemsAI.find(item=>item.name === menuStore.activeMenu) }" x-init="fileStore.fullWidth = !isAI" class="-mx-2 space-y-1 mt-1">
-			<button @click.throttle="AISubMenuExpand = !AISubMenuExpand" type="button" class="text-nbpurple-300 hover:text-nbpurple-50 hover:bg-nbpurple-800 flex items-center w-full text-left rounded-md p-2 gap-x-3 text-sm leading-6 font-semibold" aria-controls="sub-menu-ai" aria-expanded="AISubMenuExpand">
-				<svg class="h-6 w-6 shrink-0 text-nbpurple-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-					<path d="M12 8V4H8"/>
-					<rect width="16" height="12" x="4" y="8" rx="2"/>
-					<path d="M2 14h2"/><path d="M20 14h2"/><path d="M15 13v2"/><path d="M9 13v2"/>
-				</svg>
-				AI Studio
-				<svg :class="AISubMenuExpand ? 'rotate-90 text-nbpurple-500' : 'text-nbpurple-400'" class="ml-auto h-5 w-5 shrink-0" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-					<path fill-rule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clip-rule="evenodd" />
-				</svg>
-			</button>
-			<ul x-cloak x-show="AISubMenuExpand || isAI" class="mt-1 px-2" id="sub-menu-ai">
-				<template x-for="item in menuStore.menuItemsAI" :key="item.name">
-					<li>
-						<a :href="item.route" :class="{ 'bg-nbpurple-800 text-nbpurple-50': menuStore.activeMenu === item.name, 'text-nbpurple-300 hover:text-nbpurple-50 hover:bg-nbpurple-800': menuStore.activeMenu !== item.name }" class="group flex gap-x-3 rounded-md p-2 text-sm leading-6 font-semibold" @click="menuStore.setActiveMenu(item.name); menuStore.mobileMenuOpen = false">
-							<svg aria-hidden="true" class="size-6 shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true" x-html="item.icon"></svg>
-							<span x-text="item.name"></span>
-						</a>
-					</li>
-				</template>
-			</ul>
-		</div>
--->
-		<ul x-data="{ isAI: menuStore.menuItemsAI.find(item=>item.name === menuStore.activeMenu) }" x-init="fileStore.fullWidth = !isAI" role="list" class="-mx-2 space-y-1">
-			<template x-for="item in menuStore.menuItemsAI" :key="item.name">
-				<li>
-					<a :href="item.route" :class="{ 'bg-nbpurple-800 text-nbpurple-50': menuStore.activeMenu === item.name, 'text-nbpurple-300 hover:text-nbpurple-50 hover:bg-nbpurple-800': menuStore.activeMenu !== item.name }" class="group flex gap-x-3 rounded-md p-2 text-sm leading-6 font-semibold" @click="menuStore.setActiveMenu(item.name); menuStore.mobileMenuOpen = false">
-						<svg aria-hidden="true" class="size-6 shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true" x-html="item.icon"></svg>
-						<span x-text="item.name"></span>
-						<span class="inline-flex items-center rounded-full bg-nbpurple-200 px-1.5 py-0.5 text-xs font-medium text-nbpurple-800 ring-1 ring-inset ring-nbpurple-700/10">New</span>
-					</a>
-				</li>
-			</template>
-		</ul>
-		<!-- External menu items -->
-		<ul role="list" class="-mx-2 space-y-1">
-			<template x-for="item in menuStore.externalMenuItems" :key="item.name">
-				<li x-show="profileStore.profileInfo.allowed(item.allowed)">
-					<a :href="item.route" :class="{ 'bg-nbpurple-800 text-nbpurple-50': menuStore.activeMenu === item.name, 'text-nbpurple-300 hover:text-nbpurple-50 hover:bg-nbpurple-800': menuStore.activeMenu !== item.name }" class="group flex gap-x-3 rounded-md p-2 text-sm leading-6 font-semibold">
-						<svg aria-hidden="true" class="size-6 shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true" x-html="item.icon"></svg>
-						<span x-text="item.name"></span>
-					</a>
-				</li>
-			</template>
-		</ul>
-		<!-- Admin menu items -->
-		<template x-if="profileStore.profileInfo.isAdmin || profileStore.profileInfo.isModerator">
-			<div x-data="{AdminSubMenuExpand: false}" class="-mx-2 space-y-1 mt-1">
-				<button @click.throttle="AdminSubMenuExpand = !AdminSubMenuExpand" type="button" class="text-nbpurple-300 hover:text-nbpurple-50 hover:bg-nbpurple-800 flex items-center w-full text-left rounded-md p-2 gap-x-3 text-sm leading-6 font-semibold" aria-controls="sub-menu-admin" aria-expanded="AdminSubMenuExpand">
-					<svg class="h-6 w-6 shrink-0 text-nbpurple-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-						<path stroke-linecap="round" stroke-linejoin="round" d="M12 3v17.25m0 0c-1.472 0-2.882.265-4.185.75M12 20.25c1.472 0 2.882.265 4.185.75M18.75 4.97A48.416 48.416 0 0 0 12 4.5c-2.291 0-4.545.16-6.75.47m13.5 0c1.01.143 2.01.317 3 .52m-3-.52 2.62 10.726c.122.499-.106 1.028-.589 1.202a5.988 5.988 0 0 1-2.031.352 5.988 5.988 0 0 1-2.031-.352c-.483-.174-.711-.703-.59-1.202L18.75 4.971Zm-16.5.52c.99-.203 1.99-.377 3-.52m0 0 2.62 10.726c.122.499-.106 1.028-.589 1.202a5.989 5.989 0 0 1-2.031.352 5.989 5.989 0 0 1-2.031-.352c-.483-.174-.711-.703-.59-1.202L5.25 4.971Z" />
-					</svg>
-					Administrate
-					<svg :class="AdminSubMenuExpand ? 'rotate-90 text-nbpurple-500' : 'text-nbpurple-400'" class="ml-auto h-5 w-5 shrink-0" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-						<path fill-rule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clip-rule="evenodd" />
-					</svg>
-				</button>
-				<ul x-cloak x-show="AdminSubMenuExpand" class="mt-1 px-2" id="sub-menu-ai">
-					<template x-for="item in menuStore.adminMenuItems" :key="item.name">
-						<li x-show="profileStore.profileInfo.allowed(item.allowed)">
-							<a @click="window.location.href = item.route" :href="item.route" :class="{ 'bg-nbpurple-800 text-nbpurple-50': menuStore.activeMenu === item.name, 'text-nbpurple-300 hover:text-nbpurple-50 hover:bg-nbpurple-800': menuStore.activeMenu !== item.name }" class="group flex gap-x-3 rounded-md p-2 text-sm leading-6 font-semibold">
-								<svg x-show="item.icon.length > 0" aria-hidden="true" class="size-6 shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true" x-html="item.icon"></svg>
-								<span x-text="item.name"></span>
-							</a>
-						</li>
-					</template>
-				</ul>
-			</div>
-		</template>
-	</li>
-	<!-- /Menu items -->
-	<!-- Folders -->
-	<li>
-		<div class="flex items-center justify-between text-xs font-semibold leading-6 text-nbpurple-300">
-			<span class="font-bold" x-text="'Folders (' + menuStore.folders.length + ')'"></span>
-			<div>
-				<!-- Button to create a new folder -->
-				<button type="button" class="ml-2 p-1 text-xs font-semibold text-nbpurple-300 hover:text-nbpurple-50 hover:bg-nbpurple-800 rounded-md" @click="menuStore.newFolderDialogOpen(); menuStore.disableDeleteFolderButtons()" :disabled="menuStore.newFolderDialog">
-					<svg aria-hidden="true" class="size-6" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-						<path stroke-linecap="round" stroke-linejoin="round" d="M12 10.5v6m3-3H9m4.06-7.19-2.12-2.12a1.5 1.5 0 0 0-1.061-.44H4.5A2.25 2.25 0 0 0 2.25 6v12a2.25 2.25 0 0 0 2.25 2.25h15A2.25 2.25 0 0 0 21.75 18V9a2.25 2.25 0 0 0-2.25-2.25h-5.379a1.5 1.5 0 0 1-1.06-.44Z" />
-					</svg>
-					<span class="sr-only">Create a new folder</span>
-				</button>
-				<!-- Button to delete folders -->
-				<button type="button" class="ml-2 p-1 text-xs font-semibold text-nbpurple-300 hover:text-nbpurple-50 hover:bg-nbpurple-800 rounded-md" @click="menuStore.toggleDeleteFolderButtons()" :disabled="menuStore.newFolderDialog">
-					<svg x-show="!menuStore.showDeleteFolderButtons" aria-hidden="true" class="size-6" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-						<path stroke-linecap="round" stroke-linejoin="round" d="M15 13.5H9m4.06-7.19-2.12-2.12a1.5 1.5 0 0 0-1.061-.44H4.5A2.25 2.25 0 0 0 2.25 6v12a2.25 2.25 0 0 0 2.25 2.25h15A2.25 2.25 0 0 0 21.75 18V9a2.25 2.25 0 0 0-2.25-2.25h-5.379a1.5 1.5 0 0 1-1.06-.44Z" />
-					</svg>
-					<svg x-cloak x-show="menuStore.showDeleteFolderButtons" aria-hidden="true" class="size-6" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-						<path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12.75V12A2.25 2.25 0 0 1 4.5 9.75h15A2.25 2.25 0 0 1 21.75 12v.75m-8.69-6.44-2.12-2.12a1.5 1.5 0 0 0-1.061-.44H4.5A2.25 2.25 0 0 0 2.25 6v12a2.25 2.25 0 0 0 2.25 2.25h15A2.25 2.25 0 0 0 21.75 18V9a2.25 2.25 0 0 0-2.25-2.25h-5.379a1.5 1.5 0 0 1-1.06-.44Z" />
-					</svg>
-					<span class="sr-only">Delete folder(s)</span>
-				</button>
-			</div>
-		</div>
-		<ul role="list" class="-mx-2 mt-2 space-y-1">
-			<!-- New Folder Form -->
-			<li x-cloak x-show="menuStore.newFolderDialog" x-trap="menuStore.newFolderDialog">
-				<div x-id="['new-folder', 'new-folder-error']">
-					<div class="flex items-center gap-x-3 relative">
-						<!-- Error message -->
-						<div
-							:id="\$id('new-folder-error')"
-							x-show="menuStore.newFolderNameError"
-							class="absolute left-1/3 -translate-x-1/2 z-10 text-sm font-semibold text-orange-300 transition-opacity duration-300 bg-nbpurple-950/85 rounded-md p-2"
-							:class="{
-								'opacity-0': !menuStore.newFolderNameError,
-								'opacity-100': menuStore.newFolderNameError
-							}"
-							x-transition:enter="transition ease-out duration-300"
-							x-transition:leave="transition ease-in duration-300"
-							x-text="menuStore.newFolderNameError"
-							aria-live="assertive"
-							role="alert"
-						>
-						</div>
-						<label :for="\$id('new-folder')" class="sr-only">New folder name</label>
-						<input :id="\$id('new-folder')" x-ref="newFolderNameInput" type="text" name="new-folder-name" :class="{'animate-shake': menuStore.newFolderNameError }" class="w-full text-sm font-semibold text-nbpurple-300 bg-nbpurple-800 rounded-md p-2" x-model="menuStore.newFolderName" @keydown.enter="menuStore.createFolder(menuStore.newFolderName)" @keydown.escape.stop="menuStore.newFolderDialogClose()" aria-describedby="new-folder-error-message">
-						<button type="button" class="-ml-2 text-nbpurple-300 hover:text-nbpurple-50 hover:bg-nbpurple-800 rounded-md p-2 text-sm leading-6 font-semibold" @click="menuStore.createFolder(menuStore.newFolderName)">
-							<svg aria-hidden="true" class="size-5 shrink-0 items-center justify-center rounded-lg border border-nbpurple-700 bg-nbpurple-800 text-[0.625rem] font-medium text-nbpurple-300 group-hover:text-nbpurple-50" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-								<path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
-							</svg>
-							<span class="sr-only">Create folder</span>
-						</button>
-						<button type="button" class="-mx-2 text-nbpurple-300 hover:text-nbpurple-50 hover:bg-nbpurple-800 rounded-md p-2 text-sm leading-6 font-semibold" @click="menuStore.newFolderDialogClose()">
-							<svg aria-hidden="true" class="size-5 shrink-0 items-center justify-center rounded-lg border border-nbpurple-700 bg-nbpurple-800 text-[0.625rem] font-medium text-nbpurple-300 group-hover:text-nbpurple-50" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-								<path stroke-linecap="round" stroke-linejoin="round" d="m9.75 9.75 4.5 4.5m0-4.5-4.5 4.5M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
-							</svg>
-							<span class="sr-only">Cancel</span>
-						</button>
-					</div>
-				</div>
-			</li>
-			<!-- /New Folder Form -->
-			<template x-for="folder in menuStore.folders" :key="folder.name">
-				<li x-on:drop.prevent="
-								if(menuStore.activeFolder === folder.name) return;
-                const mediaId = event.dataTransfer.getData('text/plain');
-								if(mediaId) {
-									const draggedElement = document.getElementById(mediaId);
-									if(!draggedElement) return;
-									draggedElement.classList.add('animate-pulse');
-									fileStore.moveItemsToFolder(mediaId, folder.id)
-									.then(() => {
-										draggedElement.remove();
-									})
-									.catch(() => {
-										draggedElement.classList.remove('animate-pulse');
-									})
-									.finally(() => {
-										adding = false;
-									});
-								}
-            " x-on:dragover.prevent="adding = true; event.dataTransfer.dropEffect = 'move';" x-on:dragleave.prevent="adding = false" x-data="{ adding: false }" x-on:drop="adding = false">
-					<div class="flex justify-between w-full" x-transition:enter="transition-opacity ease-linear duration-500" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" x-transition:leave="transition-opacity ease-linear duration-300" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0">
-						<a :href="folder.route" :class="{ 'bg-nbpurple-800 text-nbpurple-50': menuStore.activeFolder === folder.name, 'text-nbpurple-300 hover:text-nbpurple-50 hover:bg-nbpurple-800': menuStore.activeFolder !== folder.name, 'bg-nbpurple-700 text-nbpurple-50 scale-105': adding && menuStore.activeFolder !== folder.name }" class="w-full truncate group flex gap-x-3 rounded-md p-2 text-sm leading-6 font-semibold" @click.prevent="menuStore.setActiveFolder(folder.name); menuStore.mobileMenuOpen = false; menuStore.disableDeleteFolderButtons()">
-							<!--
-							<span class="flex size-6 shrink-0 items-center justify-center rounded-lg border border-nbpurple-700 bg-nbpurple-800 text-[0.625rem] font-medium text-nbpurple-300 group-hover:text-nbpurple-50" x-text="folder.icon"></span>
-							-->
-							<span class="relative flex size-6 shrink-0 items-center justify-center rounded-lg border border-nbpurple-700 bg-nbpurple-800 text-[0.5rem] font-normal text-nbpurple-300 group-hover:text-nbpurple-50">
-								<svg class="absolute w-full h-full" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-									<path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/>
-								</svg>
-								<span class="relative z-10 -mb-[0.1rem]" x-text="folder.icon"></span>
-							</span>
-							<span class="truncate" x-text="folder.name"></span>
-						</a>
-						<!-- Delete folder Icon -->
-						<button x-cloak x-show="menuStore.showDeleteFolderButtons && folder.allowDelete && folder.name !== menuStore.activeFolder" type="button" class="text-nbpurple-300 hover:text-nbpurple-50 hover:bg-nbpurple-800 rounded-md p-2 text-sm leading-6 font-semibold" @click="menuStore.openDeleteFolderModal(folder.id)">
-							<svg aria-hidden="true" class="size-5 shrink-0 items-center justify-center rounded-lg border border-nbpurple-700 bg-nbpurple-800 text-[0.625rem] font-medium text-nbpurple-300 group-hover:text-nbpurple-50" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-								<path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
-							</svg>
-							<span class="sr-only">Delete folder</span>
-						</button>
-					</div>
-				</li>
-			</template>
-			<li x-cloak x-show="!menuStore.newFolderDialog">
-				<button type="button" class="w-full text-nbpurple-300 hover:text-nbpurple-50 hover:bg-nbpurple-800 group flex gap-x-3 rounded-md p-2 text-sm leading-6 font-semibold" @click="menuStore.newFolderDialogOpen()">
-					<svg aria-hidden="true" class="flex size-6 shrink-0 items-center justify-center rounded-lg border border-nbpurple-700 bg-nbpurple-800 text-[0.625rem] font-medium text-nbpurple-300 group-hover:text-nbpurple-50" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-						<path stroke-linecap="round" stroke-linejoin="round" d="M12 10.5v6m3-3H9m4.06-7.19-2.12-2.12a1.5 1.5 0 0 0-1.061-.44H4.5A2.25 2.25 0 0 0 2.25 6v12a2.25 2.25 0 0 0 2.25 2.25h15A2.25 2.25 0 0 0 21.75 18V9a2.25 2.25 0 0 0-2.25-2.25h-5.379a1.5 1.5 0 0 1-1.06-.44Z" />
-					</svg>
-					<span class="truncate">Create folder</span>
-				</button>
-			</li>
-		</ul>
-	</li>
-	<!-- /Folders -->
-	<!-- Bottom buffer -->
-	<li class="flex-1 min-h-12"></li>
-	<!-- /Bottom buffer -->
-</ul>
-HTML;
-?>
-
 <!DOCTYPE html>
 <html lang="en" class="h-full bg-gradient-to-tr from-nbpurple-950 to-nbpurple-800 bg-fixed bg-no-repeat bg-cover antialiased">
 
@@ -800,19 +383,378 @@ onDropCB(event) {
 						</div>
 
 						<!-- Sidebar component -->
-						<div class="flex grow flex-col gap-y-5 overflow-y-auto bg-nbpurple-900 px-6 ring-1 ring-nbpurple-50/10" @click.outside="menuStore.mobileMenuOpen = false; menuStore.disableDeleteFolderButtons()" @keydown.escape="menuStore.mobileMenuOpen = false; menuStore.disableDeleteFolderButtons()">
+						<div :class="{'main-menu': window.innerWidth < 1280}" class="flex grow flex-col gap-y-5 overflow-y-auto bg-nbpurple-900 px-6 ring-1 ring-nbpurple-50/10" @click.outside="menuStore.mobileMenuOpen = false; menuStore.disableDeleteFolderButtons()" @keydown.escape="menuStore.mobileMenuOpen = false; menuStore.disableDeleteFolderButtons()">
 							<div class="flex h-16 shrink-0 items-center -mb-5">
-								<?= $NBLogoSVG ?>
+								<div x-ref="svgLogo">
+									<svg class="h-8 w-auto" id="a" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 33.4 39">
+										<defs>
+											<linearGradient id="b" x1="8.25" y1="-326.6" x2="8.25" y2="-297.6" gradientTransform="translate(0 336.6)" gradientUnits="userSpaceOnUse">
+												<stop offset="0" stop-color="#9b4399" />
+												<stop offset="1" stop-color="#3d1e56" />
+												<stop offset="1" stop-color="#231815" />
+											</linearGradient>
+											<style>
+												.e {
+													stroke-width: 0;
+													fill: #fff
+												}
+											</style>
+										</defs>
+										<path d="M16.7 0 .1 9.8l16.6 9.7 16.5-9.7L16.7 0Z" style="fill:#70429a;stroke-width:0" />
+										<path class="e" d="m16.7 1.7-4.6 2.6v10.8l4.6 2.7 4.6-2.7V9.7l4.5-2.6-9.1-5.4Zm-3 6.3c-1.23-.11-1.13-1.98.1-2 1.3 0 1.27 2.09 0 2m6.8 1.3L16.8 7l3.8-2.3L24.3 7l-3.7 2.3Z" />
+										<path d="M0 10v19.3L16.5 39V19.7L0 10Z" style="fill:url(#b);stroke-width:0" />
+										<path class="e" d="m14.4 35.2-3-1.8v-.9L5.1 21.8l-.8-.4v8L2 28.1V13.8l3 1.7v1l6.2 10.7.8.4v-8l2.3 1.3.1 14.3Z" />
+										<path d="M16.8 19.7V39l16.6-9.7V10l-16.6 9.7Z" style="stroke-width:0;fill:#3d1e56" />
+										<path class="e" d="M31.3 16.4 29 15.1l-10 5.8v14.3L29.7 29l1.6-2.7v-3.6l-1.6-.9 1.6-2.7v-2.7Zm-2.5 9.9-1.1 2-6.5 3.8v-4.5l6.5-3.8 1.2.7-.1 1.8Zm0-6.3-1 2-6.5 3.8v-4.4l6.5-3.8 1.2.6-.2 1.8Z" />
+									</svg>
+								</div>
 								<span class="text-nbpurple-50 font-semibold ml-4" x-text="profileStore.profileInfo.planName + ' Account'"></span>
 								<!-- Upgrade or renewal button -->
 								<button x-cloak x-show="profileStore.profileInfo.accountEligibleForRenewal || profileStore.profileInfo.accountEligibleForUpgrade" type="button" class="ml-auto p-1 text-nbpurple-50 hover:text-nbpurple-100 rounded-md bg-nbpurple-600 hover:bg-nbpurple-400 text-xs" @click="window.location.href='/plans/'">
 									<span x-text="profileStore.profileInfo.accountLevel === 0 ? 'Subscribe' : profileStore.profileInfo.accountEligibleForRenewal ? 'Renew' : profileStore.profileInfo.accountEligibleForUpgrade ? 'Upgrade' : ''"></span>
 								</button>
 							</div>
-							<nav class="flex flex-1 flex-col">
-								<!-- Mobile menu content -->
-								<?= $pageMenuContent ?>
-							</nav>
+							<template x-if="window.innerWidth >= 1280" x-teleport=".main-menu">
+								<nav class="flex flex-1 flex-col">
+									<!-- Mobile menu content -->
+									<ul role="list" class="flex flex-1 flex-col gap-y-7" x-data="{ pfpError: false }" x-init="menuStore.setActiveMenuFromHash()" @click.away="!menuStore.showDeleteFolderModal && menuStore.disableDeleteFolderButtons()" x-effect="pfpError = !profileStore.profileInfo.pfpUrl">
+
+										<!-- Profile -->
+										<ul role="list" class="-mx-2 space-y-1">
+											<li>
+												<div class="flex items-center justify-between">
+													<div class="flex items-center gap-x-4">
+														<!-- PFP -->
+														<template x-if="profileStore.profileInfo.pfpUrl && !pfpError">
+															<img class="size-8 rounded-full bg-nbpurple-800 object-cover" :src="profileStore.profileInfo.pfpUrl" :alt="'Profile picture for ' + profileStore.profileInfo.name" @error="pfpError = true" @load="pfpError = false">
+														</template>
+														<template x-if="!profileStore.profileInfo.pfpUrl || pfpError">
+															<svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="inline-block size-8 rounded-full text-nbpurple-400">
+																<path stroke-linecap="round" stroke-linejoin="round" d="M17.982 18.725A7.488 7.488 0 0 0 12 15.75a7.488 7.488 0 0 0-5.982 2.975m11.963 0a9 9 0 1 0-11.963 0m11.963 0A8.966 8.966 0 0 1 12 21a8.966 8.966 0 0 1-5.982-2.275M15 9.75a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+															</svg>
+														</template>
+														<!-- /PFP -->
+														<div>
+															<span class="block text-sm font-semibold leading-tight text-nbpurple-50" x-text="profileStore.profileInfo.getNameDisplay()"></span>
+															<span class="block text-xs font-semibold leading-tight text-nbpurple-50" x-text="profileStore.profileInfo.getNpubDisplay()"></span>
+														</div>
+													</div>
+													<div class="flex items-center">
+														<button @click.prevent="profileStore.openDialog(); menuStore.mobileMenuOpen = false; menuStore.disableDeleteFolderButtons(); " class="text-sm font-semibold leading-6 text-nbpurple-50 hover:bg-nbpurple-800 p-1.5 rounded-md">
+															<svg aria-hidden="true" class="size-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+																<path d="M2 21a8 8 0 0 1 10.434-7.62" />
+																<circle cx="10" cy="8" r="5" />
+																<circle cx="18" cy="18" r="3" />
+																<path d="m19.5 14.3-.4.9" />
+																<path d="m16.9 20.8-.4.9" />
+																<path d="m21.7 19.5-.9-.4" />
+																<path d="m15.2 16.9-.9-.4" />
+																<path d="m21.7 16.5-.9.4" />
+																<path d="m15.2 19.1-.9.4" />
+																<path d="m19.5 21.7-.4-.9" />
+																<path d="m16.9 15.2-.4-.9" />
+															</svg>
+															<span class="sr-only">Profile Settings</span>
+														</button>
+														<button @click.prevent="logoutScreen = true" class="text-sm font-semibold leading-6 text-nbpurple-50 hover:bg-nbpurple-800 p-1.5 rounded-md">
+															<svg aria-hidden="true" class="size-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+																<path stroke-linecap="round" stroke-linejoin="round" d="M8.25 9V5.25A2.25 2.25 0 0 1 10.5 3h6a2.25 2.25 0 0 1 2.25 2.25v13.5A2.25 2.25 0 0 1 16.5 21h-6a2.25 2.25 0 0 1-2.25-2.25V15M12 9l3 3m0 0-3 3m3-3H2.25" />
+															</svg>
+															<span class="sr-only">Logout</span>
+														</button>
+													</div>
+												</div>
+											</li>
+										</ul>
+										<!-- /Profile -->
+										<!-- Sidebar widgets -->
+										<li>
+											<ul role="list" class="-mx-2 space-y-1">
+												<!-- Storage Usage Widget -->
+												<li>
+													<div class="flex items-center justify-between">
+														<div class="flex items-center">
+															<svg aria-hidden="true" class="size-5 text-nbpurple-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+																<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
+															</svg>
+															<span class="ml-2 text-sm font-medium text-nbpurple-300">Usage</span>
+														</div>
+														<div class="text-sm font-medium text-nbpurple-300" x-text="formatBytes(profileStore.profileInfo.storageUsed) + ' / ' + profileStore.profileInfo.totalStorageLimit"></div>
+													</div>
+													<div class="mt-2 w-full bg-nbpurple-200 rounded-full h-2">
+														<div class="bg-nbpurple-600 h-2 rounded-full" :style="'width: ' + (profileStore.profileInfo.getStorageRatio().toFixed(2) * 100) + '%'"></div>
+													</div>
+												</li>
+												<!-- /Storage Usage Widget -->
+												<!-- Remaining Days Widget -->
+												<li>
+													<div class="flex items-center justify-between">
+														<div class="flex items-center">
+															<svg aria-hidden="true" class="size-5 text-nbpurple-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+																<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+															</svg>
+															<span class="ml-2 text-sm font-medium text-nbpurple-300">Remaining Days</span>
+														</div>
+														<div class="text-sm font-medium text-nbpurple-300" x-text="profileStore.profileInfo.remainingDays"></div>
+													</div>
+												</li>
+												<!-- /Remaining Days Widget -->
+												<!-- File statistics -->
+												<li>
+													<div class="flex items-center justify-between">
+														<div class="flex items-center">
+															<svg aria-hidden="true" class="size-5 text-nbpurple-300" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+																<path stroke-linecap="round" stroke-linejoin="round" d="M10.5 6a7.5 7.5 0 1 0 7.5 7.5h-7.5V6Z" />
+																<path stroke-linecap="round" stroke-linejoin="round" d="M13.5 10.5H21A7.5 7.5 0 0 0 13.5 3v7.5Z" />
+															</svg>
+															<span class="ml-2 text-sm font-medium text-nbpurple-300" x-text="'Media(' + menuStore.formatNumberInThousands(menuStore.fileStats.totalFiles) + ')'"></span>
+														</div>
+														<div class="flex items-center space-x-2">
+															<div class="flex items-center">
+																<svg aria-hidden="true" class="size-4 text-nbpurple-300" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+																	<path stroke-linecap="round" stroke-linejoin="round" d="M12.75 8.25v7.5m6-7.5h-3V12m0 0v3.75m0-3.75H18M9.75 9.348c-1.03-1.464-2.698-1.464-3.728 0-1.03 1.465-1.03 3.84 0 5.304 1.03 1.464 2.699 1.464 3.728 0V12h-1.5M4.5 19.5h15a2.25 2.25 0 0 0 2.25-2.25V6.75A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25v10.5A2.25 2.25 0 0 0 4.5 19.5Z" />
+																</svg>
+																<span class="ml-1 text-sm font-medium text-nbpurple-300" x-text="menuStore.formatNumberInThousands(menuStore.fileStats.totalGifs)"></span>
+															</div>
+															<div class="flex items-center">
+																<svg aria-hidden="true" class="size-4 text-nbpurple-300" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+																	<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+																</svg>
+																<span class="ml-1 text-sm font-medium text-nbpurple-300" x-text="menuStore.formatNumberInThousands(menuStore.fileStats.totalImages)"></span>
+															</div>
+															<div class="flex items-center">
+																<svg aria-hidden="true" class="size-4 text-nbpurple-300" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+																	<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+																</svg>
+																<span class="ml-1 text-sm font-medium text-nbpurple-300" x-text="menuStore.formatNumberInThousands(menuStore.fileStats.totalVideos)"></span>
+															</div>
+														</div>
+													</div>
+												</li>
+												<!-- /File statistics -->
+												<!-- Creators Page Shares -->
+												<li x-cloak x-show="profileStore.profileInfo.isCreatorsPageEligible">
+													<div class="flex items-center justify-between">
+														<div class="flex items-center cursor-copy" @click="navigator.clipboard.writeText(profileStore.profileInfo.creatorPageLink); showToast = true">
+															<svg aria-hidden="true" class="size-4 text-nbpurple-300" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+																<path stroke-linecap="round" stroke-linejoin="round" d="M9.53 16.122a3 3 0 0 0-5.78 1.128 2.25 2.25 0 0 1-2.4 2.245 4.5 4.5 0 0 0 8.4-2.245c0-.399-.078-.78-.22-1.128Zm0 0a15.998 15.998 0 0 0 3.388-1.62m-5.043-.025a15.994 15.994 0 0 1 1.622-3.395m3.42 3.42a15.995 15.995 0 0 0 4.764-4.648l3.876-5.814a1.151 1.151 0 0 0-1.597-1.597L14.146 6.32a15.996 15.996 0 0 0-4.649 4.763m3.42 3.42a6.776 6.776 0 0 0-3.42-3.42" />
+															</svg>
+															<span class="ml-2 text-sm font-medium text-nbpurple-300">Creators Page</span>
+															<svg aria-hidden="true" class="ml-1 size-4 text-nbpurple-300" viewBox="0 0 20 20" fill="currentColor">
+																<path fill-rule="evenodd" d="M15.988 3.012A2.25 2.25 0 0 1 18 5.25v6.5A2.25 2.25 0 0 1 15.75 14H13.5v-3.379a3 3 0 0 0-.879-2.121l-3.12-3.121a3 3 0 0 0-1.402-.791 2.252 2.252 0 0 1 1.913-1.576A2.25 2.25 0 0 1 12.25 1h1.5a2.25 2.25 0 0 1 2.238 2.012ZM11.5 3.25a.75.75 0 0 1 .75-.75h1.5a.75.75 0 0 1 .75.75v.25h-3v-.25Z" clip-rule="evenodd" />
+																<path d="M3.5 6A1.5 1.5 0 0 0 2 7.5v9A1.5 1.5 0 0 0 3.5 18h7a1.5 1.5 0 0 0 1.5-1.5v-5.879a1.5 1.5 0 0 0-.44-1.06L8.44 6.439A1.5 1.5 0 0 0 7.378 6H3.5Z" />
+															</svg>
+														</div>
+														<a class="flex items-center cursor-pointer" :href="profileStore.profileInfo.creatorPageLink">
+															<svg aria-hidden="true" class="size-4 text-nbpurple-300" viewBox="0 0 20 20" fill="currentColor">
+																<path d="M12.232 4.232a2.5 2.5 0 0 1 3.536 3.536l-1.225 1.224a.75.75 0 0 0 1.061 1.06l1.224-1.224a4 4 0 0 0-5.656-5.656l-3 3a4 4 0 0 0 .225 5.865.75.75 0 0 0 .977-1.138 2.5 2.5 0 0 1-.142-3.667l3-3Z" />
+																<path d="M11.603 7.963a.75.75 0 0 0-.977 1.138 2.5 2.5 0 0 1 .142 3.667l-3 3a2.5 2.5 0 0 1-3.536-3.536l1.225-1.224a.75.75 0 0 0-1.061-1.06l-1.224 1.224a4 4 0 1 0 5.656 5.656l3-3a4 4 0 0 0-.225-5.865Z" />
+															</svg>
+															<span class="ml-1 text-sm font-medium text-nbpurple-300" x-text="menuStore.formatNumberInThousands(menuStore.fileStats.creatorCount)"></span>
+														</a>
+													</div>
+												</li>
+												<!-- /Creators Page Shares -->
+											</ul>
+										</li>
+										<!-- /Sidebar widgets -->
+										<!-- Menu items -->
+										<li>
+											<!-- Top-level menu items -->
+											<ul role="list" class="-mx-2 space-y-1">
+												<template x-for="item in menuStore.menuItems" :key="item.name">
+													<li>
+														<a :href="item.route" :class="{ 'bg-nbpurple-800 text-nbpurple-50': menuStore.activeMenu === item.name, 'text-nbpurple-300 hover:text-nbpurple-50 hover:bg-nbpurple-800': menuStore.activeMenu !== item.name }" class="group flex gap-x-3 rounded-md p-2 text-sm leading-6 font-semibold" @click="menuStore.setActiveMenu(item.name); menuStore.mobileMenuOpen = false">
+															<svg aria-hidden="true" class="size-6 shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true" x-html="item.icon"></svg>
+															<span x-text="item.name"></span>
+														</a>
+													</li>
+												</template>
+											</ul>
+											<!-- AI Studio submenu -->
+											<!--
+		<div x-data="{ AISubMenuExpand: menuStore.menuItemsAI.length === 1, isAI: menuStore.menuItemsAI.find(item=>item.name === menuStore.activeMenu) }" x-init="fileStore.fullWidth = !isAI" class="-mx-2 space-y-1 mt-1">
+			<button @click.throttle="AISubMenuExpand = !AISubMenuExpand" type="button" class="text-nbpurple-300 hover:text-nbpurple-50 hover:bg-nbpurple-800 flex items-center w-full text-left rounded-md p-2 gap-x-3 text-sm leading-6 font-semibold" aria-controls="sub-menu-ai" aria-expanded="AISubMenuExpand">
+				<svg class="h-6 w-6 shrink-0 text-nbpurple-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+					<path d="M12 8V4H8"/>
+					<rect width="16" height="12" x="4" y="8" rx="2"/>
+					<path d="M2 14h2"/><path d="M20 14h2"/><path d="M15 13v2"/><path d="M9 13v2"/>
+				</svg>
+				AI Studio
+				<svg :class="AISubMenuExpand ? 'rotate-90 text-nbpurple-500' : 'text-nbpurple-400'" class="ml-auto h-5 w-5 shrink-0" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+					<path fill-rule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clip-rule="evenodd" />
+				</svg>
+			</button>
+			<ul x-cloak x-show="AISubMenuExpand || isAI" class="mt-1 px-2" id="sub-menu-ai">
+				<template x-for="item in menuStore.menuItemsAI" :key="item.name">
+					<li>
+						<a :href="item.route" :class="{ 'bg-nbpurple-800 text-nbpurple-50': menuStore.activeMenu === item.name, 'text-nbpurple-300 hover:text-nbpurple-50 hover:bg-nbpurple-800': menuStore.activeMenu !== item.name }" class="group flex gap-x-3 rounded-md p-2 text-sm leading-6 font-semibold" @click="menuStore.setActiveMenu(item.name); menuStore.mobileMenuOpen = false">
+							<svg aria-hidden="true" class="size-6 shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true" x-html="item.icon"></svg>
+							<span x-text="item.name"></span>
+						</a>
+					</li>
+				</template>
+			</ul>
+		</div>
+-->
+											<ul x-data="{ isAI: menuStore.menuItemsAI.find(item=>item.name === menuStore.activeMenu) }" x-init="fileStore.fullWidth = !isAI" role="list" class="-mx-2 space-y-1">
+												<template x-for="item in menuStore.menuItemsAI" :key="item.name">
+													<li>
+														<a :href="item.route" :class="{ 'bg-nbpurple-800 text-nbpurple-50': menuStore.activeMenu === item.name, 'text-nbpurple-300 hover:text-nbpurple-50 hover:bg-nbpurple-800': menuStore.activeMenu !== item.name }" class="group flex gap-x-3 rounded-md p-2 text-sm leading-6 font-semibold" @click="menuStore.setActiveMenu(item.name); menuStore.mobileMenuOpen = false">
+															<svg aria-hidden="true" class="size-6 shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true" x-html="item.icon"></svg>
+															<span x-text="item.name"></span>
+															<span class="inline-flex items-center rounded-full bg-nbpurple-200 px-1.5 py-0.5 text-xs font-medium text-nbpurple-800 ring-1 ring-inset ring-nbpurple-700/10">New</span>
+														</a>
+													</li>
+												</template>
+											</ul>
+											<!-- External menu items -->
+											<ul role="list" class="-mx-2 space-y-1">
+												<template x-for="item in menuStore.externalMenuItems" :key="item.name">
+													<li x-show="profileStore.profileInfo.allowed(item.allowed)">
+														<a :href="item.route" :class="{ 'bg-nbpurple-800 text-nbpurple-50': menuStore.activeMenu === item.name, 'text-nbpurple-300 hover:text-nbpurple-50 hover:bg-nbpurple-800': menuStore.activeMenu !== item.name }" class="group flex gap-x-3 rounded-md p-2 text-sm leading-6 font-semibold">
+															<svg aria-hidden="true" class="size-6 shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true" x-html="item.icon"></svg>
+															<span x-text="item.name"></span>
+														</a>
+													</li>
+												</template>
+											</ul>
+											<!-- Admin menu items -->
+											<template x-if="profileStore.profileInfo.isAdmin || profileStore.profileInfo.isModerator">
+												<div x-data="{AdminSubMenuExpand: false}" class="-mx-2 space-y-1 mt-1">
+													<button @click.throttle="AdminSubMenuExpand = !AdminSubMenuExpand" type="button" class="text-nbpurple-300 hover:text-nbpurple-50 hover:bg-nbpurple-800 flex items-center w-full text-left rounded-md p-2 gap-x-3 text-sm leading-6 font-semibold" aria-controls="sub-menu-admin" aria-expanded="AdminSubMenuExpand">
+														<svg class="h-6 w-6 shrink-0 text-nbpurple-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+															<path stroke-linecap="round" stroke-linejoin="round" d="M12 3v17.25m0 0c-1.472 0-2.882.265-4.185.75M12 20.25c1.472 0 2.882.265 4.185.75M18.75 4.97A48.416 48.416 0 0 0 12 4.5c-2.291 0-4.545.16-6.75.47m13.5 0c1.01.143 2.01.317 3 .52m-3-.52 2.62 10.726c.122.499-.106 1.028-.589 1.202a5.988 5.988 0 0 1-2.031.352 5.988 5.988 0 0 1-2.031-.352c-.483-.174-.711-.703-.59-1.202L18.75 4.971Zm-16.5.52c.99-.203 1.99-.377 3-.52m0 0 2.62 10.726c.122.499-.106 1.028-.589 1.202a5.989 5.989 0 0 1-2.031.352 5.989 5.989 0 0 1-2.031-.352c-.483-.174-.711-.703-.59-1.202L5.25 4.971Z" />
+														</svg>
+														Administrate
+														<svg :class="AdminSubMenuExpand ? 'rotate-90 text-nbpurple-500' : 'text-nbpurple-400'" class="ml-auto h-5 w-5 shrink-0" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+															<path fill-rule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clip-rule="evenodd" />
+														</svg>
+													</button>
+													<ul x-cloak x-show="AdminSubMenuExpand" class="mt-1 px-2" id="sub-menu-ai">
+														<template x-for="item in menuStore.adminMenuItems" :key="item.name">
+															<li x-show="profileStore.profileInfo.allowed(item.allowed)">
+																<a @click="window.location.href = item.route" :href="item.route" :class="{ 'bg-nbpurple-800 text-nbpurple-50': menuStore.activeMenu === item.name, 'text-nbpurple-300 hover:text-nbpurple-50 hover:bg-nbpurple-800': menuStore.activeMenu !== item.name }" class="group flex gap-x-3 rounded-md p-2 text-sm leading-6 font-semibold">
+																	<svg x-show="item.icon.length > 0" aria-hidden="true" class="size-6 shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true" x-html="item.icon"></svg>
+																	<span x-text="item.name"></span>
+																</a>
+															</li>
+														</template>
+													</ul>
+												</div>
+											</template>
+										</li>
+										<!-- /Menu items -->
+										<!-- Folders -->
+										<li>
+											<div class="flex items-center justify-between text-xs font-semibold leading-6 text-nbpurple-300">
+												<span class="font-bold" x-text="'Folders (' + menuStore.folders.length + ')'"></span>
+												<div>
+													<!-- Button to create a new folder -->
+													<button type="button" class="ml-2 p-1 text-xs font-semibold text-nbpurple-300 hover:text-nbpurple-50 hover:bg-nbpurple-800 rounded-md" @click="menuStore.newFolderDialogOpen(); menuStore.disableDeleteFolderButtons()" :disabled="menuStore.newFolderDialog">
+														<svg aria-hidden="true" class="size-6" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+															<path stroke-linecap="round" stroke-linejoin="round" d="M12 10.5v6m3-3H9m4.06-7.19-2.12-2.12a1.5 1.5 0 0 0-1.061-.44H4.5A2.25 2.25 0 0 0 2.25 6v12a2.25 2.25 0 0 0 2.25 2.25h15A2.25 2.25 0 0 0 21.75 18V9a2.25 2.25 0 0 0-2.25-2.25h-5.379a1.5 1.5 0 0 1-1.06-.44Z" />
+														</svg>
+														<span class="sr-only">Create a new folder</span>
+													</button>
+													<!-- Button to delete folders -->
+													<button type="button" class="ml-2 p-1 text-xs font-semibold text-nbpurple-300 hover:text-nbpurple-50 hover:bg-nbpurple-800 rounded-md" @click="menuStore.toggleDeleteFolderButtons()" :disabled="menuStore.newFolderDialog">
+														<svg x-show="!menuStore.showDeleteFolderButtons" aria-hidden="true" class="size-6" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+															<path stroke-linecap="round" stroke-linejoin="round" d="M15 13.5H9m4.06-7.19-2.12-2.12a1.5 1.5 0 0 0-1.061-.44H4.5A2.25 2.25 0 0 0 2.25 6v12a2.25 2.25 0 0 0 2.25 2.25h15A2.25 2.25 0 0 0 21.75 18V9a2.25 2.25 0 0 0-2.25-2.25h-5.379a1.5 1.5 0 0 1-1.06-.44Z" />
+														</svg>
+														<svg x-cloak x-show="menuStore.showDeleteFolderButtons" aria-hidden="true" class="size-6" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+															<path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12.75V12A2.25 2.25 0 0 1 4.5 9.75h15A2.25 2.25 0 0 1 21.75 12v.75m-8.69-6.44-2.12-2.12a1.5 1.5 0 0 0-1.061-.44H4.5A2.25 2.25 0 0 0 2.25 6v12a2.25 2.25 0 0 0 2.25 2.25h15A2.25 2.25 0 0 0 21.75 18V9a2.25 2.25 0 0 0-2.25-2.25h-5.379a1.5 1.5 0 0 1-1.06-.44Z" />
+														</svg>
+														<span class="sr-only">Delete folder(s)</span>
+													</button>
+												</div>
+											</div>
+											<ul role="list" class="-mx-2 mt-2 space-y-1">
+												<!-- New Folder Form -->
+												<li x-cloak x-show="menuStore.newFolderDialog" x-trap="menuStore.newFolderDialog">
+													<div x-id="['new-folder', 'new-folder-error']">
+														<div class="flex items-center gap-x-3 relative">
+															<!-- Error message -->
+															<div :id="$id('new-folder-error')" x-show="menuStore.newFolderNameError" class="absolute left-1/3 -translate-x-1/2 z-10 text-sm font-semibold text-orange-300 transition-opacity duration-300 bg-nbpurple-950/85 rounded-md p-2" :class="{
+																	'opacity-0': !menuStore.newFolderNameError,
+																	'opacity-100': menuStore.newFolderNameError
+																}" x-transition:enter="transition ease-out duration-300" x-transition:leave="transition ease-in duration-300" x-text="menuStore.newFolderNameError" aria-live="assertive" role="alert">
+															</div>
+															<label :for="$id('new-folder')" class="sr-only">New folder name</label>
+															<input :id="$id('new-folder')" x-ref="newFolderNameInput" type="text" name="new-folder-name" :class="{'animate-shake': menuStore.newFolderNameError }" class="w-full text-sm font-semibold text-nbpurple-300 bg-nbpurple-800 rounded-md p-2" x-model="menuStore.newFolderName" @keydown.enter="menuStore.createFolder(menuStore.newFolderName)" @keydown.escape.stop="menuStore.newFolderDialogClose()" aria-describedby="new-folder-error-message">
+															<button type="button" class="-ml-2 text-nbpurple-300 hover:text-nbpurple-50 hover:bg-nbpurple-800 rounded-md p-2 text-sm leading-6 font-semibold" @click="menuStore.createFolder(menuStore.newFolderName)">
+																<svg aria-hidden="true" class="size-5 shrink-0 items-center justify-center rounded-lg border border-nbpurple-700 bg-nbpurple-800 text-[0.625rem] font-medium text-nbpurple-300 group-hover:text-nbpurple-50" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+																	<path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+																</svg>
+																<span class="sr-only">Create folder</span>
+															</button>
+															<button type="button" class="-mx-2 text-nbpurple-300 hover:text-nbpurple-50 hover:bg-nbpurple-800 rounded-md p-2 text-sm leading-6 font-semibold" @click="menuStore.newFolderDialogClose()">
+																<svg aria-hidden="true" class="size-5 shrink-0 items-center justify-center rounded-lg border border-nbpurple-700 bg-nbpurple-800 text-[0.625rem] font-medium text-nbpurple-300 group-hover:text-nbpurple-50" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+																	<path stroke-linecap="round" stroke-linejoin="round" d="m9.75 9.75 4.5 4.5m0-4.5-4.5 4.5M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+																</svg>
+																<span class="sr-only">Cancel</span>
+															</button>
+														</div>
+													</div>
+												</li>
+												<!-- /New Folder Form -->
+												<template x-for="folder in menuStore.folders" :key="folder.name">
+													<li x-on:drop.prevent="
+																if(menuStore.activeFolder === folder.name) return;
+																const mediaId = event.dataTransfer.getData('text/plain');
+																if(mediaId) {
+																	const draggedElement = document.getElementById(mediaId);
+																	if(!draggedElement) return;
+																	draggedElement.classList.add('animate-pulse');
+																	fileStore.moveItemsToFolder(mediaId, folder.id)
+																	.then(() => {
+																		draggedElement.remove();
+																	})
+																	.catch(() => {
+																		draggedElement.classList.remove('animate-pulse');
+																	})
+																	.finally(() => {
+																		adding = false;
+																	});
+																}
+														" x-on:dragover.prevent="adding = true; event.dataTransfer.dropEffect = 'move';" x-on:dragleave.prevent="adding = false" x-data="{ adding: false }" x-on:drop="adding = false">
+														<div class="flex justify-between w-full" x-transition:enter="transition-opacity ease-linear duration-500" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" x-transition:leave="transition-opacity ease-linear duration-300" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0">
+															<a :href="folder.route" :class="{ 'bg-nbpurple-800 text-nbpurple-50': menuStore.activeFolder === folder.name, 'text-nbpurple-300 hover:text-nbpurple-50 hover:bg-nbpurple-800': menuStore.activeFolder !== folder.name, 'bg-nbpurple-700 text-nbpurple-50 scale-105': adding && menuStore.activeFolder !== folder.name }" class="w-full truncate group flex gap-x-3 rounded-md p-2 text-sm leading-6 font-semibold" @click.prevent="menuStore.setActiveFolder(folder.name); menuStore.mobileMenuOpen = false; menuStore.disableDeleteFolderButtons()">
+																<span class="relative flex size-6 shrink-0 items-center justify-center rounded-lg border border-nbpurple-700 bg-nbpurple-800 text-[0.5rem] font-normal text-nbpurple-300 group-hover:text-nbpurple-50">
+																	<svg class="absolute w-full h-full" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+																		<path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z" />
+																	</svg>
+																	<span class="relative z-10 -mb-[0.1rem]" x-text="folder.icon"></span>
+																</span>
+																<span class="truncate" x-text="folder.name"></span>
+															</a>
+															<!-- Delete folder Icon -->
+															<button x-cloak x-show="menuStore.showDeleteFolderButtons && folder.allowDelete && folder.name !== menuStore.activeFolder" type="button" class="text-nbpurple-300 hover:text-nbpurple-50 hover:bg-nbpurple-800 rounded-md p-2 text-sm leading-6 font-semibold" @click="menuStore.openDeleteFolderModal(folder.id)">
+																<svg aria-hidden="true" class="size-5 shrink-0 items-center justify-center rounded-lg border border-nbpurple-700 bg-nbpurple-800 text-[0.625rem] font-medium text-nbpurple-300 group-hover:text-nbpurple-50" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+																	<path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
+																</svg>
+																<span class="sr-only">Delete folder</span>
+															</button>
+														</div>
+													</li>
+												</template>
+												<li x-cloak x-show="!menuStore.newFolderDialog">
+													<button type="button" class="w-full text-nbpurple-300 hover:text-nbpurple-50 hover:bg-nbpurple-800 group flex gap-x-3 rounded-md p-2 text-sm leading-6 font-semibold" @click="menuStore.newFolderDialogOpen()">
+														<svg aria-hidden="true" class="flex size-6 shrink-0 items-center justify-center rounded-lg border border-nbpurple-700 bg-nbpurple-800 text-[0.625rem] font-medium text-nbpurple-300 group-hover:text-nbpurple-50" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+															<path stroke-linecap="round" stroke-linejoin="round" d="M12 10.5v6m3-3H9m4.06-7.19-2.12-2.12a1.5 1.5 0 0 0-1.061-.44H4.5A2.25 2.25 0 0 0 2.25 6v12a2.25 2.25 0 0 0 2.25 2.25h15A2.25 2.25 0 0 0 21.75 18V9a2.25 2.25 0 0 0-2.25-2.25h-5.379a1.5 1.5 0 0 1-1.06-.44Z" />
+														</svg>
+														<span class="truncate">Create folder</span>
+													</button>
+												</li>
+											</ul>
+										</li>
+										<!-- /Folders -->
+										<!-- Bottom buffer -->
+										<li class="flex-1 min-h-12"></li>
+										<!-- /Bottom buffer -->
+									</ul>
+								</nav>
+							</template>
 						</div>
 					</div>
 				</div>
@@ -820,20 +762,18 @@ onDropCB(event) {
 
 			<!-- Static sidebar for desktop -->
 			<div class="hidden xl:fixed xl:inset-y-0 xl:z-50 xl:flex xl:w-72 xl:flex-col">
-				<!-- Sidebar component, swap this element with another sidebar if you like -->
-				<div class="flex grow flex-col gap-y-5 overflow-y-auto bg-nbpurple-900/10 px-6 ring-1 ring-nbpurple-50/5">
+				<!-- Sidebar component -->
+				<div class="main-menu flex grow flex-col gap-y-5 overflow-y-auto bg-nbpurple-900/10 px-6 ring-1 ring-nbpurple-50/5">
 					<div class="flex h-16 shrink-0 items-center -mb-5">
-						<?= $NBLogoSVG ?>
+						<div x-html="$refs.svgLogo.innerHTML"></div>
 						<span class="text-nbpurple-50 font-semibold ml-4" x-text="profileStore.profileInfo.planName + ' Account'"></span>
 						<!-- Upgrade or renewal button -->
 						<button x-cloak x-show="profileStore.profileInfo.accountEligibleForRenewal || profileStore.profileInfo.accountEligibleForUpgrade" type="button" class="ml-auto p-1 text-nbpurple-50 hover:text-nbpurple-100 rounded-md bg-nbpurple-600 hover:bg-nbpurple-400 text-xs" @click="window.location.href='/plans/'">
 							<span x-text="profileStore.profileInfo.accountLevel === 0 ? 'Subscribe' : profileStore.profileInfo.accountEligibleForRenewal ? 'Renew' : profileStore.profileInfo.accountEligibleForUpgrade ? 'Upgrade' : ''"></span>
 						</button>
 					</div>
-					<nav class="flex flex-1 flex-col">
-						<!-- Desktop menu content -->
-						<?= $pageMenuContent ?>
-					</nav>
+					<!-- Desktop menu content -->
+					<!-- Teleported from mobile menu -->
 				</div>
 			</div>
 
