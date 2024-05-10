@@ -2374,6 +2374,12 @@ Alpine.store('uppyStore', {
           fileData.uppy.errorMessage = error.message;
           fileData.uppy.errorResponse = response;
         }
+        // If we receive a 401 error, it means the user is not authenticated
+        if (response && response.status === 401) {
+          // Redirect to login page
+          console.log('User is not authenticated, redirecting to login page...');
+          profileStore.unauthenticated = true;
+        }
       })
       .on('info-visible', () => {
         const { info } = this.instance.getState();
