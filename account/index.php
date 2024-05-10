@@ -383,38 +383,36 @@ onDropCB(event) {
 						</div>
 
 						<!-- Sidebar component -->
-						<div :class="{'main-menu': window.innerWidth < 1280}" class="flex grow flex-col gap-y-5 overflow-y-auto bg-nbpurple-900 px-6 ring-1 ring-nbpurple-50/10" @click.outside="menuStore.mobileMenuOpen = false; menuStore.disableDeleteFolderButtons()" @keydown.escape="menuStore.mobileMenuOpen = false; menuStore.disableDeleteFolderButtons()">
+						<div class="flex grow flex-col gap-y-5 overflow-y-auto bg-nbpurple-900 px-6 ring-1 ring-nbpurple-50/10" @click.outside="menuStore.mobileMenuOpen = false; menuStore.disableDeleteFolderButtons()" @keydown.escape="menuStore.mobileMenuOpen = false; menuStore.disableDeleteFolderButtons()">
 							<div class="flex h-16 shrink-0 items-center -mb-5">
-								<div x-ref="svgLogo">
-									<svg class="h-8 w-auto" id="a" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 33.4 39">
-										<defs>
-											<linearGradient id="b" x1="8.25" y1="-326.6" x2="8.25" y2="-297.6" gradientTransform="translate(0 336.6)" gradientUnits="userSpaceOnUse">
-												<stop offset="0" stop-color="#9b4399" />
-												<stop offset="1" stop-color="#3d1e56" />
-												<stop offset="1" stop-color="#231815" />
-											</linearGradient>
-											<style>
-												.e {
-													stroke-width: 0;
-													fill: #fff
-												}
-											</style>
-										</defs>
-										<path d="M16.7 0 .1 9.8l16.6 9.7 16.5-9.7L16.7 0Z" style="fill:#70429a;stroke-width:0" />
-										<path class="e" d="m16.7 1.7-4.6 2.6v10.8l4.6 2.7 4.6-2.7V9.7l4.5-2.6-9.1-5.4Zm-3 6.3c-1.23-.11-1.13-1.98.1-2 1.3 0 1.27 2.09 0 2m6.8 1.3L16.8 7l3.8-2.3L24.3 7l-3.7 2.3Z" />
-										<path d="M0 10v19.3L16.5 39V19.7L0 10Z" style="fill:url(#b);stroke-width:0" />
-										<path class="e" d="m14.4 35.2-3-1.8v-.9L5.1 21.8l-.8-.4v8L2 28.1V13.8l3 1.7v1l6.2 10.7.8.4v-8l2.3 1.3.1 14.3Z" />
-										<path d="M16.8 19.7V39l16.6-9.7V10l-16.6 9.7Z" style="stroke-width:0;fill:#3d1e56" />
-										<path class="e" d="M31.3 16.4 29 15.1l-10 5.8v14.3L29.7 29l1.6-2.7v-3.6l-1.6-.9 1.6-2.7v-2.7Zm-2.5 9.9-1.1 2-6.5 3.8v-4.5l6.5-3.8 1.2.7-.1 1.8Zm0-6.3-1 2-6.5 3.8v-4.4l6.5-3.8 1.2.6-.2 1.8Z" />
-									</svg>
-								</div>
+								<svg class="h-8 w-auto" id="a" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 33.4 39">
+									<defs>
+										<linearGradient id="b" x1="8.25" y1="-326.6" x2="8.25" y2="-297.6" gradientTransform="translate(0 336.6)" gradientUnits="userSpaceOnUse">
+											<stop offset="0" stop-color="#9b4399" />
+											<stop offset="1" stop-color="#3d1e56" />
+											<stop offset="1" stop-color="#231815" />
+										</linearGradient>
+										<style>
+											.e {
+												stroke-width: 0;
+												fill: #fff
+											}
+										</style>
+									</defs>
+									<path d="M16.7 0 .1 9.8l16.6 9.7 16.5-9.7L16.7 0Z" style="fill:#70429a;stroke-width:0" />
+									<path class="e" d="m16.7 1.7-4.6 2.6v10.8l4.6 2.7 4.6-2.7V9.7l4.5-2.6-9.1-5.4Zm-3 6.3c-1.23-.11-1.13-1.98.1-2 1.3 0 1.27 2.09 0 2m6.8 1.3L16.8 7l3.8-2.3L24.3 7l-3.7 2.3Z" />
+									<path d="M0 10v19.3L16.5 39V19.7L0 10Z" style="fill:url(#b);stroke-width:0" />
+									<path class="e" d="m14.4 35.2-3-1.8v-.9L5.1 21.8l-.8-.4v8L2 28.1V13.8l3 1.7v1l6.2 10.7.8.4v-8l2.3 1.3.1 14.3Z" />
+									<path d="M16.8 19.7V39l16.6-9.7V10l-16.6 9.7Z" style="stroke-width:0;fill:#3d1e56" />
+									<path class="e" d="M31.3 16.4 29 15.1l-10 5.8v14.3L29.7 29l1.6-2.7v-3.6l-1.6-.9 1.6-2.7v-2.7Zm-2.5 9.9-1.1 2-6.5 3.8v-4.5l6.5-3.8 1.2.7-.1 1.8Zm0-6.3-1 2-6.5 3.8v-4.4l6.5-3.8 1.2.6-.2 1.8Z" />
+								</svg>
 								<span class="text-nbpurple-50 font-semibold ml-4" x-text="profileStore.profileInfo.planName + ' Account'"></span>
 								<!-- Upgrade or renewal button -->
 								<button x-cloak x-show="profileStore.profileInfo.accountEligibleForRenewal || profileStore.profileInfo.accountEligibleForUpgrade" type="button" class="ml-auto p-1 text-nbpurple-50 hover:text-nbpurple-100 rounded-md bg-nbpurple-600 hover:bg-nbpurple-400 text-xs" @click="window.location.href='/plans/'">
 									<span x-text="profileStore.profileInfo.accountLevel === 0 ? 'Subscribe' : profileStore.profileInfo.accountEligibleForRenewal ? 'Renew' : profileStore.profileInfo.accountEligibleForUpgrade ? 'Upgrade' : ''"></span>
 								</button>
 							</div>
-							<template x-if="window.innerWidth >= 1280" x-teleport=".main-menu">
+							<template x-data="{xl: window.innerWidth >= 1280}" @resize.window="xl = window.innerWidth >= 1280" x-if="!xl" x-teleport=".main-menu">
 								<nav class="flex flex-1 flex-col">
 									<!-- Mobile menu content -->
 									<ul role="list" class="flex flex-1 flex-col gap-y-7" x-data="{ pfpError: false }" x-init="menuStore.setActiveMenuFromHash()" @click.away="!menuStore.showDeleteFolderModal && menuStore.disableDeleteFolderButtons()" x-effect="pfpError = !profileStore.profileInfo.pfpUrl">
@@ -765,7 +763,27 @@ onDropCB(event) {
 				<!-- Sidebar component -->
 				<div class="main-menu flex grow flex-col gap-y-5 overflow-y-auto bg-nbpurple-900/10 px-6 ring-1 ring-nbpurple-50/5">
 					<div class="flex h-16 shrink-0 items-center -mb-5">
-						<div x-html="$refs.svgLogo.innerHTML"></div>
+						<svg class="h-8 w-auto" id="a" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 33.4 39">
+							<defs>
+								<linearGradient id="b" x1="8.25" y1="-326.6" x2="8.25" y2="-297.6" gradientTransform="translate(0 336.6)" gradientUnits="userSpaceOnUse">
+									<stop offset="0" stop-color="#9b4399" />
+									<stop offset="1" stop-color="#3d1e56" />
+									<stop offset="1" stop-color="#231815" />
+								</linearGradient>
+								<style>
+									.e {
+										stroke-width: 0;
+										fill: #fff
+									}
+								</style>
+							</defs>
+							<path d="M16.7 0 .1 9.8l16.6 9.7 16.5-9.7L16.7 0Z" style="fill:#70429a;stroke-width:0" />
+							<path class="e" d="m16.7 1.7-4.6 2.6v10.8l4.6 2.7 4.6-2.7V9.7l4.5-2.6-9.1-5.4Zm-3 6.3c-1.23-.11-1.13-1.98.1-2 1.3 0 1.27 2.09 0 2m6.8 1.3L16.8 7l3.8-2.3L24.3 7l-3.7 2.3Z" />
+							<path d="M0 10v19.3L16.5 39V19.7L0 10Z" style="fill:url(#b);stroke-width:0" />
+							<path class="e" d="m14.4 35.2-3-1.8v-.9L5.1 21.8l-.8-.4v8L2 28.1V13.8l3 1.7v1l6.2 10.7.8.4v-8l2.3 1.3.1 14.3Z" />
+							<path d="M16.8 19.7V39l16.6-9.7V10l-16.6 9.7Z" style="stroke-width:0;fill:#3d1e56" />
+							<path class="e" d="M31.3 16.4 29 15.1l-10 5.8v14.3L29.7 29l1.6-2.7v-3.6l-1.6-.9 1.6-2.7v-2.7Zm-2.5 9.9-1.1 2-6.5 3.8v-4.5l6.5-3.8 1.2.7-.1 1.8Zm0-6.3-1 2-6.5 3.8v-4.4l6.5-3.8 1.2.6-.2 1.8Z" />
+						</svg>
 						<span class="text-nbpurple-50 font-semibold ml-4" x-text="profileStore.profileInfo.planName + ' Account'"></span>
 						<!-- Upgrade or renewal button -->
 						<button x-cloak x-show="profileStore.profileInfo.accountEligibleForRenewal || profileStore.profileInfo.accountEligibleForUpgrade" type="button" class="ml-auto p-1 text-nbpurple-50 hover:text-nbpurple-100 rounded-md bg-nbpurple-600 hover:bg-nbpurple-400 text-xs" @click="window.location.href='/plans/'">
