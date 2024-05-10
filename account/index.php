@@ -1,4 +1,5 @@
 <?php
+/*
 require_once $_SERVER['DOCUMENT_ROOT'] . "/config.php";
 require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/permissions.class.php';
 
@@ -16,6 +17,7 @@ if ($perm->validatePermissionsLevelEqual(0)) {
 	$link->close();
 	exit;
 }
+*/
 
 // TODO:
 // - Add simple notification for any important messages
@@ -422,11 +424,11 @@ HTML;
 	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 	<title>nostr.build account</title>
 
-	<script defer src="/scripts/dist/account-v2.js?v=b80624623bf9eca19b96b4f75134fd44"></script>
+	<script defer src="/scripts/dist/account-v2.js?v=9b9784bbda0512668d4f9c384b8820d3"></script>
 	<link href="/scripts/dist/account-v2.css?v=dbfaad81a558216cc1207acd10bc90b1" rel="stylesheet">
 
 	<link rel="icon" href="/assets/nb-logo-color-w.png" />
-	<link href="/styles/twbuild.css?v=3f9eb8c34c946c6126e40d4d7a5a3979" rel="stylesheet">
+	<link href="/styles/twbuild.css?v=6f058aa1f1ede8a79b1bbb3907255a20" rel="stylesheet">
 
 	<!-- Pre-connect and DNS prefetch -->
 	<link rel="preconnect" href="https://i.nostr.build" crossorigin>
@@ -768,6 +770,18 @@ onDropCB(event) {
 		</svg>
 		<p class="absolute bottom-1/4 text-nbpurple-100 text-lg md:text-2xl lg:text-3xl xl:text-4xl font-semibold ml-4 animate-pulse">Loading...</p>
 	</div>
+	<!-- /Big loading spinner -->
+	<!-- Session unauthenticated screen -->
+	<template x-if="profileStore.unauthenticated">
+		<div class="flex flex-col fixed inset-0 z-[9999] items-center justify-center bg-gradient-to-tr from-nbpurple-950 to-nbpurple-800 bg-fixed bg-no-repeat bg-cover" x-transition:enter="transition ease-out duration-500" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" x-transition:leave="transition ease-in duration-500" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0">
+			<div class="flex flex-col items-center justify-center gap-y-5">
+				<h1 class="text-nbpurple-100 text-2xl md:text-3xl lg:text-4xl xl:text-5xl font-semibold">Session expired</h1>
+				<p class="text-nbpurple-100 text-lg md:text-xl lg:text-2xl xl:text-3xl font-semibold">Please log in again to continue</p>
+				<button type="button" class="text-nbpurple-50 hover:text-nbpurple-100 bg-nbpurple-600 hover:bg-nbpurple-400 rounded-md p-2 text-sm leading-6 font-semibold" @click="window.location.href='/login/'">Log in</button>
+			</div>
+		</div>
+	</template>
+	<!-- /Session unauthenticated screen -->
 	<main>
 		<div>
 			<!-- Off-canvas menu for mobile, show/hide based on off-canvas menu state. -->
@@ -792,7 +806,7 @@ onDropCB(event) {
 								<span class="text-nbpurple-50 font-semibold ml-4" x-text="profileStore.profileInfo.planName + ' Account'"></span>
 								<!-- Upgrade or renewal button -->
 								<button x-cloak x-show="profileStore.profileInfo.accountEligibleForRenewal || profileStore.profileInfo.accountEligibleForUpgrade" type="button" class="ml-auto p-1 text-nbpurple-50 hover:text-nbpurple-100 rounded-md bg-nbpurple-600 hover:bg-nbpurple-400 text-xs" @click="window.location.href='/plans/'">
-									<span x-text="profileStore.profileInfo.accountEligibleForRenewal ? 'Renew' : profileStore.profileInfo.accountEligibleForUpgrade ? 'Upgrade' : ''">Renew</span>
+									<span x-text="profileStore.profileInfo.accountLevel === 0 ? 'Subscribe' : profileStore.profileInfo.accountEligibleForRenewal ? 'Renew' : profileStore.profileInfo.accountEligibleForUpgrade ? 'Upgrade' : ''"></span>
 								</button>
 							</div>
 							<nav class="flex flex-1 flex-col">
@@ -813,7 +827,7 @@ onDropCB(event) {
 						<span class="text-nbpurple-50 font-semibold ml-4" x-text="profileStore.profileInfo.planName + ' Account'"></span>
 						<!-- Upgrade or renewal button -->
 						<button x-cloak x-show="profileStore.profileInfo.accountEligibleForRenewal || profileStore.profileInfo.accountEligibleForUpgrade" type="button" class="ml-auto p-1 text-nbpurple-50 hover:text-nbpurple-100 rounded-md bg-nbpurple-600 hover:bg-nbpurple-400 text-xs" @click="window.location.href='/plans/'">
-							<span x-text="profileStore.profileInfo.accountEligibleForRenewal ? 'Renew' : profileStore.profileInfo.accountEligibleForUpgrade ? 'Upgrade' : ''">Renew</span>
+							<span x-text="profileStore.profileInfo.accountLevel === 0 ? 'Subscribe' : profileStore.profileInfo.accountEligibleForRenewal ? 'Renew' : profileStore.profileInfo.accountEligibleForUpgrade ? 'Upgrade' : ''"></span>
 						</button>
 					</div>
 					<nav class="flex flex-1 flex-col">

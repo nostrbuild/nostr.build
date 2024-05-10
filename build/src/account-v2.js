@@ -44,6 +44,19 @@ window.getApiFetcher = function (baseUrl, contentType = 'multipart/form-data', t
     timeout: timeout,
   });
 
+  // Add a response interceptor to handle HTTP 401
+  api.interceptors.response.use(
+    (response) => response,
+    (error) => {
+      if (error.response && error.response.status === 401) {
+        // Perform special functions for HTTP 401 error
+        console.log('HTTP 401 Unauthorized error encountered');
+        Alpine.store('profileStore').unauthenticated = true;
+      }
+      return Promise.reject(error);
+    }
+  );
+
   axiosRetry(api, {
     retries: 5, // Make it resilient
     //retryDelay: axiosRetry.exponentialDelay,
@@ -299,7 +312,10 @@ window.logoutAndRedirectHome = () => {
   const api = getApiFetcher(logoutApi, 'application/json');
   api.get('', {}).then(() => {
     window.location.href = `https://${window.location.hostname}/`;
-  });
+  })
+    .catch(() => {
+      window.location.href = `https://${window.location.hostname}/`;
+    });
 }
 
 window.copyUrlToClipboard = (url) => {
@@ -318,6 +334,7 @@ const homeFolderName = 'Home: Main Folder';
 
 Alpine.store('profileStore', {
   profileDataInitialized: false,
+  unauthenticated: false,
   init() {
     if (!this.profileDataInitialized) {
       this.refreshProfileInfo().then(() => {
