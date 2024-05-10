@@ -30,6 +30,8 @@ if ($perm->validatePermissionsLevelEqual(0)) {
 //   - [Depends on] Implement simple "Trash" folder for deleted media and disable serving it to the public (TBD)
 
 // - Allow user to verify their npub in profile edit dialog
+// - Add logout functionality within the page itself and using the api
+// - Add login functionality within the page itself and using the api
 
 $NBLogoSVG = <<<SVG
 <svg class="h-8 w-auto" id="a" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 33.4 39">
@@ -424,7 +426,7 @@ HTML;
 	<link href="/scripts/dist/account-v2.css?v=dbfaad81a558216cc1207acd10bc90b1" rel="stylesheet">
 
 	<link rel="icon" href="/assets/nb-logo-color-w.png" />
-	<link href="/styles/twbuild.css?v=06721b3afd4b7c600c8f381c26e8b740" rel="stylesheet">
+	<link href="/styles/twbuild.css?v=3f9eb8c34c946c6126e40d4d7a5a3979" rel="stylesheet">
 
 	<!-- Pre-connect and DNS prefetch -->
 	<link rel="preconnect" href="https://i.nostr.build" crossorigin>
@@ -1239,7 +1241,7 @@ onDropCB(event) {
 										}
 									" :class="{ 'opacity-50 drop-shadow-xl': dragging }" class="relative" x-data="{ showMediaActions: false, dragging: false }">
 									<!-- Media type badge -->
-									<div :id="'badge_' + file.id" class="z-10 absolute top-1.5 right-1.5 size-8 bg-nbpurple-600 text-nbpurple-50 text-xs font-semibold rounded-full flex items-center justify-center opacity-75">
+									<div :id="'badge_' + file.id" class="z-[5] absolute top-1.5 right-1.5 size-8 bg-nbpurple-600 text-nbpurple-50 text-xs font-semibold rounded-full flex items-center justify-center opacity-75">
 										<svg x-show="file.mime.startsWith('image/') && !file.mime.endsWith('/gif')" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="size-5">
 											<rect width="18" height="18" x="3" y="3" rx="2" ry="2" />
 											<circle cx="9" cy="9" r="2" />
