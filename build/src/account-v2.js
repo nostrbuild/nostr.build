@@ -294,6 +294,14 @@ function getHashParams() {
   };
 }
 
+window.logoutAndRedirectHome = () => {
+  const logoutApi = `https://${window.location.hostname}/api/v2/account/logout`;
+  const api = getApiFetcher(logoutApi, 'application/json');
+  api.get('', {}).then(() => {
+    window.location.href = `https://${window.location.hostname}/`;
+  });
+}
+
 window.copyUrlToClipboard = (url) => {
   navigator.clipboard.writeText(url)
     .then(() => {

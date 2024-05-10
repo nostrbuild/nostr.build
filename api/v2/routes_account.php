@@ -194,6 +194,16 @@ $app->group('/account', function (RouteCollectorProxy $group) {
     }
   });
 
+  // Route to logout account
+  $group->get('/logout', function (Request $request, Response $response) {
+    // Unset all session variables
+    $_SESSION = [];
+    // Destroy the session
+    session_destroy();
+    // Return a 200 response
+    return jsonResponse($response, 'success', 'Logged out', new stdClass(), 200);
+  });
+
   // Route to login account using NostrAuth
   $group->post('/login', function (Request $request, Response $response) {
     $body = $request->getParsedBody();
@@ -385,7 +395,10 @@ $app->group('/account', function (RouteCollectorProxy $group) {
   });
 })->add(function ($request, $handler) use ($perm) {
   // Check if the request is coming to /login and bypass the authentication
-  if ($request->getUri()->getPath() === '/api/v2/account/login' || $request->getUri()->getPath() === '/api/v2/account/verify') {
+  if (
+    $request->getUri()->getPath() === '/api/v2/account/login' ||
+    $request->getUri()->getPath() === '/api/v2/account/verify'
+  ) {
     return $handler->handle($request);
   }
   // Check if the user is logged in
@@ -397,7 +410,7 @@ $app->group('/account', function (RouteCollectorProxy $group) {
   }
   // Check if the user account has expired
   $account = $this->get('accountClass')($_SESSION['usernpub']);
-  if($account->isExpired()) {
+  if ($account->isExpired()) {
     error_log('User account expired: ' . $_SESSION['usernpub']);
     $response = new Slim\Psr7\Response(); // Create a new response object
     return jsonResponse($response, 'error', 'User account expired', new stdClass(), 401);

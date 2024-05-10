@@ -422,7 +422,7 @@ HTML;
 	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 	<title>nostr.build account</title>
 
-	<script defer src="/scripts/dist/account-v2.js?v=3ef77fb3323e1ccee6cbd2c3e3139b48"></script>
+	<script defer src="/scripts/dist/account-v2.js?v=b80624623bf9eca19b96b4f75134fd44"></script>
 	<link href="/scripts/dist/account-v2.css?v=dbfaad81a558216cc1207acd10bc90b1" rel="stylesheet">
 
 	<link rel="icon" href="/assets/nb-logo-color-w.png" />
@@ -2167,7 +2167,7 @@ onDropCB(event) {
 							</div>
 						</div>
 						<div class="mt-5 sm:ml-10 sm:mt-4 sm:flex sm:pl-4">
-							<a href="/functions/logout.php" class="inline-flex w-full justify-center rounded-md bg-red-700 px-3 py-2 text-sm font-semibold text-nbpurple-50 shadow-sm hover:bg-red-500 sm:w-auto">Logout</a>
+							<button @click="logoutAndRedirectHome()" class="inline-flex w-full justify-center rounded-md bg-red-700 px-3 py-2 text-sm font-semibold text-nbpurple-50 shadow-sm hover:bg-red-500 sm:w-auto">Logout</button>
 							<button @click="logoutScreen = false" type="button" class="mt-3 inline-flex w-full justify-center rounded-md bg-nbpurple-300 px-3 py-2 text-sm font-semibold text-nbpurple-900 shadow-sm ring-1 ring-inset ring-nbpurple-300 hover:bg-nbpurple-400 sm:ml-3 sm:mt-0 sm:w-auto">Cancel</button>
 						</div>
 					</div>
