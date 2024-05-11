@@ -354,15 +354,35 @@ if (isset($_GET["action"])) {
 	} else if ($action == "list_folders") {
 		// List all folders in the user's account
 		$folders = new UsersImagesFolders($link);
-		$folderList = $folders->getFolders($_SESSION['usernpub']);
+		$folderList = $folders->getFoldersWithStats($_SESSION['usernpub']);
 		// Process the folder list so it returns array of assoc arrays: name: <name>, icon: <icon>, route: <route>, id: <id>
+		// | folder               | id   | allSize    | all | imageSize | images | gifSize   | gifs | videoSize  | videos | audioSize | audio | publicCount |
 		$folderList = array_map(function ($folder) {
 			$folderName = $folder['folder'];
 			$folderId = $folder['id'];
 			$folderRoute = "#f=" . urlencode($folderName);
 			$firstChar = mb_substr($folderName, 0, 1, 'UTF-8');
 			$folderIcon = mb_strlen($firstChar, 'UTF-8') === 1 ? strtoupper($firstChar) : '#';
-			return array("name" => $folderName, "icon" => $folderIcon, "route" => $folderRoute, "id" => $folderId, "allowDelete" => true);
+			return [
+				"name" => $folderName,
+				"icon" => $folderIcon,
+				"route" => $folderRoute,
+				"id" => $folderId,
+				"allowDelete" => true,
+				"stats" => [
+					"allSize" => (int) $folder['allSize'] ?? 0,
+					"all" => (int) $folder['all']	?? 0,
+					"imageSize" => (int) $folder['imageSize'] ?? 0,
+					"images" => (int) $folder['images'] ?? 0,
+					"gifSize" => (int) $folder['gifSize'] ?? 0,
+					"gifs" => (int) $folder['gifs'] ?? 0,
+					"videoSize" => (int) $folder['videoSize'] ?? 0,
+					"videos" => (int) $folder['videos'] ?? 0,
+					"audioSize" => (int) $folder['audioSize'] ?? 0,
+					"audio" => (int) $folder['audio'] ?? 0,
+					"publicCount" => (int) $folder['publicCount'] ?? 0,
+				],
+			];
 		}, $folderList);
 		http_response_code(200);
 		echo json_encode($folderList);
@@ -380,11 +400,10 @@ if (isset($_GET["action"])) {
 		// Fetch user's folder statistics and storage statistics
 		try {
 			$usersFoldersTable = new UsersImagesFolders($link);
-			$usersFoldersStats = $usersFoldersTable->getFoldersStats($_SESSION['usernpub']);
+			$usersFoldersStats = $usersFoldersTable->getTotalStats($_SESSION['usernpub']);
 			// Repackage for JSON response
 			$foldersStats = [
-				'foldersStats' => $usersFoldersStats['FOLDERS'],
-				'totalStats' => $usersFoldersStats['TOTAL'],
+				'totalStats' => $usersFoldersStats,
 			];
 			http_response_code(200);
 			echo json_encode($foldersStats);

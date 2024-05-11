@@ -1037,6 +1037,8 @@ Alpine.store('menuStore', {
   ],
   folders: [],
   activeFolder: '',
+  activeFolderStats: {},
+  activeFolderObj: {},
   // Top most folders
   staticFolders: [{
     id: 0, // There is no actual folder so we use 0
@@ -1084,6 +1086,8 @@ Alpine.store('menuStore', {
     // Clear the files list
     fileStore.files = [];
     this.activeFolder = folderName;
+    this.activeFolderObj = this.getFolderObjByName(folderName) || {};
+    this.activeFolderStats = this.getFolderObjByName(folderName)?.stats || {};
     updateHashURL(folderName);
     console.log('Active folder set:', folderName);
     // Reset filter
@@ -1117,6 +1121,7 @@ Alpine.store('menuStore', {
             existingFolder.id = folder.id;
             existingFolder.route = folder.route;
             existingFolder.icon = folder.icon;
+            existingFolder.stats = folder?.stats;
           }
           return acc;
         }, this.folders);
@@ -1339,13 +1344,13 @@ Alpine.store('menuStore', {
       .then(data => {
         this.fileStats.stats = data;
         // Convert potential strings into numbers
-        this.fileStats.totalFiles = parseInt(data.totalStats.fileCount);
-        this.fileStats.totalGifs = parseInt(data.totalStats.gifCount);
-        this.fileStats.totalImages = parseInt(data.totalStats.imageCount);
-        this.fileStats.totalVideos = parseInt(data.totalStats.avCount);
+        this.fileStats.totalFiles = parseInt(data.totalStats?.all);
+        this.fileStats.totalGifs = parseInt(data.totalStats.gifs);
+        this.fileStats.totalImages = parseInt(data.totalStats.images);
+        this.fileStats.totalVideos = parseInt(data.totalStats.videos + data.totalStats.audio);
         this.fileStats.creatorCount = parseInt(data.totalStats.publicCount);
-        this.fileStats.totalFolders = parseInt(data.totalStats.folderCount);
-        this.fileStats.totalSize = parseInt(data.totalStats.totalSize);
+        this.fileStats.totalFolders = Alpine.store('menuStore').folders.length;
+        this.fileStats.totalSize = parseInt(data.totalStats.allSize);
       })
       .catch(error => {
         console.error('Error refreshing file stats:', error);
@@ -1717,6 +1722,33 @@ Alpine.store('fileStore', {
       });
   },
   // Filter: "all", "images", "videos", "audio", 'gifs'
+  filters: {
+    all: {
+      filter: 'all',
+      name: 'All',
+      icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="size-5" aria-hidden="true"><path d="M18 22H4a2 2 0 0 1-2-2V6"/><path d="m22 13-1.296-1.296a2.41 2.41 0 0 0-3.408 0L11 18"/><circle cx="12" cy="8" r="2"/><rect width="16" height="16" x="6" y="2" rx="2"/></svg>`,
+    },
+    images: {
+      filter: 'images',
+      name: 'Images',
+      icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="size-5" aria-hidden="true"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>`,
+    },
+    gifs: {
+      filter: 'gifs',
+      name: 'GIFs',
+      icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="size-5" aria-hidden="true"><path d="m11 16-5 5"/><path d="M11 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v6.5"/><path d="M15.765 22a.5.5 0 0 1-.765-.424V13.38a.5.5 0 0 1 .765-.424l5.878 3.674a1 1 0 0 1 0 1.696z"/><circle cx="9" cy="9" r="2"/></svg>`,
+    },
+    videos: {
+      filter: 'videos',
+      name: 'Videos',
+      icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="size-5" aria-hidden="true"><path d="m16 13 5.223 3.482a.5.5 0 0 0 .777-.416V7.87a.5.5 0 0 0-.752-.432L16 10.5"/><rect x="2" y="6" width="14" height="12" rx="2"/></svg>`,
+    },
+    audio: {
+      filter: 'audio',
+      name: 'Audio',
+      icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="size-5" aria-hidden="true"><path d="M3 14h3a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-7a9 9 0 0 1 18 0v7a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3"/></svg>`,
+    },
+  },
   currentFilter: 'all',
   setFilter(filter) {
     this.currentFilter = filter;
