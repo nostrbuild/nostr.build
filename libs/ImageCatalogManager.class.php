@@ -134,46 +134,9 @@ class ImageCatalogManager
       return [];
     }
 
-    $folders = [];
-
     try {
       $placeholders = implode(',', array_fill(0, count($folderIds), '?'));
-      $stmt = $this->link->prepare("SELECT * FROM users_images_folders WHERE usernpub = ? AND id IN ($placeholders)");
-      $stmt->bind_param('s' . str_repeat('i', count($folderIds)),  $this->usernpub, ...$folderIds);
-      $stmt->execute();
-      $result = $stmt->get_result();
-      $folders = $result->fetch_all(MYSQLI_ASSOC);
-      $folderIds = array_column($folders, 'id');
-      $stmt->close();
-    } catch (Exception $e) {
-      error_log("Error occurred while fetching folder records: " . $e->getMessage());
-      return $folders;
-    }
-
-    if (!empty($folders)) {
-      $folderNames = array_column($folders, 'folder');
-      $placeholders = implode(',', array_fill(0, count($folderNames), '?'));
-
-      try {
-        // TODO: This is a temp hack to delete the folder while old folder structure is in place
-        $stmt = $this->link->prepare("UPDATE users_images SET folder = NULL WHERE usernpub = ? AND folder IN ($placeholders)");
-        $stmt->bind_param('s' . str_repeat('s', count($folderNames)), $this->usernpub, ...$folderNames);
-        $stmt->execute();
-
-        // TODO: Workaround, should be gone ASAP
-        $stmt = $this->link->prepare("DELETE FROM users_images WHERE usernpub = ? AND folder IN ($placeholders) AND image = 'https://nostr.build/p/Folder.png'");
-        $stmt->bind_param('s' . str_repeat('s', count($folderNames)), $this->usernpub, ...$folderNames);
-        $stmt->execute();
-      } catch (Exception $e) {
-        error_log("Error occurred while updating and deleting folder records: " . $e->getMessage());
-        return [];
-      } finally {
-        $stmt->close();
-      }
-    }
-
-    try {
-      $placeholders = implode(',', array_fill(0, count($folderIds), '?'));
+      // FK constraint will NULL out the folder_id in users_images table
       $stmt = $this->link->prepare("DELETE FROM users_images_folders WHERE usernpub = ? AND id IN ($placeholders)");
       $stmt->bind_param('s' . str_repeat('i', count($folderIds)), $this->usernpub, ...$folderIds);
       $stmt->execute();
@@ -243,30 +206,17 @@ class ImageCatalogManager
     try {
       // Handle special case where folderId is set to 0, meaning the images are moved to the root folder
       if ($folderId === 0) {
-        $stmt = $this->link->prepare("UPDATE users_images SET folder = NULL, folder_id = NULL WHERE usernpub = ? AND id IN ($placeholders)");
+        $stmt = $this->link->prepare("UPDATE users_images SET folder_id = NULL WHERE usernpub = ? AND id IN ($placeholders)");
         $stmt->bind_param('s' . str_repeat('i', count($imageIds)), $this->usernpub, ...$imageIds);
         if (!$stmt->execute()) {
           throw new Exception("Failed to move images");
         }
         return $imageIds;
       }
-      // Get folder name from the folder ID
-      $stmt = $this->link->prepare("SELECT folder FROM users_images_folders WHERE usernpub = ? AND id = ?");
-      $stmt->bind_param('si', $this->usernpub, $folderId);
-      if (!$stmt->execute()) {
-        throw new Exception("Failed to fetch folder name");
-      }
-      $result = $stmt->get_result();
-      $res = $result->fetch_assoc();
-      $stmt->close();
-      if (empty($res)) {
-        throw new Exception("Folder not found");
-      }
-      // Get folder name into a variable
-      $folder = $res['folder'];
       // Update the folder and folder ID for the images
-      $stmt = $this->link->prepare("UPDATE users_images SET folder = ?, folder_id = ? WHERE usernpub = ? AND id IN ($placeholders)");
-      $stmt->bind_param('sis' . str_repeat('i', count($imageIds)), $folder, $folderId, $this->usernpub, ...$imageIds);
+      // FK constraint will prevent moving images to a folder that doesn't exist
+      $stmt = $this->link->prepare("UPDATE users_images SET folder_id = ? WHERE usernpub = ? AND id IN ($placeholders)");
+      $stmt->bind_param('is' . str_repeat('i', count($imageIds)), $folderId, $this->usernpub, ...$imageIds);
       if (!$stmt->execute()) {
         throw new Exception("Failed to move images");
       }

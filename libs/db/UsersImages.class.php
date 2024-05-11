@@ -48,7 +48,6 @@ class UsersImages extends DatabaseTable
         SELECT NULL AS id, 'TOTAL' AS folder
     ) AS dummy
     LEFT JOIN {$this->tableName} ui ON ui.usernpub = ?
-        AND ui.image != 'https://nostr.build/p/Folder.png'
     GROUP BY dummy.id, dummy.folder
     ";
     // Prepare and execute the statement
@@ -101,7 +100,6 @@ class UsersImages extends DatabaseTable
     WHERE 
         ((? IS NULL AND ui.folder_id IS NULL) OR ui.folder_id = ?)
         AND ui.usernpub = ?
-        AND ui.image != 'https://nostr.build/p/Folder.png'
         {$filter_sql}
     GROUP BY
         ui.id

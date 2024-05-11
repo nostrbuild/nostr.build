@@ -59,7 +59,6 @@ class UsersImagesFolders extends DatabaseTable
         COALESCE(SUM(CASE WHEN ui.flag = 1 THEN 1 ELSE 0 END), 0) AS publicCount
     FROM users_images_folders uif
     LEFT JOIN users_images ui ON uif.id = ui.folder_id
-        AND ui.image != 'https://nostr.build/p/Folder.png'
     WHERE uif.usernpub = ?
     GROUP BY uif.id, uif.folder
     UNION ALL
@@ -75,7 +74,6 @@ class UsersImagesFolders extends DatabaseTable
     FROM users_images ui
     WHERE ui.usernpub = ?
         AND ui.folder_id IS NULL
-        AND ui.image != 'https://nostr.build/p/Folder.png'
     UNION ALL
     SELECT
         dummy.id,
@@ -90,7 +88,6 @@ class UsersImagesFolders extends DatabaseTable
         SELECT NULL AS id, 'TOTAL' AS folder
     ) AS dummy
     LEFT JOIN users_images ui ON ui.usernpub = ?
-        AND ui.image != 'https://nostr.build/p/Folder.png'
     GROUP BY dummy.id, dummy.folder
       ";
 
