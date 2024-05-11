@@ -44,6 +44,112 @@ class UsersImagesFolders extends DatabaseTable
     return $result->fetch_all(MYSQLI_ASSOC);
   }
 
+  public function getFoldersWithStats(string $usernpub): array
+  {
+    $stmt = $this->db->prepare("
+    SELECT
+        COALESCE(uif.folder, '') AS folder,
+        COALESCE(dt.id, uif.id, 0) AS id,
+        COALESCE(dt.totalSize, 0) AS allSize,
+        COALESCE(dt.fileCount, 0) AS \"all\",
+        COALESCE(dt.imageSize, 0) AS imageSize,
+        COALESCE(dt.imageCount, 0) AS images,
+        COALESCE(dt.gifSize, 0) AS gifSize,
+        COALESCE(dt.gifCount, 0) AS gifs,
+        COALESCE(dt.videoSize, 0) AS videoSize,
+        COALESCE(dt.videoCount, 0) AS videos,
+        COALESCE(dt.audioSize, 0) AS audioSize,
+        COALESCE(dt.audioCount, 0) AS audio,
+        COALESCE(dt.publicCount, 0) AS publicCount
+    FROM users_images_folders uif
+    LEFT JOIN (
+        SELECT
+            ui.folder_id,
+            ui.folder_id AS id,
+            SUM(COALESCE(ui.file_size, 0)) AS totalSize,
+            COUNT(ui.id) AS fileCount,
+            SUM(CASE WHEN SUBSTR(ui.mime_type, 1, 6) = 'image/' AND ui.mime_type != 'image/gif' THEN COALESCE(ui.file_size, 0) ELSE 0 END) AS imageSize,
+            SUM(CASE WHEN SUBSTR(ui.mime_type, 1, 6) = 'image/' AND ui.mime_type != 'image/gif' THEN 1 ELSE 0 END) AS imageCount,
+            SUM(CASE WHEN ui.mime_type = 'image/gif' THEN COALESCE(ui.file_size, 0) ELSE 0 END) AS gifSize,
+            SUM(CASE WHEN ui.mime_type = 'image/gif' THEN 1 ELSE 0 END) AS gifCount,
+            SUM(CASE WHEN SUBSTR(ui.mime_type, 1, 6) = 'video/' THEN COALESCE(ui.file_size, 0) ELSE 0 END) AS videoSize,
+            SUM(CASE WHEN SUBSTR(ui.mime_type, 1, 6) = 'video/' THEN 1 ELSE 0 END) AS videoCount,
+            SUM(CASE WHEN SUBSTR(ui.mime_type, 1, 6) = 'audio/' THEN COALESCE(ui.file_size, 0) ELSE 0 END) AS audioSize,
+            SUM(CASE WHEN SUBSTR(ui.mime_type, 1, 6) = 'audio/' THEN 1 ELSE 0 END) AS audioCount,
+            SUM(CASE WHEN ui.flag = 1 THEN 1 ELSE 0 END) AS publicCount
+        FROM users_images ui
+        WHERE ui.usernpub = ?
+        GROUP BY ui.folder_id
+    ) dt ON uif.id = dt.folder_id
+    WHERE uif.usernpub = ?
+    UNION ALL
+    SELECT
+        'Home: Main Folder' AS folder,
+        COALESCE(dt.id, 0) AS id,
+        COALESCE(dt.totalSize, 0) AS allSize,
+        COALESCE(dt.fileCount, 0) AS \"all\",
+        COALESCE(dt.imageSize, 0) AS imageSize,
+        COALESCE(dt.imageCount, 0) AS images,
+        COALESCE(dt.gifSize, 0) AS gifSize,
+        COALESCE(dt.gifCount, 0) AS gifs,
+        COALESCE(dt.videoSize, 0) AS videoSize,
+        COALESCE(dt.videoCount, 0) AS videos,
+        COALESCE(dt.audioSize, 0) AS audioSize,
+        COALESCE(dt.audioCount, 0) AS audio,
+        COALESCE(dt.publicCount, 0) AS publicCount
+    FROM (
+        SELECT
+            0 AS id,
+            SUM(COALESCE(ui.file_size, 0)) AS totalSize,
+            COUNT(ui.id) AS fileCount,
+            SUM(CASE WHEN SUBSTR(ui.mime_type, 1, 6) = 'image/' AND ui.mime_type != 'image/gif' THEN COALESCE(ui.file_size, 0) ELSE 0 END) AS imageSize,
+            SUM(CASE WHEN SUBSTR(ui.mime_type, 1, 6) = 'image/' AND ui.mime_type != 'image/gif' THEN 1 ELSE 0 END) AS imageCount,
+            SUM(CASE WHEN ui.mime_type = 'image/gif' THEN COALESCE(ui.file_size, 0) ELSE 0 END) AS gifSize,
+            SUM(CASE WHEN ui.mime_type = 'image/gif' THEN 1 ELSE 0 END) AS gifCount,
+            SUM(CASE WHEN SUBSTR(ui.mime_type, 1, 6) = 'video/' THEN COALESCE(ui.file_size, 0) ELSE 0 END) AS videoSize,
+            SUM(CASE WHEN SUBSTR(ui.mime_type, 1, 6) = 'video/' THEN 1 ELSE 0 END) AS videoCount,
+            SUM(CASE WHEN SUBSTR(ui.mime_type, 1, 6) = 'audio/' THEN COALESCE(ui.file_size, 0) ELSE 0 END) AS audioSize,
+            SUM(CASE WHEN SUBSTR(ui.mime_type, 1, 6) = 'audio/' THEN 1 ELSE 0 END) AS audioCount,
+            SUM(CASE WHEN ui.flag = 1 THEN 1 ELSE 0 END) AS publicCount
+        FROM users_images ui
+        WHERE ui.usernpub = ?
+            AND ui.folder_id IS NULL
+    ) dt
+    ");
+    $stmt->bind_param("sss", $usernpub, $usernpub, $usernpub);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $stmt->close();
+    return $result->fetch_all(MYSQLI_ASSOC);
+  }
+
+  public function getTotalStats(string $usernpub): array
+  {
+    $stmt = $this->db->prepare("
+    SELECT
+        'TOTAL' AS folder,
+        0 AS id,
+        SUM(COALESCE(ui.file_size, 0)) AS allSize,
+        COUNT(ui.id) AS \"all\",
+        SUM(CASE WHEN SUBSTR(ui.mime_type, 1, 6) = 'image/' AND ui.mime_type != 'image/gif' THEN COALESCE(ui.file_size, 0) ELSE 0 END) AS imageSize,
+        SUM(CASE WHEN SUBSTR(ui.mime_type, 1, 6) = 'image/' AND ui.mime_type != 'image/gif' THEN 1 ELSE 0 END) AS images,
+        SUM(CASE WHEN ui.mime_type = 'image/gif' THEN COALESCE(ui.file_size, 0) ELSE 0 END) AS gifSize,
+        SUM(CASE WHEN ui.mime_type = 'image/gif' THEN 1 ELSE 0 END) AS gifs,
+        SUM(CASE WHEN SUBSTR(ui.mime_type, 1, 6) = 'video/' THEN COALESCE(ui.file_size, 0) ELSE 0 END) AS videoSize,
+        SUM(CASE WHEN SUBSTR(ui.mime_type, 1, 6) = 'video/' THEN 1 ELSE 0 END) AS videos,
+        SUM(CASE WHEN SUBSTR(ui.mime_type, 1, 6) = 'audio/' THEN COALESCE(ui.file_size, 0) ELSE 0 END) AS audioSize,
+        SUM(CASE WHEN SUBSTR(ui.mime_type, 1, 6) = 'audio/' THEN 1 ELSE 0 END) AS audio,
+        SUM(CASE WHEN ui.flag = 1 THEN 1 ELSE 0 END) AS publicCount
+    FROM users_images ui
+    WHERE ui.usernpub = ?
+    ");
+    $stmt->bind_param("s", $usernpub);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $stmt->close();
+    return $result->fetch_assoc();
+  }
+
   public function getFoldersStats(string $usernpub): array
   {
     // Populate information about folders and files
