@@ -50,7 +50,7 @@ window.getApiFetcher = function (baseUrl, contentType = 'multipart/form-data', t
     (error) => {
       if (error.response && error.response.status === 401) {
         // Perform special functions for HTTP 401 error
-        console.log('HTTP 401 Unauthorized error encountered');
+        console.debug('HTTP 401 Unauthorized error encountered');
         Alpine.store('profileStore').unauthenticated = true;
       }
       return Promise.reject(error);
@@ -85,7 +85,7 @@ window.formatBytes = (bytes) => {
   const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB'];
   const i = Math.floor(Math.log(bytes) / Math.log(k));
 
-  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + sizes[i];
 }
 
 // Bech32 encoding and decoding library
@@ -273,10 +273,10 @@ window.abbreviateBech32 = (bech32Address) => {
 
 // AlpineJS components and stores
 document.addEventListener('alpine:init', () => {
-  console.log('Alpine started');
+  console.debug('Alpine started');
 });
 document.addEventListener('alpine:initialized', () => {
-  console.log('Alpine initialized');
+  console.debug('Alpine initialized');
   const menuStore = Alpine.store('menuStore');
   menuStore.alpineInitiated = true;
 })
@@ -321,7 +321,7 @@ window.logoutAndRedirectHome = () => {
 window.copyUrlToClipboard = (url) => {
   navigator.clipboard.writeText(url)
     .then(() => {
-      console.log('URL copied to clipboard:', url);
+      console.debug('URL copied to clipboard:', url);
     })
     .catch(error => {
       console.error('Error copying URL to clipboard:', error);
@@ -564,7 +564,7 @@ Alpine.store('profileStore', {
           this.dialogError = true;
           this.dialogErrorMessages.push(data.error);
         } else {
-          //console.log('Profile updated:', data);
+          //console.debug('Profile updated:', data);
           this.dialogSuccessMessages.push('Profile updated.');
           // Update the profile info
           this.updateProfileInfoFromData(data);
@@ -644,7 +644,7 @@ Alpine.store('profileStore', {
             this.dialogError = true;
             this.dialogErrorMessages.push('Error updating password.');
           } else {
-            //console.log('Password updated:', data);
+            //console.debug('Password updated:', data);
             this.dialogSuccessMessages.push('Password updated.');
           }
         }
@@ -671,7 +671,7 @@ Alpine.store('profileStore', {
     })
       .then(response => response.data)
       .then(data => {
-        //console.log('Profile info:', data);
+        //console.debug('Profile info:', data);
         if (!data.error) {
           this.updateProfileInfoFromData(data);
         } else {
@@ -740,10 +740,10 @@ Alpine.store('nostrStore', {
       if (!Array.isArray(ids)) {
         ids = [ids];
       }
-      console.log('Opening sharing modal:', ids);
+      console.debug('Opening sharing modal:', ids);
       this.selectedIds = ids;
       this.selectedFiles = Alpine.store('fileStore').files.filter(file => ids.includes(file.id));
-      console.log('Selected files:', this.selectedFiles);
+      console.debug('Selected files:', this.selectedFiles);
       this.isOpen = true;
       this.callback = callback;
     },
@@ -766,7 +766,7 @@ Alpine.store('nostrStore', {
     async send() {
       const nostrStore = Alpine.store('nostrStore');
       if (nostrStore.isExtensionInstalled()) {
-        //console.log('Sending share request to Nostr:', this.selectedFiles, this.extNpub, this.note);
+        //console.debug('Sending share request to Nostr:', this.selectedFiles, this.extNpub, this.note);
       } else {
         console.error('Nostr extension not installed.');
         this.isError = true;
@@ -816,10 +816,10 @@ Alpine.store('nostrStore', {
         content: this.note,
       }
       this.signedEvent = await window.nostr.signEvent(event);
-      //console.log('Signed event:', this.signedEvent);
+      //console.debug('Signed event:', this.signedEvent);
       nostrStore.publishSignedEvent(this.signedEvent, this.selectedIds)
         .then(() => {
-          console.log('Published Nostr event:', this.signedEvent);
+          console.debug('Published Nostr event:', this.signedEvent);
           this.close();
         })
         .catch(error => {
@@ -846,7 +846,7 @@ Alpine.store('nostrStore', {
     return api.post('', formData)
       .then(response => response.data)
       .then(data => {
-        //console.log('Published Nostr event:', data);
+        //console.debug('Published Nostr event:', data);
         // Check if noteId is not null and success is true, otherwise throw an error
         if (!data.noteId || !data.success) {
           throw new Error('Error publishing Nostr event.');
@@ -892,10 +892,10 @@ Alpine.store('nostrStore', {
       content: 'User requested deletion of these posts',
     };
     signedEvent = await window.nostr.signEvent(event);
-    //console.log('Signed event:', this.signedEvent);
+    //console.debug('Signed event:', this.signedEvent);
     nostrStore.publishSignedEvent(signedEvent)
       .then(() => {
-        console.log('Published Nostr event:', this.signedEvent);
+        console.debug('Published Nostr event:', this.signedEvent);
         this.close();
       })
       .catch(error => {
@@ -914,7 +914,7 @@ Alpine.store('nostrStore', {
     }
     try {
       const publicKey = await window.nostr.getPublicKey();
-      console.log('Nostr public key:', publicKey);
+      console.debug('Nostr public key:', publicKey);
       return publicKey;
     } catch (error) {
       console.error('Error getting Nostr public key:', error);
@@ -958,7 +958,7 @@ Alpine.store('menuStore', {
     } = getHashParams();
     this.setActiveFolder(folder);
     this.setActiveMenuFromHash();
-    console.log('Menu store initiated');
+    console.debug('Menu store initiated');
   },
   menuItemsAI: [{
     name: 'AI Studio',
@@ -980,9 +980,9 @@ Alpine.store('menuStore', {
   menuItems: [{
     name: 'Account Main Page',
     icon: '<path stroke-linecap="round" stroke-linejoin="round" d="M17.982 18.725A7.488 7.488 0 0 0 12 15.75a7.488 7.488 0 0 0-5.982 2.975m11.963 0a9 9 0 1 0-11.963 0m11.963 0A8.966 8.966 0 0 1 12 21a8.966 8.966 0 0 1-5.982-2.275M15 9.75a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />',
-    route: getUpdatedHashLink('Home: Main Folder', 'main'),
+    route: getUpdatedHashLink(homeFolderName, 'main'),
     routeId: 'main',
-    rootFolder: 'Home: Main Folder'
+    rootFolder: homeFolderName
   }],
   externalMenuItems: [{
     name: 'Free Media Gallery',
@@ -1042,7 +1042,7 @@ Alpine.store('menuStore', {
   // Top most folders
   staticFolders: [{
     id: 0, // There is no actual folder so we use 0
-    name: 'Home: Main Folder',
+    name: homeFolderName,
     icon: 'H',
     route: '#',
     allowDelete: false
@@ -1059,6 +1059,55 @@ Alpine.store('menuStore', {
   },
   getFolderNameById(folderId) {
     return this.folders.find(folder => folder.id === folderId)?.name;
+  },
+  updateFolderStatsFromFile(file, folderName, increment = true) {
+    const folder = this.getFolderObjByName(folderName);
+    if (!folder) {
+      return;
+    }
+    // Determine file type from mime
+    const fileType = file.mime.split('/')[0];
+    console.debug('File type:', fileType);
+    switch (fileType) {
+      case 'image':
+        // GIF or others
+        if (file.mime === 'image/gif') {
+          folder.stats.gifs += increment ? 1 : -1;
+          folder.stats.gifsSize += increment ? file.size : -file.size;
+          this.fileStats.totalGifs += increment ? 1 : -1;
+        } else {
+          folder.stats.images += increment ? 1 : -1;
+          folder.stats.imagesSize += increment ? file.size : -file.size;
+          this.fileStats.totalImages += increment ? 1 : -1;
+        }
+        break;
+      case 'video':
+        folder.stats.videos += increment ? 1 : -1;
+        folder.stats.videosSize += increment ? file.size : -file.size;
+        this.fileStats.totalVideos += increment ? 1 : -1;
+        break;
+      case 'audio':
+        folder.stats.audio += increment ? 1 : -1;
+        folder.stats.audioSize += increment ? file.size : -file.size;
+        this.fileStats.totalVideos += increment ? 1 : -1;
+        break;
+    }
+    // Update the total files and size
+    folder.stats.all += increment ? 1 : -1;
+    folder.stats.allSize += increment ? file.size : -file.size;
+    folder.stats.publicCount += increment ? file.flag : -file.flag;
+    this.fileStats.totalFiles += increment ? 1 : -1;
+    this.fileStats.totalSize += increment ? file.size : -file.size;
+    this.fileStats.creatorCount += increment ? file.flag : -file.flag;
+  },
+  updateSharedStatsFromFile(file, folderName, increment = true) {
+    const folder = this.getFolderObjByName(folderName);
+    if (!folder) {
+      return;
+    }
+    // Update the total files and size
+    folder.stats.publicCount += increment ? file.flag : -file.flag;
+    this.fileStats.creatorCount += increment ? file.flag : -file.flag;
   },
   setActiveMenuFromHash() {
     const params = new URLSearchParams(window.location.hash.slice(1));
@@ -1089,7 +1138,7 @@ Alpine.store('menuStore', {
     this.activeFolderObj = this.getFolderObjByName(folderName) || {};
     this.activeFolderStats = this.getFolderObjByName(folderName)?.stats || {};
     updateHashURL(folderName);
-    console.log('Active folder set:', folderName);
+    console.debug('Active folder set:', folderName);
     // Reset filter
     fileStore.currentFilter = 'all';
     fileStore.fetchFiles(folderName, true).then(() => {
@@ -1121,7 +1170,12 @@ Alpine.store('menuStore', {
             existingFolder.id = folder.id;
             existingFolder.route = folder.route;
             existingFolder.icon = folder.icon;
-            existingFolder.stats = folder?.stats;
+            // Update folder stats
+            if (!existingFolder.stats) {
+              existingFolder.stats = folder.stats;
+            } else {
+              Object.assign(existingFolder.stats, folder.stats);
+            }
           }
           return acc;
         }, this.folders);
@@ -1142,19 +1196,19 @@ Alpine.store('menuStore', {
         this.folders = [...this.staticFolders, ...this.folders];
         // Folders have been fetched
         this.foldersFetched = true;
-        //console.log('Folders fetched:', this.folders);
+        //console.debug('Folders fetched:', this.folders);
         // Set this.activeFolder to the value of URL's # parameter
         const url = new URL(window.location.href);
         const params = new URLSearchParams(url.hash.slice(1));
         const activeFolder = decodeURIComponent(params.get('f') || '');
-        //console.log('Active folder:', activeFolder);
+        //console.debug('Active folder:', activeFolder);
         //const defaultFolder = this.folders.length > 0 ? this.folders[0].name : '';
         // Set default folder as the one with id 0
         const defaultFolder = this.folders.find(f => f.id === 0).name;
-        //console.log('Default folder:', defaultFolder);
+        //console.debug('Default folder:', defaultFolder);
         // If URL hash has a folder, set it as active folder, otherwise use defaul
         const folderToSet = this.folders.find(f => f.name === activeFolder) ? activeFolder : defaultFolder;
-        //console.log('Folder to set:', folderToSet);
+        //console.debug('Folder to set:', folderToSet);
         this.setActiveFolder(folderToSet);
       }).catch(error => {
         console.error('Error fetching folders:', error);
@@ -1218,7 +1272,7 @@ Alpine.store('menuStore', {
     if (callback) {
       callback();
     }
-    console.log('Folder created:', folderName);
+    console.debug('Folder created:', folderName);
   },
   showDeleteFolderButtons: false,
   showDeleteFolderModal: false,
@@ -1245,7 +1299,7 @@ Alpine.store('menuStore', {
     this.foldersToDelete = this.folders.filter(folder => this.foldersToDeleteIds.includes(folder.id));
     // Check if activeFolder name matches any of the folders to delete
     if (this.foldersToDelete.some(folder => folder.name === this.activeFolder)) {
-      //console.log('Cannot delete active folder:', this.activeFolder);
+      //console.debug('Cannot delete active folder:', this.activeFolder);
       return;
     }
     this.showDeleteFolderModal = true;
@@ -1279,7 +1333,7 @@ Alpine.store('menuStore', {
       });
   },
   async deleteFolders(folderIds) {
-    console.log('Deleting folders:', folderIds);
+    console.debug('Deleting folders:', folderIds);
 
     const formData = {
       action: 'delete_folders',
@@ -1291,7 +1345,7 @@ Alpine.store('menuStore', {
     return api.post('', formData)
       .then(response => response.data)
       .then(data => {
-        console.log('Folders deleted:', data);
+        console.debug('Folders deleted:', data);
         const deletedFolders = data.deletedFolders || [];
 
         // Remove the deleted folders from this.folders
@@ -1308,19 +1362,19 @@ Alpine.store('menuStore', {
     const menuItem = this.menuItemsAI.concat(this.menuItems).find(item => item.name === menuName);
     const rootFolder = menuItem ? menuItem.rootFolder : 'main';
     const routeId = menuItem ? menuItem.routeId : 'main';
-    console.log('Active menu set:', menuName);
+    console.debug('Active menu set:', menuName);
     // Update fileStore.fullWidth is menuName is in menuItemsAI
     const fileStore = Alpine.store('fileStore');
     fileStore.fullWidth = !this.menuItemsAI.some(item => item.name === menuName);
-    console.log('Full width:', fileStore.fullWidth);
+    console.debug('Full width:', fileStore.fullWidth);
     updateHashURL(rootFolder, routeId);
     this.setActiveFolder(rootFolder);
   },
   updateTotalUsed(addUsed) {
     Alpine.store('profileStore').profileInfo.storageUsed += addUsed;
-    //console.log('Total used updated:', Alpine.store('profileStore').profileInfo.storageUsed);
-    //console.log('Total used ratio:', Alpine.store('profileStore').profileInfo.getStorageRatio());
-    //console.log('Total used added:', addUsed);
+    //console.debug('Total used updated:', Alpine.store('profileStore').profileInfo.storageUsed);
+    //console.debug('Total used ratio:', Alpine.store('profileStore').profileInfo.getStorageRatio());
+    //console.debug('Total used added:', addUsed);
   },
   fileStats: {
     totalFiles: 0,
@@ -1457,10 +1511,10 @@ Alpine.store('fileStore', {
       if (!Array.isArray(ids)) {
         ids = [ids];
       }
-      console.log('Opening move to folder modal:', ids);
+      console.debug('Opening move to folder modal:', ids);
       this.selectedIds = ids;
       this.selectedFiles = Alpine.store('fileStore').files.filter(file => ids.includes(file.id));
-      console.log('Selected files:', this.selectedFiles);
+      console.debug('Selected files:', this.selectedFiles);
       this.isOpen = true;
       this.callback = callback;
     },
@@ -1509,7 +1563,7 @@ Alpine.store('fileStore', {
       });
   },
   async moveItemsToFolder(itemIds, folderId) {
-    console.log('Moving items to folder:', itemIds, folderId);
+    console.debug('Moving items to folder:', itemIds, folderId);
 
     itemIds = Array.isArray(itemIds) ? itemIds : [itemIds];
 
@@ -1524,11 +1578,18 @@ Alpine.store('fileStore', {
     return api.post('', formData)
       .then(response => response.data)
       .then(data => {
-        console.log('Moved items to folder:', data);
+        console.debug('Moved items to folder:', data);
         const movedImageIds = data.movedImages || [];
+        const menuStore = Alpine.store('menuStore');
 
-        // Capture the original files length
-        const originalFilesLength = this.files.length;
+        // Update the file stats for each file
+        this.files.forEach(file => {
+          if (movedImageIds.includes(file.id)) {
+            menuStore.updateFolderStatsFromFile(file, menuStore.activeFolder, false);
+            menuStore.updateFolderStatsFromFile(file, menuStore.getFolderNameById(folderId), true);
+          }
+        });
+
         // Remove moved images from the files list
         this.files = this.files.filter(file => !movedImageIds.includes(file.id));
         // Refresh the files starting at 0 and up to the original length + 
@@ -1550,10 +1611,10 @@ Alpine.store('fileStore', {
       if (!Array.isArray(ids)) {
         ids = [ids];
       }
-      console.log('Opening sharing modal:', ids);
+      console.debug('Opening sharing modal:', ids);
       this.selectedIds = ids;
       this.selectedFiles = Alpine.store('fileStore').files.filter(file => ids.includes(file.id));
-      console.log('Selected files:', this.selectedFiles);
+      console.debug('Selected files:', this.selectedFiles);
       this.isOpen = true;
       this.callback = callback;
     },
@@ -1587,7 +1648,7 @@ Alpine.store('fileStore', {
       });
   },
   async shareItemsCreatorPage(shareFlag) {
-    console.log('Sharing media on Creators page:', this.shareMedia.selectedIds);
+    console.debug('Sharing media on Creators page:', this.shareMedia.selectedIds);
 
     const itemsToShare = Array.isArray(this.shareMedia.selectedIds) ? this.shareMedia.selectedIds : [this.shareMedia.selectedIds];
     const formData = {
@@ -1601,7 +1662,7 @@ Alpine.store('fileStore', {
     return api.post('', formData)
       .then(response => response.data)
       .then(data => {
-        //console.log('Shared media on Creators page:', data);
+        //console.debug('Shared media on Creators page:', data);
         const sharedImageIds = data.sharedImages || [];
         const menuStore = Alpine.store('menuStore');
 
@@ -1609,7 +1670,8 @@ Alpine.store('fileStore', {
         this.files.forEach(file => {
           if (sharedImageIds.includes(file.id)) {
             file.flag = shareFlag ? 1 : 0;
-            menuStore.fileStats.creatorCount += shareFlag ? 1 : -1;
+            // We can assume we are in the same folder as the files
+            menuStore.updateSharedStatsFromFile(file, menuStore.activeFolder, shareFlag);
           }
         });
       })
@@ -1629,10 +1691,10 @@ Alpine.store('fileStore', {
       if (!Array.isArray(ids)) {
         ids = [ids];
       }
-      console.log('Opening delete confirmation:', ids);
+      console.debug('Opening delete confirmation:', ids);
       this.selectedIds = ids;
       this.selectedFiles = Alpine.store('fileStore').files.filter(file => ids.includes(file.id));
-      console.log('Selected files:', this.selectedFiles);
+      console.debug('Selected files:', this.selectedFiles);
       this.isOpen = true;
       this.callback = callback;
     },
@@ -1663,7 +1725,7 @@ Alpine.store('fileStore', {
       });
   },
   async deleteItem(itemIds) {
-    console.log('Deleting image:', itemIds);
+    console.debug('Deleting image:', itemIds);
 
     itemIds = Array.isArray(itemIds) ? itemIds : [itemIds];
 
@@ -1678,44 +1740,19 @@ Alpine.store('fileStore', {
     return api.post('', formData)
       .then(response => response.data)
       .then(data => {
-        console.log('Deleted image:', data);
+        console.debug('Deleted image:', data);
         const deletedImageIds = data.deletedImages || [];
-
-        // Collect stats for deleted files
-        const stats = deletedImageIds.reduce((acc, id) => {
-          const file = this.files.find(f => f.id === id);
-          if (file) {
-            acc.totalSize += file.size;
-            acc.totalCount++;
-            if (file.name.endsWith('.gif')) {
-              acc.gif++;
-            } else {
-              acc[file.mime.split('/')[0]]++;
-            }
+        // Update the file stats for each file
+        this.files.forEach(file => {
+          if (deletedImageIds.includes(file.id)) {
+            menuStore.updateFolderStatsFromFile(file, menuStore.activeFolder, false);
           }
-          return acc;
-        }, {
-          totalSize: 0,
-          totalCount: 0,
-          image: 0,
-          gif: 0,
-          video: 0,
-          audio: 0
         });
 
-        // Capture the original files length
-        const originalFilesLength = this.files.length;
         // Remove deleted images from the grid
         this.files = this.files.filter(f => !deletedImageIds.includes(f.id));
         // Refresh the files starting at 0 and up to the original length + 
         this.fetchFiles(this.lastFetchedFolder, true);
-
-        // Update file stats
-        menuStore.fileStats.totalImages -= stats.image;
-        menuStore.fileStats.totalGifs -= stats.gif;
-        menuStore.fileStats.totalVideos -= stats.video + stats.audio;
-        menuStore.fileStats.totalFiles -= stats.totalCount;
-        menuStore.updateTotalUsed(-stats.totalSize);
       })
       .catch(error => {
         console.error('Error deleting image:', error);
@@ -1762,12 +1799,12 @@ Alpine.store('fileStore', {
   loadingMoreFiles: false,
   refreshFoldersAfterFetch: false,
   async fetchFiles(folder, refresh = false) {
-    //console.log('Fetching files:', folder, start, limit, refresh);
+    //console.debug('Fetching files:', folder, start, limit, refresh);
     const uppyStore = Alpine.store('uppyStore');
 
     if (!folder) {
       this.resetFetchFilesState();
-      console.log('Empty folder:', folder);
+      console.debug('Empty folder:', folder);
       return;
     }
 
@@ -1775,16 +1812,16 @@ Alpine.store('fileStore', {
       this.resetFetchFilesState();
       this.lastFetchedFolder = folder;
       this.loading = true;
-      console.log('Folder changed:', folder);
+      console.debug('Folder changed:', folder);
     } else {
       this.loadingMoreFiles = true;
-      console.log('Fetching more files...');
+      console.debug('Fetching more files...');
     }
 
     if (!this.fileFetchHasMore && !refresh) {
       this.loading = false;
       this.loadingMoreFiles = false;
-      console.log('No more files to fetch.');
+      console.debug('No more files to fetch.');
       return;
     }
 
@@ -1796,7 +1833,7 @@ Alpine.store('fileStore', {
       limit: fetchLimit,
       filter: this.currentFilter,
     };
-    //console.log('Fetching files:', params);
+    //console.debug('Fetching files:', params);
 
     const api = getApiFetcher(apiUrl, 'application/json');
 
@@ -1816,7 +1853,7 @@ Alpine.store('fileStore', {
         if (!refresh) {
           const hasDuplicates = data.some(file => this.files.some(f => f.id === file.id));
           if (hasDuplicates) {
-            console.log('Duplicate files found, refreshing...');
+            console.debug('Duplicate files found, refreshing...');
             await this.fetchFiles(folder, true);
             return;
           }
@@ -1844,7 +1881,7 @@ Alpine.store('fileStore', {
           this.fileFetchStart = data.length;
         }
 
-        //console.log('Parameters:', this.fileFetchStart, this.fileFetchLimit, this.fileFetchHasMore, this.files.length, data.length);
+        //console.debug('Parameters:', this.fileFetchStart, this.fileFetchLimit, this.fileFetchHasMore, this.files.length, data.length);
 
         if (this.fileFetchHasMore) {
           const lastFileIndex = this.files.length - Math.floor(this.fileFetchLimit * 0.2) - 1;
@@ -1852,7 +1889,7 @@ Alpine.store('fileStore', {
         }
       } else {
         this.fileFetchHasMore = false;
-        console.log('No more files to fetch.');
+        console.debug('No more files to fetch.');
       }
     } catch (error) {
       console.error('Error fetching files:', error);
@@ -1861,14 +1898,14 @@ Alpine.store('fileStore', {
       this.loadingMoreFiles = false;
 
       if (this.refreshFoldersAfterFetch) {
-        console.log('Refetching folders...');
+        console.debug('Refetching folders...');
         Alpine.store('menuStore').fetchFolders();
         this.refreshFoldersAfterFetch = false;
       }
     }
   },
   async loadMoreFiles() {
-    console.log('Loading more triggered.');
+    console.debug('Loading more triggered.');
     if (!this.loading && this.fileFetchHasMore && !this.loadingMoreFiles) {
       this.loadingMoreFiles = true;
 
@@ -1878,11 +1915,11 @@ Alpine.store('fileStore', {
       if (lastFileIndex > -1) {
         delete this.files[lastFileIndex].loadMore;
       }
-      //console.log('Last file:', this.files[lastFileIndex]);
+      //console.debug('Last file:', this.files[lastFileIndex]);
 
       await this.fetchFiles(this.lastFetchedFolder)
         .finally(() => {
-          console.log('Loading more done.');
+          console.debug('Loading more done.');
           this.loadingMoreFiles = false;
         });
     }
@@ -1897,7 +1934,7 @@ Alpine.store('fileStore', {
     this.loadingMoreFiles = false;
   },
   injectFile(file) {
-    console.log('Injecting file:', file);
+    console.debug('Injecting file:', file);
     this.files.unshift(file);
   },
   modalFile: {},
@@ -2016,11 +2053,11 @@ Alpine.store('urlImportStore', {
     }, 5000);
   },
   async importFromURL() {
-    console.log('Importing from URL:', this.importURL, this.importFolder);
+    console.debug('Importing from URL:', this.importURL, this.importFolder);
     // Validate URL
     if (!this.importURL.startsWith('http://') &&
       !this.importURL.startsWith('https://')) {
-      console.log('Invalid URL:', this.importURL);
+      console.debug('Invalid URL:', this.importURL);
       this.setErrorWithTimeout('URL is empty or invalid.');
       return;
     }
@@ -2056,9 +2093,11 @@ Alpine.store('urlImportStore', {
           this.setErrorWithTimeout('Error importing from URL.');
           return;
         }
-        console.log('Import from URL:', data);
+        console.debug('Import from URL:', data);
         // Is current active folder a home folder?
         const home = menuStore.folders.find(folder => folder.name === menuStore.activeFolder).id === 0;
+        // Update the folder stats
+        menuStore.updateFolderStatsFromFile(data, folderName, true);
         // Check if the we are in the same folder as the imported file
         if (menuStore.activeFolder === folderName || (home && importToHomeFolder)) {
           // Inject the imported file into the files array
@@ -2138,7 +2177,7 @@ Alpine.store('uppyStore', {
   },
   instantiateUppy(el, dropTarget, onDropCallback, onDragOverCallback, onDragLeaveCallback) {
     this.mainDialog.dialogEl = el;
-    console.log('Instantiating Uppy...');
+    console.debug('Instantiating Uppy...');
     // Stores
     const menuStore = Alpine.store('menuStore');
     const fileStore = Alpine.store('fileStore');
@@ -2247,16 +2286,18 @@ Alpine.store('uppyStore', {
         }
       })
       .on('upload-success', (file, response) => {
-        console.log('Upload result:', response);
+        console.debug('Upload result:', response);
         // Set uploadComplete state for the file
         file.progress.uploadComplete = true;
         //this.instance.removeFile(file.id);
         const fd = response.body.fileData;
-        console.log('File uploaded:', fd);
+        console.debug('File uploaded:', fd);
         // Get folderName from uppy file metadata
         const folderName = JSON.parse(file.meta.folderName);
         // Check if folderName is default home folder
-        const fileFolderName = file.meta.folderName === '' ? menuStore.folders.find(folder => folder.id === 0).name : folderName;
+        const fileFolderName = folderName === '' ? menuStore.folders.find(folder => folder.id === 0).name : folderName;
+        // Update the file stats for the folder
+        menuStore.updateFolderStatsFromFile(fd, fileFolderName, true);
         // Inject file into the fileStore files array if activeFolder matches 
         if (menuStore.activeFolder === fileFolderName) {
           // Remove the file from the currentUploads
@@ -2277,8 +2318,8 @@ Alpine.store('uppyStore', {
         const activeFolder = menuStore.activeFolder;
         const activeFolderId = menuStore.folders.find(folder => folder.name === activeFolder).id;
         const defaultFolder = activeFolderId === 0 ? '' : activeFolder;
-        console.log('Active folder (Uppy):', activeFolder, activeFolderId, defaultFolder);
-        //console.log('Added file', file);
+        console.debug('Active folder (Uppy):', activeFolder, activeFolderId, defaultFolder);
+        //console.debug('Added file', file);
         const path = file.data.relativePath ?? file.data.webkitRelativePath;
         let folderHierarchy = [defaultFolder];
         let folderName = defaultFolder;
@@ -2307,13 +2348,13 @@ Alpine.store('uppyStore', {
         } else {
           this.mainDialog.uploadFolder = defaultFolder;
         }
-        console.log('Folder name', folderName);
-        console.log('Folder hierarchy', folderHierarchy);
+        console.debug('Folder name', folderName);
+        console.debug('Folder hierarchy', folderHierarchy);
         this.instance.setFileMeta(file.id, {
           folderName: JSON.stringify(folderName),
           folderHierarchy: JSON.stringify(folderHierarchy),
         });
-        console.log('File added:', file);
+        console.debug('File added:', file);
         const currentFile = {
           id: file.id,
           name: file.name,
@@ -2337,7 +2378,7 @@ Alpine.store('uppyStore', {
         }
       })
       .on('upload', (data) => {
-        console.log('Upload started:', data);
+        console.debug('Upload started:', data);
         this.mainDialog.isLoading = true;
       })
       .on('complete', (result) => {
@@ -2351,7 +2392,7 @@ Alpine.store('uppyStore', {
         // If the failed upload count is zero, all uploads succeeded
         if (result.failed.length === 0) {
           //location.reload(); // reload the page
-          console.log('Upload complete:', result);
+          console.debug('Upload complete:', result);
           // Mark dialog as done!
           this.instance.cancelAll();
           // Close the dialog
@@ -2372,7 +2413,7 @@ Alpine.store('uppyStore', {
         // Refresh the files
         if (activeFolderMatch) {
           // We are still in the same folder, so refresh the files
-          console.log('Refreshing files:', menuStore.activeFolder);
+          console.debug('Refreshing files:', menuStore.activeFolder);
           fileStore.refreshFoldersAfterFetch = true;
           fileStore.fetchFiles(menuStore.activeFolder, true);
         } else {
@@ -2396,9 +2437,9 @@ Alpine.store('uppyStore', {
         }
       })
       .on('upload-error', (file, error, response) => {
-        console.log('error with file:', file.id);
-        console.log('error message:', error);
-        console.log('error response:', response);
+        console.debug('error with file:', file.id);
+        console.debug('error message:', error);
+        console.debug('error response:', response);
         // Find the file in the fileStore and mark it as errored
         const fileData = this.mainDialog.getFileById(file.id);
         if (fileData) {
@@ -2409,7 +2450,7 @@ Alpine.store('uppyStore', {
         // If we receive a 401 error, it means the user is not authenticated
         if (response && response.status === 401) {
           // Redirect to login page
-          console.log('User is not authenticated, redirecting to login page...');
+          console.debug('User is not authenticated, redirecting to login page...');
           profileStore.unauthenticated = true;
         }
       })
@@ -2421,10 +2462,10 @@ Alpine.store('uppyStore', {
         //  message: 'Failed to upload',
         //  details: 'Error description'
         // }
-        console.log(`Info: ${info.type} ${info.message} ${info.details}`);
+        console.debug(`Info: ${info.type} ${info.message} ${info.details}`);
       })
       .on('file-removed', (file) => {
-        console.log('File removed:', file);
+        console.debug('File removed:', file);
         // Remove the file from the fileStore
         this.mainDialog.removeFile(file.id);
         // Remove file from the fileStore
@@ -2437,7 +2478,7 @@ Alpine.store('uppyStore', {
         }
       })
       .on('upload-retry', (fileId) => {
-        console.log('Retrying upload:', fileId);
+        console.debug('Retrying upload:', fileId);
         // Reset the uploadError state
         const fileData = this.mainDialog.getFileById(fileId);
         if (fileData) {
@@ -2447,7 +2488,7 @@ Alpine.store('uppyStore', {
         }
       })
       .on('retry-all', () => {
-        console.log('Retrying all uploads');
+        console.debug('Retrying all uploads');
         // Reset the uploadError state for all files
         this.mainDialog.currentFiles.forEach(file => {
           file.uppy.uploadError = false;
@@ -2463,7 +2504,7 @@ Alpine.store('uppyStore', {
           fileData.uppy.preview = preview;
         }
       });
-    console.log('Uppy instance created:', el.id);
+    console.debug('Uppy instance created:', el.id);
     // Dynamic note
     Alpine.effect(() => {
       if (this.instance) {
@@ -2506,14 +2547,14 @@ Alpine.store('GAI', {
   },
   async generateImage(title, prompt, selectedModel) {
     // Access the form inputs passed as arguments
-    console.log('Title:', title);
-    console.log('Prompt:', prompt);
-    console.log('Selected Model:', selectedModel);
+    console.debug('Title:', title);
+    console.debug('Prompt:', prompt);
+    console.debug('Selected Model:', selectedModel);
     // Switch to aiImagesFolderName folder
     menuStore = Alpine.store('menuStore');
     if (menuStore.activeFolder !== aiImagesFolderName) {
-      console.log('Switching to folder:', aiImagesFolderName);
-      console.log('Current folder:', menuStore.activeFolder);
+      console.debug('Switching to folder:', aiImagesFolderName);
+      console.debug('Current folder:', menuStore.activeFolder);
       menuStore.setActiveFolder(aiImagesFolderName);
     }
     // Prepare form data to send to the server
@@ -2534,7 +2575,7 @@ Alpine.store('GAI', {
     })
       .then(response => response.data)
       .then(data => {
-        console.log('Generated image:', data);
+        console.debug('Generated image:', data);
         this.ImageUrl = data.url;
         this.ImageFilesize = data.size;
         this.ImageDimensions = `${data.width}x${data.height}`;
@@ -2544,12 +2585,10 @@ Alpine.store('GAI', {
 
         data.title = title;
         data.ai_prompt = prompt;
+        // Update the file stats for the folder
+        menuStore.updateFolderStatsFromFile(data, aiImagesFolderName, true);
         // Add file to the grid
         Alpine.store('fileStore').injectFile(data);
-        // Update file stats
-        menuStore.fileStats.totalImages++;
-        menuStore.fileStats.totalFiles++;
-        menuStore.updateTotalUsed(data.size);
         this.file = data;
       })
       .catch(error => {
@@ -2558,7 +2597,7 @@ Alpine.store('GAI', {
       })
       .finally(() => {
         this.ImageLoading = false;
-        console.log('Image loading:', this.ImageLoading);
+        console.debug('Image loading:', this.ImageLoading);
       });
   },
 });
