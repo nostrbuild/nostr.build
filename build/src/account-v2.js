@@ -328,6 +328,18 @@ window.copyUrlToClipboard = (url) => {
     });
 }
 
+window.copyTextToClipboard = (text, callbackOn = null, callbackOff = null) => {
+  navigator.clipboard.writeText(text)
+    .then(() => {
+      console.debug('Text copied to clipboard:', text);
+      if(typeof callbackOn === 'function') callbackOn();
+      if(typeof callbackOff === 'function') setTimeout(() => {callbackOff()}, 2000);
+    })
+    .catch(error => {
+      console.error('Error copying text to clipboard:', error);
+    });
+}
+
 // Constants
 const aiImagesFolderName = 'AI: Generated Images';
 const homeFolderName = 'Home: Main Folder';
