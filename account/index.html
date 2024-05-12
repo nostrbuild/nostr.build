@@ -1296,22 +1296,22 @@ onDropCB(event) {
 								<span x-html="fileStore.filters.all.icon"></span>
 								<span x-text="formatBytes(menuStore.activeFolderStats.allSize)"></span>
 							</p>
-							<p @click="fileStore.setFilter('images')" :class="{'text-orange-300 font-bold': fileStore.currentFilter === 'images'}"
+							<p x-cloak x-show="fileStore.fullWidth" @click="fileStore.setFilter('images')" :class="{'text-orange-300 font-bold': fileStore.currentFilter === 'images'}"
 								class="cursor-pointer hidden text-xs sm:text-sm text-nbpurple-300 font-semibold leading-6 lg:flex justify-center items-center gap-x-1">
 								<span x-html="fileStore.filters.images.icon"></span>
 								<span x-text="formatBytes(menuStore.activeFolderStats.imagesSize)"></span>
 							</p>
-							<p @click="fileStore.setFilter('gifs')" :class="{'text-orange-300 font-bold': fileStore.currentFilter === 'gifs'}"
+							<p x-cloak x-show="fileStore.fullWidth" @click="fileStore.setFilter('gifs')" :class="{'text-orange-300 font-bold': fileStore.currentFilter === 'gifs'}"
 								class="cursor-pointer hidden text-xs sm:text-sm text-nbpurple-300 font-semibold leading-6 lg:flex justify-center items-center gap-x-1">
 								<span x-html="fileStore.filters.gifs.icon"></span>
 								<span x-text="formatBytes(menuStore.activeFolderStats.gifsSize)"></span>
 							</p>
-							<p @click="fileStore.setFilter('videos')" :class="{'text-orange-300 font-bold': fileStore.currentFilter === 'videos'}"
+							<p x-cloak x-show="fileStore.fullWidth" @click="fileStore.setFilter('videos')" :class="{'text-orange-300 font-bold': fileStore.currentFilter === 'videos'}"
 								class="cursor-pointer hidden text-xs sm:text-sm text-nbpurple-300 font-semibold leading-6 lg:flex justify-center items-center gap-x-1">
 								<span x-html="fileStore.filters.videos.icon"></span>
 								<span x-text="formatBytes(menuStore.activeFolderStats.videosSize)"></span>
 							</p>
-							<p @click="fileStore.setFilter('audio')" :class="{'text-orange-300 font-bold': fileStore.currentFilter === 'audio'}"
+							<p x-cloak x-show="fileStore.fullWidth" @click="fileStore.setFilter('audio')" :class="{'text-orange-300 font-bold': fileStore.currentFilter === 'audio'}"
 								class="cursor-pointer hidden text-xs sm:text-sm text-nbpurple-300 font-semibold leading-6 lg:flex justify-center items-center gap-x-1">
 								<span x-html="fileStore.filters.audio.icon"></span>
 								<span x-text="formatBytes(menuStore.activeFolderStats.audioSize)"></span>
