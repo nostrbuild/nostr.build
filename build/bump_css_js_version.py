@@ -47,7 +47,7 @@ def find_and_update_files(start_path='.', skip_folders=[], root_folder=None):
         dirs[:] = [d for d in dirs if d not in skip_folders]
 
         for filename in filenames:
-            if filename.endswith('.php'):
+            if filename.endswith('.php') or filename.endswith('.html'):
                 full_path = os.path.join(root, filename)
                 process_file(full_path, root_folder)
 

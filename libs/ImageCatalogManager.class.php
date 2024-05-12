@@ -56,7 +56,7 @@ class ImageCatalogManager
   /**
    * Delete folder records
    * @param array $folderIds Array of folder IDs to delete
-   * @return bool Liat of folders that were deleted successfully
+   * @return array Liat of folders that were deleted successfully
    */
   public function deleteFolders(array $folderIds): array
   {

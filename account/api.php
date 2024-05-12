@@ -354,15 +354,35 @@ if (isset($_GET["action"])) {
 	} else if ($action == "list_folders") {
 		// List all folders in the user's account
 		$folders = new UsersImagesFolders($link);
-		$folderList = $folders->getFolders($_SESSION['usernpub']);
+		$folderList = $folders->getFoldersWithStats($_SESSION['usernpub']);
 		// Process the folder list so it returns array of assoc arrays: name: <name>, icon: <icon>, route: <route>, id: <id>
+		// | folder               | id   | allSize    | all | imageSize | images | gifSize   | gifs | videoSize  | videos | audioSize | audio | publicCount |
 		$folderList = array_map(function ($folder) {
 			$folderName = $folder['folder'];
 			$folderId = $folder['id'];
 			$folderRoute = "#f=" . urlencode($folderName);
 			$firstChar = mb_substr($folderName, 0, 1, 'UTF-8');
 			$folderIcon = mb_strlen($firstChar, 'UTF-8') === 1 ? strtoupper($firstChar) : '#';
-			return array("name" => $folderName, "icon" => $folderIcon, "route" => $folderRoute, "id" => $folderId, "allowDelete" => true);
+			return [
+				"name" => $folderName,
+				"icon" => $folderIcon,
+				"route" => $folderRoute,
+				"id" => $folderId,
+				"allowDelete" => true,
+				"stats" => [
+					"allSize" => (int) $folder['allSize'] ?? 0,
+					"all" => (int) $folder['all']	?? 0,
+					"imagesSize" => (int) $folder['imageSize'] ?? 0,
+					"images" => (int) $folder['images'] ?? 0,
+					"gifsSize" => (int) $folder['gifSize'] ?? 0,
+					"gifs" => (int) $folder['gifs'] ?? 0,
+					"videosSize" => (int) $folder['videoSize'] ?? 0,
+					"videos" => (int) $folder['videos'] ?? 0,
+					"audioSize" => (int) $folder['audioSize'] ?? 0,
+					"audio" => (int) $folder['audio'] ?? 0,
+					"publicCount" => (int) $folder['publicCount'] ?? 0,
+				],
+			];
 		}, $folderList);
 		http_response_code(200);
 		echo json_encode($folderList);
@@ -380,11 +400,10 @@ if (isset($_GET["action"])) {
 		// Fetch user's folder statistics and storage statistics
 		try {
 			$usersFoldersTable = new UsersImagesFolders($link);
-			$usersFoldersStats = $usersFoldersTable->getFoldersStats($_SESSION['usernpub']);
+			$usersFoldersStats = $usersFoldersTable->getTotalStats($_SESSION['usernpub']);
 			// Repackage for JSON response
 			$foldersStats = [
-				'foldersStats' => $usersFoldersStats['FOLDERS'],
-				'totalStats' => $usersFoldersStats['TOTAL'],
+				'totalStats' => $usersFoldersStats,
 			];
 			http_response_code(200);
 			echo json_encode($foldersStats);
@@ -505,6 +524,9 @@ if (isset($_GET["action"])) {
 		$icm = new ImageCatalogManager($link, $s3, $_SESSION['usernpub']);
 		$deletedFolders = $icm->deleteFolders($foldersToDelete);
 		$deletedImages = $icm->deleteImages($imagesToDelete);
+		// Convert Ids to integers
+		$deletedFolders = array_map('intval', $deletedFolders);
+		$deletedImages = array_map('intval', $deletedImages);
 		// Return the list of deleted folders and images
 		http_response_code(200);
 		echo json_encode(array("action" => "delete", "deletedFolders" => $deletedFolders, "deletedImages" => $deletedImages));
@@ -532,6 +554,8 @@ if (isset($_GET["action"])) {
 		// Instantiate ImageCatalogManager class
 		$icm = new ImageCatalogManager($link, $s3, $_SESSION['usernpub']);
 		$sharedImages = $icm->shareImage($imagesToShare, (bool)$shareFlag);
+		// Convert Ids to integers
+		$sharedImages = array_map('intval', $sharedImages);
 		http_response_code(200);
 		echo json_encode(array("action" => "share_creator_page", "sharedImages" => $sharedImages));
 	} elseif ($_POST['action'] === 'move_to_folder') {
@@ -547,6 +571,8 @@ if (isset($_GET["action"])) {
 		// Instantiate ImageCatalogManager class
 		$icm = new ImageCatalogManager($link, $s3, $_SESSION['usernpub']);
 		$movedImages = $icm->moveImages($imagesToMove, $destinationFolderId);
+		// Convert Ids to integers
+		$movedImages = array_map('intval', $movedImages);
 		http_response_code(200);
 		echo json_encode(array("action" => "move_to_folder", "movedImages" => $movedImages));
 	} elseif ($_POST['action'] === 'delete_folders') {
@@ -563,6 +589,8 @@ if (isset($_GET["action"])) {
 		// Instantiate ImageCatalogManager class
 		$icm = new ImageCatalogManager($link, $s3, $_SESSION['usernpub']);
 		$deletedFolders = $icm->deleteFolders($foldersToDelete);
+		// Convert Ids to integers
+		$deletedFolders = array_map('intval', $deletedFolders);
 		error_log("Deleted folders: " . json_encode($deletedFolders));
 		http_response_code(200);
 		echo json_encode(array("action" => "delete_folders", "deletedFolders" => $deletedFolders));
