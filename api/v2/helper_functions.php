@@ -101,6 +101,7 @@ function createSuccessResponse($data): array
       "created_at" => date('Y-m-d H:i:s'),
       "title" => $file['title'] ?? '',
       "ai_prompt" => $file['ai_prompt'] ?? '',
+      "description" => '',
       "loaded" => false,
       "show" => true,
       "associated_notes" => null,

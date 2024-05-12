@@ -228,4 +228,55 @@ class ImageCatalogManager
     }
     return $imageIds;
   }
+
+  /**
+   * Rename a folder
+   * @param int $folderId Folder ID
+   * @param string $folderName New folder name
+   */
+  public function renameFolder(int $folderId, string $folderName): array
+  {
+    error_log("Renaming folder: $folderId to $folderName" . PHP_EOL);
+    try {
+      $stmt = $this->link->prepare("UPDATE users_images_folders SET name = ? WHERE usernpub = ? AND id = ?");
+      $stmt->bind_param('ssi', $folderName, $this->usernpub, $folderId);
+      if (!$stmt->execute()) {
+        throw new Exception("Failed to rename folder");
+      }
+    } catch (Exception $e) {
+      error_log("Error occurred while renaming folder: " . $e->getMessage());
+      return [];
+    } finally {
+      $stmt->close();
+    }
+    return [$folderId];
+  }
+
+  /**
+   * Update media metadata
+   *
+   * This method updates the metadata (title and description) of an image in the user's image catalog.
+   *
+   * @param int $imageId The ID of the image to update.
+   * @param string|null $title The new title of the image. If not provided, the title will remain unchanged.
+   * @param string|null $description The new description of the image. If not provided, the description will remain unchanged.
+   * @return array An array containing the updated image ID.
+   */
+  public function updateMediaMetadata(int $imageId, ?string $title = '', ?string $description = ''): array
+  {
+    error_log("Updating metadata for image: $imageId" . PHP_EOL);
+    try {
+      $stmt = $this->link->prepare("UPDATE users_images SET title = ?, description = ? WHERE usernpub = ? AND id = ?");
+      $stmt->bind_param('sssi', $title, $description, $this->usernpub, $imageId);
+      if (!$stmt->execute()) {
+        throw new Exception("Failed to update metadata");
+      }
+    } catch (Exception $e) {
+      error_log("Error occurred while updating metadata: " . $e->getMessage());
+      return [];
+    } finally {
+      $stmt->close();
+    }
+    return [$imageId];
+  }
 }

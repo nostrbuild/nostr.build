@@ -29,6 +29,7 @@ class UsersImages extends DatabaseTable
       'sha256_hash' => v::optional(v::stringType()->length(1, 255)),
       'title' => v::optional(v::stringType()->length(1, 255)),
       'ai_prompt' => v::optional(v::stringType()->length(1, 4096)),
+      'description' => v::optional(v::stringType()->length(1, 4096)),
     ];
   }
 

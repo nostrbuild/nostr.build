@@ -132,6 +132,7 @@ function listImagesByFolderName($folderName, $link, $start = null, $limit = null
 			"created_at" => $images_row['created_at'],
 			"title" => $images_row['title'],
 			"ai_prompt" => $type === 'image' ? $images_row['ai_prompt'] : null,
+			"description" => $images_row['description'],
 			"loaded" => false,
 			"show" => true,
 			"associated_notes" => $images_row['associated_notes'] ?? null,
@@ -300,6 +301,7 @@ function getReturnFilesArray($fileData)
 		"created_at" => date('Y-m-d H:i:s'),
 		"title" => $fileData[0]['title'] ?? '',
 		"ai_prompt" => $fileData[0]['ai_prompt'] ?? '',
+		"description" => $fileData[0]['description'] ?? '',
 		"loaded" => false,
 		"show" => true,
 		"associated_notes" => null,
@@ -575,6 +577,24 @@ if (isset($_GET["action"])) {
 		$movedImages = array_map('intval', $movedImages);
 		http_response_code(200);
 		echo json_encode(array("action" => "move_to_folder", "movedImages" => $movedImages));
+	} elseif ($_POST['action'] === 'rename_folders') {
+		error_log("Renaming folders");
+		$folderToRename = !empty($_POST['foldersToRename']) ? json_decode($_POST['foldersToRename']) : null;
+		$folderName = !empty($_POST['folderNames']) ? json_decode($_POST['folderNames']) : null;
+		if (empty($folderToRename) || empty($folderName)) {
+			http_response_code(400);
+			echo json_encode(array("error" => "Missing required parameters"));
+			exit;
+		}
+		// Convert folder IDs to integers
+		$foldersToRename = intval($folderToRename);
+		// Instantiate ImageCatalogManager class
+		$icm = new ImageCatalogManager($link, $s3, $_SESSION['usernpub']);
+		$renamedFolders = $icm->renameFolder($folderToRename, $folderNames);
+		// Convert Ids to integers
+		$renamedFolders = array_map('intval', $renamedFolders);
+		http_response_code(200);
+		echo json_encode(array("action" => "rename_folders", "renamedFolders" => $renamedFolders));
 	} elseif ($_POST['action'] === 'delete_folders') {
 		error_log("Deleting folders");
 		$foldersToDelete = !empty($_POST['foldersToDelete']) ? json_decode($_POST['foldersToDelete']) : [];
@@ -594,6 +614,23 @@ if (isset($_GET["action"])) {
 		error_log("Deleted folders: " . json_encode($deletedFolders));
 		http_response_code(200);
 		echo json_encode(array("action" => "delete_folders", "deletedFolders" => $deletedFolders));
+	} elseif ($_POST['action'] === 'update_media_metadata') {
+		error_log("Updating media metadata");
+		$mediaId = !empty($_POST['mediaId']) ? intval($_POST['mediaId']) : null;
+		// Allow empty title and description
+		$title = !empty($_POST['title']) ? $_POST['title'] : null;
+		$description = !empty($_POST['description']) ? $_POST['description'] : null;
+		// We must have mediaId and at least one of title or description
+		if ($mediaId === null || ($title === null && $description === null)) {
+			http_response_code(400);
+			echo json_encode(array("error" => "Missing required parameters"));
+			exit;
+		}
+		// Instantiate ImageCatalogManager class
+		$icm = new ImageCatalogManager($link, $s3, $_SESSION['usernpub']);
+		$updatedMedia = $icm->updateMediaMetadata($mediaId, $title, $description);
+		http_response_code(200);
+		echo json_encode(array("action" => "update_media_metadata", "updatedMedia" => $updatedMedia));
 	} elseif ($_POST['action'] === 'publish_nostr_event') {
 		// Check if account is expired
 		if ($daysRemaining <= 0) {
