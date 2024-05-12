@@ -372,11 +372,11 @@ if (isset($_GET["action"])) {
 				"stats" => [
 					"allSize" => (int) $folder['allSize'] ?? 0,
 					"all" => (int) $folder['all']	?? 0,
-					"imageSize" => (int) $folder['imageSize'] ?? 0,
+					"imagesSize" => (int) $folder['imageSize'] ?? 0,
 					"images" => (int) $folder['images'] ?? 0,
-					"gifSize" => (int) $folder['gifSize'] ?? 0,
+					"gifsSize" => (int) $folder['gifSize'] ?? 0,
 					"gifs" => (int) $folder['gifs'] ?? 0,
-					"videoSize" => (int) $folder['videoSize'] ?? 0,
+					"videosSize" => (int) $folder['videoSize'] ?? 0,
 					"videos" => (int) $folder['videos'] ?? 0,
 					"audioSize" => (int) $folder['audioSize'] ?? 0,
 					"audio" => (int) $folder['audio'] ?? 0,
@@ -524,6 +524,9 @@ if (isset($_GET["action"])) {
 		$icm = new ImageCatalogManager($link, $s3, $_SESSION['usernpub']);
 		$deletedFolders = $icm->deleteFolders($foldersToDelete);
 		$deletedImages = $icm->deleteImages($imagesToDelete);
+		// Convert Ids to integers
+		$deletedFolders = array_map('intval', $deletedFolders);
+		$deletedImages = array_map('intval', $deletedImages);
 		// Return the list of deleted folders and images
 		http_response_code(200);
 		echo json_encode(array("action" => "delete", "deletedFolders" => $deletedFolders, "deletedImages" => $deletedImages));
@@ -551,6 +554,8 @@ if (isset($_GET["action"])) {
 		// Instantiate ImageCatalogManager class
 		$icm = new ImageCatalogManager($link, $s3, $_SESSION['usernpub']);
 		$sharedImages = $icm->shareImage($imagesToShare, (bool)$shareFlag);
+		// Convert Ids to integers
+		$sharedImages = array_map('intval', $sharedImages);
 		http_response_code(200);
 		echo json_encode(array("action" => "share_creator_page", "sharedImages" => $sharedImages));
 	} elseif ($_POST['action'] === 'move_to_folder') {
@@ -566,6 +571,8 @@ if (isset($_GET["action"])) {
 		// Instantiate ImageCatalogManager class
 		$icm = new ImageCatalogManager($link, $s3, $_SESSION['usernpub']);
 		$movedImages = $icm->moveImages($imagesToMove, $destinationFolderId);
+		// Convert Ids to integers
+		$movedImages = array_map('intval', $movedImages);
 		http_response_code(200);
 		echo json_encode(array("action" => "move_to_folder", "movedImages" => $movedImages));
 	} elseif ($_POST['action'] === 'delete_folders') {
@@ -582,6 +589,8 @@ if (isset($_GET["action"])) {
 		// Instantiate ImageCatalogManager class
 		$icm = new ImageCatalogManager($link, $s3, $_SESSION['usernpub']);
 		$deletedFolders = $icm->deleteFolders($foldersToDelete);
+		// Convert Ids to integers
+		$deletedFolders = array_map('intval', $deletedFolders);
 		error_log("Deleted folders: " . json_encode($deletedFolders));
 		http_response_code(200);
 		echo json_encode(array("action" => "delete_folders", "deletedFolders" => $deletedFolders));
