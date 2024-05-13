@@ -77,60 +77,65 @@ class UsersImages extends DatabaseTable
    */
   public function getFiles(string $npub, ?int $folderId = null, ?int $start = null, ?int $limit = null, ?string $filter = null): array
   {
-    // Filter: "all", "images", "videos", "audio", 'gifs'
-    $filter_sql = '';
-    if ($filter === "all") {
-      $filter_sql = "";
-    } elseif ($filter === "images") {
-      $filter_sql = "AND (ui.mime_type LIKE 'image%' AND ui.mime_type != 'image/gif')";
-    } elseif ($filter === "videos") {
-      $filter_sql = "AND ui.mime_type LIKE 'video%'";
-    } elseif ($filter === "audio") {
-      $filter_sql = "AND ui.mime_type LIKE 'audio%'";
-    } elseif ($filter === "gifs") {
-      $filter_sql = "AND ui.mime_type = 'image/gif'";
-    }
-    $sql_nostr = "
-    SELECT 
-        ui.*,
-        GROUP_CONCAT(CONCAT(uni.note_id, ':', UNIX_TIMESTAMP(unn.created_at))) AS associated_notes
-    FROM 
-        {$this->tableName} ui
-        LEFT JOIN users_nostr_images uni ON ui.id = uni.image_id
-        LEFT JOIN users_nostr_notes unn ON uni.note_id = unn.note_id
-    WHERE 
-        ((? IS NULL AND ui.folder_id IS NULL) OR ui.folder_id = ?)
-        AND ui.usernpub = ?
-        {$filter_sql}
-    GROUP BY
-        ui.id
-    ORDER BY 
-        ui.created_at DESC
-    ";
+    $filterConditions = [
+      'all' => '',
+      'images' => "AND (ui.mime_type LIKE 'image%' AND ui.mime_type != 'image/gif')",
+      'videos' => "AND ui.mime_type LIKE 'video%'",
+      'audio' => "AND ui.mime_type LIKE 'audio%'",
+      'gifs' => "AND ui.mime_type = 'image/gif'"
+    ];
 
-    // Decide the SQL based on presence of start and limit
+    $filter_sql = $filterConditions[$filter] ?? '';
+    $folder_id_sql = $folderId !== null ? "folder_id = ?" : "folder_id IS NULL";
+
+    $sql_nostr = "
+          SELECT 
+              ui.*,
+              (SELECT GROUP_CONCAT(CONCAT(uni.note_id, ':', UNIX_TIMESTAMP(unn.created_at)))
+               FROM users_nostr_images uni
+               LEFT JOIN users_nostr_notes unn ON uni.note_id = unn.note_id
+               WHERE uni.image_id = ui.id) AS associated_notes
+          FROM {$this->tableName} ui
+          WHERE {$folder_id_sql}
+            AND usernpub = ?
+            {$filter_sql}
+          ORDER BY created_at DESC
+      ";
+
     if ($start !== null && $limit !== null) {
       $sql_nostr .= "LIMIT ?, ?";
     }
 
+    $params = [];
+    $types = '';
+
+    if ($folderId !== null) {
+      $params[] = $folderId;
+      $types .= 'i';
+    }
+
+    $params[] = $npub;
+    $types .= 's';
+
+    if ($start !== null && $limit !== null) {
+      $params[] = $start;
+      $params[] = $limit;
+      $types .= 'ii';
+    }
+
     try {
       $stmt = $this->db->prepare($sql_nostr);
-      // start and limit are optional
-      if ($start !== null && $limit !== null) {
-        $stmt->bind_param('iisii', $folderId, $folderId, $npub, $start, $limit);
-      } else {
-        $stmt->bind_param('iis', $folderId, $folderId, $npub);
-      }
+      $stmt->bind_param($types, ...$params);
       $stmt->execute();
+      $result = $stmt->get_result();
 
-      $result = $stmt->get_result(); // get mysqli_result object
       if ($result === false) {
-        error_log("Error: " . $this->db->error);
         throw new Exception("Error: " . $this->db->error);
       }
-      $files = $result->fetch_all(MYSQLI_ASSOC); // fetch all rows as an associative array
 
+      $files = $result->fetch_all(MYSQLI_ASSOC);
       $stmt->close();
+
       return $files;
     } catch (Exception $e) {
       error_log("Exception: " . $e->getMessage());
