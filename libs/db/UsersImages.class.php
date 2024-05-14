@@ -17,7 +17,6 @@ class UsersImages extends DatabaseTable
       'id' => v::optional(v::intVal()),
       'usernpub' => v::notEmpty()->stringType()->length(1, 70),
       'image' => v::notEmpty()->stringType()->length(1, 255),
-      'folder' => v::notEmpty()->stringType()->length(1, 255),
       'flag' => v::notEmpty()->stringType()->length(1, 10),
       'created_at' => v::optional(v::dateTime()),
       'file_size' => v::notEmpty()->intType(),

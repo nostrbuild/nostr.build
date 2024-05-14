@@ -1573,7 +1573,6 @@ class MultimediaUpload
         'image' => $newName,
         'file_size' => $fileSize,
         'folder_id' => $folder_id,
-        'folder' => $folder_name ?? '', // Legacy crap
         'media_width' => $mediaWidth,
         'media_height' => $mediaHeight,
         'blurhash' => $blurhash,
