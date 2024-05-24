@@ -498,7 +498,7 @@ class ImageProcessor
       throw new RuntimeException("Please call save() method before optimizeImage");
     }
     $jpegQuality = '--max=85';
-    $pngQuality = '--quality=85';
+    $pngQuality = '--quality=100';
     $webpQuality = '-q 80';
 
     $optimizerChain = (new OptimizerChain())
@@ -508,16 +508,18 @@ class ImageProcessor
         '--all-progressive',
       ]))
 
+      ->addOptimizer(new Optipng([
+        '-i0',
+        '-o2',
+        '-nx',
+        '-fix',
+        '-quiet',
+      ]))
+
       ->addOptimizer(new Pngquant([
         $pngQuality,
         '--force',
         '--skip-if-larger',
-      ]))
-
-      ->addOptimizer(new Optipng([
-        '-i0',
-        '-o2',
-        '-quiet',
       ]))
 
       ->addOptimizer(new Svgo([
@@ -529,6 +531,7 @@ class ImageProcessor
         '-O3',
         '--careful',
       ]))
+
       ->addOptimizer(new Cwebp([
         $webpQuality,
         '-m 6',
