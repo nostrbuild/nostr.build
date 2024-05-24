@@ -252,7 +252,10 @@ $app->group('/upload', function (RouteCollectorProxy $group) {
     } else {
       error_log('Unauthenticated upload of pfp');
       // Return error
-      return jsonResponse($response, 'error', 'Unauthorized, please provide a valid nip-98 token', new stdClass(), 401);
+      //return jsonResponse($response, 'error', 'Unauthorized, please provide a valid nip-98 token', new stdClass(), 401);
+      // Allow unauthenticated uploads for pfp for now (Mutinywallet support)
+      error_log('Unauthenticated upload of pfp');
+      $upload = $factory->create();
     }
 
     try {
