@@ -52,8 +52,8 @@ class SiteConfig
       'use_cdn' => true,
     ],
     'audio' => [
-      'cdn_host' => 'media.nostr.build',
-      'path' => 'av/',
+      'cdn_host' => 'audio.nostr.build',
+      'path' => '',
       's3_path' => 'av/',
       'thumbnail_path' => '', // not possible or needed
       'responsive_path' => '', // not possible or needed
@@ -84,8 +84,8 @@ class SiteConfig
       'use_cdn' => true,
     ],
     'professional_account_audio' => [
-      'cdn_host' => 'media.nostr.build',
-      'path' => 'p/',
+      'cdn_host' => 'a.nostr.build',
+      'path' => '',
       's3_path' => 'p/',
       'thumbnail_path' => '', // not possible or needed
       'responsive_path' => '', // not possible or needed
