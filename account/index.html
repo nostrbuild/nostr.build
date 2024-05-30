@@ -1798,12 +1798,10 @@ onDropCB(event) {
 										<!-- Image -->
 										<template x-if="file.mime.startsWith('image/')">
 											<img x-intersect.once.margin.1024px="
-												$el.src=file.thumb;
-												$el.srcset=file.srcset;
-												$el.sizes=file.sizes;
+												$el.src=file.responsive['240p'];
 												if (file.loadMore && !fileStore.loading && !fileStore.loadingMoreFiles) setTimeout(async () => {await fileStore.loadMoreFiles()}, 0);
 												" :id="'media_' + file.id" @load="$el.classList.remove('opacity-0'); file.loaded = true;"
-												@error="file.loaded = true, file.loadError" :data-src="file.thumb" :alt="file.name"
+												@error="file.loaded = true, file.loadError" :data-src="file.responsive['240p']" :alt="file.name"
 												:width="file.width" :height="file.height" loading="eager"
 												class="opacity-0 transition-opacity duration-500 ease-in pointer-events-none object-contain group-hover:opacity-75" />
 										</template>

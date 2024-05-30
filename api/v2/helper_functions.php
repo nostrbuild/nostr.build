@@ -89,6 +89,7 @@ function createSuccessResponse($data): array
       "mime" => $file['mime'],
       "url" => $file['url'],
       "thumb" => $file['thumbnail'],
+      "responsive" => $file['responsive'],
       "size" => $file['size'],
       "sizes" => '(max-width: 426px) 100vw, (max-width: 640px) 100vw, (max-width: 854px) 100vw, (max-width: 1280px) 50vw, 33vw',
       "srcset" => implode(", ", array_map(function ($resolution) use ($file, $resolutionToWidth) {

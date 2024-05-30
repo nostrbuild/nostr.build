@@ -111,6 +111,10 @@ function listImagesByFolderName($folderName, $link, $start = null, $limit = null
 		foreach ($resolutionToWidth as $resolution => $width) {
 			$srcset[] = htmlspecialchars(SiteConfig::getResponsiveUrl('professional_account_image', $resolution) . $filename . " {$width}w");
 		}
+		$responsive = [];
+		foreach ($resolutionToWidth as $resolution => $width) {
+			$responsive[$resolution] = htmlspecialchars(SiteConfig::getResponsiveUrl('professional_account_image', $resolution) . $filename);
+		}
 		$srcset = implode(", ", $srcset);
 		$sizes = '(max-width: 426px) 100vw, (max-width: 640px) 100vw, (max-width: 854px) 100vw, (max-width: 1280px) 50vw, 33vw';
 		//$responsiveTag = "<img height="$media_height" width="$media_width" loading="lazy" src="$bh_dataUrl" data-src="$thumbnail_path" data-srcset="$srcset" data-sizes="$sizes" alt="image" />
@@ -121,6 +125,7 @@ function listImagesByFolderName($folderName, $link, $start = null, $limit = null
 			"name" => $filename,
 			"url" => $image_url,
 			"thumb" => $type === 'image' ? $thumb_url : null,
+			"responsive" => $responsive,
 			"mime" => $images_row['mime_type'],
 			"size" => $size,
 			"sizes" => $type === 'image' ? $sizes : null,
@@ -289,6 +294,7 @@ function getReturnFilesArray($fileData)
 		"mime" => $fileData[0]['mime'],
 		"url" => $fileData[0]['url'],
 		"thumb" => $fileData[0]['thumbnail'],
+		"responsive" => $fileData[0]['responsive'],
 		"size" => $fileData[0]['size'],
 		"sizes" => '(max-width: 426px) 100vw, (max-width: 640px) 100vw, (max-width: 854px) 100vw, (max-width: 1280px) 50vw, 33vw',
 		"srcset" => implode(", ", array_map(function ($resolution) use ($fileData, $resolutionToWidth) {
