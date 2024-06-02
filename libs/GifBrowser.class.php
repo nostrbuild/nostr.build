@@ -98,11 +98,12 @@ class GifBrowser
     }
 
     // Construct the final JSON
+    $returnedCount = count($results);
     $returnVal = [
       'status' => 'success', // 'error' if something went wrong
       'message' => 'Gifs fetched successfully', // Error message if status is 'error'
       'cursor' => $this->cursor, // Optional, only if status is 'success'
-      'count' => count($results), // Optional, only if status is 'success'
+      'count' => $returnedCount, // Optional, only if status is 'success'
       'gifs' => $results // Optional, only if status is 'success'
     ];
     $ret = json_encode($returnVal);
@@ -152,6 +153,7 @@ class GifBrowser
 
     // Cache the result using AMP Cache; check cache first and then fetch from DB if not found
     // If the cache is found, return it
+    /*
     $ttl = 60 * 10; // 10 minutes
     $cacheKey = 'gifs_' . $start . '_' . $limit . '_' . $order . '_' . ($random ? 'random' : 'date');
     if (apcu_exists($cacheKey)) {
@@ -161,6 +163,7 @@ class GifBrowser
         return true;
       }
     }
+    */
 
     $sql = "SELECT filename, blurhash FROM uploads_data WHERE approval_status = 'approved' AND file_extension = 'gif' AND type = 'picture' ORDER BY upload_date " . $order . " LIMIT ? OFFSET ?";
     try {
@@ -171,7 +174,7 @@ class GifBrowser
       $this->results = $result->fetch_all(MYSQLI_ASSOC);
       $this->cursor = $start + $limit;
       // Cache the result
-      apcu_store($cacheKey, $this->results, $ttl);
+      //apcu_store($cacheKey, $this->results, $ttl);
     } catch (Exception $e) {
       error_log('Error fetching gifs: ' . $e->getMessage());
       return false;
