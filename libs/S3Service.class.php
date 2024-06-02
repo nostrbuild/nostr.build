@@ -60,7 +60,7 @@ class S3Service
   }
 
   // Upload a file to S3
-  public function uploadToS3($sourcePath, $destinationPath, $sha256 = '', $s3backup = false): bool
+  public function uploadToS3($sourcePath, $destinationPath, $sha256 = '', $s3backup = false, $npub = ''): bool
   {
     // Number of retries for the upload
     $maxRetries = 3;
@@ -73,6 +73,9 @@ class S3Service
       return false;
     }
 
+    // DEBUG
+    error_log("Uploading $sourcePath to $destinationPath with sha256: $sha256 and npub: $npub\n");
+
     // Define the options for S3 upload
     $s3Options = [
       'Bucket' => $this->bucket,
@@ -84,7 +87,8 @@ class S3Service
       'CacheControl' => 'max-age=2592000',
       'ContentType' => $mimeType,
       'Metadata' => [
-        'sha256' => $sha256
+        'sha256' => $sha256,
+        'npub' => $npub,
       ],
     ];
 
@@ -100,7 +104,8 @@ class S3Service
       'CacheControl' => 'max-age=2592000',
       'ContentType' => $mimeType,
       'Metadata' => [
-        'sha256' => $sha256
+        'sha256' => $sha256,
+        'npub' => $npub,
       ],
     ];
 

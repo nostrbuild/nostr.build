@@ -1616,7 +1616,7 @@ class MultimediaUpload
   protected function uploadToS3(string $objectName, $sha256 = '', $backup = false): bool
   {
     try {
-      $this->s3Service->uploadToS3($this->file['tmp_name'], $objectName, $sha256, $backup);
+      $this->s3Service->uploadToS3($this->file['tmp_name'], $objectName, $sha256, $backup, $this->userNpub ?? '');
     } catch (Exception $e) {
       error_log($e->getMessage());
       return false;
