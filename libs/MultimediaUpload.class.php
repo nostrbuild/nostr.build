@@ -176,6 +176,12 @@ class MultimediaUpload
    * @var
    */
   protected $defaultFolderName;
+  /**
+   * Indicates whether the multimedia upload should undergo any transformation.
+   *
+   * @var bool $no_transform
+   */
+  protected $no_transform;
 
   /**
    * Summary of __construct
@@ -561,8 +567,9 @@ class MultimediaUpload
    * @throws \Exception
    * @return array
    */
-  public function uploadFiles(): array
+  public function uploadFiles(bool $no_transform = false): array
   {
+    $this->no_transform = $no_transform;
     // Check if $this->filesArray is empty, and throw an exception if it is
     if (!is_array($this->filesArray) || empty($this->filesArray)) {
       return [false, 400, 'No files to upload'];
@@ -626,13 +633,20 @@ class MultimediaUpload
           } else {
             $fileData = $this->processFreeUploadImage($fileType);
           }
+          if (!empty($fileData) && $this->no_transform) {
+            // Check if we detected any private metadata, and throw error if we have
+            if (!empty($fileData['privateMetadata'])) {
+              $returnError[] = [false, 400, 'Private metadata detected: ' . json_encode($fileData['privateMetadata'])];
+              throw new Exception('Private metadata detected');
+            }
+          }
           // We need to detect the file type again, because it may have changed due to conversion
           $fileType = detectFileExt($this->file['tmp_name']);
         } else {
           $fileData = [];
         }
         // Repackage video files for all uploads under 200MiB
-        if ($fileType['type'] === 'video' && $this->file['size'] < 1024 ** 2 * 200) { // 200MB
+        if ($fileType['type'] === 'video' && $this->file['size'] < 1024 ** 2 * 200 && !$this->no_transform) { // 200MB
           try {
             $videoRepackager = new VideoRepackager($this->file['tmp_name']);
             $this->file['tmp_name'] = $videoRepackager->repackageVideo();
@@ -1057,7 +1071,7 @@ class MultimediaUpload
     $fileType = detectFileExt($this->file['tmp_name']);
     $multiplierSize = 1;
     // Check if uploaded file is an image, and add a fuzz factor to account for future optimization
-    if ($fileType['type'] === 'image') {
+    if ($fileType['type'] === 'image' && !$this->no_transform) {
       $multiplierSize = 2; // Multiplier for future optimization
     }
 
@@ -1078,17 +1092,17 @@ class MultimediaUpload
 
     // Calculate remaining space and check if file size exceeds the remaining space for pro users
     if ($this->pro) {
+      // Check if account has expired
+      if ($this->userAccount->isExpired()) {
+        error_log('Account has expired');
+        return [false, 403, "Account has expired, please renew at https://nostr.build/plans/"];
+      }
       // TODO: Need to validate array of files, so we do not allow to go over the limit with batch
       //error_log('Remaining space: ' . $this->userAccount->getRemainingStorageSpace() .
       //  ', uploading:' . $this->file['size'] . PHP_EOL);
       if (!$this->userAccount->hasSufficientStorageSpace($this->file['size'])) {
         error_log('File size exceeds the remaining space of ' . formatSizeUnits($this->userAccount->getRemainingStorageSpace()));
         return [false, 413, "File size exceeds the remaining space of " . formatSizeUnits($this->userAccount->getRemainingStorageSpace())];
-      }
-      // Check if account has expired
-      if ($this->userAccount->isExpired()) {
-        error_log('Account has expired');
-        return [false, 403, "Account has expired, please renew at https://nostr.build/plans/"];
       }
     }
 
@@ -1259,7 +1273,7 @@ class MultimediaUpload
     // Downsize GIFs to 500x500 to avoid memory issues
     // Anything bigger than that should be using MP4 video
     if (
-      $fileType['type'] === 'image' && in_array($fileType['extension'], ['gif'])
+      $fileType['type'] === 'image' && in_array($fileType['extension'], ['gif']) && !$this->no_transform
     ) {
       // Process animated image or video with GifConverter class
       $tmp_gif = $this->gifConverter->downsizeGif($this->file['tmp_name']);
@@ -1270,18 +1284,21 @@ class MultimediaUpload
       $this->file['tmp_name'] = $tmp_gif;
     }
     $img = new ImageProcessor($this->file['tmp_name']);
-    $img->convertHeicToJpeg()
-      ->convertToJpeg() // Convert to JPEG for images that are not visually affected by the conversion
-      ->fixImageOrientation()
-      ->resizeImage(1920, 1920) // Resize to 1920x1920 (HD)
-      ->reduceQuality(75) // 75 should be a good balance between quality and size
-      ->stripImageMetadata()
-      ->save();
-    $img->optimiseImage(); // Optimise the image, can take upto 60 seconds
+    if (!$this->no_transform) {
+      $img->convertHeicToJpeg()
+        ->convertToJpeg() // Convert to JPEG for images that are not visually affected by the conversion
+        ->fixImageOrientation()
+        ->resizeImage(1920, 1920) // Resize to 1920x1920 (HD)
+        ->reduceQuality(75) // 75 should be a good balance between quality and size
+        ->stripImageMetadata()
+        ->save();
+      $img->optimiseImage(); // Optimise the image, can take upto 60 seconds
+    }
     return [
       'metadata' => $img->getImageMetadata(),
       'dimensions' => $img->getImageDimensions(),
       'blurhash' => $img->calculateBlurhash(),
+      'privateMetadata' => $img->getPrivateMetadata() ?? [],
     ];
   }
 
@@ -1295,7 +1312,7 @@ class MultimediaUpload
     // Downsize GIFs to 500x500 to avoid memory issues
     // Anything bigger than that should be using MP4 video
     if (
-      $fileType['type'] === 'image' && in_array($fileType['extension'], ['gif'])
+      $fileType['type'] === 'image' && in_array($fileType['extension'], ['gif']) && !$this->no_transform
     ) {
       // Process animated image or video with GifConverter class
       $tmp_gif = $this->gifConverter->downsizeGif($this->file['tmp_name']);
@@ -1306,16 +1323,19 @@ class MultimediaUpload
       $this->file['tmp_name'] = $tmp_gif;
     }
     $img = new ImageProcessor($this->file['tmp_name']);
-    $img->convertHeicToJpeg()
-      ->convertTiffToJpeg() // Convert TIFF to JPG even for paid accounts
-      ->fixImageOrientation()
-      ->stripImageMetadata()
-      ->save();
-    $img->optimiseImage(); // Optimise the image, can take upto 60 seconds
+    if (!$this->no_transform) {
+      $img->convertHeicToJpeg()
+        ->convertTiffToJpeg() // Convert TIFF to JPG even for paid accounts
+        ->fixImageOrientation()
+        ->stripImageMetadata()
+        ->save();
+      $img->optimiseImage(); // Optimise the image, can take upto 60 seconds
+    }
     return [
       'metadata' => $img->getImageMetadata(),
       'dimensions' => $img->getImageDimensions(),
       'blurhash' => $img->calculateBlurhash(),
+      'privateMetadata' => $img->getPrivateMetadata() ?? [],
     ];
   }
 

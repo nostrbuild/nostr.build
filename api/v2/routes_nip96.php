@@ -30,7 +30,11 @@ $app->group('/nip96', function (RouteCollectorProxy $group) {
       'caption' => $body['caption'] ?? null,
       'media_type' => $body['media_type'] ?? null,
       'content_type' => $body['content_type'] ?? null,
+      'no_transform' => $body['no_transform'] ?? 'false',
     ];
+
+    // DEBUG
+    error_log('Form Params: ' . json_encode($formParams) . PHP_EOL);
 
     // Log request route
     //error_log('Route: /nip96/upload');
@@ -79,7 +83,8 @@ $app->group('/nip96', function (RouteCollectorProxy $group) {
       if ($formParams['media_type'] === 'avatar') {
         [$status, $code, $message] = $upload->uploadProfilePicture();
       } else {
-        [$status, $code, $message] = $upload->uploadFiles();
+        $no_transform = $formParams['no_transform'] === 'true' ? true : false;
+        [$status, $code, $message] = $upload->uploadFiles($no_transform);
       }
       if (!$status) {
       error_log('Upload failed' . json_encode(['code' => $code, 'message' => $message]));
