@@ -77,13 +77,13 @@ $perm = new Permission();
       We will also continue to add additional features to our free service,
       including:<br />
 
-      - Media uploads up to (10MB) hosted on Cloudflare<br />
+      - Media (images, audio and video) uploads up to (7MB) hosted on Cloudflare<br />
       - <a class="ref_link" href="https://www.cloudflare.com/" target="_blank">Cloudflare</a> global CDN network for images and GIFs<br />
       - No ads! Only community projects, nostr builders, creators, devs,
       artists and memes<br />
       - Profile picture uploader that properly shrinks, crops and puts your PP
       in a hidden folder<br />
-      - API for all nostr applications, projects and developers<br /><br />
+      - API (NIP96 and Proprietary) for all nostr applications, projects and developers<br /><br />
 
       nostr.build was recently honored to be part of the first wave of nostr
       devs to receive a grant from the <a class="ref_link" href="https://opensats.org/blog/nostr-grants-july-2023">OpenSats public charity</a> focused on
