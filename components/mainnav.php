@@ -72,7 +72,7 @@ SVG;
       Signup/Login
     </a>
   <?php else : ?>
-    <a href="/account" class="nav_button login_button">
+    <a href="/account/" class="nav_button login_button">
       Account
       <img src="<?= $ppic ?>" alt="user image" style="width:33px;height:33px;border-radius:50%;">
     </a>
@@ -142,7 +142,7 @@ SVG;
         </span>
       </a>
     <?php else : ?>
-      <a href="/account" class="nav_button login_button login_desktop">
+      <a href="/account/" class="nav_button login_button login_desktop">
         <span style="display: flex; align-items: center;">
           <span style="margin-right: 10px;">Account</span>
           <img src="<?= $ppic ?>" alt="user image" style="width:33px;height:33px;border-radius:50%">
