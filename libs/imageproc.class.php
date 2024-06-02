@@ -9,6 +9,7 @@ use Spatie\ImageOptimizer\Optimizers\Optipng;
 use Spatie\ImageOptimizer\Optimizers\Pngquant;
 use Spatie\ImageOptimizer\Optimizers\Svgo;
 use kornrunner\Blurhash\Blurhash;
+use Respect\Validation\Rules\Length;
 
 // Define array for image extensions
 $imageExtensions = [
@@ -454,6 +455,85 @@ class ImageProcessor
     // The image metadata is changed, we should unset saved flag
     $this->isSaved = false;
     return $this;
+  }
+
+  /**
+   * Retrieves the private metadata associated with the image.
+   * This method will be used to reject immutable uploads that contain private metadata.
+   * The detected list of private metadata will be returned as an array to the caller.
+   *
+   * @return array The private metadata as an array.
+   */
+  public function getPrivateMetadata(): array
+  {
+    $privateMetadata = [
+      // EXIF metadata tags
+      'exif:GPSInfo',
+      'exif:GPSLatitude',
+      'exif:GPSLatitudeRef',
+      'exif:GPSLongitude',
+      'exif:GPSLongitudeRef',
+      'exif:GPSAltitude',
+      'exif:GPSAltitudeRef',
+      'exif:GPSTimeStamp',
+      'exif:GPSDateStamp',
+      'exif:UserComment',
+      'exif:SubjectLocation',
+      'exif:SerialNumber',
+      'exif:OwnerName',
+      'exif:CameraOwnerName',
+      'exif:BodySerialNumber',
+
+      // IPTC metadata tags
+      'iptc:Contact',
+      'iptc:CreatorContactInfo',
+      'iptc:Location',
+      'iptc:LocationCreated',
+      'iptc:LocationShown',
+      'iptc:PersonInImage',
+
+      // XMP metadata tags
+      'xmp:Creator',
+      'xmp:LocationShown',
+      'xmp:LocationCreated',
+      'xmp:PersonInImage',
+      'xmp:GPSLatitude',
+      'xmp:GPSLongitude',
+      'xmp:GPSAltitude',
+      'xmp:GPSTimeStamp',
+      'xmp:OwnerName',
+      'xmp:SerialNumber',
+      'xmp:CameraOwnerName',
+      'xmp:BodySerialNumber',
+    ];
+
+    $foundPrivateMetadata = [];
+
+    // Check EXIF metadata
+    $exif = $this->imagick->getImageProperties("exif:*");
+    foreach ($privateMetadata as $key) {
+      if (strpos($key, 'exif:') === 0 && isset($exif[$key])) {
+        $foundPrivateMetadata[] = $key;
+      }
+    }
+
+    // Check IPTC metadata
+    $iptc = $this->imagick->getImageProperties("iptc:*");
+    foreach ($privateMetadata as $key) {
+      if (strpos($key, 'iptc:') === 0 && isset($iptc[$key])) {
+        $foundPrivateMetadata[] = $key;
+      }
+    }
+
+    // Check XMP metadata
+    $xmp = $this->imagick->getImageProperties("xmp:*");
+    foreach ($privateMetadata as $key) {
+      if (strpos($key, 'xmp:') === 0 && isset($xmp[$key])) {
+        $foundPrivateMetadata[] = $key;
+      }
+    }
+
+    return $foundPrivateMetadata;
   }
 
   /**
