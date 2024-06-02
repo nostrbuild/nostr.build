@@ -473,7 +473,7 @@ SVG;
               <?php endif; ?>
             </form>
           </div>
-          <script src="/scripts/dist/signup.js?v=d6a487c435188eced2cbbdfbd680e59f"></script>
+          <script src="/scripts/dist/signup.js?v=832478645fec19d6fb252b92715878f7"></script>
           <script>
             document.addEventListener('DOMContentLoaded', (event) => {
               // Check if NIP-07 extension is installed and enable NIP-07 login
