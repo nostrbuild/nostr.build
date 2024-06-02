@@ -618,8 +618,14 @@ class ImageProcessor
         '-pass 10',
         '-mt',
       ]));
-    $optimizerChain->setTimeout(60) // Set 60 seconds timeout
-      ->optimize($this->imagePath);
+
+    // Protect agains timeout exception
+    try {
+      $optimizerChain->setTimeout(60) // Set 60 seconds timeout
+        ->optimize($this->imagePath);
+    } catch (Exception $e) {
+      error_log($e->getMessage() . PHP_EOL);
+    }
 
     // Reinitialize Imagick after optimizing
     $this->reinitializeImagick();
