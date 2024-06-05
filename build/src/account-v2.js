@@ -78,6 +78,35 @@ window.getApiFetcher = function (baseUrl, contentType = 'multipart/form-data', t
   return api;
 };
 
+// Image variants pre-cache
+window.imageVariantsPrecache = async (urls) => {
+  const promises = urls.map((url) => {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => {
+        img.onload = null;
+        img.onerror = null;
+        img.src = '';
+        resolve();
+      };
+      img.onerror = () => {
+        img.onload = null;
+        img.onerror = null;
+        img.src = '';
+        reject(new Error(`Failed to load image: ${url}`));
+      };
+      img.src = url;
+    });
+  });
+
+  try {
+    await Promise.all(promises);
+    console.log('All images preloaded successfully.');
+  } catch (error) {
+    console.error('Error preloading images:', error);
+  }
+};
+
 window.formatBytes = (bytes) => {
   if (bytes === 0) return '0 Bytes';
 
@@ -332,8 +361,8 @@ window.copyTextToClipboard = (text, callbackOn = null, callbackOff = null) => {
   navigator.clipboard.writeText(text)
     .then(() => {
       console.debug('Text copied to clipboard:', text);
-      if(typeof callbackOn === 'function') callbackOn();
-      if(typeof callbackOff === 'function') setTimeout(() => {callbackOff()}, 2000);
+      if (typeof callbackOn === 'function') callbackOn();
+      if (typeof callbackOff === 'function') setTimeout(() => { callbackOff() }, 2000);
     })
     .catch(error => {
       console.error('Error copying text to clipboard:', error);
@@ -2310,6 +2339,19 @@ Alpine.store('uppyStore', {
         const fileFolderName = folderName === '' ? menuStore.folders.find(folder => folder.id === 0).name : folderName;
         // Update the file stats for the folder
         menuStore.updateFolderStatsFromFile(fd, fileFolderName, true);
+        // Preload image variants only with image/* MIME type
+        if (fd.mime.startsWith('image/')) {
+          const urls = [...Object.values(fd.responsive), fd.thumb, fd.url];
+          imageVariantsPrecache(urls)
+            .then(() => {
+              console.debug('Image variants pre-caching completed.');
+              // Additional code to run after pre-caching is done
+            })
+            .catch((error) => {
+              console.error('Error during image variants pre-caching:', error);
+              // Handle any errors that occurred during pre-caching
+            });
+        }
         // Inject file into the fileStore files array if activeFolder matches 
         if (menuStore.activeFolder === fileFolderName) {
           // Remove the file from the currentUploads
