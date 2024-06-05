@@ -320,6 +320,8 @@ class ImageProcessor
           $this->isSaved = false;
         } else {
           error_log("Could not convert HEIC/HEIF image: $this->imagePath" . PHP_EOL);
+          error_log("Command: $command" . PHP_EOL);
+          error_log("Output: " . implode(PHP_EOL, $output) . PHP_EOL);
         }
       } catch (Exception $e) {
         error_log($e->getMessage() . PHP_EOL);
