@@ -21,31 +21,31 @@
     "@tailwindcss/forms": "^0.5.7",
     "@tailwindcss/typography": "^0.5.12",
     "@uppy/audio": "^1.1.8",
-    "@uppy/core": "^3.11.3",
+    "@uppy/core": "^3.12.0",
     "@uppy/dashboard": "^3.8.3",
     "@uppy/drop-target": "^2.1.0",
     "@uppy/golden-retriever": "^3.2.0",
     "@uppy/url": "^3.6.0",
-    "@uppy/webcam": "^3.4.0",
+    "@uppy/webcam": "^3.4.2",
     "@uppy/xhr-upload": "^3.6.7",
     "alpinejs": "^3.14.0",
     "axios": "^1.7.2",
-    "axios-retry": "^4.3.0",
+    "axios-retry": "^4.4.0",
     "nostr-tools": "^2.7.0",
     "sortablejs": "^1.15.2",
     "tua-body-scroll-lock": "^1.5.0",
-    "uppy": "^3.25.5",
+    "uppy": "^3.26.0",
     "vidstack": "^1.11.19"
   },
   "devDependencies": {
     "autoprefixer": "^10.4.19",
     "buffer": "^6.0.3",
-    "cssnano": "^7.0.0",
+    "cssnano": "^7.0.2",
     "parcel": "2.12.0",
     "postcss": "^8.4.38",
     "postcss-import": "^16.1.0",
     "process": "^0.11.10",
-    "tailwindcss": "^3.4.3"
+    "tailwindcss": "^3.4.4"
   },
   "targets": {
     "default": {
