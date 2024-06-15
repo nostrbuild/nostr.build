@@ -34,8 +34,8 @@
     "nostr-tools": "^2.7.0",
     "sortablejs": "^1.15.2",
     "tua-body-scroll-lock": "^1.5.0",
-    "uppy": "^3.26.0",
-    "vidstack": "^1.11.19"
+    "uppy": "^3.26.1",
+    "vidstack": "1.11.22"
   },
   "devDependencies": {
     "autoprefixer": "^10.4.19",
