@@ -38,14 +38,15 @@ class CloudflareUploadWebhook
     int $fileSize,
     string $fileMimeType,
     string $fileUrl,
-    string $fileType, // 'video' | 'audio' | 'image' | 'other'
+    string $fileType, // 'video' | 'audio' | 'image' | "archive" | "document" | "text" | 'other'
     string $uploadAccountType, // 'free' | 'subscriber' | 'other'
     bool $shouldTranscode = false,
     int $uploadTime = null,
     string $fileOriginalUrl = null,
     string $uploadNpub = null,
     string $uploadedFileInfo = null,
-    string $orginalSha256Hash = null // NIP-96
+    string $orginalSha256Hash = null, // NIP-96
+    bool $doVirusScan = false
   ): void {
     $uploadTime = $uploadTime ?? time();  // Set default value if null
 
@@ -60,6 +61,7 @@ class CloudflareUploadWebhook
       'uploadAccountType' => $uploadAccountType,
       'uploadTime' => $uploadTime,
       'orginalSha256Hash' => $orginalSha256Hash ?? '', // NIP96
+      'doVirusScan' => $doVirusScan,
     ];
 
     if ($fileOriginalUrl !== null) {
