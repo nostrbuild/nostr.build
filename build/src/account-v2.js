@@ -2314,6 +2314,7 @@ Alpine.store('uppyStore', {
     // This is just for client side convenience, it is still enforced server-side
     const mimeTypesImages = {
       'image/jpeg': 'jpg',
+      'image/jpeg': 'jpeg',
       'image/png': 'png',
       'image/apng': 'apng',
       'image/gif': 'gif',
@@ -2321,12 +2322,14 @@ Alpine.store('uppyStore', {
       'image/bmp': 'bmp',
       'image/tiff': 'tiff',
       'image/heic': 'heic',
+      'image/heif': 'heif',
       'image/avif': 'avif',
       'image/jp2': 'jp2',
       'image/jpx': 'jpx',
       'image/jpm': 'jpm',
       'image/jxr': 'jxr',
       'image/pipeg': 'jfif',
+      'image/dng': 'dng',
     };
 
     const mimeTypesAudio = {
