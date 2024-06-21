@@ -9,6 +9,11 @@ module.exports = {
     'z-30',
     'z-40',
     'z-50',
+    'text-nbpurple-50',
+    'text-nbpurple-100',
+    'text-nbpurple-200',
+    'text-nbpurple-300',
+    'text-nbpurple-400',
   ],
   content: [
     "./src/*.js",
