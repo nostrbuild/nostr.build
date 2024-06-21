@@ -251,6 +251,7 @@ class Plans
         price: self::$originalPrices[self::CREATOR],
         features: [
           '30GB of private storage',
+          'Upload and share PDFs, SVGs',
           'AI Studio (Text-to-Image)',
           '<a class="ref_link" target="_blank" href="https://nostr.build/creators/">Host a Creators page</a></b>',
           'S3 backup for all media',
@@ -275,6 +276,7 @@ class Plans
         price: self::$originalPrices[self::ADVANCED],
         features: [
           '100GB of private storage',
+          'Upload and share ZIPs, PDFs, SVGs',
           'AI Studio Extended Access',
           'NIP-05 @nostr.build',
           'Expandable storage *',
