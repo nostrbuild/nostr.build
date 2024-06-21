@@ -15,6 +15,7 @@ class SiteConfig
       'cdn_host' => 'image.nostr.build',
       'path' => '',
       's3_path' => 'i/',
+      'bucket_suffix' => '-img',
       'thumbnail_path' => 'thumb/',
       'responsive_path' => 'resp/',
       'use_cdn' => true, // CDN Optimizer is off now due to other issues
@@ -23,6 +24,7 @@ class SiteConfig
       'cdn_host' => 'video.nostr.build',
       'path' => '',
       's3_path' => 'av/',
+      'bucket_suffix' => '-av',
       'thumbnail_path' => '',
       'responsive_path' => '',
       'use_cdn' => true,
@@ -31,6 +33,7 @@ class SiteConfig
       'cdn_host' => 'media.nostr.build',
       'path' => 'av/',
       's3_path' => 'av/',
+      'bucket_suffix' => '-av',
       'thumbnail_path' => '', // not possible or needed
       'responsive_path' => '', // not possible or needed
       'use_cdn' => true,
@@ -39,6 +42,7 @@ class SiteConfig
       'cdn_host' => 'image.nostr.build',
       'path' => '',
       's3_path' => 'i/',
+      'bucket_suffix' => '-img',
       'thumbnail_path' => 'thumb/',
       'responsive_path' => 'resp/',
       'use_cdn' => true,
@@ -47,6 +51,7 @@ class SiteConfig
       'cdn_host' => 'video.nostr.build',
       'path' => '',
       's3_path' => 'av/',
+      'bucket_suffix' => '-av',
       'thumbnail_path' => '', // for later usage, maybe
       'responsive_path' => '', // for later usage, maybe
       'use_cdn' => true,
@@ -55,6 +60,7 @@ class SiteConfig
       'cdn_host' => 'audio.nostr.build',
       'path' => '',
       's3_path' => 'av/',
+      'bucket_suffix' => '-av',
       'thumbnail_path' => '', // not possible or needed
       'responsive_path' => '', // not possible or needed
       'use_cdn' => true,
@@ -63,6 +69,7 @@ class SiteConfig
       'cdn_host' => 'pfp.nostr.build',
       'path' => '',
       's3_path' => 'i/p/',
+      'bucket_suffix' => '-pfp',
       'thumbnail_path' => '', // not needed
       'responsive_path' => '', // not needed
       'use_cdn' => true,
@@ -71,6 +78,7 @@ class SiteConfig
       'cdn_host' => 'i.nostr.build',
       'path' => '',
       's3_path' => 'p/',
+      'bucket_suffix' => '-pro',
       'thumbnail_path' => 'thumb/',
       'responsive_path' => 'resp/',
       'use_cdn' => true,
@@ -79,6 +87,7 @@ class SiteConfig
       'cdn_host' => 'v.nostr.build',
       'path' => '',
       's3_path' => 'p/',
+      'bucket_suffix' => '-pro-av',
       'thumbnail_path' => '', // for later usage, maybe
       'responsive_path' => '', // for later usage, maybe
       'use_cdn' => true,
@@ -87,14 +96,53 @@ class SiteConfig
       'cdn_host' => 'a.nostr.build',
       'path' => '',
       's3_path' => 'p/',
+      'bucket_suffix' => '-pro-av',
       'thumbnail_path' => '', // not possible or needed
       'responsive_path' => '', // not possible or needed
       'use_cdn' => true,
     ],
+    // Not yet used, but reserved for future use
     'professional_account_application' => [
       'cdn_host' => 'd.nostr.build',
-      'path' => 'data/',
-      's3_path' => 'data/',
+      'path' => '',
+      's3_path' => 'p/data/',
+      'bucket_suffix' => '-pro-data',
+      'thumbnail_path' => '', // not possible or needed
+      'responsive_path' => '', // not possible or needed
+      'use_cdn' => true,
+    ],
+    'professional_account_archive' => [
+      'cdn_host' => 'd.nostr.build',
+      'path' => '',
+      's3_path' => 'p/archive/',
+      'bucket_suffix' => '-pro-data',
+      'thumbnail_path' => '', // not possible or needed
+      'responsive_path' => '', // not possible or needed
+      'use_cdn' => true,
+    ],
+    'professional_account_document' => [
+      'cdn_host' => 'd.nostr.build',
+      'path' => '',
+      's3_path' => 'p/document/',
+      'bucket_suffix' => '-pro-data',
+      'thumbnail_path' => '', // not possible or needed
+      'responsive_path' => '', // not possible or needed
+      'use_cdn' => true,
+    ],
+    'professional_account_text' => [
+      'cdn_host' => 'd.nostr.build',
+      'path' => '',
+      's3_path' => 'p/text/',
+      'bucket_suffix' => '-pro-data',
+      'thumbnail_path' => '', // not possible or needed
+      'responsive_path' => '', // not possible or needed
+      'use_cdn' => true,
+    ],
+    'professional_account_other' => [
+      'cdn_host' => 'd.nostr.build',
+      'path' => '',
+      's3_path' => 'p/other/',
+      'bucket_suffix' => '-pro-data',
       'thumbnail_path' => '', // not possible or needed
       'responsive_path' => '', // not possible or needed
       'use_cdn' => true,
@@ -104,6 +152,7 @@ class SiteConfig
       'cdn_host' => 'image.nostr.build',
       'path' => '',
       's3_path' => 'i/',
+      'bucket_suffix' => '-img',
       'thumbnail_path' => '', // not possible or needed
       'responsive_path' => '', // not possible or needed
       'use_cdn' => false,
@@ -139,7 +188,7 @@ class SiteConfig
   public static function getHost($mediaType)
   {
     if (!array_key_exists($mediaType, self::CDN_CONFIGS)) {
-      throw new Exception("Invalid media type: {$mediaType}");
+      throw new Exception("getHost: Invalid media type: {$mediaType}");
     }
 
     $config = self::CDN_CONFIGS[$mediaType];
@@ -149,7 +198,7 @@ class SiteConfig
   public static function getPath($mediaType)
   {
     if (!array_key_exists($mediaType, self::CDN_CONFIGS)) {
-      throw new Exception("Invalid media type: {$mediaType}");
+      throw new Exception("getPath: Invalid media type: {$mediaType}");
     }
 
     return self::CDN_CONFIGS[$mediaType]['path'];
@@ -158,16 +207,25 @@ class SiteConfig
   public static function getS3Path($mediaType)
   {
     if (!array_key_exists($mediaType, self::CDN_CONFIGS)) {
-      throw new Exception("Invalid media type: {$mediaType}");
+      throw new Exception("getS3Path: Invalid media type: {$mediaType}");
     }
 
     return self::CDN_CONFIGS[$mediaType]['s3_path'];
   }
 
+  public static function getBucketSuffix($mediaType)
+  {
+    if (!array_key_exists($mediaType, self::CDN_CONFIGS)) {
+      throw new Exception("getBucketSuffix: Invalid media type: {$mediaType}");
+    }
+
+    return self::CDN_CONFIGS[$mediaType]['bucket_suffix'];
+  }
+
   public static function getBaseUrl($mediaType)
   {
     if (!array_key_exists($mediaType, self::CDN_CONFIGS)) {
-      throw new Exception("Invalid media type: {$mediaType}");
+      throw new Exception("getBaseUrl: Invalid media type: {$mediaType}");
     }
 
     $scheme = self::ACCESS_SCHEME;
@@ -179,7 +237,7 @@ class SiteConfig
   public static function getFullyQualifiedUrl($mediaType)
   {
     if (!array_key_exists($mediaType, self::CDN_CONFIGS)) {
-      throw new Exception("Invalid media type: {$mediaType}");
+      throw new Exception("getFullyQualifiedUrl: Invalid media type: {$mediaType}");
     }
 
     $base_url = self::getBaseUrl($mediaType);
@@ -191,7 +249,7 @@ class SiteConfig
   public static function getThumbnailUrl($mediaType)
   {
     if (!array_key_exists($mediaType, self::CDN_CONFIGS)) {
-      throw new Exception("Invalid media type: {$mediaType}");
+      throw new Exception("getThumbnailUrl: Invalid media type: {$mediaType}");
     }
 
     $base_url = self::getBaseUrl($mediaType);
@@ -208,7 +266,7 @@ class SiteConfig
   public static function getResponsiveUrl($mediaType, $resolution)
   {
     if (!array_key_exists($mediaType, self::CDN_CONFIGS)) {
-      throw new Exception("Invalid media type: {$mediaType}");
+      throw new Exception("getResponsiveUrl: Invalid media type: {$mediaType}");
     }
 
     $base_url = self::getBaseUrl($mediaType);
