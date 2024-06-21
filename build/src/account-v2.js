@@ -25,6 +25,11 @@ import Alpine from 'alpinejs';
 import intersect from '@alpinejs/intersect';
 import focus from '@alpinejs/focus';
 
+// Icons
+import { getIconByMime, getIcon } from '../lib/icons';
+window.getIconByMime = getIconByMime;
+window.getIcon = getIcon;
+
 Alpine.plugin(focus);
 Alpine.plugin(intersect);
 
@@ -42,6 +47,7 @@ window.getApiFetcher = function (baseUrl, contentType = 'multipart/form-data', t
       'Content-Type': contentType,
     },
     timeout: timeout,
+    withCredentials: true,
   });
 
   // Add a response interceptor to handle HTTP 401
@@ -105,6 +111,77 @@ window.imageVariantsPrecache = async (urls) => {
   } catch (error) {
     console.error('Error preloading images:', error);
   }
+};
+
+// Check URLs Virus scanning status
+window.checkMediaVirusScanStatus = async (url) => {
+  const api = getApiFetcher('', '*/*');
+  // HEAD request to check the URL
+  return fetch(url,
+    {
+      method: 'HEAD',
+      credentials: 'include',
+      mode: 'cors',
+      cache: 'no-store',
+      redirect: 'follow',
+      referrerPolicy: 'no-referrer',
+      onerror: (error) => {
+        console.error('Error scanning URL:', error);
+        return false;
+      }
+    })
+    .then(response => {
+      switch (response.status) {
+        case 200:
+          // If the user is logged in, check the heasders for the virus scan status
+          const scanStatus = response.headers.get('x-virus-scan-result') || 'pending'; // Default to pending
+          const scanMessage = response.headers.get('x-virus-scan-message') || 'Pending virus scan'; // Default to pending
+          const scanDate = response.headers.get('x-virus-scan-date') || 'Pending virus scan'; // Default to pending
+          const scanVersion = response.headers.get('x-virus-scan-version') || 'Pending virus scan'; // Default to pending
+          console.debug('URL scan status:', scanStatus, scanMessage, scanDate, scanVersion);
+          return {
+            status: scanStatus,
+            message: scanMessage,
+            date: scanDate,
+            version: scanVersion,
+            previewMessage: () => { switch (scanStatus) { case 'clean': return 'Scanned & clean'; case 'pending': return 'Pending virus scan'; case 'infected': return 'Infected with virus'; default: return 'Unknown status'; } },
+          };
+        case 403: // Not yet scanned
+          return {
+            status: 'pending',
+            message: 'Pending virus scan',
+            date: 'Pending virus scan',
+            version: 'Pending virus scan',
+            previewMessage: 'Pending virus scan',
+          };
+        case 451: // Infected
+          return {
+            status: 'infected',
+            message: 'Infected with virus',
+            date: 'Infected with virus',
+            version: 'Infected with virus',
+            previewMessage: 'Infected with virus',
+          };
+        default: // Unknown status
+          return {
+            status: 'unknown',
+            message: 'Unknown status',
+            date: 'Unknown status',
+            version: 'Unknown status',
+            previewMessage: 'Unknown status',
+          }
+      }
+    })
+    .catch((error) => {
+      console.error('Error scanning URL:', error);
+      return {
+        status: 'unknown',
+        message: 'Unknown status',
+        date: 'Unknown status',
+        version: 'Unknown status',
+        previewMessage: 'Unknown status',
+      }
+    });
 };
 
 window.formatBytes = (bytes) => {
@@ -1826,6 +1903,21 @@ Alpine.store('fileStore', {
       name: 'Audio',
       icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="size-5" aria-hidden="true"><path d="M3 14h3a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-7a9 9 0 0 1 18 0v7a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3"/></svg>`,
     },
+    documents: {
+      filter: 'document',
+      name: 'Documents',
+      icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="size-5"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/></svg>`,
+    },
+    archives: {
+      filter: 'archive',
+      name: 'Archives',
+      icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="size-5"><path d="M10 12v-1"/><path d="M10 18v-2"/><path d="M10 7V6"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M15.5 22H18a2 2 0 0 0 2-2V7l-5-5H6a2 2 0 0 0-2 2v16a2 2 0 0 0 .274 1.01"/><circle cx="10" cy="20" r="2"/></svg>`,
+    },
+    other: {
+      filter: 'other',
+      name: 'Other',
+      icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="size-5"><path d="M20 7h-3a2 2 0 0 1-2-2V2"/><path d="M9 18a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h7l4 4v10a2 2 0 0 1-2 2Z"/><path d="M3 7.6v12.8A1.6 1.6 0 0 0 4.6 22h9.8"/></svg>`,
+    },
   },
   currentFilter: 'all',
   setFilter(filter) {
@@ -2216,6 +2308,115 @@ Alpine.store('uppyStore', {
       return this.currentFiles.filter(file => file.folder === folderName);
     }
   },
+  getAllowedFileTypes(accountLevel = 0) {
+    // Return allowed file types
+    // Copy of the server-side libs/utils.funcs.php array
+    // This is just for client side convenience, it is still enforced server-side
+    const mimeTypesImages = {
+      'image/jpeg': 'jpg',
+      'image/png': 'png',
+      'image/apng': 'apng',
+      'image/gif': 'gif',
+      'image/webp': 'webp',
+      'image/bmp': 'bmp',
+      'image/tiff': 'tiff',
+      'image/heic': 'heic',
+      'image/avif': 'avif',
+      'image/jp2': 'jp2',
+      'image/jpx': 'jpx',
+      'image/jpm': 'jpm',
+      'image/jxr': 'jxr',
+      'image/pipeg': 'jfif',
+    };
+
+    const mimeTypesAudio = {
+      'audio/mpeg': 'mp3',
+      'audio/ogg': 'ogg',
+      'audio/wav': 'wav',
+      'audio/aac': 'aac',
+      'audio/webm': 'webm',
+      'audio/flac': 'flac',
+      'audio/x-aiff': 'aif',
+      'audio/x-ms-wma': 'wma',
+      'audio/x-m4a': 'm4a',
+      'audio/x-m4b': 'm4b',
+      'audio/mp4': 'mp4a',
+      'audio/mpegurl': 'm3u',
+      'audio/x-mpegurl': 'm3u',
+      'audio/x-ms-wax': 'wax',
+      'audio/x-realaudio': 'ra',
+      'audio/x-pn-realaudio': 'ram',
+      'audio/x-pn-realaudio-plugin': 'rmp',
+      'audio/x-wav': 'wav',
+    };
+
+    const mimeTypesVideo = {
+      'video/mp4': 'mp4',
+      'video/webm': 'webm',
+      'video/ogg': 'ogv',
+      'video/x-msvideo': 'avi',
+      'video/x-ms-wmv': 'wmv',
+      'video/quicktime': 'mov',
+      'video/mpeg': 'mpeg',
+      'video/3gpp': '3gp',
+      'video/3gpp2': '3g2',
+      'video/x-flv': 'flv',
+      'video/x-m4v': 'm4v',
+      'video/x-matroska': 'mkv',
+      'video/x-mpeg2': 'mp2v',
+      'video/x-m4p': 'm4p',
+      'video/mp2t': 'm2ts',
+      'video/MP2T': 'ts',
+      'video/mp2p': 'mp2',
+      'video/x-mxf': 'mxf',
+      'video/x-ms-asf': 'asf',
+      'video/x-ms-wm': 'asf',
+      'video/x-pn-realvideo': 'rm',
+      'video/x-ms-vob': 'vob',
+      'video/x-f4v': 'f4v',
+      'video/x-fli': 'fli',
+      'video/x-m2v': 'm2v',
+      'video/x-ms-wmx': 'wmx',
+      'video/x-ms-wvx': 'wvx',
+      'video/x-sgi-movie': 'movie',
+    };
+
+    const mimeTypesAddonDocs = {
+      'application/pdf': 'pdf',
+      'image/svg+xml': 'svg',
+    };
+
+    const mimeTypesAddonExtra = {
+      'application/zip': 'zip',
+      'application/x-tar': 'tar',
+    };
+
+    // Construct lists of extensions based on account level
+    const extsImages = Object.values(mimeTypesImages).map(ext => `.${ext}`);
+    const extsAudio = Object.values(mimeTypesAudio).map(ext => `.${ext}`);
+    const extsVideo = Object.values(mimeTypesVideo).map(ext => `.${ext}`);
+    const extsAddonDocs = Object.values(mimeTypesAddonDocs).map(ext => `.${ext}`);
+    const extsAddonExtra = Object.values(mimeTypesAddonExtra).map(ext => `.${ext}`);
+
+    const mimesImages = Object.keys(mimeTypesImages).map(mime => mime);
+    const mimesAudio = Object.keys(mimeTypesAudio).map(mime => mime);
+    const mimesVideo = Object.keys(mimeTypesVideo).map(mime => mime);
+    const mimesAddonDocs = Object.keys(mimeTypesAddonDocs).map(mime => mime);
+    const mimesAddonExtra = Object.keys(mimeTypesAddonExtra).map(mime => mime);
+
+    switch (accountLevel) {
+      case 10:
+      case 99:
+        console.debug('All file types allowed.');
+        return [...mimesImages, ...mimesAudio, ...mimesVideo, ...mimesAddonDocs, ...mimesAddonExtra, ...extsAddonDocs, ...extsAddonExtra];
+      case 1:
+        console.debug('All file types allowed except for archives.');
+        return [...mimesImages, ...mimesAudio, ...mimesVideo, ...mimesAddonDocs, ...extsAddonDocs];
+      default:
+        console.debug('Default file types allowed.');
+        return [...mimesImages, ...mimesAudio, ...mimesVideo];
+    }
+  },
   instantiateUppy(el, dropTarget, onDropCallback, onDragOverCallback, onDragLeaveCallback) {
     this.mainDialog.dialogEl = el;
     console.debug('Instantiating Uppy...');
@@ -2228,22 +2429,31 @@ Alpine.store('uppyStore', {
       debug: false,
       autoProceed: true, // Automatically upload files after adding them
       allowMultipleUploadBatches: false, // Disallow multiple upload batches
-      allowedFileTypes: ['image/*', 'video/*', 'audio/*'],
       restrictions: {
         maxFileSize: 4096 * 1024 * 1024, // 4 GB
         maxTotalFileSize: profileStore.profileInfo.storageRemaining,
-        allowedFileTypes: ['image/*', 'video/*', 'audio/*'],
+        allowedFileTypes: this.getAllowedFileTypes(),
       },
       //maxTotalFileSize: 150 * 1024 * 1024,
       onBeforeFileAdded: (currentFile, files) => {
+        // Limit the size of the files that are not images, videos, or audio to 1GiB
+        const fileType = currentFile.type.split('/')[0]; // Extract the file type from the MIME type
+
+        if (fileType !== 'image' && fileType !== 'video' && fileType !== 'audio') {
+          if (currentFile.size > 1024 ** 3) {
+            this.instance.info(`Skipping file ${currentFile.name} because it's too large`, 'error', 500);
+            return false; // Exclude the file
+          }
+        }
+        /* Probably not needed
         const allowedTypes = ['video', 'audio', 'image'];
         const fileType = currentFile.type.split('/')[0]; // Extract the file type from the MIME type
 
         if (!allowedTypes.includes(fileType)) {
           // log to console
-          this.instance.log(`Skipping file ${currentFile.name} because it's not a video, audio, or image`);
+          this.instance.log(`Skipping file ${currentFile.name} because it's not an allowed file type`);
           // show error message to the user
-          this.instance.info(`Skipping file ${currentFile.name} because it's not a video, audio, or image`, 'error', 500);
+          this.instance.info(`Skipping file ${currentFile.name} because it's not an allowed file type`, 'error', 500);
           return false; // Exclude the file
         }
 
@@ -2257,7 +2467,7 @@ Alpine.store('uppyStore', {
         if (currentFile.type === 'image/vnd.adobe.photoshop' || currentFile.name.endsWith('.psd')) {
           this.instance.info(`Skipping file ${currentFile.name} because PSD files are not allowed`, 'error', 500);
           return false; // Exclude the file
-        }
+        }*/
 
         return true; // Include the file
       },
@@ -2565,12 +2775,24 @@ Alpine.store('uppyStore', {
         // Determine if user has less than 4GB remaining storage
         const byteLimit = (profileStore.profileInfo.storageRemaining < 4 * 1024 * 1024 * 1024) ?
           profileStore.profileInfo.storageRemaining : 4 * 1024 * 1024 * 1024;
-        const note = `Images, video and audio only, up to your storage limit, and ${formatBytes(byteLimit)} per file`;
+        const allowedFileTypes = this.getAllowedFileTypes(profileStore.profileInfo.accountLevel);
+        let note = 'Images, video, audio';
+        switch (profileStore.profileInfo.accountLevel) {
+          case 10:
+          case 99:
+            note += ', including documents and archives';
+            break;
+          case 1:
+            note += ', including documents';
+            break;
+        }
+        note += `, up to your storage limit, and ${formatBytes(byteLimit)} per file`;
+
         this.instance.setOptions({
           restrictions: {
             maxFileSize: byteLimit,
             maxTotalFileSize: profileStore.profileInfo.storageRemaining,
-            allowedFileTypes: ['image/*', 'video/*', 'audio/*'],
+            allowedFileTypes: allowedFileTypes,
           },
         });
         this.instance.getPlugin('Dashboard').setOptions({
