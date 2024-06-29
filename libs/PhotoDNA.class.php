@@ -109,6 +109,8 @@ class PhotoDNA
         usleep(500 ** $tries);
       }
     }
+    // All failed, throw an exception
+    throw new Exception("Error occurred while scanning image with PhotoDNA", 3004);
   }
 
   public function apiRequestMatch(): mixed
