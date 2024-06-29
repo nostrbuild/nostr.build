@@ -71,6 +71,11 @@ $csamReportingConfig = [
     'r2LogsBucket' => $_SERVER['CSAM_REPORTING_R2_LOGS_BUCKET'],
 ];
 
+$photoDNAConfig = [
+    'api_url' => $_SERVER['PHOTODNA_API_URL'],
+    'api_key' => $_SERVER['PHOTODNA_API_KEY'],
+];
+
 // Maybe we should move it to a separate place and do not open a link to the database every time?
 /* Attempt to connect to MySQL database */
 $link = mysqli_connect(DB_SERVER, DB_USERNAME, DB_PASSWORD, DB_NAME);
