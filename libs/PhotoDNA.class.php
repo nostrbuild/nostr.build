@@ -314,7 +314,7 @@ class PhotoDNA
   {
     // Check if image is a match for CSAM
     if ($this->scan($this->filePath)) {
-      error_log("CSAM match found for file: {$this->fileName}\n");
+      error_log("PhotoDNA: CSAM match found for file: {$this->fileName}\n");
       // Create evidence report
       $evidenceData = $this->createCSAMEvidenceReport();
       error_log("Evidence data: " . json_encode($evidenceData) . PHP_EOL);
@@ -330,6 +330,7 @@ class PhotoDNA
       $this->addFileToRejectedTable();
       return true;
     }
+    error_log("PhotoDNA: No CSAM match found for file: {$this->fileName}\n");
     return false;
   }
 }

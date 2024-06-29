@@ -640,7 +640,6 @@ class MultimediaUpload
         // Perform PhotoDNA check
         if (!$this->pro && $fileType['type'] === 'image') {
           try {
-            error_log('PhotoDNA check started');
             $pdnaNpub = empty($this->userNpub) ? 'Unknown' : $this->userNpub;
             $photoDNA = new PhotoDNA($pdnaNpub, $fileSha256, $this->file['tmp_name']);
             $pdnaResult = $photoDNA->proccessUploadedImage();
