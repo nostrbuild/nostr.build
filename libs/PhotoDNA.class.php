@@ -89,15 +89,26 @@ class PhotoDNA
   // Returns true if image is a match for CSAM
   public function scan(): bool
   {
-    $this->csamMatchResult = $this->apiRequestMatch();
-    // Return true if Status code is 3000 and IsMatch is true
-    $isCSAMMatch = $this->csamMatchResult['Status']['Code'] === 3000 && $this->csamMatchResult['IsMatch'];
-    // Throw if Status code is not 3000
-    if ($this->csamMatchResult['Status']['Code'] !== 3000) {
-      error_log("Error occurred while scanning image with PhotoDNA: " . $this->csamMatchResult['Status']['Description']);
-      throw new Exception("Error occurred while scanning image with PhotoDNA", 3004);
+    $tries = 0;
+    for ($i = 0; $i < 3; $i++) {
+      try {
+        $this->csamMatchResult = $this->apiRequestMatch();
+
+        // Return true if Status code is 3000 and IsMatch is true
+        $isCSAMMatch = $this->csamMatchResult['Status']['Code'] === 3000 && $this->csamMatchResult['IsMatch'];
+        // Throw if Status code is not 3000
+        if ($this->csamMatchResult['Status']['Code'] === 3004) {
+          error_log("Error occurred while scanning image with PhotoDNA: " . $this->csamMatchResult['Status']['Description']);
+          throw new Exception("Error occurred while scanning image with PhotoDNA", 3004);
+        }
+        return $isCSAMMatch;
+      } catch (Exception $e) {
+        error_log("Error occurred while scanning image with PhotoDNA: " . $e->getMessage());
+        $tries++;
+        // Perform exponential backoff
+        usleep(500 ** $tries);
+      }
     }
-    return $isCSAMMatch;
   }
 
   public function apiRequestMatch(): mixed
@@ -146,6 +157,13 @@ class PhotoDNA
     $resp = curl_exec($curl);
     // Close request
     curl_close($curl);
+    // Response status code
+    $status_code = curl_getinfo($curl, CURLINFO_HTTP_CODE);
+    // Throw if status code is not 200
+    if ($status_code !== 200) {
+      error_log("Error occurred while scanning image with PhotoDNA: " . $status_code);
+      throw new Exception("Error occurred while scanning image with PhotoDNA", 3004);
+    }
 
     // Check for errors
     if ($resp === false) {
@@ -304,7 +322,7 @@ class PhotoDNA
     // Use Imagick to convert image to JPEG
     $img = new Imagick($img_file_path);
     $img->setImageFormat('jpeg');
-    $img->resizeImage(2048, 2048, Imagick::FILTER_LANCZOS, 1);
+    $img->resizeImage(1200, 1200, Imagick::FILTER_LANCZOS, 1);
     $img->setImageCompressionQuality(75);
     // Return image as binary string
     return $img->getImageBlob();
