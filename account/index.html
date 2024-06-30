@@ -12,7 +12,7 @@
 	<link href="/scripts/dist/account-v2.css?v=48350470780409add985b483914871c3" rel="stylesheet">
 
 	<link rel="icon" href="/assets/nb-logo-color-w.png" />
-	<link href="/styles/twbuild.css?v=e2fa3e82e08c119d6b28ed332b4fe73a" rel="stylesheet">
+	<link href="/styles/twbuild.css?v=1664d66f348a489915b7ff5b07b47327" rel="stylesheet">
 
 	<!-- Pre-connect and DNS prefetch -->
 	<link rel="preconnect" href="https://i.nostr.build" crossorigin>
@@ -1776,23 +1776,15 @@ onDropCB(event) {
 
 										<!-- PDF -->
 										<template x-if="file.media_type === 'document' && file.mime.startsWith('application/pdf')">
-											<embed class="object-contain" :id="'media_' + file.id" :src="file.url" :type="file.mime"
-												class="pointer-events-none" @load="file.loaded = true;">
-											<p>
-												Your browser does not support the PDF viewer.
-												<a :href="file.url" download>Download the PDF</a>
-											</p>
-											</embed>
+											<iframe class="object-scale-down" :id="'media_' + file.id" :src="file.url" :type="file.mime"
+												class="pointer-events-none" loading="lazy" @load="file.loaded = true;">
+										</iframe>
 										</template>
 
 										<!-- SVG -->
 										<template x-if="file.media_type === 'other' && file.mime === 'image/svg+xml'">
 											<embed class="object-contain" :id="'media_' + file.id" :src="file.url" :type="file.mime"
 												class="pointer-events-none" @load="file.loaded = true;">
-											<p>
-												Your browser does not support the SVG viewer.
-												<a :href="file.url" download>Download the SVG</a>
-											</p>
 											</embed>
 										</template>
 
@@ -2539,8 +2531,8 @@ onDropCB(event) {
 					</template>
 					<!-- SVG -->
 					<template x-if="fileStore.modalFile.media_type === 'other' && fileStore.modalFile.mime === 'image/svg+xml'">
-						<object :data="fileStore.modalFile.url" type="image/svg+xml"
-							class="w-dvh h-full max-w-full max-h-[80svh] landscape:max-h-svh xl:landscape:max-h-[80svh] object-contain mx-auto"></object>
+						<img :src="fileStore.modalFile.url"
+							class="w-dvh h-full max-w-full max-h-[80svh] landscape:max-h-svh xl:landscape:max-h-[80svh] object-contain mx-auto">
 					</template>
 					<!-- All other types -->
 					<template
