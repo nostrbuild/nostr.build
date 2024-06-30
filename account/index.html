@@ -12,7 +12,7 @@
 	<link href="/scripts/dist/account-v2.css?v=48350470780409add985b483914871c3" rel="stylesheet">
 
 	<link rel="icon" href="/assets/nb-logo-color-w.png" />
-	<link href="/styles/twbuild.css?v=13cd88284199f638fdb4b445df454fad" rel="stylesheet">
+	<link href="/styles/twbuild.css?v=e2fa3e82e08c119d6b28ed332b4fe73a" rel="stylesheet">
 
 	<!-- Pre-connect and DNS prefetch -->
 	<link rel="preconnect" href="https://i.nostr.build" crossorigin>
@@ -1559,8 +1559,9 @@ onDropCB(event) {
 											}
 										});
 									};
-									file.loaded = true;
-									checkStatus();
+									if(!file?.uppy && !['image', 'video', 'audio'].includes(file?.media_type)) {
+										checkStatus();
+									}
 								">
 									<!-- Media type badge -->
 									<div x-cloak x-show="!file.mime.startsWith('uppy/')" :id="'badge_' + file.id"
@@ -1606,12 +1607,12 @@ onDropCB(event) {
 										</template>
 										<!-- Loading placeholders -->
 										<div :id="'placeholders_' + file.id">
-											<div x-cloak x-show="!file.loaded && !file.mime.startsWith('uppy/')"
-												x-html="getIconByMime(file.mime, 'absolute inset-0 pointer-events-none object-cover group-hover:opacity-75 h-full w-full text-nbpurple-400 animate-pulse', 2, true)">
+											<div x-show="!file?.uppy && !file.loaded"
+												x-html="getIconByMime(file.mime, 'absolute inset-0 pointer-events-none object-cover group-hover:opacity-75 h-full w-full text-nbpurple-400 animate-pulse opacity-100', 2, true)">
 											</div>
 
 											<!-- Uppy progress -->
-											<template x-if="!file.loaded && file.mime.startsWith('uppy/')">
+											<template x-if="file?.uppy">
 												<svg :class="{ 'animate-pulse': file?.uppy?.uploadError }"
 													class="absolute z-10 inset-0 pointer-events-none object-cover h-full w-full"
 													viewBox="0 0 192 192">
@@ -1652,8 +1653,9 @@ onDropCB(event) {
 													</svg>
 												</button>
 												<!-- Share button -->
-												<button x-cloak x-show="profileStore.profileInfo.isShareEligible && (!scanResults || scanResults?.status === 'clean')" x-data="{shareClick: false}"
-													@click="fileStore.shareMedia.open(file.id)"
+												<button x-cloak
+													x-show="profileStore.profileInfo.isShareEligible && (!scanResults || scanResults?.status === 'clean')"
+													x-data="{shareClick: false}" @click="fileStore.shareMedia.open(file.id)"
 													class="p-1 bg-nbpurple-600/10 text-nbpurple-50 rounded-md hover:bg-nbpurple-700/10 focus:outline-none focus:ring-2 focus:ring-nbpurple-500/10"
 													aria-label="Share media file">
 													<svg x-show="!shareClick" class="max-h-11 w-full inline-block" fill="none" viewBox="0 0 24 24"
@@ -1693,7 +1695,8 @@ onDropCB(event) {
 													</svg>
 												</button>
 												<!-- Copy link -->
-												<button x-cloak x-show="!scanResults || scanResults?.status === 'clean'" x-data="{copyClick: false}"
+												<button x-cloak x-show="!scanResults || scanResults?.status === 'clean'"
+													x-data="{copyClick: false}"
 													@click="copyUrlToClipboard(file.url); copyClick = true; setTimeout(() => copyClick = false, 2000); showToast = true"
 													class="p-1 bg-nbpurple-600/10 text-nbpurple-50 rounded-md hover:bg-nbpurple-700/10 focus:outline-none focus:ring-2 focus:ring-nbpurple-500/10"
 													aria-label="Copy image URL to clipboard">
@@ -1713,7 +1716,8 @@ onDropCB(event) {
 													</svg>
 												</button>
 												<!-- Nostr Share -->
-												<button x-cloak x-show="profileStore.profileInfo.isNostrShareEligible && (!scanResults || scanResults?.status === 'clean')"
+												<button x-cloak
+													x-show="profileStore.profileInfo.isNostrShareEligible && (!scanResults || scanResults?.status === 'clean')"
 													@click="nostrStore.share.open(file.id)"
 													class="p-1 bg-nbpurple-600/10 text-nostrpurple-50 rounded-md hover:bg-nbpurple-700/10 focus:outline-none focus:ring-2 focus:ring-nbpurple-500/10"
 													aria-label="Share image on Nostr">
@@ -1736,7 +1740,7 @@ onDropCB(event) {
 										</template>
 
 										<!-- Image -->
-										<template x-if="file.mime.startsWith('image/')">
+										<template x-if="file.media_type === 'image'">
 											<img x-intersect.once.margin.1024px="
 												$el.src=file.responsive['240p'];
 												if (file.loadMore && !fileStore.loading && !fileStore.loadingMoreFiles) setTimeout(async () => {await fileStore.loadMoreFiles()}, 0);
@@ -1747,7 +1751,7 @@ onDropCB(event) {
 										</template>
 
 										<!-- Video -->
-										<template x-if="file.mime.startsWith('video/')">
+										<template x-if="file.media_type === 'video'">
 											<video :id="'media_' + file.id" crossorigin="use-credentials" x-intersect.once.margin.1024px="
 														$el.src = file.url;
 														$el.load();
@@ -1763,22 +1767,46 @@ onDropCB(event) {
 										</template>
 
 										<!-- Audio -->
-										<template x-if="file.mime.startsWith('audio/')">
+										<template x-if="file.media_type === 'audio'">
 											<!-- Default poster -->
 											<img :id="'media_' + file.id" src="https://cdn.nostr.build/assets/audio/jpg/audio-wave@0.5x.jpg"
 												:alt="'Poster for ' + file.name" @load="file.loaded = true;" loading="eager"
 												class="pointer-events-none object-cover group-hover:opacity-75" />
 										</template>
 
+										<!-- PDF -->
+										<template x-if="file.media_type === 'document' && file.mime.startsWith('application/pdf')">
+											<embed class="object-contain" :id="'media_' + file.id" :src="file.url" :type="file.mime"
+												class="pointer-events-none" @load="file.loaded = true;">
+											<p>
+												Your browser does not support the PDF viewer.
+												<a :href="file.url" download>Download the PDF</a>
+											</p>
+											</embed>
+										</template>
+
+										<!-- SVG -->
+										<template x-if="file.media_type === 'other' && file.mime === 'image/svg+xml'">
+											<embed class="object-contain" :id="'media_' + file.id" :src="file.url" :type="file.mime"
+												class="pointer-events-none" @load="file.loaded = true;">
+											<p>
+												Your browser does not support the SVG viewer.
+												<a :href="file.url" download>Download the SVG</a>
+											</p>
+											</embed>
+										</template>
+
 										<!-- All other types -->
 										<template
-											x-if="!file.mime.startsWith('uppy/') && !file.mime.startsWith('image/') && !file.mime.startsWith('video/') && !file.mime.startsWith('audio/')">
-											<div class="flex items-center justify-center h-full"
+											x-if="!file?.uppy && !['image', 'video', 'audio'].includes(file.media_type) && !file.mime.startsWith('application/pdf') && !file.mime.startsWith('image/svg+xml')">
+											<div :id="'media_' + file.id" class="flex items-center justify-center h-full"
+												x-init="file.loaded = true"
 												x-html="getIconByMime(file.mime, 'size-1/3 text-nbpurple-300', 2, true)">
 											</div>
 										</template>
 
-										<template x-if="!file.uppy">
+										<template
+											x-if="!file.uppy && (['image', 'video', 'audio'].includes(file.media_type) || file.mime.startsWith('application/pdf') || file.mime.startsWith('image/svg+xml'))">
 											<button @click="fileStore.openModal(file)" type="button"
 												:class="{'hidden pointer-events-none': showMediaActions}"
 												class="absolute inset-0 focus:outline-none">
@@ -1797,7 +1825,9 @@ onDropCB(event) {
 													class="pointer-events-none mt-2 flex text-md font-medium text-nbpurple-300 items-center align-middle">
 													<span :class="{'mr-1': scanResults}"
 														x-html="scanResults ? getIcon(scanResults.status, 'size-5') : ''"></span>
-													<span :class="{'text-nborange-500 cursor-not-allowed font-bold line-through': scanResults?.status === 'infected'}" class="text-ellipsis overflow-hidden whitespace-nowrap"
+													<span
+														:class="{'text-nborange-500 cursor-not-allowed font-bold line-through': scanResults?.status === 'infected'}"
+														class="text-ellipsis overflow-hidden whitespace-nowrap"
 														x-text="file.title?.length > 0 ? file.title : file.name"></span>
 												</p>
 												<p class="pointer-events-none block text-sm font-medium text-nbpurple-500"
@@ -2468,12 +2498,12 @@ onDropCB(event) {
 					</button>
 					<!-- Image -->
 					<!-- Progressive load of media is handled by the next/prev functions -->
-					<template x-if="fileStore.modalFile.mime?.startsWith('image/')">
+					<template x-if="fileStore.modalFile.media_type === 'image'">
 						<img :src="fileStore.modalImageUrl" :srcset="fileStore.modalImageSrcset" :sizes="fileStore.modalImageSizes"
 							:alt="fileStore.modalImageAlt"
 							class="w-dvh h-full max-w-full max-h-[80svh] landscape:max-h-svh xl:landscape:max-h-[80svh] object-contain mx-auto">
 					</template>
-					<template x-if="fileStore.modalFile.mime?.startsWith('video/')">
+					<template x-if="fileStore.modalFile.media_type === 'video'">
 						<div class="relative w-full h-full flex items-center justify-center" @mouseenter="handleMouseEnter"
 							@mouseleave="handleMouseLeave">
 							<video crossorigin="use-credentials"
@@ -2487,7 +2517,7 @@ onDropCB(event) {
 						</div>
 					</template>
 					<!-- Audio -->
-					<template x-if="fileStore.modalFile.mime?.startsWith('audio/')">
+					<template x-if="fileStore.modalFile.media_type === 'audio'">
 						<!-- Use video player to play audio files -->
 						<!--
 						<img src="https://cdn.nostr.build/assets/audio/jpg/audio-wave@0.5x.jpg" :alt="fileStore.modalFile.name" class="w-full h-full object-cover">
@@ -2500,6 +2530,24 @@ onDropCB(event) {
 							class="w-dvh h-full max-w-full max-h-[80svh] landscape:max-h-svh xl:landscape:max-h-[80svh] object-contain mx-auto">
 							<source :src="fileStore.modalFile.url" :type="fileStore.modalFile.mime">
 						</video>
+					</template>
+					<!-- PDF -->
+					<template
+						x-if="fileStore.modalFile.media_type === 'document' && fileStore.modalFile.mime === 'application/pdf'">
+						<iframe :src="fileStore.modalFile.url"
+							class="w-full h-full max-w-full max-h-[80svh] landscape:max-h-svh xl:landscape:max-h-[80svh] object-fill mx-auto"></iframe>
+					</template>
+					<!-- SVG -->
+					<template x-if="fileStore.modalFile.media_type === 'other' && fileStore.modalFile.mime === 'image/svg+xml'">
+						<object :data="fileStore.modalFile.url" type="image/svg+xml"
+							class="w-dvh h-full max-w-full max-h-[80svh] landscape:max-h-svh xl:landscape:max-h-[80svh] object-contain mx-auto"></object>
+					</template>
+					<!-- All other types -->
+					<template
+						x-if="!['image', 'video', 'audio'].includes(fileStore.modalFile.media_type) && !fileStore.modalFile.mime.startsWith('application/pdf') && !fileStore.modalFile.mime.startsWith('image/svg+xml')">
+						<div class="flex items-center justify-center h-full"
+							x-html="getIconByMime(fileStore.modalFile.mime, 'size-1/2 text-nbpurple-300', 2, true)">
+						</div>
 					</template>
 				</div>
 				<div class="bg-black/50 px-4 py-3 sm:px-6 overflow-y-auto landscape:hidden xl:landscape:block">
@@ -2699,7 +2747,7 @@ onDropCB(event) {
 																	src="https://cdn.nostr.build/assets/audio/jpg/audio-wave@0.25x.jpg"
 																	:alt="'Poster for ' + file.name" loading="eager" class="object-cover rounded-md" />
 																<div x-show="!['image', 'video', 'audio'].includes(file.media_type)"
-																x-html="getIconByMime(file.mime, 'size-12 text-nbpurple-50')"></div>
+																	x-html="getIconByMime(file.mime, 'size-12 text-nbpurple-50')"></div>
 															</div>
 															<button x-show="nostrStore.share.selectedFiles.length > 1"
 																@click="nostrStore.share.remove(file.id)"
