@@ -39,7 +39,7 @@ $total_size_gb = round($stats['total_size'] / (1024 * 1024 * 1024), 2); // Conve
 	// Instantiates S3Service class
 	$s3 = new S3Service($awsConfig);
 	// Grab User npub if logged in
-	$usernpub = $perm->validateLoggedin() ? $_SESSION['usernpub'] : null;
+	$usernpub = $perm->validateLoggedin() ? $_SESSION['usernpub'] : '';
 	// Instantiates MultimediaUpload class
 	$upload = new MultimediaUpload($link, $s3, false, $usernpub);
 	// Set the $_FILES array or initiate file download from the URL
