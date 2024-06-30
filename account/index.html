@@ -8,7 +8,7 @@
 	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 	<title>nostr.build account</title>
 
-	<script defer src="/scripts/dist/account-v2.js?v=cf77acce662ea3bc1ff12e03a0938346"></script>
+	<script defer src="/scripts/dist/account-v2.js?v=a480c68eadd82ad1aca06a08ca3dd63c"></script>
 	<link href="/scripts/dist/account-v2.css?v=48350470780409add985b483914871c3" rel="stylesheet">
 
 	<link rel="icon" href="/assets/nb-logo-color-w.png" />
@@ -2536,7 +2536,7 @@ onDropCB(event) {
 					</template>
 					<!-- All other types -->
 					<template
-						x-if="!['image', 'video', 'audio'].includes(fileStore.modalFile.media_type) && !fileStore.modalFile.mime.startsWith('application/pdf') && !fileStore.modalFile.mime.startsWith('image/svg+xml')">
+						x-if="fileStore.modalFile && !['image', 'video', 'audio'].includes(fileStore.modalFile?.media_type) && !fileStore.modalFile?.mime?.startsWith('application/pdf') && !fileStore.modalFile?.mime?.startsWith('image/svg+xml')">
 						<div class="flex items-center justify-center h-full"
 							x-html="getIconByMime(fileStore.modalFile.mime, 'size-1/2 text-nbpurple-300', 2, true)">
 						</div>
