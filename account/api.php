@@ -352,7 +352,7 @@ if (isset($_GET["action"])) {
 		$limit = isset($_GET["limit"]) ? intval($_GET["limit"]) : null;
 		$filter = isset($_GET["filter"]) ? $_GET["filter"] : null;
 		// Check if the filter one of the allowed values
-		if ($filter !== null && !in_array($filter, ["all", "images", "videos", "audio", 'gifs'])) {
+		if ($filter !== null && !in_array($filter, ["all", "images", "videos", "audio", 'gifs', 'documents', 'archives', 'others'])) {
 			http_response_code(400);
 			echo json_encode(array("error" => "Invalid filter value"));
 			exit;
@@ -390,6 +390,12 @@ if (isset($_GET["action"])) {
 					"videos" => (int) $folder['videos'] ?? 0,
 					"audioSize" => (int) $folder['audioSize'] ?? 0,
 					"audio" => (int) $folder['audio'] ?? 0,
+					"documentsSize" => (int) $folder['documentSize'] ?? 0,
+					"documents" => (int) $folder['documents'] ?? 0,
+					"archivesSize" => (int) $folder['archiveSize'] ?? 0,
+					"archives" => (int) $folder['archives'] ?? 0,
+					"othersSize" => (int) $folder['otherSize'] ?? 0,
+					"others" => (int) $folder['others'] ?? 0,
 					"publicCount" => (int) $folder['publicCount'] ?? 0,
 				],
 			];

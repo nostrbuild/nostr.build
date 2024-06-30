@@ -1186,8 +1186,8 @@ Alpine.store('menuStore', {
     if (!folder) {
       return;
     }
-    // Determine file type from mime
-    const fileType = file.mime.split('/')[0];
+    // Determine file type from media_type
+    const fileType = file.media_type;
     console.debug('File type:', fileType);
     switch (fileType) {
       case 'image':
@@ -1211,6 +1211,21 @@ Alpine.store('menuStore', {
         folder.stats.audio += increment ? 1 : -1;
         folder.stats.audioSize += increment ? file.size : -file.size;
         this.fileStats.totalVideos += increment ? 1 : -1;
+        break;
+      case 'document':
+        folder.stats.documents += increment ? 1 : -1;
+        folder.stats.documentsSize += increment ? file.size : -file.size;
+        this.fileStats.totalDocuments += increment ? 1 : -1;
+        break;
+      case 'archive':
+        folder.stats.archives += increment ? 1 : -1;
+        folder.stats.archivesSize += increment ? file.size : -file.size;
+        this.fileStats.totalArchives += increment ? 1 : -1;
+        break;
+      case 'other':
+        folder.stats.others += increment ? 1 : -1;
+        folder.stats.othersSize += increment ? file.size : -file.size;
+        this.fileStats.totalOthers += increment ? 1 : -1;
         break;
     }
     // Update the total files and size
@@ -1502,6 +1517,9 @@ Alpine.store('menuStore', {
     totalGifs: 0,
     totalImages: 0,
     totalVideos: 0,
+    totalDocuments: 0,
+    totalArchives: 0,
+    totalOthers: 0,
     creatorCount: 0,
     totalFolders: 0,
     totalSize: 0,
@@ -1523,6 +1541,9 @@ Alpine.store('menuStore', {
         this.fileStats.totalGifs = parseInt(data.totalStats.gifs);
         this.fileStats.totalImages = parseInt(data.totalStats.images);
         this.fileStats.totalVideos = parseInt(data.totalStats.videos + data.totalStats.audio);
+        this.fileStats.totalDocuments = parseInt(data.totalStats.documents);
+        this.fileStats.totalArchives = parseInt(data.totalStats.archives);
+        this.fileStats.totalOthers = parseInt(data.totalStats.others);
         this.fileStats.creatorCount = parseInt(data.totalStats.publicCount);
         this.fileStats.totalFolders = Alpine.store('menuStore').folders.length;
         this.fileStats.totalSize = parseInt(data.totalStats.allSize);
@@ -1907,18 +1928,18 @@ Alpine.store('fileStore', {
       icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="size-5" aria-hidden="true"><path d="M3 14h3a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-7a9 9 0 0 1 18 0v7a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3"/></svg>`,
     },
     documents: {
-      filter: 'document',
+      filter: 'documents',
       name: 'Documents',
       icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="size-5"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/></svg>`,
     },
     archives: {
-      filter: 'archive',
+      filter: 'archives',
       name: 'Archives',
       icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="size-5"><path d="M10 12v-1"/><path d="M10 18v-2"/><path d="M10 7V6"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M15.5 22H18a2 2 0 0 0 2-2V7l-5-5H6a2 2 0 0 0-2 2v16a2 2 0 0 0 .274 1.01"/><circle cx="10" cy="20" r="2"/></svg>`,
     },
-    other: {
-      filter: 'other',
-      name: 'Other',
+    others: {
+      filter: 'others',
+      name: 'Others',
       icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="size-5"><path d="M20 7h-3a2 2 0 0 1-2-2V2"/><path d="M9 18a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h7l4 4v10a2 2 0 0 1-2 2Z"/><path d="M3 7.6v12.8A1.6 1.6 0 0 0 4.6 22h9.8"/></svg>`,
     },
   },
@@ -2629,6 +2650,7 @@ Alpine.store('uppyStore', {
           id: file.id,
           name: file.name,
           mime: 'uppy/upload',
+          media_type: 'uppy',
           size: file.size,
           loaded: false,
           folder: folderName,

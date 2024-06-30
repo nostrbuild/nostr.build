@@ -8,7 +8,7 @@
 	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 	<title>nostr.build account</title>
 
-	<script defer src="/scripts/dist/account-v2.js?v=a480c68eadd82ad1aca06a08ca3dd63c"></script>
+	<script defer src="/scripts/dist/account-v2.js?v=56d32242fc686058efed04f00ca637fa"></script>
 	<link href="/scripts/dist/account-v2.css?v=48350470780409add985b483914871c3" rel="stylesheet">
 
 	<link rel="icon" href="/assets/nb-logo-color-w.png" />
@@ -1324,6 +1324,27 @@ onDropCB(event) {
 								class="cursor-pointer hidden text-xs sm:text-sm text-nbpurple-300 font-semibold leading-6 lg:flex justify-center items-center gap-x-1">
 								<span x-html="fileStore.filters.audio.icon"></span>
 								<span x-text="formatBytes(menuStore.activeFolderStats.audioSize)"></span>
+							</p>
+							<p x-cloak x-show="fileStore.fullWidth && menuStore.activeFolderStats.documentsSize > 0"
+								@click="fileStore.setFilter('documents')"
+								:class="{'text-orange-300 font-bold': fileStore.currentFilter === 'documents'}"
+								class="cursor-pointer hidden text-xs sm:text-sm text-nbpurple-300 font-semibold leading-6 lg:flex justify-center items-center gap-x-1">
+								<span x-html="fileStore.filters.documents.icon"></span>
+								<span x-text="formatBytes(menuStore.activeFolderStats.documentsSize)"></span>
+							</p>
+							<p x-cloak x-show="fileStore.fullWidth && menuStore.activeFolderStats.archivesSize > 0"
+								@click="fileStore.setFilter('archives')"
+								:class="{'text-orange-300 font-bold': fileStore.currentFilter === 'archives'}"
+								class="cursor-pointer hidden text-xs sm:text-sm text-nbpurple-300 font-semibold leading-6 lg:flex justify-center items-center gap-x-1">
+								<span x-html="fileStore.filters.archives.icon"></span>
+								<span x-text="formatBytes(menuStore.activeFolderStats.archivesSize)"></span>
+							</p>
+							<p x-cloak x-show="fileStore.fullWidth && menuStore.activeFolderStats.othersSize > 0"
+								@click="fileStore.setFilter('other')"
+								:class="{'text-orange-300 font-bold': fileStore.currentFilter === 'other'}"
+								class="cursor-pointer hidden text-xs sm:text-sm text-nbpurple-300 font-semibold leading-6 lg:flex justify-center items-center gap-x-1">
+								<span x-html="fileStore.filters.others.icon"></span>
+								<span x-text="formatBytes(menuStore.activeFolderStats.archivesSize)"></span>
 							</p>
 						</div>
 						<div class="flex ml-4 mt-0 transition-all">
