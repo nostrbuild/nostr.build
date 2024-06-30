@@ -630,7 +630,9 @@ class MultimediaUpload
         // Get account level to use later
         $accountLevelInt = 0;
         try {
-          $accountLevelInt = $this->userAccount->getAccountLevelInt();
+          if ($this->userAccount) {
+            $accountLevelInt = $this->userAccount->getAccountLevelInt();
+          }
         } catch (Exception $e) {
           error_log("Failed to get account level: " . $e->getMessage());
         }
