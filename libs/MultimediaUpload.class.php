@@ -12,6 +12,7 @@ require_once $_SERVER['DOCUMENT_ROOT'] . "/SiteConfig.php"; // File size limits,
 require_once $_SERVER['DOCUMENT_ROOT'] . "/libs/CloudflareUploadWebhook.class.php";
 require_once $_SERVER['DOCUMENT_ROOT'] . "/libs/VideoTranscoding.class.php";
 require_once $_SERVER['DOCUMENT_ROOT'] . "/libs/VideoRepackager.class.php";
+require_once $_SERVER['DOCUMENT_ROOT'] . "/libs/PhotoDNA.class.php";
 
 // Vendor autoload
 require_once $_SERVER['DOCUMENT_ROOT'] . "/vendor/autoload.php";
@@ -435,7 +436,6 @@ class MultimediaUpload
     // Work only with the single file, there is no need to loop over the whole array
     try {
       // Begin a database transaction, so that we can rollback if anything fails
-      $this->db->begin_transaction();
       $this->file = $this->filesArray[0];
       $fileType = detectFileExt($this->file['tmp_name']);
       if ($fileType['type'] !== 'image' && $fileType['type'] !== 'video') {
@@ -453,7 +453,6 @@ class MultimediaUpload
         error_log('Duplicate file:' . $fileSha256 . PHP_EOL);
         //error_log('Npub:' . $this->userNpub ?? 'anon' . PHP_EOL);
         //error_log('Client Info:' . $_SERVER['CLIENT_REQUEST_INFO'] ?? 'unknown' . PHP_EOL);
-        $this->db->rollback();
         return [true, 200, 'Upload successful.'];
       }
 
@@ -461,6 +460,18 @@ class MultimediaUpload
       $validationResult = $this->validateFile();
       if ($validationResult[0] !== true) {
         return $validationResult;
+      }
+      // Perform PhotoDNA check
+      try {
+        $pdnaNpub = empty($this->userNpub) ? 'Unknown' : $this->userNpub;
+        $photoDNA = new PhotoDNA($pdnaNpub, $fileSha256, $this->file['tmp_name']);
+        $pdnaResult = $photoDNA->proccessUploadedImage();
+        if ($pdnaResult === true) {
+          return [false, 451, 'The image you uploaded is not allowed.'];
+        }
+      } catch (Exception $e) {
+        // Manual check will be done later
+        error_log('PhotoDNA check failed: ' . $e->getMessage());
       }
       // Perform image manipulations
       $fileData = $this->processProfileImage($fileType);
@@ -473,6 +484,7 @@ class MultimediaUpload
       $newFileSize = filesize($this->file['tmp_name']); // Capture the file size after transformations
       $newFileType = 'profile';
 
+      $this->db->begin_transaction();
       // Insert the file data into the database
       $insert_id = $this->storeInDatabaseFree(
         $newFileName,
@@ -633,6 +645,22 @@ class MultimediaUpload
         //   'mime' => 'image/jpeg',
         // ];
         $fileType = detectFileExt($this->file['tmp_name'], $accountLevelInt);
+
+        // Perform PhotoDNA check
+        if (!$this->pro && $fileType['type'] === 'image') {
+          try {
+            $pdnaNpub = empty($this->userNpub) ? 'Unknown' : $this->userNpub;
+            $photoDNA = new PhotoDNA($pdnaNpub, $fileSha256, $this->file['tmp_name']);
+            $pdnaResult = $photoDNA->proccessUploadedImage();
+            if ($pdnaResult === true) {
+              return [false, 451, 'The image you uploaded is not allowed.'];
+            }
+          } catch (Exception $e) {
+            // Manual check will be done later
+            error_log('PhotoDNA check failed: ' . $e->getMessage());
+          }
+        }
+
         if ($fileType['type'] === 'image') {
           if ($this->pro) {
             $fileData = $this->processProUploadImage($fileType);
@@ -662,6 +690,9 @@ class MultimediaUpload
             error_log("Video repackaging failed: " . $e->getMessage());
           }
         }
+        // Begin a database transaction, so that we can rollback if anything fails
+        $this->db->begin_transaction(MYSQLI_TRANS_START_WITH_CONSISTENT_SNAPSHOT);
+
         // By this time the image has been processed and saved to a temporary location
         // It is now ready to be uploaded to S3 and information about it stored in the database
         // Determine if we will backup the upload to S3 based on account level

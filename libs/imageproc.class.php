@@ -413,7 +413,8 @@ class ImageProcessor
   {
     // Do nothing for formats that don't support metadata
     $imageFormat = strtolower($this->imagick->getImageFormat());
-    if ($imageFormat !== 'jpeg' || $imageFormat !== 'heic' || $imageFormat !== 'heif' || $imageFormat !== 'webp' || $imageFormat !== 'tiff') {
+    if ($imageFormat !== 'jpeg' && $imageFormat !== 'heic' && $imageFormat !== 'heif' && $imageFormat !== 'webp' && $imageFormat !== 'tiff') {
+      error_log("Image format: $imageFormat does not support metadata stripping" . PHP_EOL);
       return $this;
     }
     // Save the ICC profile if one exists
@@ -440,6 +441,8 @@ class ImageProcessor
     // Strip all profiles and comments
     try {
       $this->imagick->stripImage();
+      $this->imagick->profileImage('*', null);
+      error_log("Image metadata stripped" . PHP_EOL);
     } catch (Exception $e) {
       error_log($e->getMessage() . PHP_EOL);
     }
