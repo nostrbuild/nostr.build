@@ -114,8 +114,11 @@ window.imageVariantsPrecache = async (urls) => {
 };
 
 // Check URLs Virus scanning status
-window.checkMediaVirusScanStatus = async (url) => {
-  const api = getApiFetcher('', '*/*');
+window.checkMediaVirusScanStatus = async (url, mediaType) => {
+  if (['image', 'video', 'audio'].includes(mediaType)) {
+    // No scan needed for images, videos, and audio
+    return null;
+  }
   // HEAD request to check the URL
   return fetch(url,
     {
