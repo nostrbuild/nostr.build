@@ -228,6 +228,7 @@ class Plans
         price: self::$originalPrices[self::PROFESSIONAL],
         features: [
           '10GB of private storage',
+          'Upload and share PDFs, SVGs',
           'Free Media Gallery, 1.5M+ items',
           'Add/Move/Delete your media',
           'Share media direct to Nostr',
@@ -251,7 +252,7 @@ class Plans
         price: self::$originalPrices[self::CREATOR],
         features: [
           '30GB of private storage',
-          'Upload and share PDFs, SVGs',
+          'Upload and share ZIPs, PDFs, SVGs',
           'AI Studio (Text-to-Image)',
           '<a class="ref_link" target="_blank" href="https://nostr.build/creators/">Host a Creators page</a></b>',
           'S3 backup for all media',

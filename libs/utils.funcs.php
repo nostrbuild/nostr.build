@@ -140,9 +140,9 @@ function getAllowedMimesArray(int $acctlevel = 0): array
   ];
 
   // Merge the arrays based on account level
-  if ($acctlevel === 10 /* Advanced */ || $acctlevel == 99 /* Admin */) {
+  if ($acctlevel === 10 /* Advanced */ || $acctlevel == 99 /* Admin */ || $acctlevel === 1 /* Creator */) {
     $mimeTypes = array_merge($mimeTypes, $mimeTypesAddonDocs, $mimeTypesAddonExtra);
-  } elseif ($acctlevel === 1) {
+  } elseif ($acctlevel === 2 /* Pro */) {
     $mimeTypes = array_merge($mimeTypes, $mimeTypesAddonDocs);
   }
 
