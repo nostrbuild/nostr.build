@@ -3,9 +3,13 @@
 function getFileType(string $ext): string
 {
   $fileTypes = [
-    'image' => ['jpg', 'png', 'apng', 'gif', 'webp', 'svg', 'bmp', 'tiff', 'psd', 'heic', 'heif', 'avif', 'jp2', 'jpx', 'jpm', 'jxr', 'jfif', 'ico'],
+    'image' => ['jpg', 'png', 'apng', 'gif', 'webp', 'bmp', 'tiff', 'heic', 'heif', 'avif', 'jp2', 'jpx', 'jpm', 'jxr', 'jfif', 'ico'],
     'audio' => ['mp3', 'ogg', 'wav', 'aac', 'webm', 'flac', 'aif', 'wma', 'm4a', 'm4b', 'm4p', 'm4r', 'm4v', 'mp2', 'mpa', 'mpga', 'mp4a', 'mpga', 'mpg', 'mpv2', 'mp2v', 'mpe', 'm2a', 'm2v', 'm2s', 'm2t', 'm2ts', 'm2v', 'm3a'],
     'video' => ['mp4', 'webm', 'ogv', 'avi', 'wmv', 'mov', 'mpeg', '3gp', '3g2', 'flv', 'm4v', 'mkv', 'mpg', 'm2v', 'm4p', 'm4v', 'mp2', 'mpa', 'mpe', 'mpv', 'm2ts', 'mts', 'ts', 'mxf', 'asf', 'rm', 'rmvb', 'vob', 'f4v', 'm2v', 'm2ts', 'mts', 'ts', 'mxf', 'asf', 'rm', 'rmvb', 'vob', 'f4v'],
+    'archive' => ['zip', 'tar', 'gz', 'bz2', 'xz', 'lz', 'tar.gz', 'tar.bz', 'tar.xz'],
+    'document' => ['pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'odt', 'ods', 'odp', 'rtf'],
+    'text' => ['txt', 'html', 'css', 'js', 'json', 'xml', 'yaml', 'toml', 'md', 'tex', 'rst', 'adoc', 'org', 'texinfo', 'roff'],
+    'other' => ['svg', 'epub', 'mobi', 'psd'],
   ];
   foreach ($fileTypes as $type => $extensions) {
     if (in_array($ext, $extensions)) {
@@ -16,6 +20,13 @@ function getFileType(string $ext): string
     }
   }
   return $fileType;
+}
+
+// Convenience function to get file type from the full name
+function getFileTypeFromName(string $filename): string
+{
+  $ext = pathinfo($filename, PATHINFO_EXTENSION);
+  return getFileType($ext);
 }
 
 function formatSizeUnits($bytes)
@@ -37,18 +48,10 @@ function formatSizeUnits($bytes)
   return $bytes;
 }
 
-// Function to detect file format based on extension and mime type
-function detectFileExt($file)
+function getAllowedMimesArray(int $acctlevel = 0): array
 {
-  // Try to get the extension from the file name
-  // $ext = strtolower(pathinfo($file, PATHINFO_EXTENSION));
+  // Sync with JS Uppy config
 
-  // Get the MIME type
-  $finfo = finfo_open(FILEINFO_MIME_TYPE);
-  $mimeType = finfo_file($finfo, $file);
-  finfo_close($finfo);
-
-  // Map MIME types to extensions and file types
   $mimeTypes = [
     // Images
     'image/jpeg' => 'jpg', // JPEG image
@@ -121,6 +124,46 @@ function detectFileExt($file)
     'video/x-ms-wvx' => 'wvx', // Windows Media Video Playlist (WVX)
     'video/x-sgi-movie' => 'movie', // Silicon Graphics movie
   ];
+
+  $mimeTypesAddonDocs = [
+    // Documents
+    'application/pdf' => 'pdf', // Portable Document Format (PDF)
+
+    // SVG, for now...
+    'image/svg+xml' => 'svg', // SVG vector image
+  ];
+
+  $mimeTypesAddonExtra = [
+    // Archives
+    'application/zip' => 'zip', // ZIP archive
+    'application/tar' => 'tar', // Tarball archive
+  ];
+
+  // Merge the arrays based on account level
+  if ($acctlevel === 10 /* Advanced */ || $acctlevel == 99 /* Admin */ || $acctlevel === 1 /* Creator */) {
+    $mimeTypes = array_merge($mimeTypes, $mimeTypesAddonDocs, $mimeTypesAddonExtra);
+  } elseif ($acctlevel === 2 /* Pro */) {
+    $mimeTypes = array_merge($mimeTypes, $mimeTypesAddonDocs);
+  }
+
+  return $mimeTypes;
+}
+
+// Function to detect file format based on extension and mime type
+function detectFileExt($file, int $acctlevel = 0)
+{
+  // Try to get the extension from the file name
+  // $ext = strtolower(pathinfo($file, PATHINFO_EXTENSION));
+
+  // Get the MIME type
+  $finfo = finfo_open(FILEINFO_MIME_TYPE);
+  $mimeType = finfo_file($finfo, $file);
+  finfo_close($finfo);
+  // DEBUG
+  error_log("\nMIME type: $mimeType\n");
+
+  // Map MIME types to extensions and file types
+  $mimeTypes = getAllowedMimesArray($acctlevel);
 
   if (!isset($mimeTypes[$mimeType])) {
     // It's probably best to throw exception here then try and salvage situation based on supplied extension

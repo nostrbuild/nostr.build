@@ -42,7 +42,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
             // Delete requests are free, so we don't bother checking if the object exists
             try {
-                $s3->deleteFromS3($objectName); // TODO: Remove when S3 purge is done
+                $s3->deleteFromS3(objectKey: $objectName, paidAccount: false);
                 $purger = new CloudflarePurger($_SERVER['NB_API_SECRET'], $_SERVER['NB_API_PURGE_URL']);
                 $result = $purger->purgeFiles([$filename]);
                 if ($result !== false) {
@@ -103,7 +103,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             $tempFile = tempnam(sys_get_temp_dir(), 'csam_');
             $objectName = ($type === 'picture') ? 'i/' . $filename : 'av/' . $filename;
             // Even if file has been marked with http-451, we can still download it from R2 directly
-            $tempFile = $s3->downloadObjectR2($objectName, $tempFile);
+            $tempFile = $s3->downloadObjectR2(key: $objectName, saveAs: $tempFile, paidAccount: false);
 
             // Get the upload logs from R2
             $logsJSON = fetchJsonFromR2Bucket(
@@ -209,7 +209,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
             // Delete requests are free, so we don't bother checking if the object exists
             try {
-                $s3->deleteFromS3($objectName); // TODO: Remove when S3 purge is done
+                $s3->deleteFromS3(objectKey: $objectName, paidAccount: false);
                 $purger = new CloudflarePurger($_SERVER['NB_API_SECRET'], $_SERVER['NB_API_PURGE_URL']);
                 $result = $purger->purgeFiles([$filename]);
                 if ($result !== false) {

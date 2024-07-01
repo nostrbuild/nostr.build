@@ -33,6 +33,11 @@ class Permission
     $this->userLevel = $this->isLoggedIn ? $_SESSION["acctlevel"] : null;
     $this->accFlags = $this->isLoggedIn && isset($_SESSION["accflags"]) ? $_SESSION["accflags"] : null;
     $this->planExpired = $this->isLoggedIn && isset($_SESSION["planexpired"]) ? $_SESSION["planexpired"] : null;
+    if ($this->isLoggedIn && !empty($_SESSION["usernpub"])) {
+      // Set or update the cookie to expire in 1 hour
+      $userNpub = $_SESSION["usernpub"];
+      $this->setSecureSignedCookie('npub', $userNpub, 3600);
+    }
   }
 
   function validateLoggedin()
@@ -98,5 +103,25 @@ class Permission
   function hasPrivilege($privilege): bool
   {
     return $this->isLoggedIn && isset($this->accFlags[$privilege]) && $this->accFlags[$privilege] === true;
+  }
+
+  private function setSecureSignedCookie(
+    string $name,
+    string $value,
+    int $expire = 3600,
+    string $path = '/',
+    string $domain = '',
+    bool $secure = true,
+    bool $httponly = false
+  ): void {
+    $name = $secure ? '__Secure-' . $name : $name;
+    $secret = $_SERVER['NMS_COOKIE_SECRET_KEY'];
+    $expireTime = time() + $expire;
+    $domain = empty($domain) ? '.' . /*$_SERVER['HTTP_HOST']*/ 'nostr.build' : $domain;
+    // Sign the value with the secret key HMAC SHA256
+    $value .= '.' . strval($expireTime);
+    $sign = hash_hmac('sha256', $value, $secret, true);
+    $value .= '.' . base64_encode($sign);
+    setcookie($name, $value, $expireTime, $path, $domain, $secure, $httponly);
   }
 }

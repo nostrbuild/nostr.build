@@ -95,8 +95,9 @@ function createSuccessResponse($data): array
       "srcset" => implode(", ", array_map(function ($resolution) use ($file, $resolutionToWidth) {
         return htmlspecialchars($file['responsive'][$resolution] . " {$resolutionToWidth[$resolution]}w");
       }, array_keys($file['responsive']))),
-      "width" => $file['dimensions']['width'],
-      "height" => $file['dimensions']['height'],
+      "width" => $file['dimensions']['width'] ?? 0,
+      "height" => $file['dimensions']['height'] ?? 0,
+      "media_type" => $file['media_type'],
       "blurhash" => $file['blurhash'],
       "sha256_hash" => $file['original_sha256'],
       "created_at" => date('Y-m-d H:i:s'),

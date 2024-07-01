@@ -74,7 +74,7 @@ function listImagesByFolderName($folderName, $link, $start = null, $limit = null
 
 	foreach ($imgArray as $images_row) {
 		// Get mime type and image URL
-		$type = explode('/', $images_row['mime_type'])[0];
+		$type = getFileTypeFromName($images_row['image']);
 		// if ($type != 'image' && $type != 'video' && $type != 'audio') continue;
 
 		$image = $images_row['image'];
@@ -109,11 +109,11 @@ function listImagesByFolderName($folderName, $link, $start = null, $limit = null
 		];
 		$srcset = [];
 		foreach ($resolutionToWidth as $resolution => $width) {
-			$srcset[] = htmlspecialchars(SiteConfig::getResponsiveUrl('professional_account_image', $resolution) . $filename . " {$width}w");
+			$srcset[] = htmlspecialchars(SiteConfig::getResponsiveUrl($professional_type, $resolution) . $filename . " {$width}w");
 		}
 		$responsive = [];
 		foreach ($resolutionToWidth as $resolution => $width) {
-			$responsive[$resolution] = htmlspecialchars(SiteConfig::getResponsiveUrl('professional_account_image', $resolution) . $filename);
+			$responsive[$resolution] = htmlspecialchars(SiteConfig::getResponsiveUrl($professional_type, $resolution) . $filename);
 		}
 		$srcset = implode(", ", $srcset);
 		$sizes = '(max-width: 426px) 100vw, (max-width: 640px) 100vw, (max-width: 854px) 100vw, (max-width: 1280px) 50vw, 33vw';
@@ -130,8 +130,9 @@ function listImagesByFolderName($folderName, $link, $start = null, $limit = null
 			"size" => $size,
 			"sizes" => $type === 'image' ? $sizes : null,
 			"srcset" => $type === 'image' ? $srcset : null,
-			"width" => $images_row['media_width'],
-			"height" => $images_row['media_height'],
+			"width" => $images_row['media_width'] ?? null,
+			"height" => $images_row['media_height'] ?? null,
+			"media_type" => getFileTypeFromName($filename),
 			"blurhash" => $type === 'image' ? $images_row['blurhash'] : null,
 			"sha256_hash" => $images_row['sha256_hash'],
 			"created_at" => $images_row['created_at'],
@@ -300,8 +301,9 @@ function getReturnFilesArray($fileData)
 		"srcset" => implode(", ", array_map(function ($resolution) use ($fileData, $resolutionToWidth) {
 			return htmlspecialchars($fileData[0]['responsive'][$resolution] . " {$resolutionToWidth[$resolution]}w");
 		}, array_keys($fileData[0]['responsive']))),
-		"width" => $fileData[0]['dimensions']['width'],
-		"height" => $fileData[0]['dimensions']['height'],
+		"width" => $fileData[0]['dimensions']['width'] ?? null,
+		"height" => $fileData[0]['dimensions']['height'] ?? null,
+		"media_type" => $fileData[0]['media_type'], // "image", "video", "audio", "document", "archive", "text", "other"
 		"blurhash" => $fileData[0]['blurhash'],
 		"sha256_hash" => $fileData[0]['original_sha256'],
 		"created_at" => date('Y-m-d H:i:s'),
@@ -350,7 +352,7 @@ if (isset($_GET["action"])) {
 		$limit = isset($_GET["limit"]) ? intval($_GET["limit"]) : null;
 		$filter = isset($_GET["filter"]) ? $_GET["filter"] : null;
 		// Check if the filter one of the allowed values
-		if ($filter !== null && !in_array($filter, ["all", "images", "videos", "audio", 'gifs'])) {
+		if ($filter !== null && !in_array($filter, ["all", "images", "videos", "audio", 'gifs', 'documents', 'archives', 'others'])) {
 			http_response_code(400);
 			echo json_encode(array("error" => "Invalid filter value"));
 			exit;
@@ -388,6 +390,12 @@ if (isset($_GET["action"])) {
 					"videos" => (int) $folder['videos'] ?? 0,
 					"audioSize" => (int) $folder['audioSize'] ?? 0,
 					"audio" => (int) $folder['audio'] ?? 0,
+					"documentsSize" => (int) $folder['documentSize'] ?? 0,
+					"documents" => (int) $folder['documents'] ?? 0,
+					"archivesSize" => (int) $folder['archiveSize'] ?? 0,
+					"archives" => (int) $folder['archives'] ?? 0,
+					"othersSize" => (int) $folder['otherSize'] ?? 0,
+					"others" => (int) $folder['others'] ?? 0,
 					"publicCount" => (int) $folder['publicCount'] ?? 0,
 				],
 			];
@@ -624,10 +632,10 @@ if (isset($_GET["action"])) {
 		error_log("Updating media metadata");
 		$mediaId = !empty($_POST['mediaId']) ? intval($_POST['mediaId']) : null;
 		// Allow empty title and description
-		$title = !empty($_POST['title']) ? $_POST['title'] : null;
-		$description = !empty($_POST['description']) ? $_POST['description'] : null;
+		$title = !empty($_POST['title']) ? $_POST['title'] : '';
+		$description = !empty($_POST['description']) ? $_POST['description'] : '';
 		// We must have mediaId and at least one of title or description
-		if ($mediaId === null || ($title === null && $description === null)) {
+		if ($mediaId === null) {
 			http_response_code(400);
 			echo json_encode(array("error" => "Missing required parameters"));
 			exit;

@@ -537,7 +537,7 @@ class MultimediaUpload
     }
     // Signal webhook about upload
     try {
-      // fileType Must be one of 'video' | 'audio' | 'image' | 'other'
+      // fileType Must be one of 'video' | 'audio' | 'image' | "archive" | "document" | "text" | 'other'
       $whFileType = match (explode('/', $fileType['mime'])[0]) {
         'image' => 'image',
         'video' => 'video',
@@ -558,6 +558,7 @@ class MultimediaUpload
         uploadNpub: $this->userNpub ?? null,
         fileOriginalUrl: null,
         orginalSha256Hash: $fileSha256, // NIP-96
+        doVirusScan: false,
       );
       $this->uploadWebhook->sendPayload();
       //error_log('Webhook payload sent for:' . $newFileName . PHP_EOL);
@@ -617,7 +618,6 @@ class MultimediaUpload
           // Duplicate is not an error, so we don't throw an exception
           continue;
         }
-
         // All initial validations are performed here, e.g., file size, type, etc.
         // This also should validate against the table of known rejected files,
         // or files that were requested to be deleted by the user
@@ -627,6 +627,17 @@ class MultimediaUpload
           throw new Exception('File validation failed: ' . json_encode($validationResult));
         }
 
+        // Get account level to use later
+        $accountLevelInt = 0;
+        try {
+          if ($this->userAccount) {
+            $accountLevelInt = $this->userAccount->getAccountLevelInt();
+          }
+        } catch (Exception $e) {
+          error_log("Failed to get account level: " . $e->getMessage());
+        }
+
+
         // Identify what file we are dealing with, e.g., image, video, audio
         // Throws an exception if the file type is not supported
         // Example of expected structure:
@@ -635,7 +646,7 @@ class MultimediaUpload
         //   'extension' => 'jpg',
         //   'mime' => 'image/jpeg',
         // ];
-        $fileType = detectFileExt($this->file['tmp_name']);
+        $fileType = detectFileExt($this->file['tmp_name'], $accountLevelInt);
 
         // Perform PhotoDNA check
         if (!$this->pro && $fileType['type'] === 'image') {
@@ -666,7 +677,7 @@ class MultimediaUpload
             }
           }
           // We need to detect the file type again, because it may have changed due to conversion
-          $fileType = detectFileExt($this->file['tmp_name']);
+          $fileType = detectFileExt($this->file['tmp_name'], $accountLevelInt);
         } else {
           $fileData = [];
         }
@@ -676,7 +687,7 @@ class MultimediaUpload
             $videoRepackager = new VideoRepackager($this->file['tmp_name']);
             $this->file['tmp_name'] = $videoRepackager->repackageVideo();
             // We need to detect the file type again, because it may have changed due to conversion
-            $fileType = detectFileExt($this->file['tmp_name']);
+            $fileType = detectFileExt($this->file['tmp_name'], $accountLevelInt);
           } catch (Exception $e) {
             error_log("Video repackaging failed: " . $e->getMessage());
           }
@@ -688,6 +699,9 @@ class MultimediaUpload
         // It is now ready to be uploaded to S3 and information about it stored in the database
         // Determine if we will backup the upload to S3 based on account level
         $s3Backup = $this->pro ? true : false;
+        // Begin a database transaction, so that we can rollback if anything fails
+        $this->db->begin_transaction(MYSQLI_TRANS_START_WITH_CONSISTENT_SNAPSHOT);
+
         if (!$this->pro) {
           // Handle free uploads
           // We use original file hash as the file name, so that we can detect duplicates later
@@ -700,7 +714,7 @@ class MultimediaUpload
             'image' => 'picture',
             'video' => 'video',
             'audio' => 'video',
-            default => 'unknown',
+            default => $fileType['type'],
           };
 
           // Insert the file data into the database but don't commit yet
@@ -742,9 +756,11 @@ class MultimediaUpload
             'image' => 'picture',
             'video' => 'video',
             'audio' => 'video',
-            default => 'unknown',
+            default => $fileType['type'],
           };
 
+          // Original filename, trimmed to fit in varchar(255)
+          $originalFileName = substr($this->file['name'], 0, 255);
           // Update the file data in the database
           if (!$this->updateDatabasePro(
             $insert_id,
@@ -754,7 +770,7 @@ class MultimediaUpload
             $fileData['dimensions']['height'] ?? 0,
             $fileData['blurhash'] ?? null,
             $fileType['mime'],
-            !empty($file['title']) ? $file['title'] : '',
+            !empty($file['title']) ? $file['title'] : $originalFileName,
             !empty($file['ai_prompt']) ? $file['ai_prompt'] : '',
           )) {
             $returnError[] = [false, 500, 'Failed to update database'];
@@ -784,6 +800,7 @@ class MultimediaUpload
           'sha256' => $transformedFileSha256, // Post-processing sha256 hash
           'original_sha256' => $fileSha256, // NIP-96
           'type' => $newFileType,
+          'media_type' => $fileType['type'], // 'image' | 'video' | 'audio' | 'document' | 'archive' | 'text' | 'other'
           'mime' => $fileType['mime'],
           'size' => $newFileSize, // Capture the file size after transformations
           'metadata' => $fileData['metadata'] ?? [],
@@ -805,13 +822,9 @@ class MultimediaUpload
       // Signal webhook about upload
       $originalMediaUrl = $this->generateMediaURL($newFileName, $fileType['type']);
       try {
-        // fileType Must be one of 'video' | 'audio' | 'image' | 'other'
-        $whFileType = match (explode('/', $fileType['mime'])[0]) {
-          'image' => 'image',
-          'video' => 'video',
-          'audio' => 'audio',
-          default => 'other',
-        };
+        // fileType Must be one of 'video' | 'audio' | 'image' | "archive" | "document" | "text" | 'other'
+        $doVirusScan = in_array($fileType['type'], ['archive', 'document', 'text', 'other']);
+        $whFileType = $fileType['type'];
         $this->uploadWebhook->createPayload(
           fileHash: explode('.', $newFileName)[0], // Remove extension
           fileName: $newFileName,
@@ -826,6 +839,7 @@ class MultimediaUpload
           uploadNpub: $this->userNpub ?? null,
           fileOriginalUrl: null,
           orginalSha256Hash: $fileSha256, // NIP-96
+          doVirusScan: $doVirusScan,
         );
         $this->uploadWebhook->sendPayload();
         //error_log('Webhook payload sent for:' . $newFileName . PHP_EOL);
@@ -1096,7 +1110,14 @@ class MultimediaUpload
       return [false, 400, "File upload error "];
     }
 
-    $fileType = detectFileExt($this->file['tmp_name']);
+    $userAccountLevel = 0;
+    try {
+      $userAccountLevel = $this->pro ? $this->userAccount->getAccountLevelInt() : 0;
+    } catch (Exception $e) {
+      error_log('Failed to get account level: ' . $e->getMessage());
+    }
+
+    $fileType = detectFileExt($this->file['tmp_name'], $userAccountLevel);
     $multiplierSize = 1;
     // Check if uploaded file is an image, and add a fuzz factor to account for future optimization
     if ($fileType['type'] === 'image' && !$this->no_transform) {
@@ -1193,7 +1214,7 @@ class MultimediaUpload
     try {
       $key = $this->determinePrefix($data['type']) . $data['filename'];
       // TODO: Needs update to handle non-prefixed paths based on media type
-      $fileS3Metadata = $this->s3Service->getObjectMetadataFromR2($key, $data['mime']);
+      $fileS3Metadata = $this->s3Service->getObjectMetadataFromR2(objectKey: $key, mime: $data['mime'], paidAccount: $this->pro);
       $stored_object_sha256 = $fileS3Metadata['Metadata']['sha256'] ?? '';
 
       if ($fileS3Metadata === false) {
@@ -1280,6 +1301,7 @@ class MultimediaUpload
         uploadedFileInfo: $_SERVER['CLIENT_REQUEST_INFO'] ?? null,
         uploadNpub: $this->userNpub ?? null,
         fileOriginalUrl: null,
+        doVirusScan: false,
         //orginalSha256Hash: $filehash, // NIP-96 not needed for duplicates
       );
       $this->uploadWebhook->sendPayload();
@@ -1644,7 +1666,7 @@ class MultimediaUpload
   protected function uploadToS3(string $objectName, $sha256 = '', $backup = false): bool
   {
     try {
-      $this->s3Service->uploadToS3($this->file['tmp_name'], $objectName, $sha256, $backup, $this->userNpub ?? '');
+      $this->s3Service->uploadToS3($this->file['tmp_name'], $objectName, $sha256, $backup, $this->userNpub ?? '', $this->pro);
     } catch (Exception $e) {
       error_log($e->getMessage());
       return false;

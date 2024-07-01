@@ -78,10 +78,13 @@ class UsersImages extends DatabaseTable
   {
     $filterConditions = [
       'all' => '',
-      'images' => "AND (ui.mime_type LIKE 'image%' AND ui.mime_type != 'image/gif')",
+      'images' => "AND (ui.mime_type LIKE 'image%' AND ui.mime_type != 'image/gif') AND ui.mime_type != 'image/svg+xml'",
       'videos' => "AND ui.mime_type LIKE 'video%'",
       'audio' => "AND ui.mime_type LIKE 'audio%'",
-      'gifs' => "AND ui.mime_type = 'image/gif'"
+      'gifs' => "AND ui.mime_type = 'image/gif'",
+      'documents' => "AND ui.mime_type = 'application/pdf'",
+      'archives' => "AND ui.mime_type IN ('application/x-tar', 'application/zip')",
+      'others' => "AND ui.mime_type IN ('image/svg+xml')",
     ];
 
     $filter_sql = $filterConditions[$filter] ?? '';

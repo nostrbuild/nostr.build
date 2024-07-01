@@ -1,5 +1,6 @@
 <?php
 require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/utils.funcs.php';
+require_once $_SERVER['DOCUMENT_ROOT'] . '/SiteConfig.php';
 require $_SERVER['DOCUMENT_ROOT'] . '/vendor/autoload.php';
 
 use Aws\S3\S3Client;
@@ -60,7 +61,7 @@ class S3Service
   }
 
   // Upload a file to S3
-  public function uploadToS3($sourcePath, $destinationPath, $sha256 = '', $s3backup = false, $npub = ''): bool
+  public function uploadToS3($sourcePath, $destinationPath, $sha256 = '', $s3backup = false, $npub = '', bool $paidAccount = false): bool
   {
     // Number of retries for the upload
     $maxRetries = 3;
@@ -93,7 +94,7 @@ class S3Service
     ];
 
     // Define the options for R2 upload
-    $r2BucketAndObjectNames = $this->getR2BucketAndObjectNames($destinationPath, $mimeType);
+    $r2BucketAndObjectNames = $this->getR2BucketAndObjectNames($destinationPath, $mimeType, $paidAccount);
     $r2Options = [
       'Bucket' => $r2BucketAndObjectNames['bucket'],
       'Key'    => $r2BucketAndObjectNames['objectName'],
@@ -149,14 +150,14 @@ class S3Service
   }
 
   // Delete an object from S3
-  public function deleteFromS3($objectKey)
+  public function deleteFromS3(string $objectKey, bool $paidAccount = false)
   {
     $s3DeleteOptions = [
       'Bucket' => $this->bucket,
       'Key'    => $objectKey,
     ];
 
-    $r2BucketAndObjectNames = $this->getR2BucketAndObjectNames($objectKey);
+    $r2BucketAndObjectNames = $this->getR2BucketAndObjectNames(objectKey: $objectKey, paidAccount: $paidAccount);
     $r2DeleteOptions = [
       'Bucket' => $r2BucketAndObjectNames['bucket'],
       'Key'    => $r2BucketAndObjectNames['objectName'],
@@ -233,7 +234,7 @@ class S3Service
     return $result;
   }
 
-  public function getObjectMetadataFromR2(string $objectKey, ?string $mime = null): bool | Aws\Result
+  public function getObjectMetadataFromR2(string $objectKey, ?string $mime = null, ?bool $paidAccount = false): bool | Aws\Result
   {
     // If mime is not provided, determine from filename/objectKey
     if (empty($mime)) {
@@ -245,7 +246,7 @@ class S3Service
       $mime = "{$fileType}/{$extension}";
     }
 
-    $r2Params = $this->getR2BucketAndObjectNames($objectKey, $mime);
+    $r2Params = $this->getR2BucketAndObjectNames($objectKey, $mime, $paidAccount);
     try {
       // Get the object metadata from the specified bucket
       $result = $this->r2->headObject([
@@ -340,7 +341,7 @@ class S3Service
     }
   }
 
-  public function downloadObjectR2(string $key, ?string $saveAs = null, ?string $mime = null): string
+  public function downloadObjectR2(string $key, ?string $saveAs = null, ?string $mime = null, ?bool $paidAccount = false): string
   {
     // If mime is not provided, determine from filename/objectKey
     if (empty($mime)) {
@@ -351,7 +352,7 @@ class S3Service
       $fileType = $fileType === 'unknown' ? 'application/octet-stream' : $fileType;
       $mime = "{$fileType}/{$extension}";
     }
-    $r2Params = $this->getR2BucketAndObjectNames($key, $mime);
+    $r2Params = $this->getR2BucketAndObjectNames($key, $mime, $paidAccount);
     // If saveAs not provided, use unique random temp file
     if (empty($saveAs)) {
       $saveAs = tempnam(sys_get_temp_dir(), 'r2download');
@@ -398,7 +399,7 @@ class S3Service
    *
    * @return array The bucket and object name as an associative array.
    */
-  private function getR2BucketAndObjectNames(string $objectKey, string | null $mimeType = 'application/octet-stream'): array
+  private function getR2BucketAndObjectNames(string $objectKey, string | null $mimeType = 'application/octet-stream', bool $paidAccount = false): array
   {
     // Validate the objectKey to ensure it contains a '/'
     if (strpos($objectKey, '/') === false) {
@@ -408,27 +409,21 @@ class S3Service
       ];
     }
 
-    // Extract prefix and object name from object key
-    $parts = explode('/', $objectKey);
-    $objectName = array_pop($parts);
-    $prefix = implode('/', $parts);
-
-    // Determine bucket suffix based on prefix
-    $bucketSuffix = match ($prefix) {
-      'i' => '-img',
-      'av' => '-av',
-      'i/p' => '-pfp',
-      'p' => '-pro',
-      default => ''
-    };
-
-    // Further augment bucket suffix for paid accounts to split img and av
-    if (!empty($mimeType) && substr_count($mimeType, '/') === 1) {
-      $mimePrefix = explode('/', $mimeType)[0];
-      if ($bucketSuffix === '-pro' && in_array($mimePrefix, ['video', 'audio'])) {
-        $bucketSuffix .= '-av';
-      }
+    $objectName = basename($objectKey);
+    error_log("R2 object key: $objectKey\n" . "R2 mime type: $mimeType\n" . getFileTypeFromName($objectName) . "\n");
+    // Handle PFP case
+    if (substr($objectKey, 0, 4) === 'i/p/') {
+      $bucketSuffix = SiteConfig::getBucketSuffix('profile_picture');
+    } else {
+      // This can throw but we expect it to be caught in the calling function
+      $bucketSuffix = $paidAccount
+        ? SiteConfig::getBucketSuffix('professional_account_' . getFileTypeFromName($objectName))
+        : SiteConfig::getBucketSuffix(getFileTypeFromName($objectName));
     }
+
+    // DEBUG
+    error_log("R2 bucket suffix: $bucketSuffix\n");
+    error_log("R2 object name: $objectName\n");
 
     return [
       'bucket' => $this->r2bucket . $bucketSuffix,

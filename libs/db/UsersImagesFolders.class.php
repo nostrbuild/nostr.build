@@ -60,6 +60,12 @@ class UsersImagesFolders extends DatabaseTable
         COALESCE(dt.videoCount, 0) AS videos,
         COALESCE(dt.audioSize, 0) AS audioSize,
         COALESCE(dt.audioCount, 0) AS audio,
+        COALESCE(dt.documentSize, 0) AS documentSize,
+        COALESCE(dt.documentCount, 0) AS documents,
+        COALESCE(dt.archiveSize, 0) AS archiveSize,
+        COALESCE(dt.archiveCount, 0) AS archives,
+        COALESCE(dt.otherSize, 0) AS otherSize,
+        COALESCE(dt.otherCount, 0) AS others,
         COALESCE(dt.publicCount, 0) AS publicCount
     FROM users_images_folders uif
     LEFT JOIN (
@@ -68,14 +74,20 @@ class UsersImagesFolders extends DatabaseTable
             ui.folder_id AS id,
             SUM(COALESCE(ui.file_size, 0)) AS totalSize,
             COUNT(ui.id) AS fileCount,
-            SUM(CASE WHEN SUBSTR(ui.mime_type, 1, 6) = 'image/' AND ui.mime_type != 'image/gif' THEN COALESCE(ui.file_size, 0) ELSE 0 END) AS imageSize,
-            SUM(CASE WHEN SUBSTR(ui.mime_type, 1, 6) = 'image/' AND ui.mime_type != 'image/gif' THEN 1 ELSE 0 END) AS imageCount,
+            SUM(CASE WHEN SUBSTR(ui.mime_type, 1, 6) = 'image/' AND ui.mime_type != 'image/gif' AND ui.mime_type != 'image/svg+xml' THEN COALESCE(ui.file_size, 0) ELSE 0 END) AS imageSize,
+            SUM(CASE WHEN SUBSTR(ui.mime_type, 1, 6) = 'image/' AND ui.mime_type != 'image/gif' AND ui.mime_type != 'image/svg+xml' THEN 1 ELSE 0 END) AS imageCount,
             SUM(CASE WHEN ui.mime_type = 'image/gif' THEN COALESCE(ui.file_size, 0) ELSE 0 END) AS gifSize,
             SUM(CASE WHEN ui.mime_type = 'image/gif' THEN 1 ELSE 0 END) AS gifCount,
             SUM(CASE WHEN SUBSTR(ui.mime_type, 1, 6) = 'video/' THEN COALESCE(ui.file_size, 0) ELSE 0 END) AS videoSize,
             SUM(CASE WHEN SUBSTR(ui.mime_type, 1, 6) = 'video/' THEN 1 ELSE 0 END) AS videoCount,
             SUM(CASE WHEN SUBSTR(ui.mime_type, 1, 6) = 'audio/' THEN COALESCE(ui.file_size, 0) ELSE 0 END) AS audioSize,
             SUM(CASE WHEN SUBSTR(ui.mime_type, 1, 6) = 'audio/' THEN 1 ELSE 0 END) AS audioCount,
+            SUM(CASE WHEN ui.mime_type = 'application/pdf' THEN COALESCE(ui.file_size, 0) ELSE 0 END) AS documentSize,
+            SUM(CASE WHEN ui.mime_type = 'application/pdf' THEN 1 ELSE 0 END) AS documentCount,
+            SUM(CASE WHEN ui.mime_type IN ('application/zip', 'application/x-tar') THEN COALESCE(ui.file_size, 0) ELSE 0 END) AS archiveSize,
+            SUM(CASE WHEN ui.mime_type IN ('application/zip', 'application/x-tar') THEN 1 ELSE 0 END) AS archiveCount,
+            SUM(CASE WHEN ui.mime_type = 'image/svg+xml' THEN COALESCE(ui.file_size, 0) ELSE 0 END) AS otherSize,
+            SUM(CASE WHEN ui.mime_type = 'image/svg+xml' THEN 1 ELSE 0 END) AS otherCount,
             SUM(CASE WHEN ui.flag = 1 THEN 1 ELSE 0 END) AS publicCount
         FROM users_images ui
         WHERE ui.usernpub = ?
@@ -96,20 +108,32 @@ class UsersImagesFolders extends DatabaseTable
         COALESCE(dt.videoCount, 0) AS videos,
         COALESCE(dt.audioSize, 0) AS audioSize,
         COALESCE(dt.audioCount, 0) AS audio,
+        COALESCE(dt.documentSize, 0) AS documentSize,
+        COALESCE(dt.documentCount, 0) AS documents,
+        COALESCE(dt.archiveSize, 0) AS archiveSize,
+        COALESCE(dt.archiveCount, 0) AS archives,
+        COALESCE(dt.otherSize, 0) AS otherSize,
+        COALESCE(dt.otherCount, 0) AS others,
         COALESCE(dt.publicCount, 0) AS publicCount
     FROM (
         SELECT
             0 AS id,
             SUM(COALESCE(ui.file_size, 0)) AS totalSize,
             COUNT(ui.id) AS fileCount,
-            SUM(CASE WHEN SUBSTR(ui.mime_type, 1, 6) = 'image/' AND ui.mime_type != 'image/gif' THEN COALESCE(ui.file_size, 0) ELSE 0 END) AS imageSize,
-            SUM(CASE WHEN SUBSTR(ui.mime_type, 1, 6) = 'image/' AND ui.mime_type != 'image/gif' THEN 1 ELSE 0 END) AS imageCount,
+            SUM(CASE WHEN SUBSTR(ui.mime_type, 1, 6) = 'image/' AND ui.mime_type != 'image/gif' AND ui.mime_type != 'image/svg+xml' THEN COALESCE(ui.file_size, 0) ELSE 0 END) AS imageSize,
+            SUM(CASE WHEN SUBSTR(ui.mime_type, 1, 6) = 'image/' AND ui.mime_type != 'image/gif' AND ui.mime_type != 'image/svg+xml' THEN 1 ELSE 0 END) AS imageCount,
             SUM(CASE WHEN ui.mime_type = 'image/gif' THEN COALESCE(ui.file_size, 0) ELSE 0 END) AS gifSize,
             SUM(CASE WHEN ui.mime_type = 'image/gif' THEN 1 ELSE 0 END) AS gifCount,
             SUM(CASE WHEN SUBSTR(ui.mime_type, 1, 6) = 'video/' THEN COALESCE(ui.file_size, 0) ELSE 0 END) AS videoSize,
             SUM(CASE WHEN SUBSTR(ui.mime_type, 1, 6) = 'video/' THEN 1 ELSE 0 END) AS videoCount,
             SUM(CASE WHEN SUBSTR(ui.mime_type, 1, 6) = 'audio/' THEN COALESCE(ui.file_size, 0) ELSE 0 END) AS audioSize,
             SUM(CASE WHEN SUBSTR(ui.mime_type, 1, 6) = 'audio/' THEN 1 ELSE 0 END) AS audioCount,
+            SUM(CASE WHEN ui.mime_type = 'application/pdf' THEN COALESCE(ui.file_size, 0) ELSE 0 END) AS documentSize,
+            SUM(CASE WHEN ui.mime_type = 'application/pdf' THEN 1 ELSE 0 END) AS documentCount,
+            SUM(CASE WHEN ui.mime_type IN ('application/zip', 'application/x-tar') THEN COALESCE(ui.file_size, 0) ELSE 0 END) AS archiveSize,
+            SUM(CASE WHEN ui.mime_type IN ('application/zip', 'application/x-tar') THEN 1 ELSE 0 END) AS archiveCount,
+            SUM(CASE WHEN ui.mime_type = 'image/svg+xml' THEN COALESCE(ui.file_size, 0) ELSE 0 END) AS otherSize,
+            SUM(CASE WHEN ui.mime_type = 'image/svg+xml' THEN 1 ELSE 0 END) AS otherCount,
             SUM(CASE WHEN ui.flag = 1 THEN 1 ELSE 0 END) AS publicCount
         FROM users_images ui
         WHERE ui.usernpub = ?
@@ -139,6 +163,12 @@ class UsersImagesFolders extends DatabaseTable
         SUM(CASE WHEN SUBSTR(ui.mime_type, 1, 6) = 'video/' THEN 1 ELSE 0 END) AS videos,
         SUM(CASE WHEN SUBSTR(ui.mime_type, 1, 6) = 'audio/' THEN COALESCE(ui.file_size, 0) ELSE 0 END) AS audioSize,
         SUM(CASE WHEN SUBSTR(ui.mime_type, 1, 6) = 'audio/' THEN 1 ELSE 0 END) AS audio,
+        SUM(CASE WHEN ui.mime_type = 'application/pdf' THEN COALESCE(ui.file_size, 0) ELSE 0 END) AS documentSize,
+        SUM(CASE WHEN ui.mime_type = 'application/pdf' THEN 1 ELSE 0 END) AS documentCount,
+        SUM(CASE WHEN ui.mime_type IN ('application/zip', 'application/x-tar') THEN COALESCE(ui.file_size, 0) ELSE 0 END) AS archiveSize,
+        SUM(CASE WHEN ui.mime_type IN ('application/zip', 'application/x-tar') THEN 1 ELSE 0 END) AS archiveCount,
+        SUM(CASE WHEN ui.mime_type = 'image/svg+xml' THEN COALESCE(ui.file_size, 0) ELSE 0 END) AS otherSize,
+        SUM(CASE WHEN ui.mime_type = 'image/svg+xml' THEN 1 ELSE 0 END) AS otherCount,
         SUM(CASE WHEN ui.flag = 1 THEN 1 ELSE 0 END) AS publicCount
     FROM users_images ui
     WHERE ui.usernpub = ?
@@ -148,77 +178,6 @@ class UsersImagesFolders extends DatabaseTable
     $result = $stmt->get_result();
     $stmt->close();
     return $result->fetch_assoc();
-  }
-
-  public function getFoldersStats(string $usernpub): array
-  {
-    // Populate information about folders and files
-    $query = "
-        SELECT
-        uif.id,
-        uif.folder,
-        SUM(COALESCE(ui.file_size, 0)) AS totalSize,
-        COUNT(ui.id) AS fileCount,
-        COALESCE(SUM(CASE WHEN SUBSTRING_INDEX(ui.image, '.', -1) = 'gif' THEN 1 ELSE 0 END), 0) AS gifCount,
-        COALESCE(SUM(CASE WHEN SUBSTRING_INDEX(ui.image, '.', -1) IN ('mov', 'mp4', 'mp3') THEN 1 ELSE 0 END), 0) AS avCount,
-        COALESCE(SUM(CASE WHEN SUBSTRING_INDEX(ui.image, '.', -1) NOT IN ('gif', 'mov', 'mp4', 'mp3') THEN 1 ELSE 0 END), 0) AS imageCount,
-        COALESCE(SUM(CASE WHEN ui.flag = 1 THEN 1 ELSE 0 END), 0) AS publicCount
-    FROM users_images_folders uif
-    LEFT JOIN users_images ui ON uif.id = ui.folder_id
-    WHERE uif.usernpub = ?
-    GROUP BY uif.id, uif.folder
-    UNION ALL
-    SELECT
-        NULL AS id,
-        '/' AS folder,
-        COALESCE(SUM(COALESCE(ui.file_size, 0)), 0) AS totalSize,
-        COUNT(*) AS fileCount,
-        COALESCE(SUM(CASE WHEN SUBSTRING_INDEX(ui.image, '.', -1) = 'gif' THEN 1 ELSE 0 END), 0) AS gifCount,
-        COALESCE(SUM(CASE WHEN SUBSTRING_INDEX(ui.image, '.', -1) IN ('mov', 'mp4', 'mp3') THEN 1 ELSE 0 END), 0) AS avCount,
-        COALESCE(SUM(CASE WHEN SUBSTRING_INDEX(ui.image, '.', -1) NOT IN ('gif', 'mov', 'mp4', 'mp3') THEN 1 ELSE 0 END), 0) AS imageCount,
-        COALESCE(SUM(CASE WHEN ui.flag = 1 THEN 1 ELSE 0 END), 0) AS publicCount
-    FROM users_images ui
-    WHERE ui.usernpub = ?
-        AND ui.folder_id IS NULL
-    UNION ALL
-    SELECT
-        dummy.id,
-        dummy.folder,
-        COALESCE(SUM(COALESCE(ui.file_size, 0)), 0) AS totalSize,
-        COUNT(ui.id) AS fileCount,
-        COALESCE(SUM(CASE WHEN SUBSTRING_INDEX(ui.image, '.', -1) = 'gif' THEN 1 ELSE 0 END), 0) AS gifCount,
-        COALESCE(SUM(CASE WHEN SUBSTRING_INDEX(ui.image, '.', -1) IN ('mov', 'mp4', 'mp3') THEN 1 ELSE 0 END), 0) AS avCount,
-        COALESCE(SUM(CASE WHEN SUBSTRING_INDEX(ui.image, '.', -1) NOT IN ('gif', 'mov', 'mp4', 'mp3') THEN 1 ELSE 0 END), 0) AS imageCount,
-        COALESCE(SUM(CASE WHEN ui.flag = 1 THEN 1 ELSE 0 END), 0) AS publicCount
-    FROM (
-        SELECT NULL AS id, 'TOTAL' AS folder
-    ) AS dummy
-    LEFT JOIN users_images ui ON ui.usernpub = ?
-    GROUP BY dummy.id, dummy.folder
-      ";
-
-    $stmt = $this->db->prepare($query);
-    $stmt->bind_param('sss', $usernpub, $usernpub, $usernpub);
-    $stmt->execute();
-
-    $result = $stmt->get_result();
-    $account_folders_data = [];
-    $folderCount = 0;
-
-    while ($row = $result->fetch_assoc()) {
-      if ($row['folder'] === 'TOTAL') {
-        $account_folders_data['TOTAL'] = $row;
-      } else {
-        if ($row['folder'] !== '/') {
-          $folderCount++;
-        }
-        $account_folders_data['FOLDERS'][$row['folder']] = $row;
-      }
-    }
-    // add folderCount to the TOTAL
-    $account_folders_data['TOTAL']['folderCount'] = $folderCount;
-    $stmt->close();
-    return $account_folders_data;
   }
 
   public function findFolderByNameOrCreate(string $usernpub, string $folder_name, int $parent_id = null): int

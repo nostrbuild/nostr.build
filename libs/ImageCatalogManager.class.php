@@ -1,5 +1,7 @@
 <?php
 require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/CloudflarePurge.class.php';
+require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/utils.funcs.php';
+require_once $_SERVER['DOCUMENT_ROOT'] . '/SiteConfig.php';
 
 /**
  * Class ImageManager
@@ -96,14 +98,15 @@ class ImageCatalogManager
 
     try {
       while ($row = $result->fetch_assoc()) {
-        $file_path = strpos($row['image'], '://') === false ? '/p/' . $row['image'] : parse_url($row['image'], PHP_URL_PATH);
-        $s3_file_path = ltrim($file_path, '/');
+        $file_name = basename(strpos($row['image'], '://') === false ? $row['image'] : parse_url($row['image'], PHP_URL_PATH));
+        $file_type = getFileTypeFromName($file_name);
+        $s3_file_path = SiteConfig::getS3Path('professional_account_' . $file_type) . $file_name;
 
-        if ($this->s3->getObjectMetadataFromR2($s3_file_path) !== false) {
+        if ($this->s3->getObjectMetadataFromR2(objectKey: $s3_file_path, paidAccount: true) !== false) {
           error_log("Deleting file from S3: " . $s3_file_path . PHP_EOL);
 
           try {
-            $this->s3->deleteFromS3($s3_file_path);
+            $this->s3->deleteFromS3(objectKey: $s3_file_path, paidAccount: true);
             $filesToPurge[] = $row['image'];
           } catch (Aws\S3\Exception\S3Exception $e) {
             if ($e->getAwsErrorCode() !== 'NoSuchKey') {
