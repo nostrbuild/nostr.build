@@ -1821,6 +1821,70 @@ Alpine.store('fileStore', {
         console.error('Error sharing media on Creators page:', error);
       });
   },
+  mediaEdit: {
+    isOpen: false,
+    isLoading: false,
+    isError: false,
+    callback: null,
+    targetFile: null,
+    editTitle: '',
+    editDescription: '',
+    open(file, callback) {
+      // Copy the file object
+      this.targetFile = Object.assign({}, file);
+      this.editTitle = this.targetFile?.title || this.targetFile?.name;
+      this.editDescription = this.targetFile?.description || '';
+      this.isOpen = true;
+      this.callback = callback;
+    },
+    close(dontCallback) {
+      this.targetFile = null;
+      this.isError = false;
+      this.isOpen = false;
+      this.isLoading = false;
+      if (this.callback && !dontCallback) {
+        this.callback();
+      }
+    },
+    save() {
+      this.isLoading = true;
+      this.targetFile.title = this.editTitle;
+      this.targetFile.description = this.editDescription;
+      this.saveMediaEdit(this.targetFile)
+        .then(() => {
+          this.close();
+        })
+        .catch(error => {
+          console.error('Error saving media edit:', error);
+          this.isError = true;
+        })
+        .finally(() => {
+          this.isLoading = false;
+        });
+    },
+    async saveMediaEdit(file) {
+      console.debug('Saving media edit:', file);
+      const api = getApiFetcher(apiUrl, 'multipart/form-data');
+      const formData = {
+        action: 'update_media_metadata',
+        mediaId: file.id,
+        title: file.title,
+        description: file.description,
+      }
+
+      return api.post('', formData)
+        .then(response => response.data)
+        .then(data => {
+          console.debug('Saved media edit:', data);
+          const fileStore = Alpine.store('fileStore');
+          const updatedFile = fileStore.files.find(f => f.id === file.id);
+          if (updatedFile) {
+            updatedFile.title = file.title;
+            updatedFile.description = file.description;
+          }
+        })
+    },
+  },
   deleteConfirmation: {
     isOpen: false,
     isLoading: false,
@@ -2432,11 +2496,12 @@ Alpine.store('uppyStore', {
     const mimesAddonExtra = Object.keys(mimeTypesAddonExtra).map(mime => mime);
 
     switch (accountLevel) {
+      case 1:
       case 10:
       case 99:
         console.debug('All file types allowed.');
         return [...mimesImages, ...mimesAudio, ...mimesVideo, ...mimesAddonDocs, ...mimesAddonExtra, ...extsAddonDocs, ...extsAddonExtra];
-      case 1:
+      case 2:
         console.debug('All file types allowed except for archives.');
         return [...mimesImages, ...mimesAudio, ...mimesVideo, ...mimesAddonDocs, ...extsAddonDocs];
       default:

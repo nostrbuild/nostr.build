@@ -632,10 +632,10 @@ if (isset($_GET["action"])) {
 		error_log("Updating media metadata");
 		$mediaId = !empty($_POST['mediaId']) ? intval($_POST['mediaId']) : null;
 		// Allow empty title and description
-		$title = !empty($_POST['title']) ? $_POST['title'] : null;
-		$description = !empty($_POST['description']) ? $_POST['description'] : null;
+		$title = !empty($_POST['title']) ? $_POST['title'] : '';
+		$description = !empty($_POST['description']) ? $_POST['description'] : '';
 		// We must have mediaId and at least one of title or description
-		if ($mediaId === null || ($title === null && $description === null)) {
+		if ($mediaId === null) {
 			http_response_code(400);
 			echo json_encode(array("error" => "Missing required parameters"));
 			exit;
