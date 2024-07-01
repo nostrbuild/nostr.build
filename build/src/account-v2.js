@@ -2167,6 +2167,7 @@ Alpine.store('fileStore', {
   modalImageDimensions: '',
   modalImageFilesize: '',
   modalImageTitle: '',
+  modalImageDescription: '',
   modalImagePrompt: '',
   openModal(file) {
     // Lock body scroll
@@ -2179,6 +2180,7 @@ Alpine.store('fileStore', {
     this.modalImageDimensions = `${file.width}x${file.height}`;
     this.modalImageFilesize = file.size;
     this.modalImageTitle = file.title || '';
+    this.modalImageDescription = file.description || '';
     this.modalImagePrompt = file.ai_prompt || '';
     this.modalOpen = true;
   },
@@ -2191,6 +2193,7 @@ Alpine.store('fileStore', {
     this.modalImageDimensions = `${file.width}x${file.height}`;
     this.modalImageFilesize = file.size;
     this.modalImageTitle = file.title || '';
+    this.modalImageDescription = file.description || '';
     this.modalImagePrompt = file.ai_prompt || '';
   },
   closeModal() {
@@ -2204,6 +2207,7 @@ Alpine.store('fileStore', {
     this.modalImageDimensions = '';
     this.modalImageFilesize = '';
     this.modalImageTitle = '';
+    this.modalImageDescription = '';
     this.modalImagePrompt = '';
   },
   async modalNext() {

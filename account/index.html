@@ -8,7 +8,7 @@
 	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 	<title>nostr.build account</title>
 
-	<script defer src="/scripts/dist/account-v2.js?v=b7b0913f1a374ed48d39a59692850a09"></script>
+	<script defer src="/scripts/dist/account-v2.js?v=705d7eedbc2049351c7df213265db33f"></script>
 	<link href="/scripts/dist/account-v2.css?v=48350470780409add985b483914871c3" rel="stylesheet">
 
 	<link rel="icon" href="/assets/nb-logo-color-w.png" />
@@ -2621,6 +2621,8 @@ onDropCB(event) {
 						<div class="flex flex-col items-start">
 							<p x-show="fileStore.modalImageTitle.length > 0" class="text-sm text-gray-300 font-medium">Title: <span
 									class="font-normal" x-text="fileStore.modalImageTitle"></span></p>
+							<p x-show="fileStore.modalImageDescription.length > 0" class="text-sm text-gray-300 font-medium">Description: <span
+									class="font-normal" x-text="fileStore.modalImageDescription"></span></p>
 							<p @click="copyTextToClipboard(fileStore.modalImagePrompt.toString(), () => {promptCopied = true}, () => {promptCopied = false})"
 								x-show="fileStore.modalImagePrompt.length > 0" class="cursor-copy text-sm text-gray-300 font-medium">
 								<svg class="size-4 inline-block" viewBox="0 0 24 24" fill="none" stroke="currentColor"
@@ -2922,7 +2924,8 @@ onDropCB(event) {
 													:alt="fileStore.mediaEdit.targetFile?.name">
 												<!-- video -->
 												<video x-show="fileStore.mediaEdit.targetFile?.media_type === 'video'" loop muted autoplay
-													playsinline preload="auto" crossorigin="use-credentials" class="object-cover rounded-md size-28">
+													playsinline preload="auto" crossorigin="use-credentials"
+													class="object-cover rounded-md size-28">
 													<source :src="fileStore.mediaEdit.targetFile?.url" type="video/mp4">
 												</video>
 												<!-- audio -->
@@ -2935,7 +2938,8 @@ onDropCB(event) {
 													class="object-cover rounded-md size-28" :src="fileStore.mediaEdit.targetFile?.url"
 													:alt="fileStore.mediaEdit.targetFile?.url">
 												<!-- other -->
-												<div x-show="!['image', 'video', 'audio'].includes(fileStore.mediaEdit.targetFile?.media_type) && fileStore.mediaEdit.targetFile?.mime !== 'image/svg+xml'"
+												<div
+													x-show="!['image', 'video', 'audio'].includes(fileStore.mediaEdit.targetFile?.media_type) && fileStore.mediaEdit.targetFile?.mime !== 'image/svg+xml'"
 													x-html="getIconByMime(fileStore.mediaEdit.targetFile?.mime, 'size-28 text-nbpurple-50')">
 												</div>
 											</div>
@@ -2951,7 +2955,8 @@ onDropCB(event) {
 									</div>
 									<!-- Edit form -->
 									<div>
-										<form class="flex w-full h-full flex-col overflow-y-scroll" @submit.prevent="fileStore.mediaEdit.save()">
+										<form class="flex w-full h-full flex-col overflow-y-scroll"
+											@submit.prevent="fileStore.mediaEdit.save()">
 
 											<!-- Title -->
 											<div class="space-y-2 px-4 sm:grid sm:grid-cols-3 sm:gap-4 sm:space-y-0 sm:px-6 sm:py-5">
