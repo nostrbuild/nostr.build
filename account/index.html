@@ -2922,7 +2922,7 @@ onDropCB(event) {
 													:alt="fileStore.mediaEdit.targetFile?.name">
 												<!-- video -->
 												<video x-show="fileStore.mediaEdit.targetFile?.media_type === 'video'" loop muted autoplay
-													playsinline preload="auto" class="object-cover rounded-md size-28">
+													playsinline preload="auto" crossorigin="use-credentials" class="object-cover rounded-md size-28">
 													<source :src="fileStore.mediaEdit.targetFile?.url" type="video/mp4">
 												</video>
 												<!-- audio -->
