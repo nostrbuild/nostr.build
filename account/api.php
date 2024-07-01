@@ -75,6 +75,10 @@ function listImagesByFolderName($folderName, $link, $start = null, $limit = null
 	foreach ($imgArray as $images_row) {
 		// Get mime type and image URL
 		$type = getFileTypeFromName($images_row['image']);
+		if ($type === 'unknown') {
+			// Use mime type from database and get the first part of it
+			$type = explode('/', $images_row['mime_type'])[0];
+		}
 		// if ($type != 'image' && $type != 'video' && $type != 'audio') continue;
 
 		$image = $images_row['image'];
@@ -132,7 +136,7 @@ function listImagesByFolderName($folderName, $link, $start = null, $limit = null
 			"srcset" => $type === 'image' ? $srcset : null,
 			"width" => $images_row['media_width'] ?? null,
 			"height" => $images_row['media_height'] ?? null,
-			"media_type" => getFileTypeFromName($filename),
+			"media_type" => $type,
 			"blurhash" => $type === 'image' ? $images_row['blurhash'] : null,
 			"sha256_hash" => $images_row['sha256_hash'],
 			"created_at" => $images_row['created_at'],
