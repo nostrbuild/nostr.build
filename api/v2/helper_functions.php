@@ -252,13 +252,16 @@ function createNip96SuccessResponse(array $data, string $message, string $proces
   }
 
   // Set core NIP-94 event fields
-  $nip94_event = [
-    'tags' => [
-      ["url", $data['url']],
-      ["ox", $data['original_sha256'], "https://{$_SERVER['HTTP_HOST']}"]
-    ],
-    'content' => "" // Empty by design
-  ];
+  $nip94_event = [];
+  if (isset($data['url']) || isset($data['original_sha256'])) {
+    $nip94_event = [
+      'tags' => [
+        ["url", $data['url']],
+        ["ox", $data['original_sha256'], "https://{$_SERVER['HTTP_HOST']}"]
+      ],
+      'content' => "" // Empty by design
+    ];
+  }
 
   if (isset($data['sha256']) || isset($data['original_sha256'])) {
     $nip94_event['tags'][] = ["x", $data['sha256'] ?? $data['original_sha256']];
@@ -280,9 +283,11 @@ function createNip96SuccessResponse(array $data, string $message, string $proces
     $nip94_event['tags'][] = ["blurhash", $data['blurhash']];
   }
 
-  $metadata = [
-    'size' => $data['size']
-  ];
+  $metadata = [];
+
+  if (isset($data['size'])) {
+    $metadata['size'] = $data['size'];
+  }
 
   if (isset($data['duration'])) {
     $metadata['duration'] = $data['duration'];
@@ -317,9 +322,15 @@ function createNip96SuccessResponse(array $data, string $message, string $proces
   $response = [
     'status' => 'success',
     'message' => $message,
-    'nip94_event' => $nip94_event,
-    'metadata' => $metadata
   ];
+
+  if (!empty($nip94_event)) {
+    $response['nip94_event'] = $nip94_event;
+  }
+
+  if (!empty($metadata)) {
+    $response['metadata'] = $metadata;
+  }
 
   if ($processing_url) {
     $response['processing_url'] = $processing_url;
