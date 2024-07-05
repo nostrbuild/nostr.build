@@ -40,6 +40,9 @@ document.addEventListener('alpine:init', () => {
         }
         // Try getting user npub to see if extension is functional
         const userNpub = await window.nostr.getPublicKey();
+        if (!userNpub) {
+          throw new Error('Nostr extension is not installed or not enabled');
+        }
         console.log('serverApiUrl', serverApiUrl);
         const urlToSign = `${serverApiUrl}/${cleanFileHash}`;
         const token = await getToken(urlToSign, 'DELETE', async (e) => window.nostr.signEvent(e), true);
