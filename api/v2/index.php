@@ -8,6 +8,8 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/BTCPayWebhook.class.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/Account.class.php';
 // Add GifBrowser class
 require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/GifBrowser.class.php';
+// Delete media class
+require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/DeleteMedia.class.php';
 
 use DI\Container;
 use Slim\Factory\AppFactory;
@@ -109,6 +111,28 @@ $container->set('multimediaUploadFactory', function () {
   global $link;
   return new MultimediaUploadFactory($awsConfig, $link);
 });
+
+// Delete media factory
+class DeleteMediaFactory {
+  private $link;
+  private $awsConfig;
+
+  public function __construct($link, $awsConfig) {
+    $this->link = $link;
+    $this->awsConfig = $awsConfig;
+  }
+
+  public function create($userNpub, $mediaName) {
+    return new DeleteMedia($userNpub, $mediaName, $this->link, new S3Service($this->awsConfig));
+  }
+}
+
+$container->set('deleteMediaFactory', function () {
+  global $link;
+  global $awsConfig;
+  return new DeleteMediaFactory($link, $awsConfig);
+});
+
 
 // Create app
 $app = AppFactory::create();

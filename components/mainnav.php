@@ -32,6 +32,9 @@ SVG;
 $svg_menu_icon = <<<SVG
 <svg width="24" height="24" fill="none" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" clip-rule="evenodd" d="M2 12a1 1 0 0 1 1-1h18a1 1 0 1 1 0 2H3a1 1 0 0 1-1-1ZM2 6a1 1 0 0 1 1-1h18a1 1 0 1 1 0 2H3a1 1 0 0 1-1-1ZM2 18a1 1 0 0 1 1-1h12a1 1 0 1 1 0 2H3a1 1 0 0 1-1-1Z" fill="#D0BED8"/></svg>
 SVG;
+$svg_delete_icon = <<<SVG
+<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-trash-2"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg>
+SVG;
 ?>
 
 <nav class="navigation_header">
@@ -65,6 +68,10 @@ SVG;
     <a href="/about" class="nav_button">
       <?= $svg_about_icon ?>
       About
+    </a>
+    <a href="/delete/" class="nav_button">
+      <?= $svg_delete_icon ?>
+      Delete
     </a>
   </div>
   <?php if ($perm->isGuest()) : ?>
@@ -134,6 +141,12 @@ SVG;
         <?= $svg_about_icon ?>
       </span>
       About
+    </a>
+    <a href="/delete/" class="nav_button">
+      <span>
+        <?= $svg_delete_icon ?>
+      </span>
+      Delete
     </a>
     <?php if ($perm->isGuest()) : ?>
       <a href="/login" class="nav_button login_button login_desktop">
