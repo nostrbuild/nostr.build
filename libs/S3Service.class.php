@@ -150,14 +150,14 @@ class S3Service
   }
 
   // Delete an object from S3
-  public function deleteFromS3(string $objectKey, bool $paidAccount = false)
+  public function deleteFromS3(string $objectKey, bool $paidAccount = false, string | null $mimeType = null)
   {
     $s3DeleteOptions = [
       'Bucket' => $this->bucket,
       'Key'    => $objectKey,
     ];
 
-    $r2BucketAndObjectNames = $this->getR2BucketAndObjectNames(objectKey: $objectKey, paidAccount: $paidAccount);
+    $r2BucketAndObjectNames = $this->getR2BucketAndObjectNames(objectKey: $objectKey, paidAccount: $paidAccount, mimeType: $mimeType);
     $r2DeleteOptions = [
       'Bucket' => $r2BucketAndObjectNames['bucket'],
       'Key'    => $r2BucketAndObjectNames['objectName'],
@@ -416,9 +416,13 @@ class S3Service
       $bucketSuffix = SiteConfig::getBucketSuffix('profile_picture');
     } else {
       // This can throw but we expect it to be caught in the calling function
+      $type = getFileTypeFromName($objectName);
+      $type = $type === 'unknown' && !empty($mimeType) && $mimeType !== 'application/octet-stream' ?
+        explode('/', $mimeType)[0] :
+        $type;
       $bucketSuffix = $paidAccount
-        ? SiteConfig::getBucketSuffix('professional_account_' . getFileTypeFromName($objectName))
-        : SiteConfig::getBucketSuffix(getFileTypeFromName($objectName));
+        ? SiteConfig::getBucketSuffix('professional_account_' . $type)
+        : SiteConfig::getBucketSuffix($type);
     }
 
     // DEBUG
