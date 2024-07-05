@@ -28,6 +28,18 @@ class ImageCatalogManager
     $this->cloudflarePurger = new CloudflarePurger($_SERVER['NB_API_SECRET'], $_SERVER['NB_API_PURGE_URL']);
   }
 
+  public function getImageByName(string $imageName): array | null
+  {
+    $stmt = $this->link->prepare("SELECT * FROM users_images WHERE usernpub = ? AND image LIKE ? ESCAPE '\\\\' LIMIT 1");
+    $imageName = $imageName . '.%';
+    $stmt->bind_param('ss', $this->usernpub, $imageName);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $row = $result ? $result->fetch_assoc() : null;
+    $stmt->close();
+    return $row;
+  }
+
   /**
    * Delete image records
    * @param array $imageIds Array of image IDs to delete
@@ -102,11 +114,11 @@ class ImageCatalogManager
         $file_type = getFileTypeFromName($file_name);
         $s3_file_path = SiteConfig::getS3Path('professional_account_' . $file_type) . $file_name;
 
-        if ($this->s3->getObjectMetadataFromR2(objectKey: $s3_file_path, paidAccount: true) !== false) {
+        if ($this->s3->getObjectMetadataFromR2(objectKey: $s3_file_path, paidAccount: true, mime: $row['mime_type']) !== false) {
           error_log("Deleting file from S3: " . $s3_file_path . PHP_EOL);
 
           try {
-            $this->s3->deleteFromS3(objectKey: $s3_file_path, paidAccount: true);
+            $this->s3->deleteFromS3(objectKey: $s3_file_path, paidAccount: true, mimeType: $row['mime_type']);
             $filesToPurge[] = $row['image'];
           } catch (Aws\S3\Exception\S3Exception $e) {
             if ($e->getAwsErrorCode() !== 'NoSuchKey') {
