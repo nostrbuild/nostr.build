@@ -801,7 +801,7 @@ class Account
 
   public function getAccountAdditionStorage(): int
   {
-    return $this->account['addon_storage'] ?? 0 * 1024 * 1024 * 1024; // Convert GB to bytes
+    return $this->account['addon_storage'] ?? 0; // In bytes
   }
 
   /**
