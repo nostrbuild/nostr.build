@@ -775,14 +775,14 @@ if (isset($_GET["action"])) {
 			"pfpUrl" => !empty($_POST['pfpUrl']) ? $_POST['pfpUrl'] : null,
 			"wallet" => !empty($_POST['wallet']) ? $_POST['wallet'] : null,
 			"allowNostrLogin" => !empty($_POST['allowNostrLogin']) ? $_POST['allowNostrLogin'] === 'true' : false,
-			"defaultFolder" => !empty($_POST['defaultFolder']) ? $_POST['defaultFolder'] : null,
+			"defaultFolder" => !empty($_POST['defaultFolder']) ? $_POST['defaultFolder'] : '',
 		];
 		try {
 			$account->updateAccount(
 				nym: $profileData['name'] ?? null,
 				ppic: $profileData['pfpUrl'] ?? null,
 				wallet: $profileData['wallet'] ?? null,
-				default_folder: $profileData['defaultFolder'] ?? null,
+				default_folder: $profileData['defaultFolder'],
 			);
 			$account->allowNpubLogin($profileData['allowNostrLogin']);
 			$data = getAccountData();
