@@ -163,6 +163,7 @@ class Account
     $_SESSION['flag'] = $this->account['flag'] ?? '';
     $_SESSION['npub_verified'] = $this->account['npub_verified'] ?? 0;
     $_SESSION['allow_npub_login'] = $this->account['allow_npub_login'] ?? 0;
+    $_SESSION['addon_storage'] = $this->account['addon_storage'] ?? 0;
 
     $accFlags = json_decode($this->account['accflags'] ?? '{}', true);
     if (json_last_error() === JSON_ERROR_NONE) {
@@ -800,7 +801,7 @@ class Account
 
   public function getAccountAdditionStorage(): int
   {
-    return $this->account['acctAddonStorage'] ?? 0 * 1024 * 1024 * 1024; // Convert GB to bytes
+    return $this->account['addon_storage'] ?? 0 * 1024 * 1024 * 1024; // Convert GB to bytes
   }
 
   /**
