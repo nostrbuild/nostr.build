@@ -9,7 +9,7 @@
 		<meta name="description" content="nostr.build" />
 		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-		<script src="/scripts/dist/delete.js?v=9c7d1575a10f575caab1d26f3c4cda42" defer></script>
+		<script src="/scripts/dist/delete.js?v=923ece1562d41b28cfd727b7a87dd0fa" defer></script>
 
 		<link rel="stylesheet" href="/styles/index.css?v=7ff4472e93e9719e0eac60b75646b485" />
 		<link rel="stylesheet" href="/styles/header.css?v=19cde718a50bd676387bbe7e9e24c639" />
