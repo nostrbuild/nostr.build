@@ -23,7 +23,7 @@ class HmacAuthHandler
   public function __construct(ServerRequestInterface $request, string $secret)
   {
     $this->headers = $request->getHeaders();
-    $this->body = $request->getBody()->getContents();
+    $this->body = $request->getBody();
     $this->request = $request;
     $this->secret = $secret;
     // Throw an exception if the secret is empty
@@ -52,15 +52,8 @@ class HmacAuthHandler
     }
 
     $token = substr($auth, 7);
-    $bToken = base64_decode($token);
 
-    if (empty($token) || empty($bToken) || $bToken[0] != 'H') {
-      error_log("Invalid token: " . $token);
-      throw new Exception("Invalid token", 401);
-    }
-
-    $data = json_decode($bToken, true);
-    if ($data === null) {
+    if (empty($token) || $token[0] != 'H') {
       error_log("Invalid token: " . $token);
       throw new Exception("Invalid token", 401);
     }
@@ -70,7 +63,7 @@ class HmacAuthHandler
       'url' => $this->request->getUri(),
       'body' => $this->body,
       'secret' => $this->secret,
-      'authorizationHeader' => $data['authorizationHeader']
+      'authorizationHeader' => $auth
     ]);
 
     if (!$res) {
@@ -117,22 +110,25 @@ class HmacAuthHandler
     // Split the authorization header
     $parts = explode('|', str_replace('Bearer HMAC|', '', $authorizationHeader));
 
-    if (count($parts) !== 4) {
+    if (count($parts) !== 3) {
+      error_log("Invalid authorization header format: " . $authorizationHeader);
       return false; // Invalid authorization header format
     }
 
     [$receivedBodyHash, $receivedTimestamp, $receivedMac] = $parts;
 
     $timestamp = (int)$receivedTimestamp;
-    $body_sha256_or_algo = $body ? hash('sha256', json_encode($body, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_PRESERVE_ZERO_FRACTION), false) : 'SHA256';
+    $body_sha256_or_algo = $body ? hash('sha256', $body, false) : 'SHA256';
 
     // Verify body hash
-    if ($receivedBodyHash !== $body_sha256_or_algo) {
+    if (!hash_equals($receivedBodyHash, $body_sha256_or_algo)) {
+      error_log("Body hash mismatch: received=$receivedBodyHash, expected=$body_sha256_or_algo, body=$body");
       return false;
     }
 
     // Verify timestamp
     if (abs(time() - $timestamp) > 60) {
+      error_log("Timestamp is too old or too new: received=$receivedTimestamp, current=" . time());
       return false;
     }
 
