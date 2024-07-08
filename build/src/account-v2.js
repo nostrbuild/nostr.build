@@ -814,7 +814,7 @@ Alpine.store('profileStore', {
     this.profileInfo.allowNostrLogin = data.allowNostrLogin === 1;
     this.profileInfo.npubVerified = data.npubVerified === 1;
     this.profileInfo.accountLevel = data.accountLevel;
-    this.profileInfo.accountFlags = data.accountFlags;
+    this.profileInfo.accountFlags = JSON.parse(data.accountFlags);
     this.profileInfo.remainingDays = data.remainingDays;
     this.profileInfo.subscriptionExpired = data.remainingDays <= 0;
     this.profileInfo.storageUsed = data.storageUsed;
