@@ -1,4 +1,9 @@
 <?php
+require __DIR__.'/../vendor/autoload.php';
+
+use Hidehalo\Nanoid\Client;
+use Hidehalo\Nanoid\GeneratorInterface;
+
 // Assign file types
 function getFileType(string $ext): string
 {
@@ -343,4 +348,12 @@ function verifyPasswordPBKDF2(string $password, string $storedCombined): bool
   $hash = base64_decode($base64Hash);
   $computedHash = hash_pbkdf2("sha256", $password, $salt, 100000, 0, true);
   return hash_equals($computedHash, $hash);
+}
+
+function getUniqueNanoId(): string
+{
+  $nano = new Client();
+  $alphabet = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
+  // 16 characters long ID
+  return $nano->formattedId(alphabet: $alphabet, size: 16);
 }

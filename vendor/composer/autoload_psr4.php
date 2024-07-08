@@ -26,7 +26,6 @@ return array(
     'JmesPath\\' => array($vendorDir . '/mtdowling/jmespath.php/src'),
     'Invoker\\' => array($vendorDir . '/php-di/invoker/src'),
     'Hidehalo\\Nanoid\\' => array($vendorDir . '/hidehalo/nanoid-php/src'),
-    'Hashids\\' => array($vendorDir . '/hashids/hashids/src'),
     'GuzzleHttp\\Psr7\\' => array($vendorDir . '/guzzlehttp/psr7/src'),
     'GuzzleHttp\\Promise\\' => array($vendorDir . '/guzzlehttp/promises/src'),
     'GuzzleHttp\\' => array($vendorDir . '/guzzlehttp/guzzle/src'),

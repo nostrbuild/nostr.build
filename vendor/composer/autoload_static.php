@@ -69,7 +69,6 @@ class ComposerStaticInitd84b9ad25db27c0cce0ffcf6c71b28b7
         'H' => 
         array (
             'Hidehalo\\Nanoid\\' => 16,
-            'Hashids\\' => 8,
         ),
         'G' => 
         array (
@@ -178,10 +177,6 @@ class ComposerStaticInitd84b9ad25db27c0cce0ffcf6c71b28b7
         'Hidehalo\\Nanoid\\' => 
         array (
             0 => __DIR__ . '/..' . '/hidehalo/nanoid-php/src',
-        ),
-        'Hashids\\' => 
-        array (
-            0 => __DIR__ . '/..' . '/hashids/hashids/src',
         ),
         'GuzzleHttp\\Psr7\\' => 
         array (

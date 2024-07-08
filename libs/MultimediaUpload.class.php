@@ -17,8 +17,6 @@ require_once $_SERVER['DOCUMENT_ROOT'] . "/libs/PhotoDNA.class.php";
 // Vendor autoload
 require_once $_SERVER['DOCUMENT_ROOT'] . "/vendor/autoload.php";
 
-use Hashids\Hashids;
-
 /**
  * Summary of MultimediaUpload
  * The flow should be as follows:
@@ -1441,9 +1439,8 @@ class MultimediaUpload
    */
   protected function generateFileName(int $id = 0): string
   {
-    $hashids = new Hashids($_SERVER['HASHIDS_SALT']); // The salt must be the same to do not have collisions
     // This method should be called before any other file transformations are performed.
-    return $id === 0 ? hash_file('sha256', realpath($this->file['tmp_name'])) : $hashids->encode($id);
+    return $id === 0 ? hash_file('sha256', realpath($this->file['tmp_name'])) : getUniqueNanoId();
   }
 
   /**
