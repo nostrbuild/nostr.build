@@ -134,6 +134,8 @@ class HmacAuthHandler
 
     $payload = "{$method}|{$url}|{$body_sha256_or_algo}|{$timestamp}";
     $expectedMac = base64_encode(hash_hmac('sha256', $payload, $secret, true));
+    error_log("Expected MAC: " . $expectedMac);
+    error_log("Received MAC: " . $receivedMac);
 
     // Compare the received MAC with the expected MAC
     return hash_equals($expectedMac, $receivedMac);
