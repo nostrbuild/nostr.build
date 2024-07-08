@@ -7,6 +7,8 @@ use Psr\Http\Server\MiddlewareInterface;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
 use Psr\Http\Server\RequestHandlerInterface as RequestHandler;
+use Psr\Http\Server\Response as ResponseClass;
+use Slim\Psr7\Response as Psr7Response;
 
 /**
  * Summary of HmacAuthMiddleware
@@ -37,6 +39,6 @@ class HmacAuthMiddleware implements MiddlewareInterface
         error_log('HmacAuthHandler error: ' . $e->getMessage());
       }
     }
-    return new Response(401);
+    return new Psr7Response(401); 
   }
 }
