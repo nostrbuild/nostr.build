@@ -1340,11 +1340,11 @@ onDropCB(event) {
 								<span x-text="formatBytes(menuStore.activeFolderStats.archivesSize)"></span>
 							</p>
 							<p x-cloak x-show="fileStore.fullWidth && menuStore.activeFolderStats.othersSize > 0"
-								@click="fileStore.setFilter('other')"
+								@click="fileStore.setFilter('others')"
 								:class="{'text-orange-300 font-bold': fileStore.currentFilter === 'other'}"
 								class="cursor-pointer hidden text-xs sm:text-sm text-nbpurple-300 font-semibold leading-6 lg:flex justify-center items-center gap-x-1">
 								<span x-html="fileStore.filters.others.icon"></span>
-								<span x-text="formatBytes(menuStore.activeFolderStats.archivesSize)"></span>
+								<span x-text="formatBytes(menuStore.activeFolderStats.othersSize)"></span>
 							</p>
 						</div>
 						<div class="flex ml-4 mt-0 transition-all">
