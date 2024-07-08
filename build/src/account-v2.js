@@ -2422,6 +2422,7 @@ Alpine.store('uppyStore', {
       'image/jxr': 'jxr',
       'image/pipeg': 'jfif',
       'image/dng': 'dng',
+      'image/*': 'jpg'
     };
 
     const mimeTypesAudio = {
