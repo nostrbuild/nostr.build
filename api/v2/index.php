@@ -2,6 +2,7 @@
 require_once $_SERVER['DOCUMENT_ROOT'] . '/config.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/MultimediaUpload.class.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/S3Service.class.php';
+require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/db/UploadsData.class.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/db/UsersImages.class.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/db/UsersImagesFolders.class.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/BTCPayWebhook.class.php';
@@ -71,6 +72,12 @@ $container->set('accountClass', function () {
 $container->set('gifBrowser', function () {
   global $link;
   return new GifBrowser($link);
+});
+
+// Setup UploadsData
+$container->set('uploadsData', function () {
+  global $link;
+  return new UploadsData($link);
 });
 
 

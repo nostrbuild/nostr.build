@@ -1,6 +1,7 @@
 <?php
 require_once $_SERVER['DOCUMENT_ROOT'] . '/config.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/NostrAuthMiddleware.class.php';
+require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/HmacAuthMiddleware.class.php';
 require_once __DIR__ . '/helper_functions.php';
 
 require $_SERVER['DOCUMENT_ROOT'] . '/vendor/autoload.php';
@@ -323,6 +324,34 @@ $app->group('/upload', function (RouteCollectorProxy $group) {
       return jsonResponse($response, 'error', 'Failed to retrieve upload limit: ' . $e->getMessage(), new stdClass(), 500);
     }
   })->add(new NostrAuthMiddleware());
+
+  // Moderation route to change the status of a file
+  $group->post('/status', function (Request $request, Response $response) {
+    // Get JSON data from the request
+    $body = $request->getBody();
+    $data = json_decode($body, true);
+    // Check if the required data is provided
+    if (!isset($data['filehash']) || !isset($data['status'])) {
+      return jsonResponse($response, 'error', 'Missing required data', new stdClass(), 400);
+    }
+
+    try {
+      $uploadsData = $this->get('uploadsData');
+      $filehash = pathinfo($data['filehash'], PATHINFO_FILENAME);
+      // Handle exceptions thrown by the MultimediaUpload class
+      $status = $uploadsData->changeStatus($filehash, $data['status']);
+
+      if (!$status) {
+        // Handle the non-true status scenario
+        return jsonResponse($response, 'error', 'Failed to change status of file', new stdClass(), 500);
+      }
+
+      return jsonResponse($response, 'success', 'Status of file changed successfully', new stdClass(), 200);
+    } catch (\Exception $e) {
+      error_log('Exception: ' . $e->getMessage());
+      return jsonResponse($response, 'error', 'Failed to change status of file: ' . $e->getMessage(), new stdClass(), 500);
+    }
+  })->add(new HmacAuthMiddleware());
 
   $group->get('/ping', function (Request $request, Response $response) {
     $response->getBody()->write('pong');

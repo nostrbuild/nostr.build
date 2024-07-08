@@ -181,4 +181,25 @@ class UploadsData extends DatabaseTable
       return false;
     }
   }
+
+  function changeStatus(string $filehash, string $status): bool
+  {
+    $sql = "UPDATE {$this->tableName} SET approval_status = ? WHERE filename LIKE ?";
+    // enum('approved','pending','rejected','adult') - approval_status
+    if (!in_array($status, ['approved', 'pending', 'rejected', 'adult'])) {
+      return false;
+    }
+
+    try {
+      $bindFileHash = $filehash . '%';
+      $stmt = $this->db->prepare($sql);
+      $stmt->bind_param('ss', $status, $bindFileHash);
+      $stmt->execute();
+      $stmt->close();
+      return true;
+    } catch (Exception $e) {
+      error_log("Exception: " . $e->getMessage());
+      return false;
+    }
+  }
 }
