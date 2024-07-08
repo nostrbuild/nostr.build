@@ -4,8 +4,8 @@ function getFileType(string $ext): string
 {
   $fileTypes = [
     'image' => ['jpg', 'jpeg', 'png', 'apng', 'gif', 'webp', 'bmp', 'tiff', 'heic', 'heif', 'avif', 'jp2', 'jpx', 'jpm', 'jxr', 'jfif', 'ico'],
-    'audio' => ['mp3', 'ogg', 'wav', 'aac', 'webm', 'flac', 'aif', 'wma', 'm4a', 'm4b', 'm4p', 'm4r', 'm4v', 'mp2', 'mpa', 'mpga', 'mp4a', 'mpga', 'mpg', 'mpv2', 'mp2v', 'mpe', 'm2a', 'm2v', 'm2s', 'm2t', 'm2ts', 'm2v', 'm3a'],
-    'video' => ['mp4', 'webm', 'ogv', 'avi', 'wmv', 'mov', 'mpeg', '3gp', '3g2', 'flv', 'm4v', 'mkv', 'mpg', 'm2v', 'm4p', 'm4v', 'mp2', 'mpa', 'mpe', 'mpv', 'm2ts', 'mts', 'ts', 'mxf', 'asf', 'rm', 'rmvb', 'vob', 'f4v', 'm2v', 'm2ts', 'mts', 'ts', 'mxf', 'asf', 'rm', 'rmvb', 'vob', 'f4v'],
+    'audio' => ['mp3', 'ogg', 'wav', 'aac', 'webm', 'flac', 'aif', 'wma', 'm4a', 'm4b', 'm4p', 'm4r', 'mp2', 'mpa', 'mpga', 'mp4a', 'mpga', 'mpg', 'mpv2', 'mp2v', 'mpe', 'm2a', 'm2v', 'm2s', 'm2t', 'm2ts', 'm2v', 'm3a'],
+    'video' => ['mp4', 'webm', 'ogv', 'avi', 'wmv', 'mov', 'mpeg', '3gp', '3g2', 'flv', 'm4v', 'mkv', 'mpg', 'm2v', 'm4p', 'mp2', 'mpa', 'mpe', 'mpv', 'm2ts', 'mts', 'ts', 'mxf', 'asf', 'rm', 'rmvb', 'vob', 'f4v', 'm2v', 'm2ts', 'mts', 'ts', 'mxf', 'asf', 'rm', 'rmvb', 'vob', 'f4v'],
     'archive' => ['zip', 'tar', 'gz', 'bz2', 'xz', 'lz', 'tar.gz', 'tar.bz', 'tar.xz'],
     'document' => ['pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'odt', 'ods', 'odp', 'rtf'],
     'text' => ['txt', 'html', 'css', 'js', 'json', 'xml', 'yaml', 'toml', 'md', 'tex', 'rst', 'adoc', 'org', 'texinfo', 'roff'],
