@@ -68,6 +68,7 @@ class ComposerStaticInitd84b9ad25db27c0cce0ffcf6c71b28b7
         ),
         'H' => 
         array (
+            'Hidehalo\\Nanoid\\' => 16,
             'Hashids\\' => 8,
         ),
         'G' => 
@@ -147,8 +148,8 @@ class ComposerStaticInitd84b9ad25db27c0cce0ffcf6c71b28b7
         ),
         'Psr\\Http\\Message\\' => 
         array (
-            0 => __DIR__ . '/..' . '/psr/http-message/src',
-            1 => __DIR__ . '/..' . '/psr/http-factory/src',
+            0 => __DIR__ . '/..' . '/psr/http-factory/src',
+            1 => __DIR__ . '/..' . '/psr/http-message/src',
         ),
         'Psr\\Http\\Client\\' => 
         array (
@@ -173,6 +174,10 @@ class ComposerStaticInitd84b9ad25db27c0cce0ffcf6c71b28b7
         'Invoker\\' => 
         array (
             0 => __DIR__ . '/..' . '/php-di/invoker/src',
+        ),
+        'Hidehalo\\Nanoid\\' => 
+        array (
+            0 => __DIR__ . '/..' . '/hidehalo/nanoid-php/src',
         ),
         'Hashids\\' => 
         array (
