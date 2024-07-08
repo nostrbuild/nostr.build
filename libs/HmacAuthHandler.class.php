@@ -26,6 +26,10 @@ class HmacAuthHandler
     $this->body = $request->getBody()->getContents();
     $this->request = $request;
     $this->secret = $secret;
+    // Throw an exception if the secret is empty
+    if (empty($this->secret)) {
+      throw new Exception("Secret is empty", 401);
+    }
   }
 
   /**
