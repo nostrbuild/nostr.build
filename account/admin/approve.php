@@ -88,6 +88,7 @@ if (isset($_POST['searchFile'])) {
             'Are you sure you want to set this media as Adult?' :
             (status === 'rejected') ?
             'Are you sure you want to set this media as Rejected and premanently delete it with no ability to re-upload?' :
+            (status === 'approved') ? 'Are you sure you want to approve this media?' :
             'Are you sure you want to set this media as CSAM and premanently delete it with no ability to re-upload?';
 
           // Show the confirmation dialog
@@ -328,6 +329,7 @@ if (isset($_POST['searchFile'])) {
       echo '        <input type="hidden" name="id" value="' . $row['id'] . '">';
       echo '        <div class="d-flex justify-content-center">';
       echo '        <div class="btn-group mx-auto" role="group" >';
+      echo '          <button type="button" name="status" value="approved" class="btn mb-1 btn-xsm status-btn">Approve</button>';
       echo '          <button type="button" name="status" value="adult" class="btn btn-warning mb-1 btn-xsm status-btn">Adult</button>';
       echo '          <button type="button" name="status" value="rejected" class="btn btn-danger mb-1 btn-xsm status-btn">Flag</button>';
       if ($perm->isAdmin()) : // Only show CSAM button to admins
