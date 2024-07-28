@@ -257,7 +257,7 @@ function createNip96SuccessResponse(array $data, string $message, string $proces
     $nip94_event = [
       'tags' => [
         ["url", $data['url']],
-        ["ox", $data['original_sha256'], "https://{$_SERVER['HTTP_HOST']}"]
+        ["ox", $data['original_sha256']]
       ],
       'content' => "" // Empty by design
     ];
@@ -281,6 +281,10 @@ function createNip96SuccessResponse(array $data, string $message, string $proces
 
   if (isset($data['blurhash'])) {
     $nip94_event['tags'][] = ["blurhash", $data['blurhash']];
+  }
+
+  if (isset($data['thumbnail'])) {
+    $nip94_event['tags'][] = ["thumb", $data['thumbnail']];
   }
 
   $metadata = [];
