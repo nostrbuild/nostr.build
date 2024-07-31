@@ -410,7 +410,7 @@ class S3Service
     }
 
     $objectName = basename($objectKey);
-    error_log("R2 object key: $objectKey\n" . "R2 mime type: $mimeType\n" . getFileTypeFromName($objectName) . "\n");
+    //error_log("R2 object key: $objectKey\n" . "R2 mime type: $mimeType\n" . getFileTypeFromName($objectName) . "\n");
     // Handle PFP case
     if (substr($objectKey, 0, 4) === 'i/p/') {
       $bucketSuffix = SiteConfig::getBucketSuffix('profile_picture');
@@ -426,8 +426,8 @@ class S3Service
     }
 
     // DEBUG
-    error_log("R2 bucket suffix: $bucketSuffix\n");
-    error_log("R2 object name: $objectName\n");
+    //error_log("R2 bucket suffix: $bucketSuffix\n");
+    //error_log("R2 object name: $objectName\n");
 
     return [
       'bucket' => $this->r2bucket . $bucketSuffix,
