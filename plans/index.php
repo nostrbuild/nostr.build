@@ -216,7 +216,7 @@ SVG;
     <div class="information pb-5">
       <ul>
         <li>
-          <span class="whitespace-pre-line">Damus/Amethyst/Snort/Coracle/noStrudel Integration
+          <span class="whitespace-pre-line">YakiHonne/Damus/Amethyst/Snort/Coracle/noStrudel Integration
             Bitcoin Only | Never Ads | Billed Annually | Sustainable
           </span>
         </li>

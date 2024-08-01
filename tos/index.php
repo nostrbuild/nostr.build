@@ -30,7 +30,7 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/config.php';
 		<h3>Overview</h3>
 		<h4>Effective May 1, 2024</h4>
 		<p>
-			Using our website, api or any connected apps (Damus, Amethyst, NoStrudel, Coracle, Snort, Iris, etc.) to do anything other than access the links to this "Terms" page or accessing any
+			Using our website, api or any connected apps (YakiHonne, Damus, Amethyst, NoStrudel, Coracle, Snort, Iris, etc.) to do anything other than access the links to this "Terms" page or accessing any
 			page of our website other than our home page and this "Terms" page constitutes your consent to these terms of use
 			and to our Privacy Policy. If you do not consent, do not use our
 			website. Your use of our website to do anything beyond simply accessing/viewing it (that is, uploading,
