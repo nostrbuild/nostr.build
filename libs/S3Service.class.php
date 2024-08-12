@@ -4,6 +4,7 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/SiteConfig.php';
 require $_SERVER['DOCUMENT_ROOT'] . '/vendor/autoload.php';
 
 use Aws\S3\S3Client;
+use Aws\S3\MultipartUploader;
 use Aws\Exception\AwsException;
 use GuzzleHttp\Promise;
 
@@ -78,100 +79,106 @@ class S3Service
   // Upload a file to S3
   public function uploadToS3($sourcePath, $destinationPath, $sha256 = '', $s3backup = false, $npub = '', bool $paidAccount = false): bool
   {
-    // Number of retries for the upload
     $maxRetries = 3;
-    // Get the mime type of the file
     $mimeType = mime_content_type($sourcePath);
+    $fileSize = filesize($sourcePath);
+    $multipartThreshold = 25 * 1024 * 1024; // 25 MB threshold
 
-    // Check if the file exists
-    if (!file_exists($sourcePath)) {
-      error_log("The source file does not exist.\n");
+    if (!file_exists($sourcePath) || $fileSize === 0) {
+      error_log("The source file does not exist or is empty.\n");
       return false;
     }
 
-    // DEBUG
     error_log("Uploading $sourcePath to $destinationPath with sha256: $sha256 and npub: $npub\n");
 
-    // Define the options for S3 upload
-    $s3Options = [
+    $commonOptions = [
+      'ACL'    => 'private',
+      'StorageClass' => 'STANDARD',
+      'CacheControl' => 'max-age=2592000',
+      'ContentType' => $mimeType,
+      'SourceFile' => $sourcePath,  // Include SourceFile here to avoid repetition
+      'retries' => 6,
+      'Metadata' => [
+        'sha256' => $sha256,
+        'npub' => $npub,
+      ],
+    ];
+
+    $s3Options = array_merge($commonOptions, [
       'Bucket' => $this->bucket,
       'Key'    => $destinationPath,
-      'SourceFile' => $sourcePath,
-      'ACL'    => 'private',
-      'retries' => 6,
-      'StorageClass' => 'STANDARD',
-      'CacheControl' => 'max-age=2592000',
-      'ContentType' => $mimeType,
-      'Metadata' => [
-        'sha256' => $sha256,
-        'npub' => $npub,
-      ],
-    ];
+    ]);
 
-    // Define the options for R2 upload
     $r2BucketAndObjectNames = $this->getR2BucketAndObjectNames($destinationPath, $mimeType, $paidAccount);
-    $r2Options = [
+    $r2Options = array_merge($commonOptions, [
       'Bucket' => $r2BucketAndObjectNames['bucket'],
       'Key'    => $r2BucketAndObjectNames['objectName'],
-      'SourceFile' => $sourcePath,
-      'ACL'    => 'private',
-      'retries' => 6,
-      'StorageClass' => 'STANDARD',
-      'CacheControl' => 'max-age=2592000',
-      'ContentType' => $mimeType,
-      'Metadata' => [
-        'sha256' => $sha256,
-        'npub' => $npub,
-      ],
-    ];
+    ]);
 
-    // Define the options for E2 upload
     $e2BucketAndObjectNames = $this->getE2BucketAndObjectNames($destinationPath, $mimeType, $paidAccount);
-    $e2Options = [
+    $e2Options = array_merge($commonOptions, [
       'Bucket' => $e2BucketAndObjectNames['bucket'],
       'Key'    => $e2BucketAndObjectNames['objectName'],
-      'SourceFile' => $sourcePath,
-      'ACL'    => 'private',
-      'retries' => 6,
-      'StorageClass' => 'STANDARD',
-      'CacheControl' => 'max-age=2592000',
-      'ContentType' => $mimeType,
-      'Metadata' => [
-        'sha256' => $sha256,
-        'npub' => $npub,
-      ],
-    ];
+    ]);
 
-    $attemptUpload = function ($client, $options, $retriesLeft) use (&$attemptUpload, $maxRetries) {
-      return $client->putObjectAsync($options)
-        ->then(
-          function ($result) {
-            if (isset($result['ObjectURL'])) {
-              return $result;
+    $attemptUpload = function ($client, $options, $retriesLeft) use (&$attemptUpload, $maxRetries, $fileSize, $multipartThreshold) {
+      if ($fileSize > $multipartThreshold) {
+        // Multipart upload for large files
+        $uploader = new MultipartUploader($client, $options['SourceFile'], [
+          'bucket' => $options['Bucket'],
+          'key' => $options['Key'],
+          'acl' => $options['ACL'],
+          'storage_class' => $options['StorageClass'],
+          'content_type' => $options['ContentType'],
+          'metadata' => $options['Metadata'],
+          'retries' => $options['retries'],
+          'part_size' => $multipartThreshold
+        ]);
+
+        error_log("Multipart uploading: {$options['SourceFile']}\n");
+        return $uploader->promise()
+          ->then(
+            function ($result) {
+              if (isset($result['ObjectURL'])) {
+                return $result;
+              }
+              throw new Exception("Multipart upload failed, no ObjectURL");
+            },
+            function ($reason) use ($client, $options, &$attemptUpload, $retriesLeft, $maxRetries) {
+              if ($retriesLeft > 0) {
+                sleep(pow(2, $maxRetries - $retriesLeft));  // Exponential backoff
+                return $attemptUpload($client, $options, $retriesLeft - 1);
+              }
+              throw $reason;
             }
-            throw new Exception("Upload failed, no ObjectURL");
-          },
-          function ($reason) use ($client, $options, &$attemptUpload, $retriesLeft, $maxRetries) {
-            if ($retriesLeft > 0) {
-              sleep(pow(2, $maxRetries - $retriesLeft));  // Exponential backoff
-              return $attemptUpload($client, $options, $retriesLeft - 1);
+          );
+      } else {
+        // Single-part upload for small files
+        error_log("Single-part uploading: {$options['SourceFile']}\n");
+        return $client->putObjectAsync($options)
+          ->then(
+            function ($result) {
+              if (isset($result['ObjectURL'])) {
+                return $result;
+              }
+              throw new Exception("Upload failed, no ObjectURL");
+            },
+            function ($reason) use ($client, $options, &$attemptUpload, $retriesLeft, $maxRetries) {
+              if ($retriesLeft > 0) {
+                sleep(pow(2, $maxRetries - $retriesLeft));  // Exponential backoff
+                return $attemptUpload($client, $options, $retriesLeft - 1);
+              }
+              throw $reason;
             }
-            throw $reason;
-          }
-        );
+          );
+      }
     };
 
-    // Initialize retriesLeft to maxRetries
-    $s3Promise = $attemptUpload($this->s3, $s3Options, $maxRetries);
-    $r2Promise = $attemptUpload($this->r2, $r2Options, $maxRetries);
-    $e2Promise = $attemptUpload($this->e2, $e2Options, $maxRetries);
-
     $uploadPromises = [];
-    // Append promises to the array and only add s3 if $s3backup is true
-    $uploadPromises[] = $r2Promise;
-    $uploadPromises[] = $e2Promise;
+    $uploadPromises[] = $attemptUpload($this->r2, $r2Options, $maxRetries);
+    $uploadPromises[] = $attemptUpload($this->e2, $e2Options, $maxRetries);
     if ($s3backup) {
-      $uploadPromises[] = $s3Promise;
+      $uploadPromises[] = $attemptUpload($this->s3, $s3Options, $maxRetries);
     }
 
     try {
@@ -182,6 +189,7 @@ class S3Service
       return false;
     }
   }
+
 
   // Delete an object from S3
   public function deleteFromS3(string $objectKey, bool $paidAccount = false, string | null $mimeType = null)
