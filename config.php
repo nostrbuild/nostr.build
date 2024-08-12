@@ -51,9 +51,22 @@ $r2Config = [
     'use_aws_shared_config_files' => false,
 ];
 
+$e2Config = [
+    'region'  => $_SERVER['E2_REGION'],
+    'version' => $_SERVER['E2_VERSION'],
+    'endpoint' => $_SERVER['E2_ENDPOINT'],
+    'credentials' => [
+        'key'    => $_SERVER['E2_ACCESS_KEY'],
+        'secret' => $_SERVER['E2_SECRET_KEY'],
+    ],
+    'bucket' => $_SERVER['E2_BUCKET'],
+    'use_aws_shared_config_files' => false,
+];
+
 $awsConfig = [
     'aws' => $s3Config,
     'r2' => $r2Config,
+    'e2' => $e2Config,
 ];
 
 $btcpayConfig = [

@@ -27,8 +27,10 @@ class S3Service
 {
   private $s3;
   private $r2;
+  private $e2;
   private $bucket;
   private $r2bucket;
+  private $e2bucket;
 
   public function __construct($awsConfig)
   {
@@ -46,7 +48,7 @@ class S3Service
     $this->s3 = new S3Client($awsConfig['aws']);
     $this->bucket = $awsConfig['aws']['bucket'];
 
-    // If AWS credentials are not defined, stop the function
+    // If R2 credentials are not defined, stop the function
     if (
       !isset($awsConfig['r2']['credentials']['key'])
       || !isset($awsConfig['r2']['credentials']['secret'])
@@ -58,6 +60,19 @@ class S3Service
 
     $this->r2 = new S3Client($awsConfig['r2']);
     $this->r2bucket = $awsConfig['r2']['bucket'];
+
+    // If E2 credentials are not defined, stop the function
+    if (
+      !isset($awsConfig['e2']['credentials']['key'])
+      || !isset($awsConfig['e2']['credentials']['secret'])
+      || !isset($awsConfig['e2']['region'])
+      || !isset($awsConfig['e2']['bucket'])
+    ) {
+      error_log("E2 credentials are not set in the config file.\n");
+    }
+
+    $this->e2 = new S3Client($awsConfig['e2']);
+    $this->e2bucket = $awsConfig['e2']['bucket'];
   }
 
   // Upload a file to S3
@@ -110,6 +125,23 @@ class S3Service
       ],
     ];
 
+    // Define the options for E2 upload
+    $e2BucketAndObjectNames = $this->getE2BucketAndObjectNames($destinationPath, $mimeType, $paidAccount);
+    $e2Options = [
+      'Bucket' => $e2BucketAndObjectNames['bucket'],
+      'Key'    => $e2BucketAndObjectNames['objectName'],
+      'SourceFile' => $sourcePath,
+      'ACL'    => 'private',
+      'retries' => 6,
+      'StorageClass' => 'STANDARD',
+      'CacheControl' => 'max-age=2592000',
+      'ContentType' => $mimeType,
+      'Metadata' => [
+        'sha256' => $sha256,
+        'npub' => $npub,
+      ],
+    ];
+
     $attemptUpload = function ($client, $options, $retriesLeft) use (&$attemptUpload, $maxRetries) {
       return $client->putObjectAsync($options)
         ->then(
@@ -132,10 +164,12 @@ class S3Service
     // Initialize retriesLeft to maxRetries
     $s3Promise = $attemptUpload($this->s3, $s3Options, $maxRetries);
     $r2Promise = $attemptUpload($this->r2, $r2Options, $maxRetries);
+    $e2Promise = $attemptUpload($this->e2, $e2Options, $maxRetries);
 
     $uploadPromises = [];
     // Append promises to the array and only add s3 if $s3backup is true
     $uploadPromises[] = $r2Promise;
+    $uploadPromises[] = $e2Promise;
     if ($s3backup) {
       $uploadPromises[] = $s3Promise;
     }
@@ -163,9 +197,16 @@ class S3Service
       'Key'    => $r2BucketAndObjectNames['objectName'],
     ];
 
+    $e2BucketAndObjectNames = $this->getE2BucketAndObjectNames(objectKey: $objectKey, paidAccount: $paidAccount, mimeType: $mimeType);
+    $e2DeleteOptions = [
+      'Bucket' => $e2BucketAndObjectNames['bucket'],
+      'Key'    => $e2BucketAndObjectNames['objectName'],
+    ];
+
     $promises = [
       's3DeletePromise' => $this->s3->deleteObjectAsync($s3DeleteOptions),
-      'r2DeletePromise' => $this->r2->deleteObjectAsync($r2DeleteOptions)
+      'r2DeletePromise' => $this->r2->deleteObjectAsync($r2DeleteOptions),
+      'e2DeletePromise' => $this->e2->deleteObjectAsync($e2DeleteOptions),
     ];
 
     // Since we cannot reliably predict which R2 bucket the object will be in for paid accounts,
@@ -175,6 +216,13 @@ class S3Service
       $promises['r2ProAvDeletePromise'] = $this->r2->deleteObjectAsync([
         'Bucket' => $additionalR2Bucket,
         'Key'    => $r2BucketAndObjectNames['objectName']
+      ]);
+    }
+    if (substr($e2BucketAndObjectNames['bucket'], -4) === '-pro') {
+      $additionalE2Bucket = $e2BucketAndObjectNames['bucket'] . '-pro';
+      $promises['e2AvProDeletePromise'] = $this->e2->deleteObjectAsync([
+        'Bucket' => $additionalE2Bucket,
+        'Key'    => $e2BucketAndObjectNames['objectName']
       ]);
     }
 
@@ -431,6 +479,37 @@ class S3Service
 
     return [
       'bucket' => $this->r2bucket . $bucketSuffix,
+      'objectName' => $objectName
+    ];
+  }
+
+  private function getE2BucketAndObjectNames(string $objectKey, string | null $mimeType = 'application/octet-stream', bool $paidAccount = false): array
+  {
+    // Validate the objectKey to ensure it contains a '/'
+    if (strpos($objectKey, '/') === false) {
+      return [
+        'bucket' => $this->e2bucket,
+        'objectName' => $objectKey
+      ];
+    }
+
+    $objectName = basename($objectKey);
+    // Handle PFP case
+    if (substr($objectKey, 0, 4) === 'i/p/') {
+      $bucketSuffix = SiteConfig::getBucketSuffix('profile_picture');
+    } else {
+      // This can throw but we expect it to be caught in the calling function
+      $type = getFileTypeFromName($objectName);
+      $type = $type === 'unknown' && !empty($mimeType) && $mimeType !== 'application/octet-stream' ?
+        explode('/', $mimeType)[0] :
+        $type;
+      $bucketSuffix = $paidAccount
+        ? SiteConfig::getBucketSuffix('professional_account_' . $type)
+        : SiteConfig::getBucketSuffix($type);
+    }
+
+    return [
+      'bucket' => $this->e2bucket . $bucketSuffix,
       'objectName' => $objectName
     ];
   }
