@@ -177,7 +177,8 @@ class S3Service
     $uploadPromises = [];
     $uploadPromises[] = $attemptUpload($this->r2, $r2Options, $maxRetries);
     $uploadPromises[] = $attemptUpload($this->e2, $e2Options, $maxRetries);
-    if ($s3backup) {
+    // Disable conventional AWS S3 uploads for now
+    if (false && $s3backup) {
       $uploadPromises[] = $attemptUpload($this->s3, $s3Options, $maxRetries);
     }
 
