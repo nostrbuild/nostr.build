@@ -193,7 +193,7 @@ SVG;
   <meta charSet="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Nostr.build account signup</title>
-  <link rel="stylesheet" href="/styles/twbuild.css?v=1eeaa22acf343c88f1cb54373d217ea9" />
+  <link rel="stylesheet" href="/styles/twbuild.css?v=384be5c08d9cc0c2325e03b56a1b1e14" />
   <link rel="stylesheet" href="/styles/index.css?v=7ff4472e93e9719e0eac60b75646b485" />
   <link rel="stylesheet" href="/styles/signup.css?v=8878cbf7163f77b3a4fb9b30804c73ca" />
   <link rel="icon" href="/assets/primo_nostr.png" />
@@ -473,7 +473,7 @@ SVG;
               <?php endif; ?>
             </form>
           </div>
-          <script src="/scripts/dist/signup.js?v=1eb96de69d0b30195065643f867f0aa1"></script>
+          <script src="/scripts/dist/signup.js?v=dabbf72d1b0c4c16eb325d71a52c7418"></script>
           <script>
             document.addEventListener('DOMContentLoaded', (event) => {
               // Check if NIP-07 extension is installed and enable NIP-07 login

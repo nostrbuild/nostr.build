@@ -21,20 +21,20 @@
     "@tailwindcss/forms": "^0.5.7",
     "@tailwindcss/typography": "^0.5.14",
     "@uppy/audio": "^2.0.1",
-    "@uppy/core": "^4.1.0",
-    "@uppy/dashboard": "^4.0.2",
+    "@uppy/core": "^4.1.2",
+    "@uppy/dashboard": "^4.0.3",
     "@uppy/drop-target": "^3.0.1",
     "@uppy/golden-retriever": "^4.0.0",
     "@uppy/url": "^4.0.0",
     "@uppy/webcam": "^4.0.1",
     "@uppy/xhr-upload": "^4.0.2",
     "alpinejs": "^3.14.1",
-    "axios": "^1.7.3",
+    "axios": "^1.7.4",
     "axios-retry": "^4.5.0",
     "nostr-tools": "^2.7.2",
     "sortablejs": "^1.15.2",
     "tua-body-scroll-lock": "^1.5.0",
-    "uppy": "^4.1.0",
+    "uppy": "^4.2.0",
     "vidstack": "1.11.22"
   },
   "devDependencies": {
@@ -45,7 +45,7 @@
     "postcss": "^8.4.41",
     "postcss-import": "^16.1.0",
     "process": "^0.11.10",
-    "tailwindcss": "^3.4.9"
+    "tailwindcss": "^3.4.10"
   },
   "targets": {
     "default": {
