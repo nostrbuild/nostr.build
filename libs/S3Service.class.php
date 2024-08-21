@@ -26,29 +26,13 @@ use GuzzleHttp\Promise;
  */
 class S3Service
 {
-  private $s3;
   private $r2;
   private $e2;
-  private $bucket;
   private $r2bucket;
   private $e2bucket;
 
   public function __construct($awsConfig)
   {
-    // If AWS credentials are not defined, stop the function
-    if (
-      !isset($awsConfig['aws']['credentials']['key'])
-      || !isset($awsConfig['aws']['credentials']['secret'])
-      || !isset($awsConfig['aws']['region'])
-      || !isset($awsConfig['aws']['bucket'])
-    ) {
-      error_log("AWS credentials are not set in the config file.\n");
-      throw new Exception("AWS credentials are not set in the config file.");
-    }
-
-    $this->s3 = new S3Client($awsConfig['aws']);
-    $this->bucket = $awsConfig['aws']['bucket'];
-
     // If R2 credentials are not defined, stop the function
     if (
       !isset($awsConfig['r2']['credentials']['key'])
@@ -103,11 +87,6 @@ class S3Service
         'npub' => $npub,
       ],
     ];
-
-    $s3Options = array_merge($commonOptions, [
-      'Bucket' => $this->bucket,
-      'Key'    => $destinationPath,
-    ]);
 
     $r2BucketAndObjectNames = $this->getR2BucketAndObjectNames($destinationPath, $mimeType, $paidAccount);
     $r2Options = array_merge($commonOptions, [
@@ -177,10 +156,6 @@ class S3Service
     $uploadPromises = [];
     $uploadPromises[] = $attemptUpload($this->r2, $r2Options, $maxRetries);
     $uploadPromises[] = $attemptUpload($this->e2, $e2Options, $maxRetries);
-    // Disable conventional AWS S3 uploads for now
-    if (false && $s3backup) {
-      $uploadPromises[] = $attemptUpload($this->s3, $s3Options, $maxRetries);
-    }
 
     try {
       $results = Promise\Utils::unwrap($uploadPromises);
@@ -195,11 +170,6 @@ class S3Service
   // Delete an object from S3
   public function deleteFromS3(string $objectKey, bool $paidAccount = false, string | null $mimeType = null)
   {
-    $s3DeleteOptions = [
-      'Bucket' => $this->bucket,
-      'Key'    => $objectKey,
-    ];
-
     $r2BucketAndObjectNames = $this->getR2BucketAndObjectNames(objectKey: $objectKey, paidAccount: $paidAccount, mimeType: $mimeType);
     $r2DeleteOptions = [
       'Bucket' => $r2BucketAndObjectNames['bucket'],
@@ -213,7 +183,6 @@ class S3Service
     ];
 
     $promises = [
-      's3DeletePromise' => $this->s3->deleteObjectAsync($s3DeleteOptions),
       'r2DeletePromise' => $this->r2->deleteObjectAsync($r2DeleteOptions),
       'e2DeletePromise' => $this->e2->deleteObjectAsync($e2DeleteOptions),
     ];
@@ -263,33 +232,6 @@ class S3Service
     }
   }
 
-  // Retrieve the object metadata from S3
-  /**
-   * Summary of getObjectMetadataFromS3
-   * @param mixed $objectKey
-   * @return Aws\Result|bool
-   */
-  public function getObjectMetadataFromS3($objectKey): bool | Aws\Result
-  {
-    try {
-      // Get the object metadata from the specified bucket
-      $result = $this->s3->headObject([
-        'Bucket' => $this->bucket,
-        'Key'    => $objectKey,
-      ]);
-
-      if (!isset($result['Metadata'])) {
-        error_log("The object metadata was not found.\n");
-        return false;
-      }
-    } catch (AwsException $e) {
-      // Output error message if fails
-      error_log("s3 Get Object Metadata Error: " . $e->getMessage());
-      return false;
-    }
-
-    return $result;
-  }
 
   public function getObjectMetadataFromR2(string $objectKey, ?string $mime = null, ?bool $paidAccount = false): bool | Aws\Result
   {
@@ -324,79 +266,6 @@ class S3Service
     return $result;
   }
 
-  // List all objects in a specific bucket with optional prefix filtering
-  /**
-   * Usage:
-   * $s3Service = new S3Service($awsConfig);
-   *
-   * foreach ($s3Service->listObjectsInBucket() as $object) {
-   *   $objectKey = $object['Key'];
-   *   // process $object
-   * }
-   */
-  public function listObjectsInBucketS3($prefix = '', $maxKeys = 1000)
-  {
-    try {
-      $isTruncated = true;
-      $marker = '';
-
-      while ($isTruncated) {
-        $response = $this->s3->listObjects([
-          'Bucket' => $this->bucket,
-          'Prefix' => $prefix,
-          'Marker' => $marker,
-          'MaxKeys' => $maxKeys
-        ]);
-
-        foreach ($response['Contents'] as $object) {
-          yield $object;
-        }
-
-        $isTruncated = $response['IsTruncated'];
-
-        if ($isTruncated) {
-          // Get the last object key and use as marker for next request
-          $marker = end($response['Contents'])['Key'];
-        }
-      }
-    } catch (AwsException $e) {
-      error_log("s3 List Objects Error: " . $e->getMessage());
-    }
-  }
-
-  // Copy an object from one location to another
-  public function copyObjectS3($sourceKey, $destinationKey)
-  {
-    try {
-      $result = $this->s3->copyObject([
-        'Bucket'     => $this->bucket,
-        'CopySource' => "{$this->bucket}/{$sourceKey}",
-        'Key'        => $destinationKey
-      ]);
-
-      return $result;
-    } catch (AwsException $e) {
-      error_log("s3 Copy Object Error: " . $e->getMessage());
-      return false;
-    }
-  }
-
-  // Download a file from S3 to your local system
-  public function downloadObjectS3($key, $saveAs)
-  {
-    try {
-      $result = $this->s3->getObject([
-        'Bucket' => $this->bucket,
-        'Key'    => $key,
-        'SaveAs' => $saveAs
-      ]);
-
-      return $result;
-    } catch (AwsException $e) {
-      error_log("s3 Download Object Error: " . $e->getMessage());
-      return false;
-    }
-  }
 
   public function downloadObjectR2(string $key, ?string $saveAs = null, ?string $mime = null, ?bool $paidAccount = false): string
   {
@@ -437,17 +306,6 @@ class S3Service
     }
   }
 
-  // Get a URL for the object
-  public function getObjectUrlS3($key)
-  {
-    try {
-      $url = $this->s3->getObjectUrl($this->bucket, $key);
-      return $url;
-    } catch (AwsException $e) {
-      error_log("s3 Get Object URL Error: " . $e->getMessage());
-      return false;
-    }
-  }
 
   /**
    * Get the R2 bucket name based on the given object key.

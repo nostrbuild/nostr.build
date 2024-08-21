@@ -28,17 +28,6 @@ define('DB_NAME', $_SERVER['DB_NAME']);
  *      'retries' => 3, // (optional) The number of times to retry failed requests. Set to 0 to disable retries. Set to -1 to retry indefinitely (the default behavior).
  *  ];
  */
-$s3Config = [
-    'region'  => $_SERVER['AWS_REGION'],
-    'version' => $_SERVER['AWS_VERSION'],
-    'credentials' => [
-        'key'    => $_SERVER['AWS_KEY'],
-        'secret' => $_SERVER['AWS_SECRET'],
-    ],
-    'bucket' => $_SERVER['AWS_BUCKET'],
-    'use_aws_shared_config_files' => false,
-];
-
 $r2Config = [
     'region'  => $_SERVER['R2_REGION'],
     'version' => $_SERVER['R2_VERSION'],
@@ -64,7 +53,6 @@ $e2Config = [
 ];
 
 $awsConfig = [
-    'aws' => $s3Config,
     'r2' => $r2Config,
     'e2' => $e2Config,
 ];
