@@ -33,6 +33,10 @@ use function class_implements;
 use function in_array;
 use function is_array;
 
+/**
+ * @api
+ * @template TContainerInterface of (ContainerInterface|null)
+ */
 class Route implements RouteInterface, RequestHandlerInterface
 {
     /**
@@ -77,9 +81,11 @@ class Route implements RouteInterface, RequestHandlerInterface
 
     /**
      * Container
+     * @var TContainerInterface $container
      */
     protected ?ContainerInterface $container = null;
 
+    /** @var MiddlewareDispatcher<TContainerInterface> $middlewareDispatcher */
     protected MiddlewareDispatcher $middlewareDispatcher;
 
     /**
@@ -106,7 +112,7 @@ class Route implements RouteInterface, RequestHandlerInterface
      * @param callable|string                  $callable   The route callable
      * @param ResponseFactoryInterface         $responseFactory
      * @param CallableResolverInterface        $callableResolver
-     * @param ContainerInterface|null          $container
+     * @param TContainerInterface              $container
      * @param InvocationStrategyInterface|null $invocationStrategy
      * @param RouteGroupInterface[]            $groups     The parent route groups
      * @param int                              $identifier The route identifier
@@ -323,7 +329,6 @@ class Route implements RouteInterface, RequestHandlerInterface
         $inner = $this->middlewareDispatcher;
         $this->middlewareDispatcher = new MiddlewareDispatcher($inner, $this->callableResolver, $this->container);
 
-        /** @var RouteGroupInterface $group */
         foreach (array_reverse($this->groups) as $group) {
             $group->appendMiddlewareToDispatcher($this->middlewareDispatcher);
         }

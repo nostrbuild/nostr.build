@@ -25,6 +25,7 @@ use Throwable;
 use function get_class;
 use function is_subclass_of;
 
+/** @api */
 class ErrorMiddleware implements MiddlewareInterface
 {
     protected CallableResolverInterface $callableResolver;

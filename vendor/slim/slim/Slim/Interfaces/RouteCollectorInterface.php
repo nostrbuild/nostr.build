@@ -13,6 +13,7 @@ namespace Slim\Interfaces;
 use InvalidArgumentException;
 use RuntimeException;
 
+/** @api */
 interface RouteCollectorInterface
 {
     /**

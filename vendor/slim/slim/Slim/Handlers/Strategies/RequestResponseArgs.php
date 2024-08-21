@@ -18,6 +18,7 @@ use function array_values;
 
 /**
  * Route callback strategy with route parameters as individual arguments.
+ * @api
  */
 class RequestResponseArgs implements InvocationStrategyInterface
 {

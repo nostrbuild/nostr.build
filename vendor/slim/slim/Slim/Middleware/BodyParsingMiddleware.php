@@ -33,6 +33,7 @@ use function trim;
 
 use const LIBXML_VERSION;
 
+/** @api */
 class BodyParsingMiddleware implements MiddlewareInterface
 {
     /**

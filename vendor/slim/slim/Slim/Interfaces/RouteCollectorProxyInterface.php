@@ -14,12 +14,19 @@ use Psr\Container\ContainerInterface;
 use Psr\Http\Message\ResponseFactoryInterface;
 use Psr\Http\Message\UriInterface;
 
+/**
+ * @api
+ * @template TContainerInterface of (ContainerInterface|null)
+ */
 interface RouteCollectorProxyInterface
 {
     public function getResponseFactory(): ResponseFactoryInterface;
 
     public function getCallableResolver(): CallableResolverInterface;
 
+    /**
+     * @return TContainerInterface
+     */
     public function getContainer(): ?ContainerInterface;
 
     public function getRouteCollector(): RouteCollectorInterface;
@@ -31,6 +38,7 @@ interface RouteCollectorProxyInterface
 
     /**
      * Set the RouteCollectorProxy's base path
+     * @return RouteCollectorProxyInterface<TContainerInterface>
      */
     public function setBasePath(string $basePath): RouteCollectorProxyInterface;
 

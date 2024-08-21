@@ -5,13 +5,13 @@ on: push
 jobs:
   run:
     name: CI on PHP ${{ matrix.php-version }}
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     strategy:
       fail-fast: false
       matrix:
-        php-version: [ "7.4", "8.0", "8.1", "8.2", "8.3" ]
+        php-version: [ "7.4", "8.0", "8.1", "8.2", "8.3", "8.4" ]
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           submodules: recursive
       - uses: shivammathur/setup-php@v2
@@ -28,7 +28,8 @@ jobs:
         run: |
           make check
       - name: Test PHP extension with Valgrind
-        if: ${{ matrix.php-version == '8.1' || matrix.php-version == '8.2' || matrix.php-version == '8.3' }}
+        if: ${{ matrix.php-version != '7.4' && matrix.php-version != '8.0' }}
         run: |
+          sudo apt-get update
           sudo apt-get install valgrind
           make check-valgrind

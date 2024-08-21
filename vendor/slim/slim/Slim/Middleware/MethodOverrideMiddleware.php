@@ -18,6 +18,7 @@ use Psr\Http\Server\RequestHandlerInterface;
 use function is_array;
 use function strtoupper;
 
+/** @api */
 class MethodOverrideMiddleware implements MiddlewareInterface
 {
     public function process(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface

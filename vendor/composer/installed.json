@@ -2,17 +2,17 @@
     "packages": [
         {
             "name": "aws/aws-crt-php",
-            "version": "v1.2.5",
-            "version_normalized": "1.2.5.0",
+            "version": "v1.2.6",
+            "version_normalized": "1.2.6.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/awslabs/aws-crt-php.git",
-                "reference": "0ea1f04ec5aa9f049f97e012d1ed63b76834a31b"
+                "reference": "a63485b65b6b3367039306496d49737cf1995408"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/awslabs/aws-crt-php/zipball/0ea1f04ec5aa9f049f97e012d1ed63b76834a31b",
-                "reference": "0ea1f04ec5aa9f049f97e012d1ed63b76834a31b",
+                "url": "https://api.github.com/repos/awslabs/aws-crt-php/zipball/a63485b65b6b3367039306496d49737cf1995408",
+                "reference": "a63485b65b6b3367039306496d49737cf1995408",
                 "shasum": ""
             },
             "require": {
@@ -25,7 +25,7 @@
             "suggest": {
                 "ext-awscrt": "Make sure you install awscrt native extension to use any of the functionality."
             },
-            "time": "2024-04-19T21:30:56+00:00",
+            "time": "2024-06-13T17:21:28+00:00",
             "type": "library",
             "installation-source": "dist",
             "autoload": {
@@ -53,23 +53,23 @@
             ],
             "support": {
                 "issues": "https://github.com/awslabs/aws-crt-php/issues",
-                "source": "https://github.com/awslabs/aws-crt-php/tree/v1.2.5"
+                "source": "https://github.com/awslabs/aws-crt-php/tree/v1.2.6"
             },
             "install-path": "../aws/aws-crt-php"
         },
         {
             "name": "aws/aws-sdk-php",
-            "version": "3.311.1",
-            "version_normalized": "3.311.1.0",
+            "version": "3.320.5",
+            "version_normalized": "3.320.5.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/aws/aws-sdk-php.git",
-                "reference": "90218b9372469babf294f97bdd764c9d47ec8a57"
+                "reference": "afda5aefd59da90208d2f59427ce81e91535b1f2"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/aws/aws-sdk-php/zipball/90218b9372469babf294f97bdd764c9d47ec8a57",
-                "reference": "90218b9372469babf294f97bdd764c9d47ec8a57",
+                "url": "https://api.github.com/repos/aws/aws-sdk-php/zipball/afda5aefd59da90208d2f59427ce81e91535b1f2",
+                "reference": "afda5aefd59da90208d2f59427ce81e91535b1f2",
                 "shasum": ""
             },
             "require": {
@@ -110,7 +110,7 @@
                 "ext-openssl": "Allows working with CloudFront private distributions and verifying received SNS messages",
                 "ext-sockets": "To use client-side monitoring"
             },
-            "time": "2024-06-06T18:05:50+00:00",
+            "time": "2024-08-21T18:14:31+00:00",
             "type": "library",
             "extra": {
                 "branch-alias": {
@@ -124,7 +124,10 @@
                 ],
                 "psr-4": {
                     "Aws\\": "src/"
-                }
+                },
+                "exclude-from-classmap": [
+                    "src/data/"
+                ]
             },
             "notification-url": "https://packagist.org/downloads/",
             "license": [
@@ -151,7 +154,7 @@
             "support": {
                 "forum": "https://forums.aws.amazon.com/forum.jspa?forumID=80",
                 "issues": "https://github.com/aws/aws-sdk-php/issues",
-                "source": "https://github.com/aws/aws-sdk-php/tree/3.311.1"
+                "source": "https://github.com/aws/aws-sdk-php/tree/3.320.5"
             },
             "install-path": "../aws/aws-sdk-php"
         },
@@ -273,23 +276,23 @@
         },
         {
             "name": "guzzlehttp/guzzle",
-            "version": "7.8.1",
-            "version_normalized": "7.8.1.0",
+            "version": "7.9.2",
+            "version_normalized": "7.9.2.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/guzzle/guzzle.git",
-                "reference": "41042bc7ab002487b876a0683fc8dce04ddce104"
+                "reference": "d281ed313b989f213357e3be1a179f02196ac99b"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/guzzle/guzzle/zipball/41042bc7ab002487b876a0683fc8dce04ddce104",
-                "reference": "41042bc7ab002487b876a0683fc8dce04ddce104",
+                "url": "https://api.github.com/repos/guzzle/guzzle/zipball/d281ed313b989f213357e3be1a179f02196ac99b",
+                "reference": "d281ed313b989f213357e3be1a179f02196ac99b",
                 "shasum": ""
             },
             "require": {
                 "ext-json": "*",
-                "guzzlehttp/promises": "^1.5.3 || ^2.0.1",
-                "guzzlehttp/psr7": "^1.9.1 || ^2.5.1",
+                "guzzlehttp/promises": "^1.5.3 || ^2.0.3",
+                "guzzlehttp/psr7": "^2.7.0",
                 "php": "^7.2.5 || ^8.0",
                 "psr/http-client": "^1.0",
                 "symfony/deprecation-contracts": "^2.2 || ^3.0"
@@ -300,9 +303,9 @@
             "require-dev": {
                 "bamarni/composer-bin-plugin": "^1.8.2",
                 "ext-curl": "*",
-                "php-http/client-integration-tests": "dev-master#2c025848417c1135031fdf9c728ee53d0a7ceaee as 3.0.999",
+                "guzzle/client-integration-tests": "3.0.2",
                 "php-http/message-factory": "^1.1",
-                "phpunit/phpunit": "^8.5.36 || ^9.6.15",
+                "phpunit/phpunit": "^8.5.39 || ^9.6.20",
                 "psr/log": "^1.1 || ^2.0 || ^3.0"
             },
             "suggest": {
@@ -310,7 +313,7 @@
                 "ext-intl": "Required for Internationalized Domain Name (IDN) support",
                 "psr/log": "Required for using the Log middleware"
             },
-            "time": "2023-12-03T20:35:24+00:00",
+            "time": "2024-07-24T11:22:20+00:00",
             "type": "library",
             "extra": {
                 "bamarni-bin": {
@@ -382,7 +385,7 @@
             ],
             "support": {
                 "issues": "https://github.com/guzzle/guzzle/issues",
-                "source": "https://github.com/guzzle/guzzle/tree/7.8.1"
+                "source": "https://github.com/guzzle/guzzle/tree/7.9.2"
             },
             "funding": [
                 {
@@ -402,17 +405,17 @@
         },
         {
             "name": "guzzlehttp/promises",
-            "version": "2.0.2",
-            "version_normalized": "2.0.2.0",
+            "version": "2.0.3",
+            "version_normalized": "2.0.3.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/guzzle/promises.git",
-                "reference": "bbff78d96034045e58e13dedd6ad91b5d1253223"
+                "reference": "6ea8dd08867a2a42619d65c3deb2c0fcbf81c8f8"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/guzzle/promises/zipball/bbff78d96034045e58e13dedd6ad91b5d1253223",
-                "reference": "bbff78d96034045e58e13dedd6ad91b5d1253223",
+                "url": "https://api.github.com/repos/guzzle/promises/zipball/6ea8dd08867a2a42619d65c3deb2c0fcbf81c8f8",
+                "reference": "6ea8dd08867a2a42619d65c3deb2c0fcbf81c8f8",
                 "shasum": ""
             },
             "require": {
@@ -420,9 +423,9 @@
             },
             "require-dev": {
                 "bamarni/composer-bin-plugin": "^1.8.2",
-                "phpunit/phpunit": "^8.5.36 || ^9.6.15"
+                "phpunit/phpunit": "^8.5.39 || ^9.6.20"
             },
-            "time": "2023-12-03T20:19:20+00:00",
+            "time": "2024-07-18T10:29:17+00:00",
             "type": "library",
             "extra": {
                 "bamarni-bin": {
@@ -468,7 +471,7 @@
             ],
             "support": {
                 "issues": "https://github.com/guzzle/promises/issues",
-                "source": "https://github.com/guzzle/promises/tree/2.0.2"
+                "source": "https://github.com/guzzle/promises/tree/2.0.3"
             },
             "funding": [
                 {
@@ -488,17 +491,17 @@
         },
         {
             "name": "guzzlehttp/psr7",
-            "version": "2.6.2",
-            "version_normalized": "2.6.2.0",
+            "version": "2.7.0",
+            "version_normalized": "2.7.0.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/guzzle/psr7.git",
-                "reference": "45b30f99ac27b5ca93cb4831afe16285f57b8221"
+                "reference": "a70f5c95fb43bc83f07c9c948baa0dc1829bf201"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/guzzle/psr7/zipball/45b30f99ac27b5ca93cb4831afe16285f57b8221",
-                "reference": "45b30f99ac27b5ca93cb4831afe16285f57b8221",
+                "url": "https://api.github.com/repos/guzzle/psr7/zipball/a70f5c95fb43bc83f07c9c948baa0dc1829bf201",
+                "reference": "a70f5c95fb43bc83f07c9c948baa0dc1829bf201",
                 "shasum": ""
             },
             "require": {
@@ -513,13 +516,13 @@
             },
             "require-dev": {
                 "bamarni/composer-bin-plugin": "^1.8.2",
-                "http-interop/http-factory-tests": "^0.9",
-                "phpunit/phpunit": "^8.5.36 || ^9.6.15"
+                "http-interop/http-factory-tests": "0.9.0",
+                "phpunit/phpunit": "^8.5.39 || ^9.6.20"
             },
             "suggest": {
                 "laminas/laminas-httphandlerrunner": "Emit PSR-7 responses"
             },
-            "time": "2023-12-03T20:05:35+00:00",
+            "time": "2024-07-18T11:15:46+00:00",
             "type": "library",
             "extra": {
                 "bamarni-bin": {
@@ -587,7 +590,7 @@
             ],
             "support": {
                 "issues": "https://github.com/guzzle/psr7/issues",
-                "source": "https://github.com/guzzle/psr7/tree/2.6.2"
+                "source": "https://github.com/guzzle/psr7/tree/2.7.0"
             },
             "funding": [
                 {
@@ -718,29 +721,30 @@
         },
         {
             "name": "laravel/serializable-closure",
-            "version": "v1.3.3",
-            "version_normalized": "1.3.3.0",
+            "version": "v1.3.4",
+            "version_normalized": "1.3.4.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/laravel/serializable-closure.git",
-                "reference": "3dbf8a8e914634c48d389c1234552666b3d43754"
+                "reference": "61b87392d986dc49ad5ef64e75b1ff5fee24ef81"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/laravel/serializable-closure/zipball/3dbf8a8e914634c48d389c1234552666b3d43754",
-                "reference": "3dbf8a8e914634c48d389c1234552666b3d43754",
+                "url": "https://api.github.com/repos/laravel/serializable-closure/zipball/61b87392d986dc49ad5ef64e75b1ff5fee24ef81",
+                "reference": "61b87392d986dc49ad5ef64e75b1ff5fee24ef81",
                 "shasum": ""
             },
             "require": {
                 "php": "^7.3|^8.0"
             },
             "require-dev": {
-                "nesbot/carbon": "^2.61",
+                "illuminate/support": "^8.0|^9.0|^10.0|^11.0",
+                "nesbot/carbon": "^2.61|^3.0",
                 "pestphp/pest": "^1.21.3",
                 "phpstan/phpstan": "^1.8.2",
-                "symfony/var-dumper": "^5.4.11"
+                "symfony/var-dumper": "^5.4.11|^6.2.0|^7.0.0"
             },
-            "time": "2023-11-08T14:08:06+00:00",
+            "time": "2024-08-02T07:48:17+00:00",
             "type": "library",
             "extra": {
                 "branch-alias": {
@@ -1095,17 +1099,17 @@
         },
         {
             "name": "php-di/php-di",
-            "version": "7.0.6",
-            "version_normalized": "7.0.6.0",
+            "version": "7.0.7",
+            "version_normalized": "7.0.7.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/PHP-DI/PHP-DI.git",
-                "reference": "8097948a89f6ec782839b3e958432f427cac37fd"
+                "reference": "e87435e3c0e8f22977adc5af0d5cdcc467e15cf1"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/PHP-DI/PHP-DI/zipball/8097948a89f6ec782839b3e958432f427cac37fd",
-                "reference": "8097948a89f6ec782839b3e958432f427cac37fd",
+                "url": "https://api.github.com/repos/PHP-DI/PHP-DI/zipball/e87435e3c0e8f22977adc5af0d5cdcc467e15cf1",
+                "reference": "e87435e3c0e8f22977adc5af0d5cdcc467e15cf1",
                 "shasum": ""
             },
             "require": {
@@ -1127,7 +1131,7 @@
             "suggest": {
                 "friendsofphp/proxy-manager-lts": "Install it if you want to use lazy injection (version ^1)"
             },
-            "time": "2023-11-02T10:04:50+00:00",
+            "time": "2024-07-21T15:55:45+00:00",
             "type": "library",
             "installation-source": "dist",
             "autoload": {
@@ -1155,7 +1159,7 @@
             ],
             "support": {
                 "issues": "https://github.com/PHP-DI/PHP-DI/issues",
-                "source": "https://github.com/PHP-DI/PHP-DI/tree/7.0.6"
+                "source": "https://github.com/PHP-DI/PHP-DI/tree/7.0.7"
             },
             "funding": [
                 {
@@ -1340,27 +1344,27 @@
         },
         {
             "name": "psr/http-message",
-            "version": "1.1",
-            "version_normalized": "1.1.0.0",
+            "version": "2.0",
+            "version_normalized": "2.0.0.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/php-fig/http-message.git",
-                "reference": "cb6ce4845ce34a8ad9e68117c10ee90a29919eba"
+                "reference": "402d35bcb92c70c026d1a6a9883f06b2ead23d71"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/php-fig/http-message/zipball/cb6ce4845ce34a8ad9e68117c10ee90a29919eba",
-                "reference": "cb6ce4845ce34a8ad9e68117c10ee90a29919eba",
+                "url": "https://api.github.com/repos/php-fig/http-message/zipball/402d35bcb92c70c026d1a6a9883f06b2ead23d71",
+                "reference": "402d35bcb92c70c026d1a6a9883f06b2ead23d71",
                 "shasum": ""
             },
             "require": {
                 "php": "^7.2 || ^8.0"
             },
-            "time": "2023-04-04T09:50:52+00:00",
+            "time": "2023-04-04T09:54:51+00:00",
             "type": "library",
             "extra": {
                 "branch-alias": {
-                    "dev-master": "1.1.x-dev"
+                    "dev-master": "2.0.x-dev"
                 }
             },
             "installation-source": "dist",
@@ -1376,7 +1380,7 @@
             "authors": [
                 {
                     "name": "PHP-FIG",
-                    "homepage": "http://www.php-fig.org/"
+                    "homepage": "https://www.php-fig.org/"
                 }
             ],
             "description": "Common interface for HTTP messages",
@@ -1390,7 +1394,7 @@
                 "response"
             ],
             "support": {
-                "source": "https://github.com/php-fig/http-message/tree/1.1"
+                "source": "https://github.com/php-fig/http-message/tree/2.0"
             },
             "install-path": "../psr/http-message"
         },
@@ -1515,23 +1519,23 @@
         },
         {
             "name": "psr/log",
-            "version": "3.0.0",
-            "version_normalized": "3.0.0.0",
+            "version": "3.0.1",
+            "version_normalized": "3.0.1.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/php-fig/log.git",
-                "reference": "fe5ea303b0887d5caefd3d431c3e61ad47037001"
+                "reference": "79dff0b268932c640297f5208d6298f71855c03e"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/php-fig/log/zipball/fe5ea303b0887d5caefd3d431c3e61ad47037001",
-                "reference": "fe5ea303b0887d5caefd3d431c3e61ad47037001",
+                "url": "https://api.github.com/repos/php-fig/log/zipball/79dff0b268932c640297f5208d6298f71855c03e",
+                "reference": "79dff0b268932c640297f5208d6298f71855c03e",
                 "shasum": ""
             },
             "require": {
                 "php": ">=8.0.0"
             },
-            "time": "2021-07-14T16:46:02+00:00",
+            "time": "2024-08-21T13:31:24+00:00",
             "type": "library",
             "extra": {
                 "branch-alias": {
@@ -1562,7 +1566,7 @@
                 "psr-3"
             ],
             "support": {
-                "source": "https://github.com/php-fig/log/tree/3.0.0"
+                "source": "https://github.com/php-fig/log/tree/3.0.1"
             },
             "install-path": "../psr/log"
         },
@@ -1743,43 +1747,43 @@
         },
         {
             "name": "slim/psr7",
-            "version": "1.6.1",
-            "version_normalized": "1.6.1.0",
+            "version": "1.7.0",
+            "version_normalized": "1.7.0.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/slimphp/Slim-Psr7.git",
-                "reference": "72d2b2bac94ab4575d369f605dbfafbe168d3163"
+                "reference": "753e9646def5ff4db1a06e5cf4ef539bfd30f467"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/slimphp/Slim-Psr7/zipball/72d2b2bac94ab4575d369f605dbfafbe168d3163",
-                "reference": "72d2b2bac94ab4575d369f605dbfafbe168d3163",
+                "url": "https://api.github.com/repos/slimphp/Slim-Psr7/zipball/753e9646def5ff4db1a06e5cf4ef539bfd30f467",
+                "reference": "753e9646def5ff4db1a06e5cf4ef539bfd30f467",
                 "shasum": ""
             },
             "require": {
                 "fig/http-message-util": "^1.1.5",
-                "php": "^7.4 || ^8.0",
-                "psr/http-factory": "^1.0",
-                "psr/http-message": "^1.0",
+                "php": "^8.0",
+                "psr/http-factory": "^1.1",
+                "psr/http-message": "^1.0 || ^2.0",
                 "ralouphie/getallheaders": "^3.0",
-                "symfony/polyfill-php80": "^1.26"
+                "symfony/polyfill-php80": "^1.29"
             },
             "provide": {
-                "psr/http-factory-implementation": "1.0",
-                "psr/http-message-implementation": "1.0"
+                "psr/http-factory-implementation": "^1.0",
+                "psr/http-message-implementation": "^1.0 || ^2.0"
             },
             "require-dev": {
-                "adriansuter/php-autoload-override": "^1.3",
+                "adriansuter/php-autoload-override": "^1.4",
                 "ext-json": "*",
-                "http-interop/http-factory-tests": "^0.9.0",
-                "php-http/psr7-integration-tests": "1.1",
-                "phpspec/prophecy": "^1.15",
-                "phpspec/prophecy-phpunit": "^2.0",
-                "phpstan/phpstan": "^1.8",
-                "phpunit/phpunit": "^9.5",
-                "squizlabs/php_codesniffer": "^3.7"
+                "http-interop/http-factory-tests": "^1.1.0",
+                "php-http/psr7-integration-tests": "1.3.0",
+                "phpspec/prophecy": "^1.19",
+                "phpspec/prophecy-phpunit": "^2.2",
+                "phpstan/phpstan": "^1.11",
+                "phpunit/phpunit": "^9.6",
+                "squizlabs/php_codesniffer": "^3.10"
             },
-            "time": "2023-04-17T16:02:20+00:00",
+            "time": "2024-06-08T14:48:17+00:00",
             "type": "library",
             "installation-source": "dist",
             "autoload": {
@@ -1822,23 +1826,23 @@
             ],
             "support": {
                 "issues": "https://github.com/slimphp/Slim-Psr7/issues",
-                "source": "https://github.com/slimphp/Slim-Psr7/tree/1.6.1"
+                "source": "https://github.com/slimphp/Slim-Psr7/tree/1.7.0"
             },
             "install-path": "../slim/psr7"
         },
         {
             "name": "slim/slim",
-            "version": "4.13.0",
-            "version_normalized": "4.13.0.0",
+            "version": "4.14.0",
+            "version_normalized": "4.14.0.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/slimphp/Slim.git",
-                "reference": "038fd5713d5a41636fdff0e8dcceedecdd17fc17"
+                "reference": "5943393b88716eb9e82c4161caa956af63423913"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/slimphp/Slim/zipball/038fd5713d5a41636fdff0e8dcceedecdd17fc17",
-                "reference": "038fd5713d5a41636fdff0e8dcceedecdd17fc17",
+                "url": "https://api.github.com/repos/slimphp/Slim/zipball/5943393b88716eb9e82c4161caa956af63423913",
+                "reference": "5943393b88716eb9e82c4161caa956af63423913",
                 "shasum": ""
             },
             "require": {
@@ -1846,7 +1850,7 @@
                 "nikic/fast-route": "^1.3",
                 "php": "^7.4 || ^8.0",
                 "psr/container": "^1.0 || ^2.0",
-                "psr/http-factory": "^1.0",
+                "psr/http-factory": "^1.1",
                 "psr/http-message": "^1.1 || ^2.0",
                 "psr/http-server-handler": "^1.0",
                 "psr/http-server-middleware": "^1.0",
@@ -1863,11 +1867,12 @@
                 "nyholm/psr7-server": "^1.1",
                 "phpspec/prophecy": "^1.19",
                 "phpspec/prophecy-phpunit": "^2.1",
-                "phpstan/phpstan": "^1.10",
+                "phpstan/phpstan": "^1.11",
                 "phpunit/phpunit": "^9.6",
                 "slim/http": "^1.3",
                 "slim/psr7": "^1.6",
-                "squizlabs/php_codesniffer": "^3.9"
+                "squizlabs/php_codesniffer": "^3.10",
+                "vimeo/psalm": "^5.24"
             },
             "suggest": {
                 "ext-simplexml": "Needed to support XML format in BodyParsingMiddleware",
@@ -1875,7 +1880,7 @@
                 "php-di/php-di": "PHP-DI is the recommended container library to be used with Slim",
                 "slim/psr7": "Slim PSR-7 implementation. See https://www.slimframework.com/docs/v4/start/installation.html for more information."
             },
-            "time": "2024-03-03T21:25:30+00:00",
+            "time": "2024-06-13T08:54:48+00:00",
             "type": "library",
             "installation-source": "dist",
             "autoload": {
@@ -2074,17 +2079,17 @@
         },
         {
             "name": "symfony/polyfill-mbstring",
-            "version": "v1.29.0",
-            "version_normalized": "1.29.0.0",
+            "version": "v1.30.0",
+            "version_normalized": "1.30.0.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/symfony/polyfill-mbstring.git",
-                "reference": "9773676c8a1bb1f8d4340a62efe641cf76eda7ec"
+                "reference": "fd22ab50000ef01661e2a31d850ebaa297f8e03c"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/symfony/polyfill-mbstring/zipball/9773676c8a1bb1f8d4340a62efe641cf76eda7ec",
-                "reference": "9773676c8a1bb1f8d4340a62efe641cf76eda7ec",
+                "url": "https://api.github.com/repos/symfony/polyfill-mbstring/zipball/fd22ab50000ef01661e2a31d850ebaa297f8e03c",
+                "reference": "fd22ab50000ef01661e2a31d850ebaa297f8e03c",
                 "shasum": ""
             },
             "require": {
@@ -2096,7 +2101,7 @@
             "suggest": {
                 "ext-mbstring": "For best performance"
             },
-            "time": "2024-01-29T20:11:03+00:00",
+            "time": "2024-06-19T12:30:46+00:00",
             "type": "library",
             "extra": {
                 "thanks": {
@@ -2137,7 +2142,7 @@
                 "shim"
             ],
             "support": {
-                "source": "https://github.com/symfony/polyfill-mbstring/tree/v1.29.0"
+                "source": "https://github.com/symfony/polyfill-mbstring/tree/v1.30.0"
             },
             "funding": [
                 {
@@ -2157,23 +2162,23 @@
         },
         {
             "name": "symfony/polyfill-php80",
-            "version": "v1.29.0",
-            "version_normalized": "1.29.0.0",
+            "version": "v1.30.0",
+            "version_normalized": "1.30.0.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/symfony/polyfill-php80.git",
-                "reference": "87b68208d5c1188808dd7839ee1e6c8ec3b02f1b"
+                "reference": "77fa7995ac1b21ab60769b7323d600a991a90433"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/symfony/polyfill-php80/zipball/87b68208d5c1188808dd7839ee1e6c8ec3b02f1b",
-                "reference": "87b68208d5c1188808dd7839ee1e6c8ec3b02f1b",
+                "url": "https://api.github.com/repos/symfony/polyfill-php80/zipball/77fa7995ac1b21ab60769b7323d600a991a90433",
+                "reference": "77fa7995ac1b21ab60769b7323d600a991a90433",
                 "shasum": ""
             },
             "require": {
                 "php": ">=7.1"
             },
-            "time": "2024-01-29T20:11:03+00:00",
+            "time": "2024-05-31T15:07:36+00:00",
             "type": "library",
             "extra": {
                 "thanks": {
@@ -2220,7 +2225,7 @@
                 "shim"
             ],
             "support": {
-                "source": "https://github.com/symfony/polyfill-php80/tree/v1.29.0"
+                "source": "https://github.com/symfony/polyfill-php80/tree/v1.30.0"
             },
             "funding": [
                 {
@@ -2240,23 +2245,23 @@
         },
         {
             "name": "symfony/process",
-            "version": "v7.1.1",
-            "version_normalized": "7.1.1.0",
+            "version": "v7.1.3",
+            "version_normalized": "7.1.3.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/symfony/process.git",
-                "reference": "febf90124323a093c7ee06fdb30e765ca3c20028"
+                "reference": "7f2f542c668ad6c313dc4a5e9c3321f733197eca"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/symfony/process/zipball/febf90124323a093c7ee06fdb30e765ca3c20028",
-                "reference": "febf90124323a093c7ee06fdb30e765ca3c20028",
+                "url": "https://api.github.com/repos/symfony/process/zipball/7f2f542c668ad6c313dc4a5e9c3321f733197eca",
+                "reference": "7f2f542c668ad6c313dc4a5e9c3321f733197eca",
                 "shasum": ""
             },
             "require": {
                 "php": ">=8.2"
             },
-            "time": "2024-05-31T14:57:53+00:00",
+            "time": "2024-07-26T12:44:47+00:00",
             "type": "library",
             "installation-source": "dist",
             "autoload": {
@@ -2284,7 +2289,7 @@
             "description": "Executes commands in sub-processes",
             "homepage": "https://symfony.com",
             "support": {
-                "source": "https://github.com/symfony/process/tree/v7.1.1"
+                "source": "https://github.com/symfony/process/tree/v7.1.3"
             },
             "funding": [
                 {
@@ -2369,20 +2374,20 @@
         },
         {
             "name": "uma/secp256k1-nostr",
-            "version": "v0.1.2",
-            "version_normalized": "0.1.2.0",
+            "version": "v0.1.3",
+            "version_normalized": "0.1.3.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/1ma/secp256k1-nostr-php.git",
-                "reference": "bff91c2450fb6f763f65d18d7fa58229cec20343"
+                "reference": "abb11275ba3be91614e4b6e9d75048934687a06e"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/1ma/secp256k1-nostr-php/zipball/bff91c2450fb6f763f65d18d7fa58229cec20343",
-                "reference": "bff91c2450fb6f763f65d18d7fa58229cec20343",
+                "url": "https://api.github.com/repos/1ma/secp256k1-nostr-php/zipball/abb11275ba3be91614e4b6e9d75048934687a06e",
+                "reference": "abb11275ba3be91614e4b6e9d75048934687a06e",
                 "shasum": ""
             },
-            "time": "2023-12-22T21:21:16+00:00",
+            "time": "2024-08-01T20:10:07+00:00",
             "type": "extension",
             "installation-source": "dist",
             "notification-url": "https://packagist.org/downloads/",
@@ -2392,7 +2397,7 @@
             "description": "secp256k1_nostr extension for PHP",
             "support": {
                 "issues": "https://github.com/1ma/secp256k1-nostr-php/issues",
-                "source": "https://github.com/1ma/secp256k1-nostr-php/tree/v0.1.2"
+                "source": "https://github.com/1ma/secp256k1-nostr-php/tree/v0.1.3"
             },
             "install-path": "../uma/secp256k1-nostr"
         }

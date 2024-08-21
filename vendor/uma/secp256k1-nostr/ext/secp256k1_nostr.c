@@ -7,8 +7,13 @@
 #include "php.h"
 #include "ext/spl/spl_exceptions.h"
 #include "ext/standard/info.h"
-#include "ext/standard/php_random.h"
 #include "zend_exceptions.h"
+
+#if PHP_VERSION_ID >= 80200
+#include "ext/random/php_random.h"
+#else
+#include "ext/standard/php_random.h"
+#endif
 
 #include "secp256k1_nostr_arginfo.h"
 #include "php_secp256k1_nostr.h"
