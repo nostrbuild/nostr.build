@@ -41,7 +41,7 @@
       "name": "Creator",
       "is_nip98_required": true,
       "url": "https://nostr.build/plans/",
-      "max_byte_size": 26843545600,
+      "max_byte_size": 32212254720,
       "file_expiration": [0, 0],
       "media_transformations": {
         "image": [
