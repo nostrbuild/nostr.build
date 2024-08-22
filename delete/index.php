@@ -14,7 +14,7 @@
 		<link rel="stylesheet" href="/styles/index.css?v=7ff4472e93e9719e0eac60b75646b485" />
 		<link rel="stylesheet" href="/styles/header.css?v=19cde718a50bd676387bbe7e9e24c639" />
 
-		<link rel="icon" href="/assets/nb-logo-color-w.png" />
+		<link rel="icon" href="https://cdn.nostr.build/assets/nb-logo-color-w.png" />
 		<link href="/styles/twbuild.css?v=384be5c08d9cc0c2325e03b56a1b1e14" rel="stylesheet">
 
 		<title>nostr.build Delete Media</title>

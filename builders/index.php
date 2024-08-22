@@ -15,7 +15,7 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/config.php';
 	<link rel="stylesheet" href="/styles/index.css?v=7ff4472e93e9719e0eac60b75646b485" />
 	<link rel="stylesheet" href="/styles/header.css?v=19cde718a50bd676387bbe7e9e24c639" />
 	<link rel="stylesheet" href="/styles/builders.css?v=0dd633698255982f3df87df8e3e2697e" />
-	<link rel="icon" href="/assets/01.png">
+	<link rel="icon" href="https://cdn.nostr.build/assets/01.png">
 
 	<title>nostr.build - builders and devs</title>
 </head>
@@ -404,7 +404,7 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/config.php';
 					<img src="https://cdn.nostr.build/assets/builders/lnstore.gif" alt="lnstore image" />
 				</figure>
 			</a>
-			<a href="/assets/greenskull" target="_blank">
+			<a href="https://cdn.nostr.build/assets/greenskull" target="_blank">
 				<figure class="builder_card">
 					<div class="card_header">
 						<figcaption class="card_title">green skull</figcaption>

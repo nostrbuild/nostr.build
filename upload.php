@@ -189,7 +189,7 @@ $total_size_gb = round($stats['total_size'] / (1024 * 1024 * 1024), 2); // Conve
 			</div>
 			<div class="toast hidden_element">
 				<div class="import_icon">
-					<img src="/assets/import_icon.png" alt="" />
+					<img src="https://cdn.nostr.build/assets/import_icon.png" alt="" />
 				</div>
 				<div class="toast_info">
 					Copied
