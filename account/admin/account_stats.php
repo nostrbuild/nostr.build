@@ -9,7 +9,7 @@ global $link;
 
 if (!$perm->isAdmin()) {
   header("location: /login");
-  $link->close();
+  // PERSIST: $link->close();
   exit;
 }
 ?>
@@ -120,7 +120,7 @@ if (!$perm->isAdmin()) {
 
     echo '</tbody></table>';
 
-    $link->close();
+    // PERSIST: $link->close();
     ?>
   </main>
 </body>

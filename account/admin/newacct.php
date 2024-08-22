@@ -8,7 +8,7 @@ $perm = new Permission();
 
 if (!$perm->isAdmin()) {
     header("location: /login");
-    $link->close();
+    // PERSIST: $link->close();
     exit;
 }
 
@@ -57,5 +57,5 @@ if (array_key_exists('acctlevel', $_POST)) {
   } else echo "ERROR: Hush! Sorry $sql. " . mysqli_error($link);
 }
 
-$link->close();
+// PERSIST: $link->close();
 ?>

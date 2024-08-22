@@ -15,7 +15,7 @@ $perm = new Permission();
 // Check if the user is logged in, if not then redirect him to login page
 if (!$perm->isAdmin() && !$perm->hasPrivilege('canModerate')) {
     echo json_encode(['success' => false, 'error' => 'User not logged in or has no permissions']);
-    $link->close();
+    // PERSIST: $link->close();
     exit;
 }
 

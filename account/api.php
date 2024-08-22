@@ -23,14 +23,14 @@ if (!$perm->validateLoggedin()  || !isset($_SESSION["usernpub"])) {
 	// Return error message
 	http_response_code(401);
 	echo json_encode(array("error" => "You are not logged in"));
-	$link->close();
+	// PERSIST: $link->close();
 	exit;
 }
 
 // If account is not verified, redirect to signup page
 if ($perm->validatePermissionsLevelEqual(0)) {
 	echo json_encode(array("error" => "Please verify your account"));
-	$link->close();
+	// PERSIST: $link->close();
 	exit;
 }
 
@@ -48,7 +48,7 @@ try {
 /*
 if ($daysRemaining <= 0) {
 	echo json_encode(array("error" => "Please subscribe to a plan"));
-	$link->close();
+	// PERSIST: $link->close();
 	exit;
 }
 */
@@ -443,7 +443,7 @@ if (isset($_GET["action"])) {
 		if ($daysRemaining <= 0 || $account->getRemainingStorageSpace() <= 0) {
 			http_response_code(403);
 			echo json_encode(array("error" => "Your account has expired"));
-			$link->close();
+			// PERSIST: $link->close();
 			exit;
 		}
 		// Check if the user has permission to generate AI images
@@ -451,7 +451,7 @@ if (isset($_GET["action"])) {
 		if (!$perm->validatePermissionsLevelAny(2, 1, 10, 99)) {
 			http_response_code(403);
 			echo json_encode(array("error" => "You do not have permission to generate AI images"));
-			$link->close();
+			// PERSIST: $link->close();
 			exit;
 		}
 		// Check for Creators Account Models access
@@ -460,7 +460,7 @@ if (isset($_GET["action"])) {
 			if (!$perm->validatePermissionsLevelAny(1, 10, 99)) {
 				http_response_code(403);
 				echo json_encode(array("error" => "You do not have permission to generate AI images using the {$_POST['model']} model"));
-				$link->close();
+				// PERSIST: $link->close();
 				exit;
 			}
 		}
@@ -470,7 +470,7 @@ if (isset($_GET["action"])) {
 			if (!$perm->validatePermissionsLevelAny(10, 99)) {
 				http_response_code(403);
 				echo json_encode(array("error" => "You do not have permission to generate AI images using the {$_POST['model']} model"));
-				$link->close();
+				// PERSIST: $link->close();
 				exit;
 			}
 		}
@@ -479,7 +479,7 @@ if (isset($_GET["action"])) {
 		// TODO: Implement a proper credit system
 		if ($account->getRemainingAICredits() <= 0) {
 			echo json_encode(array("error" => "You do not have enough credits to generate AI images"));
-			$link->close();
+			// PERSIST: $link->close();
 			exit;
 		}
 		*/
@@ -487,7 +487,7 @@ if (isset($_GET["action"])) {
 		if (!isset($_POST['model']) || !isset($_POST['prompt']) || !isset($_POST['title'])) {
 			http_response_code(400);
 			echo json_encode(array("error" => "Missing required parameters"));
-			$link->close();
+			// PERSIST: $link->close();
 			exit;
 		}
 		$model = $_POST['model'];
@@ -508,7 +508,7 @@ if (isset($_GET["action"])) {
 		if ($daysRemaining <= 0 || $account->getRemainingStorageSpace() <= 0) {
 			http_response_code(403);
 			echo json_encode(array("error" => "Your account has expired"));
-			$link->close();
+			// PERSIST: $link->close();
 			exit;
 		}
 		// Check if we got the required parameters
@@ -555,7 +555,7 @@ if (isset($_GET["action"])) {
 		if ($daysRemaining <= 0) {
 			http_response_code(403);
 			echo json_encode(array("error" => "Your account has expired"));
-			$link->close();
+			// PERSIST: $link->close();
 			exit;
 		}
 		// Check permissions
@@ -654,14 +654,14 @@ if (isset($_GET["action"])) {
 		if ($daysRemaining <= 0) {
 			http_response_code(403);
 			echo json_encode(array("error" => "Your account has expired"));
-			$link->close();
+			// PERSIST: $link->close();
 			exit;
 		}
 		// Check if account level is eligible to publish Nostr events
 		if (!$perm->validatePermissionsLevelAny(1, 2, 10, 99)) {
 			http_response_code(403);
 			echo json_encode(array("error" => "You do not have permission to publish Nostr events"));
-			$link->close();
+			// PERSIST: $link->close();
 			exit;
 		}
 		error_log("Publishing Nostr event");
