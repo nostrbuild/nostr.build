@@ -12,7 +12,7 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/config.php';
 	<meta name="description" content="Image, video and media uploader for nostr, damus, astral.ninja, snort.social, and most all nostr clients. Upload any kind of media and get a link to post, or use our iOS app to automatically uppload images straight from your keyboard.">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-	<link rel="stylesheet" href="/styles/index.css?v=7ff4472e93e9719e0eac60b75646b485" />
+	<link rel="stylesheet" href="/styles/index.css?v=d92cc716e5a959e5720d593defd68e21" />
 	<link rel="stylesheet" href="/styles/header.css?v=19cde718a50bd676387bbe7e9e24c639" />
 	<link rel="stylesheet" href="/styles/builders.css?v=0dd633698255982f3df87df8e3e2697e" />
 	<link rel="icon" href="https://cdn.nostr.build/assets/01.png">
