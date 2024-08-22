@@ -12,7 +12,7 @@
 }
 
 body {
-  background-image: url("../assets/bg.png");
+  background-image: url("https://cdn.nostr.build/assets/bg.png");
   overflow-x: hidden;
   display: flex;
   flex-direction: column;
