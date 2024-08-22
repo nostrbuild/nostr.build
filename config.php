@@ -79,7 +79,7 @@ $photoDNAConfig = [
 
 // Maybe we should move it to a separate place and do not open a link to the database every time?
 /* Attempt to connect to MySQL database */
-$link = mysqli_connect(DB_SERVER, DB_USERNAME, DB_PASSWORD, DB_NAME);
+$link = mysqli_connect("p:" . DB_SERVER, DB_USERNAME, DB_PASSWORD, DB_NAME);
 
 // Check connection
 if ($link === false) {
