@@ -4,6 +4,7 @@ const defaultTheme = require('tailwindcss/defaultTheme')
 module.exports = {
   safelist: [
     'z-0',
+    'z-[5]',
     'z-10',
     'z-20',
     'z-30',
@@ -14,6 +15,25 @@ module.exports = {
     'text-nbpurple-200',
     'text-nbpurple-300',
     'text-nbpurple-400',
+    'size-2',
+    'size-3',
+    'size-4',
+    'size-5',
+    'size-6',
+    'size-7',
+    'size-8',
+    'size-9',
+    'size-10',
+    'grid-cols-1',
+    'grid-cols-2',
+    'grid-cols-3',
+    'grid-cols-4',
+    'grid-cols-5',
+    'grid-cols-6',
+    'grid-cols-8',
+    'grid-cols-10',
+    'grid-cols-12',
+    'grid-cols-16',
   ],
   content: [
     "./src/*.js",
@@ -31,6 +51,9 @@ module.exports = {
       ...defaultTheme.screens,
     },
     extend: {
+      gridTemplateColumns: {
+        '16': 'repeat(16, minmax(0, 1fr))',
+      },
       colors: {
         /* Lightness */
         "darknbpurple": {
