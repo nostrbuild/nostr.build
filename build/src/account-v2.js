@@ -1,6 +1,6 @@
 import Uppy from '@uppy/core';
 import Dashboard from '@uppy/dashboard';
-import GoldenRetriever from '@uppy/golden-retriever';
+//import GoldenRetriever from '@uppy/golden-retriever';
 import XHRUpload from '@uppy/xhr-upload';
 //import Audio from '@uppy/audio';
 //import Compressor from '@uppy/compressor';
@@ -18,12 +18,13 @@ import '@uppy/drop-target/dist/style.css';
 
 
 import { lock, unlock, clearBodyLocks } from 'tua-body-scroll-lock';
-import axios, { all } from 'axios';
+import axios from 'axios';
 import axiosRetry from 'axios-retry';
 import Alpine from 'alpinejs';
 
 import intersect from '@alpinejs/intersect';
 import focus from '@alpinejs/focus';
+import persist from '@alpinejs/persist';
 
 // Icons
 import { getIconByMime, getIcon } from '../lib/icons';
@@ -32,13 +33,9 @@ window.getIcon = getIcon;
 
 Alpine.plugin(focus);
 Alpine.plugin(intersect);
+Alpine.plugin(persist);
 
 window.Alpine = Alpine;
-
-// Video Player
-//import 'vidstack/player/styles/default/theme.css';
-//import 'vidstack/player/styles/default/layouts/audio.css';
-//import { VidstackPlayer, VidstackPlayerLayout } from 'vidstack/global/player';
 
 window.getApiFetcher = function (baseUrl, contentType = 'multipart/form-data', timeout = 30000) {
   const api = axios.create({
@@ -2014,7 +2011,7 @@ Alpine.store('fileStore', {
   },
   filterMenuOpen: false,
   fileFetchStart: 0,
-  fileFetchLimit: 36,
+  fileFetchLimit: 96, // Increase this number to fetch more files at once
   fileFetchHasMore: true,
   lastFetchedFolder: '',
   loadingMoreFiles: false,
