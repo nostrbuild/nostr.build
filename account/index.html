@@ -1442,8 +1442,7 @@ onDropCB(event) {
 										<template
 											x-for="zoomLevel in [{name: 'Large', level: 0},{name: 'Normal', level: 1},{name: 'Small', level: 2},{name:'X-Small', level: 3}]"
 											:key="zoomLevel.level">
-											<button
-												@click="zoom = zoomLevel.level; zoomMenuOpen = false"
+											<button @click="zoom = zoomLevel.level; zoomMenuOpen = false"
 												:class="zoom === zoomLevel.level ? 'bg-nbpurple-600 text-nbpurple-50' : 'text-nbpurple-50 hover:bg-nbpurple-700'"
 												class="flex px-4 py-2 text-sm w-full justify-between" role="menuitem" tabindex="-1"
 												id="zoom-item-{{ zoomLevel.level }}">
@@ -1657,8 +1656,8 @@ onDropCB(event) {
 									</div>
 									<!-- /Creators page badge -->
 									<!-- Nostr badge -->
-									<div x-cloak x-show="zoom < 2" x-data="{ events: 0 }"
-										x-effect="events = file.associated_notes?.split(',')?.length || 0" x-show="events"
+									<div x-cloak x-data="{ events: 0 }" x-effect="events = file.associated_notes?.split(',')?.length || 0"
+										x-show="events && zoom < 2"
 										class="cursor-pointer hover:animate-[wiggle_1s_ease-in-out_infinite] absolute bottom-[3.35rem] left-1.5 z-10 py-1 size-6 bg-nbpurple-600 text-nbpurple-50 text-xs font-semibold rounded-full flex flex-col items-center justify-center opacity-75 h-fit w-fit">
 										<svg class="size-5" stroke="currentColor" fill="currentColor" viewBox="0 0 256 256"
 											xmlns="http://www.w3.org/2000/svg">
@@ -1677,7 +1676,7 @@ onDropCB(event) {
 											<div class="z-10 absolute inset-0 flex items-center justify-center">
 												<div class="relative w-full h-full">
 													<span class="absolute inset-0 flex items-center justify-center text-nbpurple-50"
-														:style="{ fontSize: (Math.min(Math.max(24, Math.min($el.offsetWidth, $el.offsetHeight) * (file?.uppy?.uploadError ? 0.15 : 0.2)), 200)) + 'px' }">
+														:style="{ fontSize: `${Math.min(Math.max(24, Math.min($el.offsetWidth, $el.offsetHeight) * (file?.uppy?.uploadError ? 0.15 : 0.2)), 200) / Math.max(zoom, 1)}px` }">
 														<span x-text="file?.uppy?.uploadError ? 'Error' : `${file?.uppy?.progress || '0'}%`"></span>
 													</span>
 												</div>
