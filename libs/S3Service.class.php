@@ -6,6 +6,7 @@ require $_SERVER['DOCUMENT_ROOT'] . '/vendor/autoload.php';
 use Aws\S3\S3Client;
 use Aws\S3\MultipartUploader;
 use Aws\Exception\AwsException;
+use Aws\Command;
 use GuzzleHttp\Promise;
 
 /**
@@ -108,10 +109,14 @@ class S3Service
           'key' => $options['Key'],
           'acl' => $options['ACL'],
           'storage_class' => $options['StorageClass'],
-          'content_type' => $options['ContentType'],
-          'metadata' => $options['Metadata'],
           'retries' => $options['retries'],
-          'part_size' => $multipartThreshold
+          'part_size' => $multipartThreshold,
+          'before_initiate' => function (Command $command) use ($options) {
+            // $command is a CreateMultipartUpload operation
+            $command['ContentType'] = $options['ContentType'];
+            $command['CacheControl'] = $options['CacheControl'];
+            $command['Metadata'] = $options['Metadata'];
+          },
         ]);
 
         error_log("Multipart uploading: {$options['SourceFile']}\n");
