@@ -896,7 +896,7 @@ class MultimediaUpload
    * 4) Download the file to a temporary location
    * 5) Set the file property to the downloaded file
    */
-  public function uploadFileFromUrl(string $url, bool $pfp = false, ?string $title = '', ?string $ai_prompt = ''): array
+  public function uploadFileFromUrl(string $url, bool $pfp = false, ?string $title = '', ?string $ai_prompt = '', ?bool $no_transform = false): array
   {
     $sizeLimit = $this->pro ?
       $this->userAccount->getRemainingStorageSpace() :
@@ -1014,7 +1014,7 @@ class MultimediaUpload
     if ($pfp) {
       return $this->uploadProfilePicture();
     } else {
-      return $this->uploadFiles(); // URL uploads are always free
+      return $this->uploadFiles($no_transform); // URL uploads are always free
     }
   }
 

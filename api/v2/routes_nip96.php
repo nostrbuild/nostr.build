@@ -39,8 +39,11 @@ $app->group('/nip96', function (RouteCollectorProxy $group) {
     // Log request route
     //error_log('Route: /nip96/upload');
 
-    // If no files are provided or more than one is submitted, return a 400 response
-    if (empty($files) || count($files) > 1) {
+    // If no files or url provided or more than one file is submitted, return a 400 response
+    if (
+      (empty($files) || count($files) > 1) &&
+      empty($body['url'])
+    ) {
       error_log('Either no file or more than one file posted. Only one file is expected.');
       return nip96Response(
         response: $response,
@@ -78,13 +81,23 @@ $app->group('/nip96', function (RouteCollectorProxy $group) {
 
     try {
       // Handle exceptions thrown by the MultimediaUpload class
-      $upload->setPsrFiles([reset($files)]);
+      if (empty($body['url'])) {
+        $upload->setPsrFiles([reset($files)]);
+      }
       $upload->setFormParams($formParams);
       if ($formParams['media_type'] === 'avatar') {
-        [$status, $code, $message] = $upload->uploadProfilePicture();
+        if (empty($body['url'])) {
+          [$status, $code, $message] = $upload->uploadProfilePicture();
+        } else {
+          [$status, $code, $message] = $upload->uploadFileFromUrl($body['url'], true);
+        }
       } else {
         $no_transform = $formParams['no_transform'] === 'true' ? true : false;
-        [$status, $code, $message] = $upload->uploadFiles($no_transform);
+        if (empty($body['url'])) {
+          [$status, $code, $message] = $upload->uploadFiles($no_transform);
+        } else {
+          [$status, $code, $message] = $upload->uploadFileFromUrl($body['url'], $no_transform);
+        }
       }
       if (!$status) {
         error_log('Upload failed' . json_encode(['code' => $code, 'message' => $message]));
