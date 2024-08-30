@@ -263,6 +263,10 @@ function createNip96SuccessResponse(array $data, string $message, string $proces
     ];
   }
 
+  if(isset($data['fallback'])) {
+    $nip94_event['tags'][] = ["fallback", $data['fallback']];
+  }
+
   if (isset($data['sha256']) || isset($data['original_sha256'])) {
     $nip94_event['tags'][] = ["x", $data['sha256'] ?? $data['original_sha256']];
   }

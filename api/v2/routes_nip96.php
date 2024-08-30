@@ -110,6 +110,10 @@ $app->group('/nip96', function (RouteCollectorProxy $group) {
         );
       }
       $data = $upload->getUploadedFiles();
+      // Add fallback if url is set for uploaded files
+      if (!empty($body['url']) && !empty($data[0]['url'])) {
+        $data[0]['fallback'] = $body['url'];
+      }
       //error_log('Upload successful' . json_encode(['code' => $code, 'message' => $message]));
       return nip96Response(
         response: $response,
