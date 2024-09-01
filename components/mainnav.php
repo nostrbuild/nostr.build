@@ -162,6 +162,3 @@ SVG;
         </span>
       </a>
     <?php endif; ?>
-  </div>
-    <a class="ref_link" href="https://shop.nostr.build/products/nostriga-24-tshirt-elidy" style="display: flex; align-items: center; text-decoration: none;"> Elidy &nbsp;<img src="https://image.nostr.build/e00e2320b107248793bb400636fc502812314ad9d324a08fc75e1daa29097c5e.png" width="180" height="30" alt="nostriga" style="margin: auto 0;">&nbsp; T-Shirts HERE! </a>
-</nav>
