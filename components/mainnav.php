@@ -162,3 +162,5 @@ SVG;
         </span>
       </a>
     <?php endif; ?>
+  </div>
+</nav>
