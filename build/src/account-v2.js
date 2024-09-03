@@ -417,7 +417,9 @@ window.logoutAndRedirectHome = () => {
   const logoutApi = `https://${window.location.hostname}/api/v2/account/logout`;
   const api = getApiFetcher(logoutApi, 'application/json');
   api.get('', {}).then(() => {
-    window.location.href = `https://${window.location.hostname}/`;
+    setTimeout(() => {
+      window.location.href = `https://${window.location.hostname}/`;
+    }, 1500);
   })
     .catch(() => {
       window.location.href = `https://${window.location.hostname}/`;
