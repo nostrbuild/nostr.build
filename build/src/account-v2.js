@@ -929,6 +929,17 @@ Alpine.store('nostrStore', {
           file.url,
         ]);
       });
+      // Parse for the hashtags and add them to the tags as 't'
+      // Regular expression to match hashtags, excluding those in URLs
+      const hashtagRegex = /(?<!\w|#)#([\p{L}\p{N}\p{M}\p{Emoji_Presentation}\p{Emoji}]+)/gu;
+      const matches = this.note.match(hashtagRegex);
+
+      if (matches) {
+        matches.forEach(hashtag => {
+          tags.push(['t', hashtag.toLowerCase()]);
+        });
+      }
+
       const event = {
         kind: 1,
         created_at: Math.floor(Date.now() / 1000),
