@@ -393,7 +393,7 @@ function updateHashURL(f, p) {
   const params = new URLSearchParams(window.location.hash.slice(1));
   if (f) params.set('f', encodeURIComponent(f));
   if (p) params.set('p', encodeURIComponent(p));
-  history.replaceState(null, null, `#${params.toString()}`);
+  history.pushState(null, null, `#${params.toString()}`);
 }
 
 function getUpdatedHashLink(f, p) {
@@ -1089,6 +1089,18 @@ Alpine.store('menuStore', {
     } = getHashParams();
     this.setActiveFolder(folder);
     this.setActiveMenuFromHash();
+    // Set popstate event listener
+    window.addEventListener('popstate', () => {
+      const {
+        folder,
+        page
+      } = getHashParams();
+      this.setActiveFolder(folder, false);
+      this.setActiveMenuFromHash();
+      const activeMenu = this.activeMenu;
+      const fullWidth = !this.menuItemsAI.some(item => item.name === activeMenu);
+      Alpine.store('fileStore').fullWidth = fullWidth;
+    });
     console.debug('Menu store initiated');
   },
   menuItemsAI: [{
@@ -1265,7 +1277,7 @@ Alpine.store('menuStore', {
     // Set this.activeMenu to the activeMenu.name or the first menu item
     this.activeMenu = activeMenu ? activeMenu.name : this.menuItems[0].name;
   },
-  setActiveFolder(folderName) {
+  setActiveFolder(folderName, doUpdateHashURL = true) {
     if (!this.foldersFetched || !folderName) {
       return;
     }
@@ -1283,7 +1295,9 @@ Alpine.store('menuStore', {
     this.activeFolder = folderName;
     this.activeFolderObj = this.getFolderObjByName(folderName) || {};
     this.activeFolderStats = this.getFolderObjByName(folderName)?.stats || {};
-    updateHashURL(folderName);
+    if (doUpdateHashURL) {
+      updateHashURL(folderName);
+    }
     console.debug('Active folder set:', folderName);
     // Reset filter
     fileStore.currentFilter = 'all';
