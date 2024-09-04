@@ -389,11 +389,15 @@ document.addEventListener('alpine:initialized', () => {
 const apiUrl = `https://${window.location.hostname}/account/api.php`;
 
 // TODO: Intercept back and forward navigation history
-function updateHashURL(f, p) {
+function updateHashURL(f, p, replace = false) {
   const params = new URLSearchParams(window.location.hash.slice(1));
   if (f) params.set('f', encodeURIComponent(f));
   if (p) params.set('p', encodeURIComponent(p));
-  history.pushState(null, null, `#${params.toString()}`);
+  if (replace) {
+    window.history.replaceState(null, null, `#${params.toString()}`);
+  } else {
+    history.pushState(null, null, `#${params.toString()}`);
+  }
 }
 
 function getUpdatedHashLink(f, p) {
@@ -1095,7 +1099,11 @@ Alpine.store('menuStore', {
         folder,
         page
       } = getHashParams();
-      this.setActiveFolder(folder, false);
+      if (folder) {
+        this.setActiveFolder(folder, false);
+      } else {
+        this.setActiveFolder(homeFolderName, false);
+      }
       this.setActiveMenuFromHash();
       const activeMenu = this.activeMenu;
       const fullWidth = !this.menuItemsAI.some(item => item.name === activeMenu);
