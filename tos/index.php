@@ -188,9 +188,9 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/config.php';
 			REASONABLE ATTORNEY FEES, ARISING OUT OF OR RELATED TO YOUR VIOLATION OF THESE TERMS, YOUR INFRINGEMENT OF ANY
 			THIRD PARTY'S RIGHTS, AND ANY HARM CAUSED TO ANY THIRD PARTY AS A RESULT OF YOUR UPLOADING OF FILES, COMMENTS, OR
 			ANYTHING ELSE TO OUR SERVERS.</br> 
-			Miscellaneous "nostr.build" or "we" refers to nostr.build and NMLH LLC., a California LLC, and its successors and assigns. "You" refers to any person
+			Miscellaneous "nostr.build" or "we" refers to nostr.build and Big Nut Media LLC., a Florida LLC, and its successors and assigns. "You" refers to any person
 			who has consented to these terms or has become contractually bound to them, whether such person is identified or
-			not at the time. These terms are governed by California law,
+			not at the time. These terms are governed by Florida law,
 			excluding its conflicts of law principles, and if there is a lawsuit between you and nostr.build, jurisdiction and
 			venue will lie exclusively in the State where the defendant is located, if within the United States, or in Santa
 			Clara County, California otherwise. If any part of these terms
@@ -203,7 +203,7 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/config.php';
 			please allow him or her to use it only under adult supervision. Parental control protections (such as computer
 			hardware, software, or filtering services) are commercially available that may assist you in limiting access to
 			material that is harmful to minors. See e.g.
-			www.toptenreviews.com/software/security/best-internet-filter-software.
+			<a href="https://www.toptenreviews.com/software/security/best-internet-filter-software" title="Filtering services"> https://www.toptenreviews.com/software/security/best-internet-filter-software</a>.</br>
 		</p>
 		<a href="https://www.dmca.com/compliance/nostr.build" title="DMCA Compliance information for nostr.build"><img src="https://www.dmca.com/img/dmca-compliant-grayscale.png" alt="DMCA compliant image" /></a>
 	</main>
