@@ -61,6 +61,10 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/config.php';
 			upload using nostr's free service, your media may be featured in the Free View or Free Media Gallery section. If you share an image
 			publicly with nostr, Facebook, Twitter, Digg, Reddit, etc.,
 			then it may also end up in the Free View or Free Media Gallery section. </br>
+			Limited License to Us. You grant us a worldwide, non-exclusive, royalty-free license (with the right to sublicense) to host, store,
+			transfer, display, adapt, perform, reproduce, modify, translate, and distribute your User Content (in whole or in part) in any media 
+			formats and through any media channels (now known or hereafter developed). You understand that we will not pay you for any use of your 
+			Images and that your Images will be made available to the public for their use without providing you attribution or compensation. </br>
 			* You can not upload any type of illegal media, it will be taken down, reported and investigated </br>
 			* You can not upload images of someone without their permission or use others in a derogatory way </br>
 			* Do not abuse this service in any way. We are offering a free service dedicated to improving the freedom of speech. </br>
@@ -68,7 +72,7 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/config.php';
 		</p>
 		<h4>Details</h4>
 		<p>
-			15/1/2024 Intellectual Property By uploading a file or other content or by making a comment, you represent and
+			By uploading a file or other content or by making a comment, you represent and
 			warrant to us that (1) doing so does not violate or infringe anyone else's rights; and (2) you created the file or
 			other content you are uploading, or otherwise have sufficient
 			intellectual property rights to upload the material consistent with these terms. With regard to any file or
