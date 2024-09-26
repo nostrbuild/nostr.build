@@ -112,6 +112,7 @@ Table: identified_csam_cases
             COUNT(CASE 
                     WHEN ncmec_report_id IS NOT NULL 
                     AND ncmec_report_id NOT LIKE 'TEST_%' 
+                    AND ncmec_report_id NOT LIKE 'FALSE_MATCH' 
                     THEN 1 
                 END) AS total_reported
         FROM 
@@ -134,6 +135,7 @@ Table: identified_csam_cases
             COUNT(CASE 
                     WHEN ncmec_report_id IS NOT NULL 
                     AND ncmec_report_id NOT LIKE 'TEST_%' 
+                    AND ncmec_report_id NOT LIKE 'FALSE_MATCH' 
                     THEN 1 
                 END) AS total_reported
         FROM 
