@@ -67,7 +67,7 @@ class S3Service
     $maxRetries = 3;
     $mimeType = mime_content_type($sourcePath);
     $fileSize = filesize($sourcePath);
-    $multipartThreshold = 25 * 1024 * 1024; // 25 MB threshold
+    $multipartThreshold = 50 * 1024 * 1024; // 50 MB threshold
 
     if (!file_exists($sourcePath) || $fileSize === 0) {
       error_log("The source file does not exist or is empty.\n");

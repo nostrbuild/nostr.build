@@ -113,15 +113,14 @@ $perm = new Permission();
       ** Purchase an account <a class="ref_link" href="/plans/">HERE!</a><br /><br />
 
       <b>Account features include:</b><br />
-      - <font color="#D3D3D3"> Global CDN network:</font>  super fast access for all media including videos<br />
+      - <font color="#D3D3D3">Global CDN network:</font> super fast access for all media including videos<br />
       - <font color="#D3D3D3">AI Studio:</font> Image Generation and more for Creator and Advanced accounts<br />
-      - <font color="#D3D3D3">Large Video Support:</font> upload videos up to account sizes 10/20/100GB<br />
+      - <font color="#D3D3D3">Large Video Support:</font> upload videos up to account sizes 10/30/100GB<br />
       - <font color="#D3D3D3">Delete:</font> your media after posted by clicking the checkbox<br />
       - <font color="#D3D3D3">Private Folders:</font> Click on ‘New Folder’ in the left menu bar, name your folder and click Create<br />
-      - <font color="#D3D3D3">Backup on S3:</font> Content is backed up on seperate providers, AWS S3 amnd Cloudflare<br />
+      - <font color="#D3D3D3">Backup on S3:</font> Content is backed up on seperate providers, S3 amnd Cloudflare<br />
       - <font color="#D3D3D3">View All:</font> over 1.5million images, GIFs and videos can be seen from all free media ever uploaded<br />
       - <font color="#D3D3D3">Creators Page:</font> lets you make your media publically available on the popular <a class="ref_link" href="https://nostr.build/creators/" target="_blank">nostr.build Creators page</a><br />
-      - <font color="#D3D3D3">TOR Links (coming soon):</font> add another layer of privacy to Creator and Advanced accounts<br />
       - <font color="#D3D3D3">AI Enhanced Search (coming soon):</font> search any free media ever uploaded to nostr.build with AI enhanced labels and keywords<br />
       - <font color="#D3D3D3">All media must align to nostr.build's</font> <a class="ref_link" href="https://nostr.build/tos/" target="_blank">Terms of Service</a> <br />
       ** See all <a class="ref_link" href="/plans/">nostr.build Plans</a> and features<br />

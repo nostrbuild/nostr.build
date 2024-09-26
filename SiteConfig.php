@@ -183,7 +183,7 @@ class SiteConfig
     '0' => ['limit' => 0, 'message' => 'No Storage, consider upgrading'],
   ];
 
-  const FREE_UPLOAD_LIMIT = 25 * 1024 * 1024; // 25MB in bytes, so we can allow inefficient clients to upload 10MB files
+  const FREE_UPLOAD_LIMIT = 50 * 1024 * 1024; // 50MB in bytes
 
   public static function getHost($mediaType)
   {
