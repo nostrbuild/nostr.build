@@ -226,37 +226,39 @@ Table: identified_csam_cases
       echo htmlspecialchars($file_sha256_hash);
       echo '</div>';
       echo '</td>';
-      echo '<td>' . htmlspecialchars($ncmec_report_id) . '</td>';
+      // Change background color to green if the report is submitted and id is numeric or FALSE_MATCH
+      $bgColor = (is_numeric($ncmec_report_id) || $ncmec_report_id === 'FALSE_MATCH') ? 'bg-success' : 'bg-danger';
+      echo "<td class=\"{$bgColor}\">" . htmlspecialchars($ncmec_report_id) . '</td>';
       echo '<td>';
 
       // Actions: View Logs, View NCMEC Report, View Evidence, Submit NCMEC Report
 
       // View Logs Button
-      echo '<button class="btn btn-sm btn-info" data-bs-toggle="modal" data-bs-target="#logsModal' . $id . '">View Logs</button>';
+      echo '<button style="margin:3px" class="btn btn-sm btn-info" data-bs-toggle="modal" data-bs-target="#logsModal' . $id . '">View Logs</button>';
 
       // View NCMEC Report Button (if ncmec_submitted_report is not null)
       if (!empty($row['ncmec_submitted_report'])) {
-        echo ' <button class="btn btn-sm btn-secondary" data-bs-toggle="modal" data-bs-target="#ncmecModal' . $id . '">View NCMEC Report</button>';
+        echo ' <button style="margin:3px" class="btn btn-sm btn-secondary" data-bs-toggle="modal" data-bs-target="#ncmecModal' . $id . '">View NCMEC Report</button>';
       }
 
       // View Evidence Button (updated to use AJAX)
-      echo ' <button class="btn btn-sm btn-primary view-evidence-btn" data-incident-id="' . htmlspecialchars($id) . '">View Evidence</button>';
+      echo ' <button style="margin:3px" class="btn btn-sm btn-primary view-evidence-btn" data-incident-id="' . htmlspecialchars($id) . '">View Evidence</button>';
 
       // Submit NCMEC Report Button (if ncmec_report_id is null or report ID starts with TEST_)
       // Show below buttons if only report id is not 'FALSE_MATCH'
       if ($ncmec_report_id !== 'FALSE_MATCH') {
         if (empty($ncmec_report_id) || strpos($ncmec_report_id, 'TEST_') === 0 || $ncmec_report_id === 'Null: Technical Error') {
-          echo ' <button class="btn btn-sm btn-danger submit-report-btn" data-incident-id="' . htmlspecialchars($id) . '" data-test-report="false">Submit NCMEC Report</button>';
+          echo ' <button style="margin:3px" class="btn btn-sm btn-danger submit-report-btn" data-incident-id="' . htmlspecialchars($id) . '" data-test-report="false">Submit NCMEC Report</button>';
         }
 
         // Optionally, a button to submit a test report (if ncmec_report_id is null)
         if (empty($ncmec_report_id)) {
-          echo ' <button class="btn btn-sm btn-warning submit-report-btn" data-incident-id="' . htmlspecialchars($id) . '" data-test-report="true">Submit Test Report</button>';
+          echo ' <button style="margin:3px" class="btn btn-sm btn-warning submit-report-btn" data-incident-id="' . htmlspecialchars($id) . '" data-test-report="true">Submit Test Report</button>';
         }
 
         // Add the Unblacklist User button
         if (!empty($row['identified_by_npub']) && 'PhotoDNA API Match' === $row['identified_by_npub']) {
-          echo ' <button class="btn btn-sm btn-success unblacklist-user-btn" data-incident-id="' . htmlspecialchars($id) . '">Unblacklist User and mark as false report</button>';
+          echo ' <button style="margin:3px" class="btn btn-sm btn-success unblacklist-user-btn" data-incident-id="' . htmlspecialchars($id) . '">Unblacklist User and mark as false report</button>';
         }
       }
 
