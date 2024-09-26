@@ -1,4 +1,79 @@
 <?php
+/*
+SPECS:
+This operation reports the content violations to NCMEC
+
+The header should contain the parameters x-usr and x-pwd for the authentication to the NCMEC cybertip API. These values are obtained from NCMEC. Please contact them if you do not have your credentials yet.
+{
+    "OrgName": "TestOrg",
+    "ReporterName": "Reporter1",
+    "ReporterEmail": "test@example.org",
+    "IncidentTime": "9/10/2014 9:08:14 PM",
+    "ReporteeName": "Reportee1",
+    "ReporteeIPAddress": "127.0.0.1",
+    "ViolationContentCollection": [{
+        "Name": "test.jpg",
+        "Value": "Base 64 image string",
+        "Location": {
+            "Latitude": "",
+            "Longitude": "",
+            "Altitude": ""
+        },
+        "UploadIpAddress": "<IP Address of the Image Upload Source - when UploadIpAddress & UploadDateTime is provided, this information would be sent to NCMEC as filedetails for this file.>",
+        "UploadDateTime": "<Timestamp for upload - when UploadIpAddress & UploadDateTime is provided, this information would be sent to NCMEC as filedetails for this file.>",
+        "AdditionalMetadata": [{
+            "Key": "viewedByEsp", // Whether the reporting company viewed the entire contents of the file being reported to NCMEC.
+            "Value": "true"
+        }, {
+            "Key": "publiclyAvailable", // Whether the entire contents of the file were publicly accessible to online users.
+            "Value": "true"
+        }, {
+            "Key": "additionalInfo", // Additional information about this file not covered by any other section.
+            "Value": "<some additional text content>"
+        }]
+    }],
+
+
+    "AdditionalMetadata": [{
+        "Key": "IsTest",
+        "Value": "<Optional KeyValue pair to route the request to NCMEC's Test Endpoint. Set the value to true to point to NCMEC's Test Endpoint.>"
+    }]
+}
+
++---------------------------+------------------------------------------------------------+-----------+
+| Name                      | Description                                                | Optional  |
++---------------------------+------------------------------------------------------------+-----------+
+| OrgName                   | This is the name of your organization                      | No        |
+| ReporterName              | Name of the Reporter                                       | No        |
+| ReporterEmail             | Email address of reporter                                  | No        |
+| IncidentTime              | The time the incident occurred and the IP address was      | No        |
+|                           | recorded.                                                  |           |
+| ReporteeName              | Name of the person/organization who is being reported      | No        |
+| ReporteeIPAddress         | The IP address from which the incident occurred            | No        |
+| ViolationContentCollection| The actual information of the content being reported       | No        |
+|                           | It is a collection of the following data for each file:    |           |
+|                           | Name: The filename of the image that is being reported     |           |
+|                           | Value: The base-64 encoded value of the content being      |           |
+|                           | reported                                                   |           |
+|                           | Location (optional): The GPS location, the content is      |           |
+|                           | marked with                                                |           |
+|                           | UploadIpAddress (optional): This represents the upload IP  |           |
+|                           | address of the file and when it occurred.                  |           |
+|                           | UploadDateTime (optional): The time the upload occurred    |           |
+|                           | and when the IP address was recorded.                      |           |
+|                           | AdditionalMetadata (optional): This is collection of       |           |
+|                           | KeyValue pairs to specify additional options. Currently    |           |
+|                           | available options:                                         |           |
+|                           | viewedByEsp                                                |           |
+|                           | publiclyAvailable                                          |           |
+|                           | additionalInfo                                             |           |
+| AdditionalMetadata        | This is collection of KeyValue pairs to specify            | Yes       |
+|                           | additional options. Currently available options:           |           |
+|                           | IsTest - passing a value of 'true' will force the          |           |
+|                           | transaction to hit the NCMEC test end point.               |           |
++---------------------------+------------------------------------------------------------+-----------+
+
+*/
 
 /**
  * NCMECReport Class
@@ -52,6 +127,7 @@ class NCMECReportHandler
   private $violationContentCollection;
   private $additionalMetadata;
   private $incidentDetails;
+  private $testReport;
 
   /**
    * Constructor for the NCMECReportHandler class.
@@ -67,6 +143,7 @@ class NCMECReportHandler
     $this->db = $link;
     $this->csamReportingConfig = $csamReportingConfig;
     $this->incidentId = $incidentId;
+    $this->testReport = $testReport;
     // Populate the incident details
     $this->incidentDetails = $this->getIncidentDetails();
     // Process the logs column
@@ -104,6 +181,16 @@ class NCMECReportHandler
         'error' => $e->getMessage()
       ];
     }
+  }
+
+  /**
+   * Process and preview the actual report that will be submitted to NCMEC.
+   * 
+   * @return array The sanitized report data.
+   */
+  public function previewReport(): array
+  {
+    return $this->getSanitizedReportData();
   }
 
   /**
@@ -165,6 +252,7 @@ class NCMECReportHandler
    */
   private function updateIncidentReportId(string $reportId, string $report)
   {
+    $reportId = $this->testReport ? 'TEST_' . $reportId : $reportId;
     $sql = 'UPDATE identified_csam_cases SET ncmec_report_id = ?, ncmec_submitted_report = ? WHERE id = ?';
     $stmt = $this->db->prepare($sql);
     $stmt->bind_param('ssi', $reportId, $report, $this->incidentId);
@@ -205,10 +293,9 @@ class NCMECReportHandler
    * Processes the logs column from the incident data.
    *
    * @param string $logs The logs data as a JSON string.
-   * @param bool   $testReport Whether this is a test report.
    * @throws Exception If the logs data is invalid or unsupported.
    */
-  private function processLogColumn(string $logs, bool $testReport = true): void
+  private function processLogColumn(string $logs): void
   {
     $data = json_decode($logs, true);
 
@@ -218,10 +305,10 @@ class NCMECReportHandler
 
     // Check if 'evidenceData' exists
     if (isset($data['evidenceData'])) {
-      $this->processEvidenceData($data['evidenceData'], $testReport);
+      $this->processEvidenceData($data['evidenceData'], $this->testReport);
     } else {
       // Assume Type 1 format
-      $this->processType1Log($data, $testReport);
+      $this->processType1Log($data, $this->testReport);
     }
   }
 
@@ -229,10 +316,9 @@ class NCMECReportHandler
    * Processes logs of Type 1 format.
    *
    * @param array $data The logs data as an associative array.
-   * @param bool  $testReport Whether this is a test report.
    * @throws Exception If required data is missing.
    */
-  private function processType1Log(array $data, bool $testReport = true): void
+  private function processType1Log(array $data): void
   {
     // Since the top-level keys are filenames, we'll iterate over them
     foreach ($data as $key => $fileData) {
@@ -249,7 +335,7 @@ class NCMECReportHandler
       // Prepare ViolationContentCollection
       $violationContentCollection = [
         [
-          'Name' => $fileData['fileName'] ?? '',
+          'Name' => (empty($fileData['fileName']) ? 'Unknown' : $fileData['fileName']),
           'Value' => $this->getBase64MediaByHash($fileHash),
           'Location' => null,
           'UploadIpAddress' => $uploadIpAddress,
@@ -262,6 +348,10 @@ class NCMECReportHandler
             [
               'Key' => 'publiclyAvailable',
               'Value' => 'true' // Assuming the content is publicly available
+            ],
+            [
+              'Key' => 'viewedByEsp',
+              'Value' => 'true' // Assuming the content was viewed by the reporting company
             ]
           ]
         ]
@@ -273,7 +363,6 @@ class NCMECReportHandler
         reporteeName: $uploadNpub,
         reporteeIPAddress: $uploadIpAddress,
         violationContentCollection: $violationContentCollection,
-        testReport: $testReport
       );
 
       // For Type 1 logs, we can assume only one entry per log, so break after processing
@@ -285,15 +374,9 @@ class NCMECReportHandler
    * Processes the evidenceData from logs of Type 2 format.
    *
    * @param array $evidenceData The evidenceData array from the logs.
-   * @param bool  $testReport   Whether this is a test report.
    */
-  private function processEvidenceData(array $evidenceData, bool $testReport = true): void
+  private function processEvidenceData(array $evidenceData): void
   {
-    // Set optional fields to null if empty
-    $orgName = !empty($evidenceData['OrgName']) ? $evidenceData['OrgName'] : null;
-    $reporterName = !empty($evidenceData['ReporterName']) ? $evidenceData['ReporterName'] : null;
-    $reporterEmail = !empty($evidenceData['ReporterEmail']) ? $evidenceData['ReporterEmail'] : null;
-
     // Process ViolationContentCollection
     $violationContent = $evidenceData['ViolationContentCollection'];
 
@@ -322,10 +405,13 @@ class NCMECReportHandler
           ];
         }
       }
+      // Add viewedByEsp
+      $additionalMetadata[] = ['Key' => 'viewedByEsp', 'Value' => 'true'];
 
+      $fileHash = $this->incidentDetails['file_sha256_hash'] ?? '';
       $violationContentCollection[] = [
-        'Name' => $violation['Name'] ?? '',
-        'Value' => $this->getBase64Media($violation['Value'] ?? ''),
+        'Name' => empty($violation['Name']) ? 'Unknown' : $violation['Name'],
+        'Value' => $this->getBase64Media($fileHash),
         'Location' => $violation['Location'] ?? null,
         'UploadIpAddress' => $violation['UploadIpAddress'] ?? '',
         'UploadDateTime' => $violation['UploadDateTime'] ?? '',
@@ -338,10 +424,6 @@ class NCMECReportHandler
       reporteeName: $evidenceData['ReporteeName'],
       reporteeIPAddress: $evidenceData['ReporteeIPAddress'],
       violationContentCollection: $violationContentCollection,
-      orgName: $orgName,
-      reporterName: $reporterName,
-      reporterEmail: $reporterEmail,
-      testReport: $testReport
     );
   }
 
@@ -355,7 +437,6 @@ class NCMECReportHandler
    * @param string|null $orgName                    The organization name.
    * @param string|null $reporterName               The reporter's name.
    * @param string|null $reporterEmail              The reporter's email.
-   * @param bool|null   $testReport                 Whether this is a test report.
    */
   private function setReportParameters(
     string $incidentTime,
@@ -365,16 +446,15 @@ class NCMECReportHandler
     ?string $orgName = null,
     ?string $reporterName = null,
     ?string $reporterEmail = null,
-    ?bool $testReport = true
   ) {
-    $this->orgName = $orgName ?? $this->csamReportingConfig['NCMEC_REPORT_ORG_NAME'];
-    $this->reporterName = $reporterName ?? $this->csamReportingConfig['NCMEC_REPORTER_NAME'];
-    $this->reporterEmail = $reporterEmail ?? $this->csamReportingConfig['NCMEC_REPORTER_EMAIL'];
+    $this->orgName = $orgName ?? $_SERVER['NCMEC_REPORT_ORG_NAME'];
+    $this->reporterName = $reporterName ?? $_SERVER['NCMEC_REPORTER_NAME'];
+    $this->reporterEmail = $reporterEmail ?? $_SERVER['NCMEC_REPORTER_EMAIL'];
     $this->incidentTime = $incidentTime;
     $this->reporteeName = $reporteeName;
     $this->reporteeIPAddress = $reporteeIPAddress;
     $this->violationContentCollection = $violationContentCollection;
-    $this->additionalMetadata = $testReport ? [['Key' => 'IsTest', 'Value' => 'true']] : [];
+    $this->additionalMetadata = $this->testReport ? [['Key' => 'IsTest', 'Value' => 'true']] : [];
   }
 
   /**
@@ -418,8 +498,12 @@ class NCMECReportHandler
       'ReporteeName' => $this->reporteeName,
       'ReporteeIPAddress' => $this->reporteeIPAddress,
       'ViolationContentCollection' => $this->violationContentCollection,
-      'AdditionalMetadata' => $this->additionalMetadata
+      //'AdditionalMetadata' => $this->additionalMetadata
     ];
+    // Add AdditionalMetadata for test reports
+    if ($this->testReport) {
+      $data['AdditionalMetadata'][] = ['Key' => 'IsTest', 'Value' => 'true'];
+    }
 
     $data_string = json_encode($data);
     // Throw exception if JSON is invalid
@@ -435,6 +519,9 @@ class NCMECReportHandler
 
     // Execute the request
     $result = curl_exec($ch);
+    // DEBUG: Log response from NCMEC
+    error_log('NCMEC API Response: ' . print_r($result, true));
+
 
     // Error handling
     if ($result === false) {
@@ -540,23 +627,29 @@ class NCMECReportHandler
 
     // Get the original media object key
     // List all objects in the bucket with the prefix
-    $evidencePrefix = parse_url($evidenceLocationUrl, PHP_URL_PATH);
-    $evidencePrefix = ltrim($evidencePrefix, '/'); // Remove leading slash if any
+    $parsed_url = parse_url($evidenceLocationUrl);
+    $endpoint_url = $parsed_url['scheme'] . '://' . $parsed_url['host'];
+    $path_parts = explode('/', trim($parsed_url['path'], '/'));
+    $bucket = array_shift($path_parts);
+    $prefix = implode('/', $path_parts);
 
     try {
       $evidenceObjects = listObjectsUnderPrefix(
-        prefix: $evidencePrefix,
-        bucket: $this->csamReportingConfig['r2EvidenceBucket'],
-        endPoint: $this->csamReportingConfig['r2EndPoint'],
+        prefix: $prefix,
+        bucket: $bucket,
+        endPoint: $endpoint_url,
         accessKey: $this->csamReportingConfig['r2AccessKey'],
         secretKey: $this->csamReportingConfig['r2SecretKey']
       );
+      error_log('Objects under prefix: ' . json_encode($evidenceObjects));
     } catch (Exception $e) {
       error_log('Error listing objects under prefix: ' . $e->getMessage());
       return '';
     }
     if (empty($evidenceObjects)) {
-      error_log('No objects found under the given prefix.');
+      error_log('No objects found under the given prefix:' . $prefix);
+      error_log('Bucket: ' . $bucket);
+      error_log('Endpoint: ' . $endpoint_url);
       return '';
     }
 
@@ -662,8 +755,14 @@ class NCMECReportHandler
     $stmt->execute();
     $affectedRows = $stmt->affected_rows;
     $stmt->close();
+    error_log('Unblacklist user affected rows: ' . $affectedRows);
+    error_log('Unblacklist user timestamp: ' . $timestamp);
+    error_log('Unblacklist user timestampStart: ' . $timestampStart);
+    error_log('Unblacklist user timestampEnd: ' . $timestampEnd);
+    error_log('Unblacklist user npub: ' . $npub);
 
+    // Update the report ID as FALSE_MATCH, even if npub is not found in the blacklist
+    $this->updateIncidentReportId('FALSE_MATCH', '{}');
     return $affectedRows > 0;
   }
-
 }
