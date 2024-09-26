@@ -360,7 +360,7 @@ class NCMECReportHandler
       // Set report parameters
       $this->setReportParameters(
         incidentTime: $incidentTime,
-        reporteeName: $uploadNpub,
+        reporteeName: (empty($uploadNpub) ? 'Unknown' : $uploadNpub),
         reporteeIPAddress: $uploadIpAddress,
         violationContentCollection: $violationContentCollection,
       );
@@ -421,7 +421,7 @@ class NCMECReportHandler
 
     $this->setReportParameters(
       incidentTime: $evidenceData['IncidentTime'],
-      reporteeName: $evidenceData['ReporteeName'],
+      reporteeName: (empty($evidenceData['ReporteeName']) ? 'Unknown' : $evidenceData['ReporteeName']),
       reporteeIPAddress: $evidenceData['ReporteeIPAddress'],
       violationContentCollection: $violationContentCollection,
     );
