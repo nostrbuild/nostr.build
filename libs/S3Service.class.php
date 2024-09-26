@@ -575,3 +575,157 @@ function fetchJsonFromR2Bucket(
 
   return $objects;
 }
+
+function fetchJsonFromR2BucketByKeys(
+  array $keys,
+  string $endPoint,
+  string $accessKey,
+  string $secretKey,
+  string $bucket
+): array {
+  $r2Config = [
+    'region'  => 'auto',
+    'version' => 'latest',
+    'endpoint' => $endPoint,
+    'credentials' => [
+      'key'    => $accessKey,
+      'secret' => $secretKey,
+    ],
+    'bucket' => $bucket,
+    'use_aws_shared_config_files' => false,
+  ];
+
+  $r2 = new S3Client($r2Config);
+
+  $objects = [];
+  $r2Params = [
+    'Bucket' => $bucket,
+  ];
+  // Iterate over the keys and fetch the object(s)
+  foreach ($keys as $key) {
+    $r2Params['Key'] = $key;
+    try {
+      $result = $r2->getObject($r2Params);
+      $objects[$key] = json_decode($result['Body'], true);
+    } catch (AwsException $e) {
+      error_log("r2 Get Object Error: " . $e->getMessage());
+    }
+  }
+
+  return $objects;
+}
+
+function fetchBinaryFromR2Bucket(
+  string $key,
+  string $endPoint,
+  string $accessKey,
+  string $secretKey,
+  string $bucket
+): string {
+  $r2Config = [
+    'region'  => 'auto',
+    'version' => 'latest',
+    'endpoint' => $endPoint,
+    'credentials' => [
+      'key'    => $accessKey,
+      'secret' => $secretKey,
+    ],
+    'bucket' => $bucket,
+    'use_aws_shared_config_files' => false,
+  ];
+
+  $r2 = new S3Client($r2Config);
+
+  $r2Params = [
+    'Bucket' => $bucket,
+    'Key'    => $key,
+  ];
+
+  try {
+    $result = $r2->getObject($r2Params);
+    return $result['Body'];
+  } catch (AwsException $e) {
+    error_log("r2 Get Object Error: " . $e->getMessage());
+    return '';
+  }
+}
+
+function listObjectsUnderPrefix(
+  string $prefix,
+  string $endPoint,
+  string $accessKey,
+  string $secretKey,
+  string $bucket
+): array {
+  $r2Config = [
+    'region'  => 'auto',
+    'version' => 'latest',
+    'endpoint' => $endPoint,
+    'credentials' => [
+      'key'    => $accessKey,
+      'secret' => $secretKey,
+    ],
+    'bucket' => $bucket,
+    'use_aws_shared_config_files' => false,
+  ];
+
+  $r2 = new S3Client($r2Config);
+
+  $r2Params = [
+    'Bucket' => $bucket,
+    'Prefix' => $prefix,
+  ];
+
+  $objects = [];
+  try {
+    $result = $r2->listObjects($r2Params);
+    if (!isset($result['Contents'])) {
+      error_log("The object was not found.\n");
+      return [];
+    }
+    foreach ($result['Contents'] as $object) {
+      $objects[] = $object['Key'];
+    }
+  } catch (AwsException $e) {
+    error_log("r2 List Objects Error: " . $e->getMessage());
+  }
+
+  return $objects;
+}
+
+function getPresignedUrlFromObjectKey(
+  string $objectKey,
+  string $endPoint,
+  string $accessKey,
+  string $secretKey,
+  string $bucket,
+  int $expires = 3600
+): string {
+  $r2Config = [
+    'region'  => 'auto',
+    'version' => 'latest',
+    'endpoint' => $endPoint,
+    'credentials' => [
+      'key'    => $accessKey,
+      'secret' => $secretKey,
+    ],
+    'bucket' => $bucket,
+    'use_aws_shared_config_files' => false,
+  ];
+
+  $r2 = new S3Client($r2Config);
+
+  $r2Params = [
+    'Bucket' => $bucket,
+    'Key'    => $objectKey,
+  ];
+
+  try {
+    $command = $r2->getCommand('GetObject', $r2Params);
+    $request = $r2->createPresignedRequest($command, "+{$expires} seconds");
+    return (string) $request->getUri();
+  } catch (AwsException $e) {
+    error_log("r2 Get Presigned URL Error: " . $e->getMessage());
+    return '';
+  }
+}
