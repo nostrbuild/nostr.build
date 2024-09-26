@@ -257,7 +257,7 @@ Table: identified_csam_cases
         }
 
         // Add the Unblacklist User button
-        if (!empty($row['identified_by_npub']) && 'PhotoDNA API Match' === $row['identified_by_npub']) {
+        if ('PhotoDNA API Match' === $row['identified_by_npub'] && empty($row['ncmec_report_id'])) {
           echo ' <button style="margin:3px" class="btn btn-sm btn-success unblacklist-user-btn" data-incident-id="' . htmlspecialchars($id) . '">Unblacklist User and mark as false report</button>';
         }
       }
