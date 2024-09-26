@@ -404,9 +404,9 @@ class NCMECReportHandler
             'Value' => $value
           ];
         }
+        // Add viewedByEsp
+        $additionalMetadata[] = ['Key' => 'viewedByEsp', 'Value' => 'true'];
       }
-      // Add viewedByEsp
-      $additionalMetadata[] = ['Key' => 'viewedByEsp', 'Value' => 'true'];
 
       $fileHash = $this->incidentDetails['file_sha256_hash'] ?? '';
       $violationContentCollection[] = [
