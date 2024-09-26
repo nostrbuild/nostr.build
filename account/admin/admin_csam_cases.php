@@ -185,6 +185,9 @@ Table: identified_csam_cases
     $stmt->execute();
     $result = $stmt->get_result();
 
+    // Admin's npub to indicate who marked media as CSAM
+    $admin_npub = $_SESSION['usernpub'];
+
     // Start the table
     echo '<div class="table-responsive">';
     echo '<table class="table table-bordered">';
@@ -214,7 +217,7 @@ Table: identified_csam_cases
       echo '<td>' . htmlspecialchars($timestamp) . '</td>';
       echo '<td>';
       echo '<div style="max-width: 150px;" class="text-truncate">';
-      echo htmlspecialchars($identified_by_npub);
+      echo ($admin_npub === $identified_by_npub ? '<b>YOU</b>' : htmlspecialchars($identified_by_npub));
       echo '</div>';
       echo '</td>';
       echo '<td><a href="' . htmlspecialchars($evidence_location_url) . '" target="_blank">Link</a></td>';
