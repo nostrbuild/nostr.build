@@ -562,9 +562,14 @@ Alpine.store('profileStore', {
     },
     // Stable Diffusion
     get isAISDiffusionEligible() {
-      return [10, 99].includes(this.accountLevel) && this.isAIStudioEligible &&
+      return [1,10, 99].includes(this.accountLevel) && this.isAIStudioEligible &&
         !this.accountExpired && !this.storageOverLimit;
     },
+    // FLUX.1 [schnell]
+    get isFluxSchnellEligible() {
+      return [10, 99].includes(this.accountLevel) && this.isAIStudioEligible &&
+        !this.accountExpired && !this.storageOverLimit;
+    }, 
     // Other Features
     // Creators Page
     get isCreatorsPageEligible() {
@@ -609,6 +614,8 @@ Alpine.store('profileStore', {
           return this.isAIDreamShaperEligible;
         case 'isAISDXLLightningEligible':
           return this.isAISDXLLightningEligible;
+        case 'isFluxSchnellEligible':
+          return this.isFluxSchnellEligible;
         case 'isAISDiffusionEligible':
           return this.isAISDiffusionEligible;
         case 'isCreatorsPageEligible':

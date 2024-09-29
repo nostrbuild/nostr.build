@@ -207,9 +207,10 @@ function getAndStoreAIGeneratedImage(string $model, string $prompt, string $titl
 
 	// If we get image/png content type, store it in temporary file
 	$tempFile = generateUniqueFilename("ai_image_", sys_get_temp_dir());
-	if ($contentType === 'image/png') {
+	if ($contentType === 'image/png' || $contentType === 'image/jpeg' || $contentType === 'image/webp') {
 		file_put_contents($tempFile, $response);
 	} else {
+		error_log("AI Image generation failed: Unexpected content type: {$contentType}: {$response}");
 		throw new Exception("AI Image generation failed: Unexpected content type: {$contentType}");
 	}
 
@@ -455,7 +456,7 @@ if (isset($_GET["action"])) {
 			exit;
 		}
 		// Check for Creators Account Models access
-		$creatorsModels = ["@cf/bytedance/stable-diffusion-xl-lightning"];
+		$creatorsModels = ["@cf/bytedance/stable-diffusion-xl-lightning", "@cf/stabilityai/stable-diffusion-xl-base-1.0"];
 		if (isset($_POST['model']) && in_array($_POST['model'], $creatorsModels)) {
 			if (!$perm->validatePermissionsLevelAny(1, 10, 99)) {
 				http_response_code(403);
@@ -465,7 +466,7 @@ if (isset($_GET["action"])) {
 			}
 		}
 		// Check for Advanced Models access
-		$advancedModels = ["@cf/stabilityai/stable-diffusion-xl-base-1.0"];
+		$advancedModels = ["@cf/black-forest-labs/flux-1-schnell"];
 		if (isset($_POST['model']) && in_array($_POST['model'], $advancedModels)) {
 			if (!$perm->validatePermissionsLevelAny(10, 99)) {
 				http_response_code(403);
