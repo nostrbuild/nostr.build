@@ -233,7 +233,7 @@ function getAndStoreAIGeneratedImage(string $model, string $prompt, string $titl
 
 	// Upload the file
 	try {
-		[$status, $code, $message] = $upload->uploadFiles();
+		[$status, $code, $message] = $upload->uploadFiles(true); // Do not transform AI images
 		if (!$status) {
 			throw new Exception("Failed to upload AI generated image: {$message} {$code}");
 		}
