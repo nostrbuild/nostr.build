@@ -8,11 +8,11 @@
 	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 	<title>nostr.build account</title>
 
-	<script defer src="/scripts/dist/account-v2.js?v=50cfa7b8d0fa5e1367a6bd61a0c0319a"></script>
+	<script defer src="/scripts/dist/account-v2.js?v=6442ac9aa5614606fc6024c8b4a0cbde"></script>
 	<link href="/scripts/dist/account-v2.css?v=5ecc26aa69603a0fc007bf24b7636047" rel="stylesheet">
 
 	<link rel="icon" href="https://cdn.nostr.build/assets/nb-logo-color-w.png" />
-	<link href="/styles/twbuild.css?v=f38b8554a8a8c48f251a4d1f4070cb09" rel="stylesheet">
+	<link href="/styles/twbuild.css?v=2989f2957939e09fc6fc04f9f4b03d90" rel="stylesheet">
 
 	<!-- Pre-connect and DNS prefetch -->
 	<link rel="preconnect" href="https://i.nostr.build" crossorigin>
@@ -544,6 +544,33 @@ onDropCB(event) {
 													</div>
 												</li>
 												<!-- /Storage Usage Widget -->
+												<!-- User Credits Widget -->
+												<li>
+													<div class="flex items-center justify-between">
+														<div class="flex items-center">
+															<svg aria-hidden="true" class="size-5 text-nbpurple-300" viewBox="0 0 24 24" fill="none"
+																stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+																<path d="M18 12h2" />
+																<path d="M18 16h2" />
+																<path d="M18 20h2" />
+																<path d="M18 4h2" />
+																<path d="M18 8h2" />
+																<path d="M4 12h2" />
+																<path d="M4 16h2" />
+																<path d="M4 20h2" />
+																<path d="M4 4h2" />
+																<path d="M4 8h2" />
+																<path
+																	d="M8 2a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2h-1.5c-.276 0-.494.227-.562.495a2 2 0 0 1-3.876 0C9.994 2.227 9.776 2 9.5 2z" />
+															</svg>
+															<span class="ml-2 text-sm font-medium text-nbpurple-300">Credits (available/used)</span>
+														</div>
+														<div class="text-sm font-medium text-nbpurple-300"
+															x-text="menuStore.formatNumberInThousands(profileStore.profileInfo.availableCredits) + '/' + menuStore.formatNumberInThousands(profileStore.profileInfo.debitedCredits)">
+															0</div>
+													</div>
+												</li>
+												<!-- /User Credits Widget -->
 												<!-- Remaining Days Widget -->
 												<li>
 													<div class="flex items-center justify-between">
@@ -1046,13 +1073,13 @@ onDropCB(event) {
 					<template x-if="profileStore.profileInfo.isAIStudioEligible">
 						<div class="p-4">
 							<form action="#" class="relative"
-								x-data="{ assignOpen: false, labelOpen: false, dueDateOpen: false, title: '', prompt: '', selectedModel: '@cf/lykon/dreamshaper-8-lcm' }">
+								x-data="{ title: '', prompt: '', selectedModel: '@cf/lykon/dreamshaper-8-lcm', negativePrompt: '', aspectRatio: '1:1', stylePreset: '' }">
 								<!-- Clear button -->
 								<div x-cloak x-show="title.length > 0 || prompt.length > 0"
 									class="flex-shrink-0 absolute top-1 right-1 z-10">
 									<button type="button"
 										class="inline-flex items-center rounded-full bg-nbpurple-600/50 p-1 sm:text-sm text-xs font-semibold text-nbpurple-50 shadow-sm hover:bg-nbpurple-500/50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-nbpurple-600"
-										@click="title = ''; prompt = ''; GAI.clearImage()">
+										@click="title = ''; prompt = ''; negativePrompt = ''; GAI.clearImage()">
 										<span class="sr-only">Clear fields</span>
 										<svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
 											stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-rotate-ccw">
@@ -1072,18 +1099,192 @@ onDropCB(event) {
 									<textarea x-model="prompt" rows="3" name="prompt" id="prompt"
 										class="block w-full resize-none border-0 py-0 pt-2 text-nbpurple-900 placeholder:text-nbpurple-400 focus:ring-0 sm:text-sm sm:leading-6 bg-nbpurple-100"
 										placeholder="(prompt) ex.: purple ostrich surfing a big wave ..."></textarea>
+									<label x-cloak x-show="selectedModel.startsWith('@sd/')" for="negativePrompt" class="sr-only">Negative
+										Prompt</label>
+									<textarea x-cloak x-show="selectedModel.startsWith('@sd/')" x-model="negativePrompt" rows="2"
+										name="negativePrompt" id="negativePrompt"
+										class="block w-full resize-none border-0 py-0 pt-2 text-nbpurple-900 placeholder:text-nbpurple-400 focus:ring-0 sm:text-sm sm:leading-6 bg-nbpurple-50"
+										placeholder="(A blurb of text describing what you do not wish to see in the output image) ex.: people, sand ..."></textarea>
 
 									<!-- Spacer element to match the height of the toolbar -->
 									<div aria-hidden="true">
 										<div class="py-2">
 											<div class="py-px">
-												<div class="h-[2.1rem]"></div>
+												<div
+													:class="{'h-[5.4rem]':selectedModel.startsWith('@sd/'), 'h-[2.1rem]': !selectedModel.startsWith('@sd/')}">
+												</div>
 											</div>
 										</div>
 									</div>
 								</div>
 
 								<div class="absolute inset-x-px bottom-0 bg-inherit">
+									<!-- Stable AI specific Menu -->
+									<div x-cloak x-show="selectedModel.startsWith('@sd/')"
+										class="flex items-center justify-between space-x-3 border-t border-nbpurple-200 px-2 py-2 sm:px-3">
+										<div class="flex">
+											<div x-data="{
+																styleMenuOpen: false,
+																selectedStyleTitle: 'Default',
+																styleOptions: [
+																	{ value: '', title: 'Default', description: 'No style bias.', disabled: false },
+																	{ value: '3d-model', title: '3D Model', description: 'Creates a realistic 3D representation.', disabled: false },
+																	{ value: 'analog-film', title: 'Analog Film', description: 'Gives the image an old-school film appearance.', disabled: false },
+																	{ value: 'anime', title: 'Anime', description: 'Mimics traditional Japanese anime style.', disabled: false },
+																	{ value: 'cinematic', title: 'Cinematic', description: 'Produces an image with a movie-like quality.', disabled: false },
+																	{ value: 'comic-book', title: 'Comic Book', description: 'Transforms the image into a comic book illustration.', disabled: false },
+																	{ value: 'digital-art', title: 'Digital Art', description: 'Generates modern digital artwork.', disabled: false },
+																	{ value: 'enhance', title: 'Enhance', description: 'Improves image details and clarity.', disabled: false },
+																	{ value: 'fantasy-art', title: 'Fantasy Art', description: 'Creates imaginative and fantastical visuals.', disabled: false },
+																	{ value: 'isometric', title: 'Isometric', description: 'Generates an isometric perspective.', disabled: false },
+																	{ value: 'line-art', title: 'Line Art', description: 'Simplifies the image into clean lines.', disabled: false },
+																	{ value: 'low-poly', title: 'Low Poly', description: 'Produces a low-polygon 3D art style.', disabled: false },
+																	{ value: 'modeling-compound', title: 'Modeling Compound', description: 'Gives the look of clay or modeling compounds.', disabled: false },
+																	{ value: 'neon-punk', title: 'Neon Punk', description: 'Applies a futuristic neon-punk aesthetic.', disabled: false },
+																	{ value: 'origami', title: 'Origami', description: 'Mimics the appearance of folded paper origami.', disabled: false },
+																	{ value: 'photographic', title: 'Photographic', description: 'Aims for realistic, photographic imagery.', disabled: false },
+																	{ value: 'pixel-art', title: 'Pixel Art', description: 'Transforms the image into pixelated, retro art.', disabled: false },
+																	{ value: 'tile-texture', title: 'Tile Texture', description: 'Generates a repeating tile-based texture.', disabled: false }
+																]
+															}">
+												<label id="listbox-label-style" class="sr-only">Change style preset</label>
+												<div class="relative">
+													<div class="inline-flex divide-x divide-nbpurple-700 rounded-md shadow-sm">
+														<div
+															class="inline-flex items-center gap-x-1.5 rounded-l-md bg-nbpurple-600 px-3 py-2 text-nbpurple-50 shadow-sm">
+															<svg class="-ml-0.5 h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+																<path fill-rule="evenodd"
+																	d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.05-.143z"
+																	clip-rule="evenodd" />
+															</svg>
+															<p class="sm:text-sm text-xs font-semibold" x-text="selectedStyleTitle"></p>
+														</div>
+														<button type="button"
+															class="inline-flex items-center rounded-l-none rounded-r-md bg-nbpurple-600 p-2 hover:bg-nbpurple-700 focus:outline-none focus:ring-2 focus:ring-nbpurple-600 focus:ring-offset-2 focus:ring-offset-nbpurple-50"
+															aria-haspopup="listbox" aria-expanded="true" aria-labelledby="listbox-label"
+															@click="styleMenuOpen = !styleMenuOpen">
+															<span class="sr-only">Change style preset</span>
+															<svg class="h-5 w-5 text-nbpurple-50" viewBox="0 0 20 20" fill="currentColor"
+																aria-hidden="true">
+																<path fill-rule="evenodd"
+																	d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z"
+																	clip-rule="evenodd" />
+															</svg>
+														</button>
+													</div>
+													<ul id="styles-listbox" x-cloak @click.outside="styleMenuOpen = false" x-show="styleMenuOpen"
+														x-transition:enter="" x-transition:enter-start="" x-transition:enter-end=""
+														x-transition:leave="transition ease-in duration-100" x-transition:leave-start="opacity-100"
+														x-transition:leave-end="opacity-0"
+														class="absolute left-0 z-30 mt-2 sm:w-96 xs:w-72 w-64 origin-top-left divide-y divide-nbpurple-200 overflow-hidden rounded-md bg-nbpurple-500 shadow-lg ring-1 ring-nbpurple-900 ring-opacity-5 focus:outline-none"
+														tabindex="-1" role="listbox" aria-labelledby="listbox-label-style"
+														aria-activedescendant="listbox-option-0">
+														<template x-for="(option, index) in styleOptions" :key="option.value">
+															<li :class="{
+																				'bg-nbpurple-600 cursor-pointer': stylePreset === option.value,
+																				'text-nbpurple-200 cursor-not-allowed': option.disabled,
+																				'hover:bg-nbpurple-700 text-nbpurple-50 cursor-pointer': !option.disabled
+																			}" class="select-none p-4 text-sm" :id="'listbox-option-' + index" role="option"
+																@click="if (!option.disabled) { stylePreset = option.value; selectedStyleTitle = option.title; styleMenuOpen = false; }">
+																<div class="flex flex-col">
+																	<div class="flex justify-between">
+																		<div class="flex items-center">
+																			<p class="font-normal" x-text="option.title"></p>
+																			<span x-show="option.disabled"
+																				class="ml-2 text-nbpurple-50 text-xs hover:underline">
+																				Style not available
+																			</span>
+																		</div>
+																		<span class="text-nbpurple-50" x-show="stylePreset === option.value">
+																			<svg class="size-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+																				<path fill-rule="evenodd"
+																					d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.05-.143z"
+																					clip-rule="evenodd" />
+																			</svg>
+																		</span>
+																	</div>
+																	<p class="text-nbpurple-50 leading-tight mt-2" x-text="option.description"></p>
+																</div>
+															</li>
+														</template>
+													</ul>
+												</div>
+												<!-- Hidden input field to store the selected model value -->
+												<input id="selected-style" type="hidden" name="stylePreset" x-model="stylePreset">
+											</div>
+										</div>
+										<div class="flex-shrink-0">
+											<!-- Aspect ratio selector -->
+											<div class="flex">
+												<div x-data="{
+																				aspectRatioMenuOpen: false,
+																				selectedAspectRatioTitle: '1:1',
+																				aspectRatioOptions: [
+																						{ value: '1:1', title: '1:1', disabled: false },
+																						{ value: '16:9', title: '16:9', disabled: false },
+																						{ value: '21:9', title: '21:9', disabled: false },
+																						{ value: '2:3', title: '2:3', disabled: false },
+																						{ value: '3:2', title: '3:2', disabled: false },
+																						{ value: '4:5', title: '4:5', disabled: false },
+																						{ value: '5:4', title: '5:4', disabled: false },
+																						{ value: '9:16', title: '9:16', disabled: false },
+																						{ value: '9:21', title: '9:21', disabled: false }
+																				]
+																		}">
+													<label id="listbox-label-aspect-ratio" class="sr-only">Change aspect ratio</label>
+													<div class="relative">
+														<div class="inline-flex divide-x divide-nbpurple-700 rounded-md shadow-sm">
+															<div
+																class="inline-flex items-center gap-x-1.5 rounded-l-md bg-nbpurple-600 px-3 py-2 text-nbpurple-50 shadow-sm">
+																<p class="sm:text-sm text-xs font-semibold" x-text="selectedAspectRatioTitle"></p>
+															</div>
+															<button type="button"
+																class="inline-flex items-center rounded-l-none rounded-r-md bg-nbpurple-600 p-2 hover:bg-nbpurple-700 focus:outline-none focus:ring-2 focus:ring-nbpurple-600 focus:ring-offset-2 focus:ring-offset-nbpurple-50"
+																aria-haspopup="listbox" aria-expanded="true"
+																aria-labelledby="listbox-label-aspect-ratio"
+																@click="aspectRatioMenuOpen = !aspectRatioMenuOpen">
+																<span class="sr-only">Change aspect ratio</span>
+																<svg class="h-5 w-5 text-nbpurple-50" viewBox="0 0 20 20" fill="currentColor"
+																	aria-hidden="true">
+																	<path fill-rule="evenodd"
+																		d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z"
+																		clip-rule="evenodd" />
+																</svg>
+															</button>
+														</div>
+														<ul id="aspect-ratio-listbox" x-cloak @click.outside="aspectRatioMenuOpen = false"
+															x-show="aspectRatioMenuOpen"
+															class="absolute left-0 z-30 mt-2 w-20 origin-top-left divide-y divide-nbpurple-200 overflow-hidden rounded-md bg-nbpurple-500 shadow-lg ring-1 ring-nbpurple-900 ring-opacity-5 focus:outline-none"
+															tabindex="-1" role="listbox" aria-labelledby="listbox-label-aspect-ratio">
+															<template x-for="(option, index) in aspectRatioOptions" :key="option.value">
+																<li :class="{
+																												'bg-nbpurple-600 cursor-pointer': aspectRatio === option.value,
+																												'text-nbpurple-200 cursor-not-allowed': option.disabled,
+																												'hover:bg-nbpurple-700 text-nbpurple-50 cursor-pointer': !option.disabled
+																										}" class="select-none p-4 text-sm" :id="'listbox-option-' + index" role="option"
+																	@click="if (!option.disabled) { aspectRatio = option.value; selectedAspectRatioTitle = option.title; aspectRatioMenuOpen = false; }">
+																	<div class="flex justify-between">
+																		<p class="font-normal" x-text="option.title"></p>
+																		<span class="text-nbpurple-50" x-show="aspectRatio === option.value">
+																			<svg class="size-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+																				<path fill-rule="evenodd"
+																					d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.05-.143z"
+																					clip-rule="evenodd" />
+																			</svg>
+																		</span>
+																	</div>
+																</li>
+															</template>
+														</ul>
+													</div>
+													<input id="selected-aspect-ratio" type="hidden" name="aspectRatio" x-model="aspectRatio">
+												</div>
+											</div>
+
+										</div>
+									</div>
+
+									<!-- /Stable AI specific Menu -->
 									<div
 										class="flex items-center justify-between space-x-3 border-t border-nbpurple-200 px-2 py-2 sm:px-3">
 										<div class="flex">
@@ -1095,6 +1296,7 @@ onDropCB(event) {
 																		{ value: '@cf/bytedance/stable-diffusion-xl-lightning', title: 'SDXL-Lightning', description: 'SDXL-Lightning is a lightning-fast text-to-image generation model. It can generate high-quality 1024px images in a few steps.', disabled: !profileStore.profileInfo.isAISDXLLightningEligible },
 																		{ value: '@cf/stabilityai/stable-diffusion-xl-base-1.0', title: 'Stable Diffusion', description: 'Diffusion-based text-to-image generative model by Stability AI. Generates and modify images based on text prompts.', disabled: !profileStore.profileInfo.isAISDiffusionEligible },
 																		{ value: '@cf/black-forest-labs/flux-1-schnell', title: 'FLUX.1 [schnell]', description: 'FLUX.1 [schnell] is a 12 billion parameter rectified flow transformer capable of generating images from text descriptions.', disabled: !profileStore.profileInfo.isFluxSchnellEligible },
+																		{ value: '@sd/core', title: 'Stable AI Core (3c)', description: 'Stable Image Core represents the best quality achievable at high speed. No prompt engineering is required! Uses 3 credits per generated image.', disabled: !profileStore.profileInfo.isFluxSchnellEligible || profileStore.profileInfo.availableCredits < 3 },
 																	]
 																}">
 												<label id="listbox-label" class="sr-only">Change generative model</label>
@@ -1142,7 +1344,7 @@ onDropCB(event) {
 																			<p class="font-normal" x-text="option.title"></p>
 																			<a x-show="option.disabled" href="/plans/"
 																				class="ml-2 text-nbpurple-50 text-xs hover:underline">
-																				Upgrade or Renew
+																				Upgrade or Renew, or add credits
 																			</a>
 																		</div>
 																		<span class="text-nbpurple-50" x-show="selectedModel === option.value">
@@ -1164,7 +1366,9 @@ onDropCB(event) {
 											</div>
 										</div>
 										<div class="flex-shrink-0">
-											<button @click="await GAI.generateImage(title, prompt, selectedModel)" type="button"
+											<button
+												@click="await GAI.generateImage(title, prompt, selectedModel, negativePrompt, aspectRatio, stylePreset)"
+												type="button"
 												class="inline-flex items-center rounded-md bg-nbpurple-600 px-3 py-2 sm:text-sm text-xs h-9 font-semibold text-nbpurple-50 shadow-sm hover:bg-nbpurple-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-nbpurple-600 disabled:bg-nbpurple-400"
 												:disabled="prompt.trim() === '' || GAI.ImageLoading === true">Generate</button>
 										</div>
@@ -3406,7 +3610,8 @@ onDropCB(event) {
 										<div class="space-y-2 px-4 sm:grid sm:grid-cols-3 sm:gap-4 sm:space-y-0 sm:px-6 sm:py-5">
 											<div>
 												<label for="wallet"
-													class="block text-sm font-medium leading-6 text-nbpurple-200 sm:mt-1.5">Wallet Address</label>
+													class="block text-sm font-medium leading-6 text-nbpurple-200 sm:mt-1.5">Wallet
+													Address</label>
 											</div>
 											<div class="sm:col-span-2">
 												<input type="text" name="wallet" id="wallet" x-model="profileStore.profileInfo.wallet"
