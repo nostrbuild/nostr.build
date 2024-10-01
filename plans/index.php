@@ -193,7 +193,7 @@ SVG;
   <meta charSet="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Nostr.build account signup</title>
-  <link rel="stylesheet" href="/styles/twbuild.css?v=2989f2957939e09fc6fc04f9f4b03d90" />
+  <link rel="stylesheet" href="/styles/twbuild.css?v=6090aaff3af0e3391081135e1a91fc4c" />
   <link rel="stylesheet" href="/styles/index.css?v=d92cc716e5a959e5720d593defd68e21" />
   <link rel="stylesheet" href="/styles/signup.css?v=8878cbf7163f77b3a4fb9b30804c73ca" />
   <link rel="icon" href="https://cdn.nostr.build/assets/primo_nostr.png" />
@@ -307,6 +307,11 @@ SVG;
                       <p class="rounded-full bg-purple-700 text-purple-100 px-2.5 py-1 text-xs font-semibold leading-5">Popular</p>
                     </div>
                   <?php endif; ?>
+                  <?php if ($plan->id === 10) : ?>
+                    <div class="absolute top-0 right-0 transform -translate-y-1/2 -translate-x-1/3">
+                      <p class="rounded-full bg-amber-700 text-purple-100 px-2.5 py-1 text-xs font-semibold leading-5">Exclusive</p>
+                    </div>
+                  <?php endif; ?>
                   <!-- Current Plan Badge -->
                   <?php if ($plan->isCurrentPlan) : ?>
                     <div class="absolute top-0 left-0 transform -translate-y-1/2 translate-x-1/3">
@@ -339,6 +344,16 @@ SVG;
                     </a>
                   <?php endif; ?>
                   <ul role="list" class="mt-8 space-y-3 text-sm leading-6 text-gray-300">
+                    <!-- Bonus Credits -->
+                    <?php if ($currentAccountLevel === null) : ?>
+                      <li class="flex gap-x-3">
+                        <svg class="h-6 w-5 flex-none text-purple-300" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                          <path fill-rule="evenodd" d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.05-.143z" clip-rule="evenodd" />
+                        </svg>
+                        <span class="text-blue-300 text-lg" x-text="(period === '1y' ? '<?= $plan->bonusCredits ?>' : (period === '2y' ? '<?= $plan->bonusCredits2y ?>' : '<?= $plan->bonusCredits3y ?>'))"></span>signup bonus credits**
+                      </li>
+                    <?php endif; ?>
+                    <!-- /Bonus Credits -->
                     <?php foreach ($plan->features as $feature) : ?>
                       <li class="flex gap-x-3">
                         <svg class="h-6 w-5 flex-none text-purple-300" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
@@ -359,7 +374,10 @@ SVG;
             </div>
           </div>
           <?php if (count(Plans::$PLANS) > 0) : ?>
-            <div class="text-pretty text-right text-sm font-semibold leading-8 text-purple-200">* Coming soon</div>
+            <div class="mt-2 text-pretty text-right text-sm font-semibold text-purple-200">
+              <p>* Coming soon</p>
+              <p>** Used by AI features</p>
+            </div>
           <?php endif; ?>
           </div>
 

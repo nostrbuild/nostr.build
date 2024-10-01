@@ -40,6 +40,10 @@ class Plan
   public string $currency;
   public bool $isCurrentPlan = false;
   public bool $isRenewable = false;
+  // Credits
+  public int $bonusCredits;
+  public int $bonusCredits2y;
+  public int $bonusCredits3y;
 
   public function __construct(
     int $id,
@@ -53,6 +57,7 @@ class Plan
     string $image = '', // Default to an empty string
     string $imageAlt = '', // Default to an empty string
     string $currentPeriod = '1y',
+    int $bonusCredits = 0,
   ) {
     $this->id = $id;
     $this->name = $name;
@@ -62,6 +67,9 @@ class Plan
     $this->discountPercentage = 0;
     $this->image = $image;
     $this->imageAlt = $imageAlt;
+    $this->bonusCredits = $bonusCredits;
+    $this->bonusCredits2y = $bonusCredits * 1.5;
+    $this->bonusCredits3y = $bonusCredits * 2;
 
     // If the current plan is the same as the plan we are creating, set isCurrentPlan to true
     $this->isCurrentPlan = $fromPlanLevel === $id;
@@ -226,6 +234,7 @@ class Plans
         image: 'https://cdn.nostr.build/assets/signup/pro.png',
         imageAlt: 'pro plan image',
         price: self::$originalPrices[self::PROFESSIONAL],
+        bonusCredits: 250,
         features: [
           '10GB of private storage',
           'Upload and share PDFs, SVGs',
@@ -250,6 +259,7 @@ class Plans
         id: self::CREATOR,
         name: 'Creator',
         price: self::$originalPrices[self::CREATOR],
+        bonusCredits: 500,
         features: [
           '30GB of private storage',
           'Upload and share ZIPs, PDFs, SVGs',
@@ -275,6 +285,7 @@ class Plans
         id: self::ADVANCED,
         name: 'Advanced',
         price: self::$originalPrices[self::ADVANCED],
+        bonusCredits: 1000,
         features: [
           '100GB of private storage',
           'Upload and share ZIPs, PDFs, SVGs',
