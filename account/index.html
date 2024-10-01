@@ -1293,10 +1293,10 @@ onDropCB(event) {
 																	selectedModelTitle: 'Dream Shaper',
 																	modelOptions: [
 																		{ value: '@cf/lykon/dreamshaper-8-lcm', title: 'Dream Shaper', description: 'Stable Diffusion model that has been fine-tuned to be better at photorealism without sacrificing range.', disabled: !profileStore.profileInfo.isAIDreamShaperEligible },
+																		{ value: '@sd/core', title: 'Stable AI Core (3c)', description: 'Stable Image Core represents the best quality achievable at high speed. No prompt engineering is required! Uses 3 credits per generated image.', disabled: !profileStore.profileInfo.isFluxSchnellEligible || profileStore.profileInfo.availableCredits < 3 },
 																		{ value: '@cf/bytedance/stable-diffusion-xl-lightning', title: 'SDXL-Lightning', description: 'SDXL-Lightning is a lightning-fast text-to-image generation model. It can generate high-quality 1024px images in a few steps.', disabled: !profileStore.profileInfo.isAISDXLLightningEligible },
 																		{ value: '@cf/stabilityai/stable-diffusion-xl-base-1.0', title: 'Stable Diffusion', description: 'Diffusion-based text-to-image generative model by Stability AI. Generates and modify images based on text prompts.', disabled: !profileStore.profileInfo.isAISDiffusionEligible },
 																		{ value: '@cf/black-forest-labs/flux-1-schnell', title: 'FLUX.1 [schnell]', description: 'FLUX.1 [schnell] is a 12 billion parameter rectified flow transformer capable of generating images from text descriptions.', disabled: !profileStore.profileInfo.isFluxSchnellEligible },
-																		{ value: '@sd/core', title: 'Stable AI Core (3c)', description: 'Stable Image Core represents the best quality achievable at high speed. No prompt engineering is required! Uses 3 credits per generated image.', disabled: !profileStore.profileInfo.isFluxSchnellEligible || profileStore.profileInfo.availableCredits < 3 },
 																	]
 																}">
 												<label id="listbox-label" class="sr-only">Change generative model</label>
