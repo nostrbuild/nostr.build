@@ -83,7 +83,7 @@ if (!empty($rows)) {
 	<link rel="stylesheet" href="/styles/index.css?v=d92cc716e5a959e5720d593defd68e21" />
 	<link rel="stylesheet" href="/styles/profile.css?v=ded26f9ac31e7492f67e6da9c95a14e2" />
 	<link rel="stylesheet" href="/styles/header.css?v=19cde718a50bd676387bbe7e9e24c639" />
-	<link rel="stylesheet" href="/styles/twbuild.css?v=f38b8554a8a8c48f251a4d1f4070cb09" />
+	<link rel="stylesheet" href="/styles/twbuild.css?v=2989f2957939e09fc6fc04f9f4b03d90" />
 	<link rel="icon" href="https://cdn.nostr.build/assets/01.png">
 
 	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/lightgallery/2.7.2/css/lightgallery-bundle.min.css" integrity="sha512-nUqPe0+ak577sKSMThGcKJauRI7ENhKC2FQAOOmdyCYSrUh0GnwLsZNYqwilpMmplN+3nO3zso8CWUgu33BDag==" crossorigin="anonymous" referrerpolicy="no-referrer" />
