@@ -3040,7 +3040,7 @@ Alpine.store('GAI', {
         this.ImageLoading = false;
       })
       .finally(() => {
-        this.ImageLoading = false;
+        //this.ImageLoading = false;
         console.debug('Image loading:', this.ImageLoading);
       });
   },
