@@ -4,6 +4,14 @@ declare(strict_types=1);
 
 require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/Account.class.php';
 
+/**
+ * Class Credits
+ *
+ * This class is responsible for managing credits within the application.
+ * It provides methods to add, remove, and query credits for users.
+ *
+ * @package nostr.build.libs
+ */
 class Credits
 {
   private string $userNpub;
@@ -12,6 +20,14 @@ class Credits
   private mysqli $db;
   private Account $account;
 
+  /**
+   * Constructor for the Credits class.
+   *
+   * @param string $userNpub The user's public key in Nostr.
+   * @param string $baseApiUrl The base URL for the API.
+   * @param string $apiKey The API key for authentication.
+   * @param mysqli $db The MySQLi database connection object.
+   */
   public function __construct(string $userNpub, string $baseApiUrl, string $apiKey, mysqli $db)
   {
     $this->userNpub = $userNpub;
@@ -30,6 +46,11 @@ class Credits
     ];
   }
 
+  /**
+   * Retrieves the current credits balance.
+   *
+   * @return array An associative array containing the credits balance information.
+   */
   public function getCreditsBalance(): array
   {
     $url = $this->baseApiUrl . '/sd/credits';
@@ -40,6 +61,59 @@ class Credits
     $userSubPeriod = urlencode($userParams['user_sub_period'] ?? '1y');
     // Constract the request url with query parameters
     $url .= "?user_npub={$userNpub}&user_level={$userLevel}&user_sub_period={$userSubPeriod}";
+
+    return $this->fetchRequest($url);
+  }
+
+  /**
+   * Top up credits for a user.
+   *
+   * @param int $amount The amount of credits to top up.
+   * @param string $invoiceId The ID of the invoice associated with the top-up.
+   * @param array $invoiceDetails An array containing details of the invoice.
+   * 
+   * @return array An array containing the result of the top-up operation.
+   */
+  public function topupCredits(int $amount, string $invoiceId, array $invoiceDetails): array
+  {
+    // The API ensures idempotency by checking if the invoiceId already exists
+    $url = $this->baseApiUrl . '/sd/credits';
+    $userParams = $this->getUserParameters();
+    // Get user npub, level and subscription period
+    $body = json_encode([
+      'user_npub' => $userParams['user_npub'],
+      'userLevel' => $userParams['user_level'],
+      'userSubscriptionLength' => $userParams['user_sub_period'],
+      'amount' => $amount,
+      'invoiceId' => $invoiceId,
+      'invoiceDetails' => json_encode($invoiceDetails, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE)
+    ], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+    return $this->fetchRequest($url, 'POST', $body);
+  }
+
+  /**
+   * Retrieves the transaction history.
+   *
+   * @param string $type The type of transactions to retrieve. Default is "all".
+   * @param int|null $limit The maximum number of transactions to retrieve. Default is null.
+   * @param int|null $offset The number of transactions to skip before starting to collect the result set. Default is null.
+   * @return array An array containing the transaction history.
+   */
+  public function getTransactionsHistory(string $type = "all", ?int $limit = null, ?int $offset = null): array
+  {
+    // Type can be "all", "credit", "debit"
+    $url = $this->baseApiUrl . "/sd/credits/{$type}";
+    $userParams = $this->getUserParameters();
+    // Get user npub, level and subscription period
+    $userNpub = urlencode($userParams['user_npub'] ?? '');
+    $userLevel = urlencode("{$userParams['user_level']}" ?? '0');
+    $userSubPeriod = urlencode($userParams['user_sub_period'] ?? '1y');
+    // Constract the request url with query parameters
+    $url .= "?user_npub={$userNpub}&user_level={$userLevel}&user_sub_period={$userSubPeriod}";
+    if (!empty($limit)) {
+      $offset = $offset ?? 0;
+      $url .= "&limit={$limit}&offset={$offset}";
+    }
 
     return $this->fetchRequest($url);
   }
