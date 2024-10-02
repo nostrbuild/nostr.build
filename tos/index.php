@@ -1,4 +1,4 @@
-<?php 
+<?php
 require_once $_SERVER['DOCUMENT_ROOT'] . '/config.php';
 ?>
 <!DOCTYPE html>
@@ -12,10 +12,17 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/config.php';
 		<meta name="description" content="nostr.build" />
 		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
+		<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+		<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+		<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+		<link rel="manifest" href="/site.webmanifest">
+		<link rel="mask-icon" href="/safari-pinned-tab.svg" color="#5bbad5">
+		<meta name="msapplication-TileColor" content="#9f00a7">
+		<meta name="theme-color" content="#ffffff">
+
 		<link rel="stylesheet" href="/styles/index.css?v=d92cc716e5a959e5720d593defd68e21" />
 		<link rel="stylesheet" href="/styles/header.css?v=19cde718a50bd676387bbe7e9e24c639" />
 		<link rel="stylesheet" href="/styles/tos.css?v=bf70ea4e016c3323424fbe67747e22a5" />
-		<link rel="icon" href="https://cdn.nostr.build/assets/01.png">
 
 		<title>nostr.build Terms of Service</title>
 	</head>
@@ -41,7 +48,7 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/config.php';
 			neutral arbitrator and not to sue in court in front of a judge or jury.
 			Please see the arbitration section below for details. Our community rules These Terms of Use are our contract with
 			you. We also have community rules, developed thanks to input from the nostr.build community, that serve as rules
-			for using nostr.build publicly.</br> 
+			for using nostr.build publicly.</br>
 			Stuff not to do If someone else might own the copyright to it, don't upload it. Don't upload gore, "hate speech" (i.e. demeaning race, gender,
 			age, religious or sexual orientation, etc.), or material that is threatening, harassing, defamatory, or that
 			encourages violence or crime. This includes any kind of human or animal abuse. Don't upload illegal content such as child
@@ -62,8 +69,8 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/config.php';
 			publicly with nostr, Facebook, Twitter, Digg, Reddit, etc.,
 			then it may also end up in the Free View or Free Media Gallery section. </br>
 			Limited License to Us. You grant us a worldwide, non-exclusive, royalty-free license (with the right to sublicense) to host, store,
-			transfer, display, adapt, perform, reproduce, modify, translate, and distribute your User Content (in whole or in part) in any media 
-			formats and through any media channels (now known or hereafter developed). You understand that we will not pay you for any use of your 
+			transfer, display, adapt, perform, reproduce, modify, translate, and distribute your User Content (in whole or in part) in any media
+			formats and through any media channels (now known or hereafter developed). You understand that we will not pay you for any use of your
 			Images and that your Images will be made available to the public for their use without providing you attribution or compensation. </br>
 			* You can not upload any type of illegal media, it will be taken down, reported and investigated </br>
 			* You can not upload images of someone without their permission or use others in a derogatory way </br>
@@ -163,7 +170,7 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/config.php';
 			remedies (such as a request for a public injunction remedy, in which case the arbitrator issues an award on
 			liability and individual relief before a court considers that request). Otherwise, if any other part of this
 			section is found to be unenforceable, the remainder will remain in effect
-			(with an arbitration award issued before any court proceeding begins).</br> 
+			(with an arbitration award issued before any court proceeding begins).</br>
 			Disclaimer of Warranties, Limitations of
 			Remedies, Indemnity Although of course we strive to make nostr.build as dependable as possible, nostr.build's
 			services are provided on an AS IS – WITH ALL FAULTS basis. Your use of
@@ -187,7 +194,7 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/config.php';
 			ALL LOSS, LIABILITY, CLAIMS, DAMAGES AND EXPENSES, INCLUDING
 			REASONABLE ATTORNEY FEES, ARISING OUT OF OR RELATED TO YOUR VIOLATION OF THESE TERMS, YOUR INFRINGEMENT OF ANY
 			THIRD PARTY'S RIGHTS, AND ANY HARM CAUSED TO ANY THIRD PARTY AS A RESULT OF YOUR UPLOADING OF FILES, COMMENTS, OR
-			ANYTHING ELSE TO OUR SERVERS.</br> 
+			ANYTHING ELSE TO OUR SERVERS.</br>
 			Miscellaneous "nostr.build" or "we" refers to nostr.build and Big Nut Media LLC., a Florida LLC, and its successors and assigns. "You" refers to any person
 			who has consented to these terms or has become contractually bound to them, whether such person is identified or
 			not at the time. These terms are governed by Florida law,
@@ -209,4 +216,5 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/config.php';
 	</main>
 	<?php include $_SERVER['DOCUMENT_ROOT'] . '/components/footer.php'; ?>
 </body>
+
 </html>
