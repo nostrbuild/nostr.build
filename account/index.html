@@ -8,11 +8,11 @@
 	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 	<title>nostr.build account</title>
 
-	<script defer src="/scripts/dist/account-v2.js?v=6442ac9aa5614606fc6024c8b4a0cbde"></script>
+	<script defer src="/scripts/dist/account-v2.js?v=8e1aa651e7fc5cb3d17c26b16fbd8cc0"></script>
 	<link href="/scripts/dist/account-v2.css?v=5ecc26aa69603a0fc007bf24b7636047" rel="stylesheet">
 
 	<link rel="icon" href="https://cdn.nostr.build/assets/nb-logo-color-w.png" />
-	<link href="/styles/twbuild.css?v=0c8085df055efd8a22272c5b877ed2df" rel="stylesheet">
+	<link href="/styles/twbuild.css?v=6f27b0bba20449b525e4b11cd8ed11e6" rel="stylesheet">
 
 	<!-- Pre-connect and DNS prefetch -->
 	<link rel="preconnect" href="https://i.nostr.build" crossorigin>
@@ -1098,13 +1098,13 @@ onDropCB(event) {
 									<label for="prompt" class="sr-only">Prompt</label>
 									<textarea x-model="prompt" rows="3" name="prompt" id="prompt"
 										class="block w-full resize-none border-0 py-0 pt-2 text-nbpurple-900 placeholder:text-nbpurple-400 focus:ring-0 sm:text-sm sm:leading-6 bg-nbpurple-100"
-										placeholder="(prompt) ex.: purple ostrich surfing a big wave ..."></textarea>
+										placeholder="(Prompt) ex. Purple ostrich …"></textarea>
 									<label x-cloak x-show="selectedModel.startsWith('@sd/')" for="negativePrompt" class="sr-only">Negative
 										Prompt</label>
-									<textarea x-cloak x-show="selectedModel.startsWith('@sd/')" x-model="negativePrompt" rows="2"
+									<textarea x-cloak x-show="selectedModel.startsWith('@sd/')" x-model="negativePrompt" rows="3"
 										name="negativePrompt" id="negativePrompt"
 										class="block w-full resize-none border-0 py-0 pt-2 text-nbpurple-900 placeholder:text-nbpurple-400 focus:ring-0 sm:text-sm sm:leading-6 bg-nbpurple-50"
-										placeholder="(A blurb of text describing what you do not wish to see in the output image) ex.: people, sand ..."></textarea>
+										placeholder="(Negative prompt) What you don’t want to see in your image"></textarea>
 
 									<!-- Spacer element to match the height of the toolbar -->
 									<div aria-hidden="true">
@@ -1292,11 +1292,11 @@ onDropCB(event) {
 																	modelMenuOpen: false,
 																	selectedModelTitle: 'Dream Shaper',
 																	modelOptions: [
-																		{ value: '@cf/lykon/dreamshaper-8-lcm', title: 'Dream Shaper', description: 'Stable Diffusion model that has been fine-tuned to be better at photorealism without sacrificing range.', disabled: !profileStore.profileInfo.isAIDreamShaperEligible },
-																		{ value: '@sd/core', title: 'Stable AI Core (3c)', description: 'Stable Image Core represents the best quality achievable at high speed. No prompt engineering is required! Uses 3 credits per generated image.', disabled: !profileStore.profileInfo.isFluxSchnellEligible || profileStore.profileInfo.availableCredits < 3 },
-																		{ value: '@cf/bytedance/stable-diffusion-xl-lightning', title: 'SDXL-Lightning', description: 'SDXL-Lightning is a lightning-fast text-to-image generation model. It can generate high-quality 1024px images in a few steps.', disabled: !profileStore.profileInfo.isAISDXLLightningEligible },
-																		{ value: '@cf/stabilityai/stable-diffusion-xl-base-1.0', title: 'Stable Diffusion', description: 'Diffusion-based text-to-image generative model by Stability AI. Generates and modify images based on text prompts.', disabled: !profileStore.profileInfo.isAISDiffusionEligible },
-																		{ value: '@cf/black-forest-labs/flux-1-schnell', title: 'FLUX.1 [schnell]', description: 'FLUX.1 [schnell] is a 12 billion parameter rectified flow transformer capable of generating images from text descriptions.', disabled: !profileStore.profileInfo.isFluxSchnellEligible },
+																			{ value: '@cf/lykon/dreamshaper-8-lcm', title: 'Dream Shaper', description: 'Enhanced for photorealism with versatile range.', disabled: !profileStore.profileInfo.isAIDreamShaperEligible },
+																			{ value: '@sd/core', title: 'Stable AI Core <span class=\'text-sm capitalize text-blue-200\'>(3 credits)</span>', description: 'High-quality, fast results. No prompt engineering.', disabled: !profileStore.profileInfo.isFluxSchnellEligible || profileStore.profileInfo.availableCredits < 3 },
+																			{ value: '@cf/bytedance/stable-diffusion-xl-lightning', title: 'SDXL-Lightning', description: 'Fast model for generating 1024px images.', disabled: !profileStore.profileInfo.isAISDXLLightningEligible },
+																			{ value: '@cf/stabilityai/stable-diffusion-xl-base-1.0', title: 'Stable Diffusion', description: 'Generates images from text prompts.', disabled: !profileStore.profileInfo.isAISDiffusionEligible },
+																			{ value: '@cf/black-forest-labs/flux-1-schnell', title: 'FLUX.1 [schnell]', description: '12B parameter model for text-to-image generation.', disabled: !profileStore.profileInfo.isFluxSchnellEligible },
 																	]
 																}">
 												<label id="listbox-label" class="sr-only">Change generative model</label>
@@ -1309,7 +1309,7 @@ onDropCB(event) {
 																	d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.05-.143z"
 																	clip-rule="evenodd" />
 															</svg>
-															<p class="sm:text-sm text-xs font-semibold" x-text="selectedModelTitle"></p>
+															<p class="sm:text-sm text-xs font-semibold" x-html="selectedModelTitle"></p>
 														</div>
 														<button type="button"
 															class="inline-flex items-center rounded-l-none rounded-r-md bg-nbpurple-600 p-2 hover:bg-nbpurple-700 focus:outline-none focus:ring-2 focus:ring-nbpurple-600 focus:ring-offset-2 focus:ring-offset-nbpurple-50"
@@ -1341,7 +1341,7 @@ onDropCB(event) {
 																<div class="flex flex-col">
 																	<div class="flex justify-between">
 																		<div class="flex items-center">
-																			<p class="font-normal" x-text="option.title"></p>
+																			<p class="font-normal" x-html="option.title"></p>
 																			<a x-show="option.disabled" href="/plans/"
 																				class="ml-2 text-nbpurple-50 text-xs hover:underline">
 																				Upgrade or Renew, or add credits
@@ -1355,7 +1355,7 @@ onDropCB(event) {
 																			</svg>
 																		</span>
 																	</div>
-																	<p class="text-nbpurple-50 leading-tight mt-2" x-text="option.description"></p>
+																	<p class="text-nbpurple-50 leading-tight mt-2" x-html="option.description"></p>
 																</div>
 															</li>
 														</template>
