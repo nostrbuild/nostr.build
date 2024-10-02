@@ -3,7 +3,6 @@
 
 <head>
 
-  <link rel="icon" href="https://cdn.nostr.build/assets/i/p/0.png">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta charset="utf-8">
   <meta name="keywords" content="nostr, damus image uploader, image link, snort.social, astril.ninja, image, uploader, media upload, damus pictures, video uploader,nostr repository ">
@@ -13,11 +12,18 @@
   <link id="u-theme-google-font" rel="stylesheet" href="https://fonts.bunny.net/css?family=Montserrat:100,100i,200,200i,300,300i,400,400i,500,500i,600,600i,700,700i,800,800i,900,900i|Open+Sans:300,300i,400,400i,500,500i,600,600i,700,700i,800,800i">
   <link id="u-page-google-font" rel="stylesheet" href="https://fonts.bunny.net/css?family=Roboto+Condensed:300,300i,400,400i,700,700i">
 
+  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+	<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+	<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+	<link rel="manifest" href="/site.webmanifest">
+	<link rel="mask-icon" href="/safari-pinned-tab.svg" color="#5bbad5">
+	<meta name="msapplication-TileColor" content="#9f00a7">
+	<meta name="theme-color" content="#ffffff">
+
   <meta name="theme-color" content="#3447d6">
   <meta property="og:title" content="nostr.build media uploader">
   <meta property="og:type" content="website">
   <link rel="canonical" href="/">
-  <link rel="icon" href="https://cdn.nostr.build/assets/01.png">
 
   <style>
     .flash {
