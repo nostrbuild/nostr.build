@@ -3,6 +3,7 @@
 declare(strict_types=1);
 require_once $_SERVER['DOCUMENT_ROOT'] . '/config.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/BTCPayClient.class.php';
+require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/Credits.class.php';
 require_once __DIR__ . '/Account.class.php';
 
 require $_SERVER['DOCUMENT_ROOT'] . '/vendor/autoload.php';
@@ -109,8 +110,27 @@ class BTCPayWebhook
         // Get purchasePrice from the invoice
         $purchasePrice = $invoice->getData()['metadata']['purchasePrice'];
 
+        // Credits fill-up orders
+        $purchasedCredits = intval($invoice->getData()['metadata']['purchasedCredits']);
+        $bonusCredits = 0;
+        if ($purchasedCredits !== 0 && $orderType === 'credits-topup') {
+          $predictedPurchasePrice = $purchasedCredits * 50; // 50 is the price per credit
+          // Ensure that the purchase price is equal to the predicted purchase price
+          if (intval($purchasePrice) !== $predictedPurchasePrice) {
+            error_log("The actual purchase price is not equal to the predicted purchase price." . PHP_EOL);
+            return false;
+          }
+          // Apply bonus credits based on the purchase size
+          if ($purchasedCredits >= 500 && $purchasedCredits < 1000) {
+            // Apply 5% bonus credits
+            $bonusCredits = intval($purchasedCredits * 0.05);
+          } elseif ($purchasedCredits >= 1000) {
+            $bonusCredits = intval($purchasedCredits * 0.1);
+          }
+        }
+
         // Compare the actual amount paid with the purchase price
-        if(!BTCPayClient::amountEqual($purchasePrice, $invoice->getAmount())){
+        if (!BTCPayClient::amountEqual($purchasePrice, $invoice->getAmount())) {
           error_log("The actual amount paid is less than the purchase price." . PHP_EOL);
           return false;
         }
@@ -120,13 +140,21 @@ class BTCPayWebhook
         error_log("Account plan: " . $accountPlan . PHP_EOL);
         error_log("Order type: " . $orderType . PHP_EOL);
         error_log("Order period: " . $orderPeriod . PHP_EOL);
+        error_log("Purchase price: " . $purchasePrice . PHP_EOL);
+        error_log("Purchased credits: " . $purchasedCredits . PHP_EOL);
 
-        // Create a new account instance
-        $account = new Account($userNpub, $link);
-        // Update the account plan and end date
-        $new = $orderType !== 'renewal'; // If the order type is not renewal, then it is a new order
-        $account->setPlan((int)$accountPlan, (string)$orderPeriod, $new);
-        error_log("[INFO] Account " . $account->getNpub() . ' updated to a new plan: ' . $accountPlan . PHP_EOL);
+        if ($purchasedCredits !== 0 && $orderType === 'credits-topup') {
+          $apiBase = substr($_SERVER['AI_GEN_API_ENDPOINT'], 0, strrpos($_SERVER['AI_GEN_API_ENDPOINT'], '/'));
+          $credits = new Credits($userNpub, $apiBase, $_SERVER['AI_GEN_API_HMAC_KEY'], $link);
+          $credits->topupCredits($purchasedCredits, $orderId, $invoice->getData());
+        } else {
+          // Create a new account instance
+          $account = new Account($userNpub, $link);
+          // Update the account plan and end date
+          $new = $orderType !== 'renewal'; // If the order type is not renewal, then it is a new order
+          $account->setPlan((int)$accountPlan, (string)$orderPeriod, $new);
+          error_log("[INFO] Account " . $account->getNpub() . ' updated to a new plan: ' . $accountPlan . PHP_EOL);
+        }
       } catch (Exception $e) {
         error_log("Failed to update account: " . $e . PHP_EOL);
         return false;
