@@ -12,7 +12,7 @@
 	<link href="/scripts/dist/account-v2.css?v=5ecc26aa69603a0fc007bf24b7636047" rel="stylesheet">
 
 	<link rel="icon" href="https://cdn.nostr.build/assets/nb-logo-color-w.png" />
-	<link href="/styles/twbuild.css?v=6090aaff3af0e3391081135e1a91fc4c" rel="stylesheet">
+	<link href="/styles/twbuild.css?v=0c8085df055efd8a22272c5b877ed2df" rel="stylesheet">
 
 	<!-- Pre-connect and DNS prefetch -->
 	<link rel="preconnect" href="https://i.nostr.build" crossorigin>
@@ -1176,7 +1176,7 @@ onDropCB(event) {
 														x-transition:enter="" x-transition:enter-start="" x-transition:enter-end=""
 														x-transition:leave="transition ease-in duration-100" x-transition:leave-start="opacity-100"
 														x-transition:leave-end="opacity-0"
-														class="absolute left-0 z-30 mt-2 sm:w-96 xs:w-72 w-64 origin-top-left divide-y divide-nbpurple-200 overflow-hidden rounded-md bg-nbpurple-500 shadow-lg ring-1 ring-nbpurple-900 ring-opacity-5 focus:outline-none"
+														class="absolute left-0 z-30 mt-2 sm:w-96 w-[90dvw] max-h-96 overflow-y-scroll origin-top-left divide-y divide-nbpurple-200 rounded-md bg-nbpurple-500 shadow-lg ring-1 ring-nbpurple-900 ring-opacity-5 focus:outline-none"
 														tabindex="-1" role="listbox" aria-labelledby="listbox-label-style"
 														aria-activedescendant="listbox-option-0">
 														<template x-for="(option, index) in styleOptions" :key="option.value">
@@ -1254,7 +1254,7 @@ onDropCB(event) {
 														</div>
 														<ul id="aspect-ratio-listbox" x-cloak @click.outside="aspectRatioMenuOpen = false"
 															x-show="aspectRatioMenuOpen"
-															class="absolute left-0 z-30 mt-2 w-20 origin-top-left divide-y divide-nbpurple-200 overflow-hidden rounded-md bg-nbpurple-500 shadow-lg ring-1 ring-nbpurple-900 ring-opacity-5 focus:outline-none"
+															class="absolute left-0 z-30 mt-2 w-20 origin-top-left divide-y divide-nbpurple-200 overflow-y-scroll max-h-96 rounded-md bg-nbpurple-500 shadow-lg ring-1 ring-nbpurple-900 ring-opacity-5 focus:outline-none"
 															tabindex="-1" role="listbox" aria-labelledby="listbox-label-aspect-ratio">
 															<template x-for="(option, index) in aspectRatioOptions" :key="option.value">
 																<li :class="{
@@ -1328,7 +1328,7 @@ onDropCB(event) {
 														x-transition:enter="" x-transition:enter-start="" x-transition:enter-end=""
 														x-transition:leave="transition ease-in duration-100" x-transition:leave-start="opacity-100"
 														x-transition:leave-end="opacity-0"
-														class="absolute left-0 z-30 mt-2 sm:w-96 xs:w-72 w-64 origin-top-left divide-y divide-nbpurple-200 overflow-hidden rounded-md bg-nbpurple-500 shadow-lg ring-1 ring-nbpurple-900 ring-opacity-5 focus:outline-none"
+														class="absolute left-0 z-30 mt-2 sm:w-96 w-[90dvw] max-h-96 overflow-y-scroll origin-top-left divide-y divide-nbpurple-200 rounded-md bg-nbpurple-500 shadow-lg ring-1 ring-nbpurple-900 ring-opacity-5 focus:outline-none"
 														tabindex="-1" role="listbox" aria-labelledby="listbox-label"
 														aria-activedescendant="listbox-option-0">
 														<template x-for="(option, index) in modelOptions" :key="option.value">
