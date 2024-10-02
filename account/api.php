@@ -10,6 +10,7 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/MultimediaUpload.class.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/S3Service.class.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/ImageCatalogManager.class.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/NostrClient.class.php';
+require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/Credits.class.php';
 
 global $link;
 global $awsConfig;
@@ -153,57 +154,17 @@ function listImagesByFolderName($folderName, $link, $start = null, $limit = null
 
 function getSDUserCredits(): array
 {
-	global $account;
+	global $link;
 	// Remove the last path component from the URL
 	$apiBase = substr($_SERVER['AI_GEN_API_ENDPOINT'], 0, strrpos($_SERVER['AI_GEN_API_ENDPOINT'], '/'));
-	$apiUrl = $apiBase . '/sd/credits';
 
 	// Get user npub, level and subscription period
-	$usernpub = urlencode($account->getNpub());
-	$level = urlencode($account->getAccountLevelInt());
-	$subscriptionPeriod = urlencode($account->getSubscriptionPeriod());
-
-	// Constract the request url with query parameters
-	$apiUrl .= "?user_npub={$usernpub}&user_level={$level}&user_sub_period={$subscriptionPeriod}";
-
-	// Sign the request
-	$payload = "GET|{$apiUrl}|SHA256|" . time();
-	$hmac = hash_hmac('sha256', $payload, $_SERVER['AI_GEN_API_HMAC_KEY'], true);
-	$base64Hmac = base64_encode($hmac);
-	$bearer = "HMAC|SHA256|" . time() . "|" . $base64Hmac;
-
-	// Initialize cURL
-	$ch = curl_init($apiUrl);
-	error_log("SD User Credits URL: " . $apiUrl . PHP_EOL);
-
-	// Set cURL options
-	curl_setopt($ch, CURLOPT_HTTPHEADER, ["Authorization: Bearer {$bearer}"]);
-	curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-
-	// Execute the cURL request
-	$response = curl_exec($ch);
-	$error = curl_error($ch);
-	// Check for cURL errors
-	if ($response === false || curl_errno($ch)) {
-		curl_close($ch);
-		throw new Exception("cURL request failed: {$error}");
-	}
-
-	// Close the cURL handle
-	curl_close($ch);
-
-	// Decode the response JSON
-	$responseJson = json_decode($response, true);
-	// Return the credits
-	// {
-	//   available: number;
-	//   debited?: number;
-	//   credited?: number;
-	// }
-	error_log("SD User Credits: " . json_encode($responseJson));
+	$credits = new Credits($_SESSION['usernpub'], $apiBase, $_SERVER['AI_GEN_API_HMAC_KEY'], $link);
+	$balance = $credits->getCreditsBalance();
+	error_log("SD User Credits: " . json_encode($balance));
 	// Update session with available credits balance
-	$_SESSION['sd_credits'] = $responseJson['available'];
-	return $responseJson;
+	$_SESSION['sd_credits'] = $balance['available'];
+	return $balance;
 }
 
 // SD Core Model API
@@ -271,16 +232,7 @@ function getAndStoreSDCoreGeneratedImage(string $prompt, string $negativePrompt 
 		$requestBodyArray['seed'] = $seed;
 	}
 	$requestBody = json_encode($requestBodyArray);
-	// Generate SHA-256 hash for the request body bytes
-	$bodySha256 = hash('sha256', $requestBody);
-	error_log("Body SHA256: " . $bodySha256 . PHP_EOL);
-	$payload = "POST|{$apiUrl}|{$bodySha256}|" . time();
-	error_log("Payload: " . $payload . PHP_EOL);
-	// Generate HMAC signature
-	$key = hex2bin($_SERVER['AI_GEN_API_HMAC_KEY']);
-	$hmac = hash_hmac('sha256', $payload, $_SERVER['AI_GEN_API_HMAC_KEY'], true);
-	$base64Hmac = base64_encode($hmac);
-	$bearer = "HMAC|SHA256|" . time() . "|" . $base64Hmac;
+	$bearer = signApiRequest($_SERVER['AI_GEN_API_HMAC_KEY'], $apiUrl, 'POST', $requestBody);
 
 	// Initialize cURL
 	$ch = curl_init($apiUrl);
@@ -369,16 +321,8 @@ function getAndStoreAIGeneratedImage(string $model, string $prompt, string $titl
 		"npub" => $_SESSION['usernpub'],
 	]);
 
-	// Generate SHA-256 hash for the request body bytes
-	$bodySha256 = hash('sha256', $requestBody);
-	error_log("Body SHA256: " . $bodySha256 . PHP_EOL);
-	$payload = "POST|{$apiUrl}|{$bodySha256}|" . time();
-	error_log("Payload: " . $payload . PHP_EOL);
-	// Generate HMAC signature
-	$key = hex2bin($_SERVER['AI_GEN_API_HMAC_KEY']);
-	$hmac = hash_hmac('sha256', $payload, $_SERVER['AI_GEN_API_HMAC_KEY'], true);
-	$base64Hmac = base64_encode($hmac);
-	$bearer = "HMAC|SHA256|" . time() . "|" . $base64Hmac;
+	// Generate signed bearer token
+	$bearer = signApiRequest($_SERVER['AI_GEN_API_HMAC_KEY'], $apiUrl, 'POST', $requestBody);
 
 	// Initialize cURL
 	$ch = curl_init($apiUrl);
