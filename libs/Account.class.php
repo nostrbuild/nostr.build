@@ -850,6 +850,7 @@ class Account
   /**
    * Summary of setPlan
    * @param int $planLevel
+   * @param string $period
    * @param bool $new
    * @throws \Exception
    * @return void
