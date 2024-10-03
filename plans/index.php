@@ -60,13 +60,15 @@ if (
 ) {
   // Get the referral npub from the referral code
   $referralNpub = findNpubByReferralCode($link, $_GET['ref']);
+  // Check if referrl account has valid level
   if (!empty($referralNpub)) {
+    $referrerAccount = new Account($referralNpub, $link);
     $_SESSION['purchase_ref_npub'] = $referralNpub;
     $_SESSION['purchase_ref'] = $_GET['ref'];
     // Get the account pfp link and nym from the referral npub
-    $referrerAccount = new Account($referralNpub, $link);
     $_SESSION['purchase_ref_pfp'] = $referrerAccount->getAccount()['ppic'];
     $_SESSION['purchase_ref_nym'] = $referrerAccount->getAccount()['nym'];
+
 
     // Redirect to a clean URL
     header('Location: /plans/');
