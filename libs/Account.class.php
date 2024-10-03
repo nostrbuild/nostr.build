@@ -1068,9 +1068,16 @@ class Account
 }
 
 // Helper function to find npub by referral code
+/**
+ * Finds the npub (public key) associated with a given referral code.
+ *
+ * @param mysqli $db The MySQLi database connection object.
+ * @param string $referralCode The referral code to search for.
+ * @return string The npub (public key) associated with the referral code.
+ */
 function findNpubByReferralCode(mysqli $db, string $referralCode): string
 {
-  $sql = "SELECT usernpub FROM users WHERE referral_code = ? AND acctlevel > 0 AND acctlevel < 80 AND plan_until_date > NOW()";
+  $sql = "SELECT usernpub FROM users WHERE referral_code = ? AND acctlevel IN (1,2,10) AND plan_until_date > NOW()";
   $stmt = $db->prepare($sql);
 
   if (!$stmt) {
