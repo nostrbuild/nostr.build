@@ -1066,3 +1066,37 @@ class Account
     return false;
   }
 }
+
+// Helper function to find npub by referral code
+function findNpubByReferralCode(mysqli $db, string $referralCode): string
+{
+  $sql = "SELECT usernpub FROM users WHERE referral_code = ? AND acctlevel > 0 AND acctlevel < 80 AND plan_until_date > NOW()";
+  $stmt = $db->prepare($sql);
+
+  if (!$stmt) {
+    throw new Exception("Error preparing statement: " . $db->error);
+  }
+
+  try {
+    // Upper case referral code
+    $referralCode = strtoupper($referralCode);
+    if (!$stmt->bind_param('s', $referralCode)) {
+      throw new Exception("Error binding parameters: " . $stmt->error);
+    }
+
+    if (!$stmt->execute()) {
+      throw new Exception("Error executing statement: " . $stmt->error);
+    }
+
+    $result = $stmt->get_result();
+    if (!$result) {
+      throw new Exception("Error getting result: " . $stmt->error);
+    }
+
+    $npub = $result->fetch_assoc()['usernpub'] ?? '';
+  } finally {
+    $stmt->close();
+  }
+
+  return $npub;
+}
