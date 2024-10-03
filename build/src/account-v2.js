@@ -506,6 +506,7 @@ Alpine.store('profileStore', {
     availableCredits: 0,
     debitedCredits: 0,
     creditedCredits: 0,
+    referralCode: '',
     get creatorPageLink() {
       return `https://${window.location.hostname}/creators/creator/?user=${this.userId}`;
     },
@@ -864,6 +865,8 @@ Alpine.store('profileStore', {
     this.profileInfo.availableCredits = data.availableCredits;
     this.profileInfo.debitedCredits = data.debitedCredits;
     this.profileInfo.creditedCredits = data.creditedCredits;
+    this.profileInfo.referralCode = data.referralCode;
+    this.profileInfo.referralLink = `https://${window.location.hostname}/plans/?ref=${data.referralCode}`;
   },
 });
 

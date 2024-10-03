@@ -197,6 +197,9 @@ function getAndStoreSDCoreGeneratedImage(string $prompt, string $negativePrompt 
 	global $account;
 	global $link;
 	global $s3;
+	if(is_null($account)) {
+		$account = new Account($_SESSION['usernpub'], $link);
+	}
 	// Remove the last path component from the URL
 	$apiBase = substr($_SERVER['AI_GEN_API_ENDPOINT'], 0, strrpos($_SERVER['AI_GEN_API_ENDPOINT'], '/'));
 	$apiUrl = $apiBase . '/sd/core';
@@ -474,7 +477,11 @@ function getReturnFilesArray($fileData)
 
 function getAccountData(): array
 {
+	global $link;
 	global $account;
+	if (is_null($account)) {
+		$account = new Account($_SESSION['usernpub'], $link);
+	}
 	$info = $account->getAccount();
 	$credits = getSDUserCredits();
 	$data = [
@@ -495,6 +502,7 @@ function getAccountData(): array
 		"availableCredits" => $credits['available'],
 		"debitedCredits" => $credits['debited'] ?? 0,
 		"creditedCredits" => $credits['credited'] ?? 0,
+		"referralCode" => $account->getAccountReferralCode()
 	];
 	return $data;
 }
@@ -585,6 +593,43 @@ if (isset($_GET["action"])) {
 			error_log($e->getMessage());
 			http_response_code(500);
 			echo json_encode(array("error" => "Failed to get folders stats"));
+		}
+	} else if ($action == "get_credits_tx_history") {
+		// Get the transaction history for the user's credits
+		try {
+			$apiBase = substr($_SERVER['AI_GEN_API_ENDPOINT'], 0, strrpos($_SERVER['AI_GEN_API_ENDPOINT'], '/'));
+			$credits = new Credits($_SESSION['usernpub'], $apiBase, $_SERVER['AI_GEN_API_HMAC_KEY'], $link);
+			// Check if type is set
+			$txType = isset($_GET['type']) ? $_GET['type'] : "all";
+			$txLimit = isset($_GET['limit']) ? intval($_GET['limit']) : null;
+			$txOffset = isset($_GET['offset']) ? intval($_GET['offset']) : null;
+			$txHistory = $credits->getTransactionsHistory($txType, $txLimit, $txOffset);
+			http_response_code(200);
+			echo json_encode($txHistory);
+		} catch (Exception $e) {
+			error_log($e->getMessage());
+			http_response_code(500);
+			echo json_encode(array("error" => "Failed to get credits transaction history"));
+		}
+	} else if ($action == "get_credits_invoice") {
+		// Get the invoice for the user's credits
+		$creditsAmount = isset($_GET['credits']) ? intval($_GET['credits']) : 0;
+		// If no ammount is provided, return an error, http-400
+		if ($creditsAmount <= 0) {
+			http_response_code(400);
+			echo json_encode(array("error" => "Invalid credits amount"));
+			exit;
+		}
+		try {
+			$apiBase = substr($_SERVER['AI_GEN_API_ENDPOINT'], 0, strrpos($_SERVER['AI_GEN_API_ENDPOINT'], '/'));
+			$credits = new Credits($_SESSION['usernpub'], $apiBase, $_SERVER['AI_GEN_API_HMAC_KEY'], $link);
+			$invoice = $credits->getInvoice($creditsAmount);
+			http_response_code(200);
+			echo json_encode($invoice);
+		} catch (Exception $e) {
+			error_log($e->getMessage());
+			http_response_code(500);
+			echo json_encode(array("error" => "Failed to get credits invoice"));
 		}
 	} else {
 		http_response_code(400);

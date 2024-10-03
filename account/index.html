@@ -16,7 +16,7 @@
 	<meta name="msapplication-TileColor" content="#9f00a7">
 	<meta name="theme-color" content="#ffffff">
 
-	<script defer src="/scripts/dist/account-v2.js?v=1ac06d9835d6c76542c4e881e2c06d2a"></script>
+	<script defer src="/scripts/dist/account-v2.js?v=be1440c31820d26bea31fc9cec555fce"></script>
 	<link href="/scripts/dist/account-v2.css?v=5ecc26aa69603a0fc007bf24b7636047" rel="stylesheet">
 
 	<link href="/styles/twbuild.css?v=6f27b0bba20449b525e4b11cd8ed11e6" rel="stylesheet">
@@ -3545,6 +3545,25 @@ onDropCB(event) {
 											</div>
 											<div class="sm:col-span-2 overflow-x-hidden">
 												<p x-text="profileStore.profileInfo.npub"
+													class="block w-full py-1.5 text-nbpurple-50 font-bold text-xs sm:text-sm sm:leading-6 truncate">
+												</p>
+											</div>
+										</div>
+
+										<!-- Referral Link -->
+										<div class="space-y-2 px-4 grid sm:grid-cols-3 sm:gap-4 sm:space-y-0 sm:px-6 sm:py-3 min-w-0 cursor-copy"
+										@click="copyUrlToClipboard(profileStore.profileInfo.referralLink); showToast = true"
+										>
+											<div>
+												<p class="inline-block text-sm font-medium leading-6 text-nbpurple-200 sm:mt-1.5">Referral
+													Link</p>
+													<svg aria-hidden="true" class="inline-flex items-center gap-x-1.5 ml-1 size-5 text-nbpurple-100" viewBox="0 0 20 20" fill="currentColor">
+														<path fill-rule="evenodd" d="M15.988 3.012A2.25 2.25 0 0 1 18 5.25v6.5A2.25 2.25 0 0 1 15.75 14H13.5v-3.379a3 3 0 0 0-.879-2.121l-3.12-3.121a3 3 0 0 0-1.402-.791 2.252 2.252 0 0 1 1.913-1.576A2.25 2.25 0 0 1 12.25 1h1.5a2.25 2.25 0 0 1 2.238 2.012ZM11.5 3.25a.75.75 0 0 1 .75-.75h1.5a.75.75 0 0 1 .75.75v.25h-3v-.25Z" clip-rule="evenodd"></path>
+														<path d="M3.5 6A1.5 1.5 0 0 0 2 7.5v9A1.5 1.5 0 0 0 3.5 18h7a1.5 1.5 0 0 0 1.5-1.5v-5.879a1.5 1.5 0 0 0-.44-1.06L8.44 6.439A1.5 1.5 0 0 0 7.378 6H3.5Z"></path>
+													</svg>
+											</div>
+											<div class="sm:col-span-2 overflow-x-hidden">
+												<p x-text="profileStore.profileInfo.referralLink"
 													class="block w-full py-1.5 text-nbpurple-50 font-bold text-xs sm:text-sm sm:leading-6 truncate">
 												</p>
 											</div>

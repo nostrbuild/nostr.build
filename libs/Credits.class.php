@@ -244,9 +244,9 @@ class Credits
       }
 
       // Complete the top-up transaction
-      $this->topupCredits($purchasedCredits, $invoiceId, $invoice->getData());
+      $this->topupCredits($purchasedCredits, $invoice->getId(), $invoice->getData());
       if ($bonusCredits !== 0)
-        $this->topupCredits($bonusCredits, $invoiceId . '-bonus', $invoice->getData());
+        $this->topupCredits($bonusCredits, $invoice->getId() . '-bonus', $invoice->getData());
     } else {
       throw new Exception('Invoice is not paid.');
     }
@@ -286,6 +286,26 @@ class Credits
     curl_close($ch);
 
     return json_decode($response, true);
+  }
+
+  static public function getInitBonusCredits(int $accountLevel, string $subPeriod = '1y'): int
+  {
+    $multiplier = match ($subPeriod) {
+      '1y' => 1.0,
+      '2y' => 1.5,
+      '3y' => 2.0,
+      default => 1
+    };
+    switch ($accountLevel) {
+      case 10: // Advanced
+        return 1000 * $multiplier;
+      case 1: // Creator
+        return 500 * $multiplier;
+      case 2:
+        return 250 * $multiplier;
+      default:
+        return 0;
+    }
   }
 }
 

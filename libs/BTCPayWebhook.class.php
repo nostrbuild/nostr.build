@@ -109,6 +109,8 @@ class BTCPayWebhook
         $orderPeriod = $invoice->getData()['metadata']['orderPeriod'] ?? '';
         // Get purchasePrice from the invoice
         $purchasePrice = $invoice->getData()['metadata']['purchasePrice'];
+        // Get referral code from the invoice
+        $referralCode = $invoice->getData()['metadata']['referralCode'] ?? '';
 
         // Compare the actual amount paid with the purchase price
         if (!BTCPayClient::amountEqual($purchasePrice, $invoice->getAmount())) {
@@ -123,9 +125,9 @@ class BTCPayWebhook
         error_log("Order period: " . $orderPeriod . PHP_EOL);
         error_log("Purchase price: " . $purchasePrice . PHP_EOL);
 
+        $apiBase = substr($_SERVER['AI_GEN_API_ENDPOINT'], 0, strrpos($_SERVER['AI_GEN_API_ENDPOINT'], '/'));
+        $credits = new Credits($userNpub, $apiBase, $_SERVER['AI_GEN_API_HMAC_KEY'], $link);
         if ($orderType === 'credits-topup') {
-          $apiBase = substr($_SERVER['AI_GEN_API_ENDPOINT'], 0, strrpos($_SERVER['AI_GEN_API_ENDPOINT'], '/'));
-          $credits = new Credits($userNpub, $apiBase, $_SERVER['AI_GEN_API_HMAC_KEY'], $link);
           // Apply credits based on the invoice
           $credits->applyCreditsBasedOnInvoiceId(invoice: $invoice);
         } else {
@@ -135,6 +137,46 @@ class BTCPayWebhook
           $new = $orderType !== 'renewal'; // If the order type is not renewal, then it is a new order
           $account->setPlan((int)$accountPlan, (string)$orderPeriod, $new);
           error_log("[INFO] Account " . $account->getNpub() . ' updated to a new plan: ' . $accountPlan . PHP_EOL);
+          // Process referral code and only for orderType 'signup'
+          if ($orderType !== 'signup') return true;
+          // Check if the code matches the format [A-F0-9]{4}-[A-F0-9]{4}-[A-F0-9]{4} and 14 characters long
+          if (!preg_match('/^[A-F0-9]{4}-[A-F0-9]{4}-[A-F0-9]{4}$/', $referralCode)) {
+            error_log("[ERROR] Invalid referral code: " . $referralCode . PHP_EOL);
+            // Ignore, no bonus credits for you then.
+            return true;
+          }
+          // Get npub of the referrer
+          // Function will check if account is valid (level > 0) and not expired (remaining days > 0)
+          $referrerNpub = findNpubByReferralCode($link, $referralCode);
+          if (empty($referrerNpub)) {
+            error_log("[ERROR] Referral code not found: " . $referralCode . PHP_EOL);
+            return true;
+          }
+          $referrerAccount = new Account($referrerNpub, $link);
+          // Make sure that account has a valid plan level, 1, 2, 10
+          $referrerValidLevels = [1, 2, 10];
+          if (!in_array($referrerAccount->getAccountLevelInt(), $referrerValidLevels)) {
+            error_log("[ERROR] Referrer account has no valid plan level: " . $referrerNpub . PHP_EOL);
+            return true;
+          }
+          // Add bonus credits to the referrer
+          $referrerCredits = new Credits($referrerNpub, $apiBase, $_SERVER['AI_GEN_API_HMAC_KEY'], $link);
+          $referralCredits = new Credits($userNpub, $apiBase, $_SERVER['AI_GEN_API_HMAC_KEY'], $link);
+          // Fetch balances to init the accounts if not done yet before this transaction
+          $referrerCredits->getCreditsBalance();
+          $referralCredits->getCreditsBalance();
+          // Get initial signup bonus credits based on the level and subscription period
+          $referralInitialBonus = Credits::getInitBonusCredits($accountPlan, $orderPeriod);
+          // Check if it's not 0
+          if ($referralInitialBonus === 0) {
+            error_log("[ERROR] Initial bonus credits is 0 for plan: " . $accountPlan . " and period: " . $orderPeriod . PHP_EOL);
+            return true;
+          }
+          // Based on a 10% of the initial bonus credits, split between the referrer and the referred
+          $referralBonus = intval($referralInitialBonus * 0.1 / 2);
+          // Apply bonus credits to the referrer and the referred
+          $referrerCredits->topupCredits($referralBonus, $invoice->getId() . '-referrer-bonus', $invoice->getData());
+          $referralCredits->topupCredits($referralBonus, $invoice->getId() . '-referral-bonus', $invoice->getData());
         }
       } catch (Exception $e) {
         error_log("Failed to update account: " . $e . PHP_EOL);
