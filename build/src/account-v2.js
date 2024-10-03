@@ -194,6 +194,27 @@ window.formatBytes = (bytes) => {
   return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + sizes[i];
 }
 
+window.loadBTCPayJS = () => {
+  // Check if the script is already loaded
+  if (!document.querySelector('script[src="https://btcpay.nostr.build/modal/btcpay.js"]')) {
+    // Create a new script element
+    const script = document.createElement('script');
+    script.src = "https://btcpay.nostr.build/modal/btcpay.js";
+    script.async = true;
+
+    // Append the script to the body
+    document.body.appendChild(script);
+
+    script.onload = function () {
+      console.log('Script loaded successfully');
+    };
+
+    script.onerror = function () {
+      console.log('Failed to load the script');
+    };
+  }
+}
+
 // Bech32 encoding and decoding library
 const ALPHABET = 'qpzry9x8gf2tvdw0s3jn54khce6mua7l';
 const ALPHABET_MAP = {};
