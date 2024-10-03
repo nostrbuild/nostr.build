@@ -16,7 +16,7 @@
 	<meta name="msapplication-TileColor" content="#9f00a7">
 	<meta name="theme-color" content="#ffffff">
 
-	<script defer src="/scripts/dist/account-v2.js?v=be1440c31820d26bea31fc9cec555fce"></script>
+	<script defer src="/scripts/dist/account-v2.js?v=7b5d5e4fc8fc0bbf53f84596b55573d2"></script>
 	<link href="/scripts/dist/account-v2.css?v=5ecc26aa69603a0fc007bf24b7636047" rel="stylesheet">
 
 	<link href="/styles/twbuild.css?v=6f27b0bba20449b525e4b11cd8ed11e6" rel="stylesheet">
@@ -3551,7 +3551,7 @@ onDropCB(event) {
 										</div>
 
 										<!-- Referral Link -->
-										<div class="space-y-2 px-4 grid sm:grid-cols-3 sm:gap-4 sm:space-y-0 sm:px-6 sm:py-3 min-w-0 cursor-copy"
+										<div x-cloak x-show="profileStore.profileInfo.isReferralEligible" class="space-y-2 px-4 grid sm:grid-cols-3 sm:gap-4 sm:space-y-0 sm:px-6 sm:py-3 min-w-0 cursor-copy"
 										@click="copyUrlToClipboard(profileStore.profileInfo.referralLink); showToast = true"
 										>
 											<div>

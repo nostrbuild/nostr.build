@@ -592,7 +592,7 @@ Alpine.store('profileStore', {
     },
     // FLUX.1 [schnell]
     get isFluxSchnellEligible() {
-      return [10, 99].includes(this.accountLevel) && this.isAIStudioEligible &&
+      return [1, 10, 99].includes(this.accountLevel) && this.isAIStudioEligible &&
         !this.accountExpired && !this.storageOverLimit;
     },
     // SD Core
@@ -632,6 +632,11 @@ Alpine.store('profileStore', {
       return [1, 2, 10, 99].includes(this.accountLevel) &&
         !this.accountExpired;
     },
+    // Referral program
+    get isReferralEligible() {
+      return [1, 2, 10].includes(this.accountLevel) &&
+        !this.accountExpired;
+    },
     allowed(permission) {
       switch (permission) {
         case 'isAdmin':
@@ -662,6 +667,8 @@ Alpine.store('profileStore', {
           return this.isSearchEligible;
         case 'isFreeGalleryEligible':
           return this.isFreeGalleryEligible;
+        case 'isReferralEligible':
+          return this.isReferralEligible;
         default:
           return false;
       }
