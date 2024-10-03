@@ -16,7 +16,7 @@
 	<meta name="msapplication-TileColor" content="#9f00a7">
 	<meta name="theme-color" content="#ffffff">
 
-	<script defer src="/scripts/dist/account-v2.js?v=8e1aa651e7fc5cb3d17c26b16fbd8cc0"></script>
+	<script defer src="/scripts/dist/account-v2.js?v=1ac06d9835d6c76542c4e881e2c06d2a"></script>
 	<link href="/scripts/dist/account-v2.css?v=5ecc26aa69603a0fc007bf24b7636047" rel="stylesheet">
 
 	<link href="/styles/twbuild.css?v=6f27b0bba20449b525e4b11cd8ed11e6" rel="stylesheet">
@@ -1103,12 +1103,12 @@ onDropCB(event) {
 								<input x-model="title" type="text" name="title" id="title" class="block w-full border-0 pt-2.5 text-sm text-nbpurple-800 font-medium placeholder:text-nbpurple-400 focus:ring-0 bg-nbpurple-50" placeholder="Title (name your creation)">
 				-->
 									<label for="prompt" class="sr-only">Prompt</label>
-									<textarea x-model="prompt" rows="3" name="prompt" id="prompt"
+									<textarea x-model="prompt" rows="4" name="prompt" id="prompt"
 										class="block w-full resize-none border-0 py-0 pt-2 text-nbpurple-900 placeholder:text-nbpurple-400 focus:ring-0 sm:text-sm sm:leading-6 bg-nbpurple-100"
 										placeholder="(Prompt) ex. Purple ostrich …"></textarea>
 									<label x-cloak x-show="selectedModel.startsWith('@sd/')" for="negativePrompt" class="sr-only">Negative
 										Prompt</label>
-									<textarea x-cloak x-show="selectedModel.startsWith('@sd/')" x-model="negativePrompt" rows="3"
+									<textarea x-cloak x-show="selectedModel.startsWith('@sd/')" x-model="negativePrompt" rows="1"
 										name="negativePrompt" id="negativePrompt"
 										class="block w-full resize-none border-0 py-0 pt-2 text-nbpurple-900 placeholder:text-nbpurple-400 focus:ring-0 sm:text-sm sm:leading-6 bg-nbpurple-50"
 										placeholder="(Negative prompt) What you don’t want to see in your image"></textarea>
