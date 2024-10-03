@@ -19,7 +19,7 @@
 	<script defer src="/scripts/dist/account-v2.js?v=7b5d5e4fc8fc0bbf53f84596b55573d2"></script>
 	<link href="/scripts/dist/account-v2.css?v=5ecc26aa69603a0fc007bf24b7636047" rel="stylesheet">
 
-	<link href="/styles/twbuild.css?v=6f27b0bba20449b525e4b11cd8ed11e6" rel="stylesheet">
+	<link href="/styles/twbuild.css?v=ce28484c00498a26744458cbc048ebb1" rel="stylesheet">
 
 	<!-- Pre-connect and DNS prefetch -->
 	<link rel="preconnect" href="https://i.nostr.build" crossorigin>
@@ -1046,6 +1046,29 @@ onDropCB(event) {
 					</div>
 					<!-- notification bell -->
 					<div class="flex items-center gap-x-4 relative">
+						<!-- Credits Menu Button -->
+						<button type="button"
+							class="inline-flex items-center gap-x-1.5 rounded-md px-2.5 py-1.5 text-nbpurple-50 hover:text-nbpurple-700 bg-nborange-600 hover:bg-nborange-400 text-xs font-semibold"
+							@click="profileStore">
+							<svg aria-hidden="true" class="size-4" viewBox="0 0 24 24" fill="none"
+								stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+								<path d="M18 12h2" />
+								<path d="M18 16h2" />
+								<path d="M18 20h2" />
+								<path d="M18 4h2" />
+								<path d="M18 8h2" />
+								<path d="M4 12h2" />
+								<path d="M4 16h2" />
+								<path d="M4 20h2" />
+								<path d="M4 4h2" />
+								<path d="M4 8h2" />
+								<path
+									d="M8 2a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2h-1.5c-.276 0-.494.227-.562.495a2 2 0 0 1-3.876 0C9.994 2.227 9.776 2 9.5 2z" />
+							</svg>
+							<span x-text="'Credits'"></span>
+						</button>
+
+
 						<!--
 					<button type="button" class="p-2.5 text-nbpurple-50">
 						<span class="sr-only">Notifications</span>
@@ -3551,16 +3574,21 @@ onDropCB(event) {
 										</div>
 
 										<!-- Referral Link -->
-										<div x-cloak x-show="profileStore.profileInfo.isReferralEligible" class="space-y-2 px-4 grid sm:grid-cols-3 sm:gap-4 sm:space-y-0 sm:px-6 sm:py-3 min-w-0 cursor-copy"
-										@click="copyUrlToClipboard(profileStore.profileInfo.referralLink); showToast = true"
-										>
+										<div x-cloak x-show="profileStore.profileInfo.isReferralEligible"
+											class="space-y-2 px-4 grid sm:grid-cols-3 sm:gap-4 sm:space-y-0 sm:px-6 sm:py-3 min-w-0 cursor-copy"
+											@click="copyUrlToClipboard(profileStore.profileInfo.referralLink); showToast = true">
 											<div>
 												<p class="inline-block text-sm font-medium leading-6 text-nbpurple-200 sm:mt-1.5">Referral
 													Link</p>
-													<svg aria-hidden="true" class="inline-flex items-center gap-x-1.5 ml-1 size-5 text-nbpurple-100" viewBox="0 0 20 20" fill="currentColor">
-														<path fill-rule="evenodd" d="M15.988 3.012A2.25 2.25 0 0 1 18 5.25v6.5A2.25 2.25 0 0 1 15.75 14H13.5v-3.379a3 3 0 0 0-.879-2.121l-3.12-3.121a3 3 0 0 0-1.402-.791 2.252 2.252 0 0 1 1.913-1.576A2.25 2.25 0 0 1 12.25 1h1.5a2.25 2.25 0 0 1 2.238 2.012ZM11.5 3.25a.75.75 0 0 1 .75-.75h1.5a.75.75 0 0 1 .75.75v.25h-3v-.25Z" clip-rule="evenodd"></path>
-														<path d="M3.5 6A1.5 1.5 0 0 0 2 7.5v9A1.5 1.5 0 0 0 3.5 18h7a1.5 1.5 0 0 0 1.5-1.5v-5.879a1.5 1.5 0 0 0-.44-1.06L8.44 6.439A1.5 1.5 0 0 0 7.378 6H3.5Z"></path>
-													</svg>
+												<svg aria-hidden="true" class="inline-flex items-center gap-x-1.5 ml-1 size-5 text-nbpurple-100"
+													viewBox="0 0 20 20" fill="currentColor">
+													<path fill-rule="evenodd"
+														d="M15.988 3.012A2.25 2.25 0 0 1 18 5.25v6.5A2.25 2.25 0 0 1 15.75 14H13.5v-3.379a3 3 0 0 0-.879-2.121l-3.12-3.121a3 3 0 0 0-1.402-.791 2.252 2.252 0 0 1 1.913-1.576A2.25 2.25 0 0 1 12.25 1h1.5a2.25 2.25 0 0 1 2.238 2.012ZM11.5 3.25a.75.75 0 0 1 .75-.75h1.5a.75.75 0 0 1 .75.75v.25h-3v-.25Z"
+														clip-rule="evenodd"></path>
+													<path
+														d="M3.5 6A1.5 1.5 0 0 0 2 7.5v9A1.5 1.5 0 0 0 3.5 18h7a1.5 1.5 0 0 0 1.5-1.5v-5.879a1.5 1.5 0 0 0-.44-1.06L8.44 6.439A1.5 1.5 0 0 0 7.378 6H3.5Z">
+													</path>
+												</svg>
 											</div>
 											<div class="sm:col-span-2 overflow-x-hidden">
 												<p x-text="profileStore.profileInfo.referralLink"
