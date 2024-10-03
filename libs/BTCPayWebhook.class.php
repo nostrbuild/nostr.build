@@ -100,34 +100,15 @@ class BTCPayWebhook
         // Get the user npub from the invoice metadata
         $userNpub = $invoice->getData()['metadata']['userNpub'];
         // Get the item code from the invoice metadata
-        $accountPlan = $invoice->getData()['metadata']['plan'];
+        $accountPlan = intval($invoice->getData()['metadata']['plan']) ?? 0;
         // Get the order ID from the invoice metadata
         $orderId = $invoice->getData()['metadata']['orderId'];
         // Get the order type from the invoice metadata (new, renewal, upgrade)
         $orderType = $invoice->getData()['metadata']['orderType'];
         // Get the order period from the invoice metadata
-        $orderPeriod = $invoice->getData()['metadata']['orderPeriod'];
+        $orderPeriod = $invoice->getData()['metadata']['orderPeriod'] ?? '';
         // Get purchasePrice from the invoice
         $purchasePrice = $invoice->getData()['metadata']['purchasePrice'];
-
-        // Credits fill-up orders
-        $purchasedCredits = intval($invoice->getData()['metadata']['purchasedCredits']);
-        $bonusCredits = 0;
-        if ($purchasedCredits !== 0 && $orderType === 'credits-topup') {
-          $predictedPurchasePrice = $purchasedCredits * 50; // 50 is the price per credit
-          // Ensure that the purchase price is equal to the predicted purchase price
-          if (intval($purchasePrice) !== $predictedPurchasePrice) {
-            error_log("The actual purchase price is not equal to the predicted purchase price." . PHP_EOL);
-            return false;
-          }
-          // Apply bonus credits based on the purchase size
-          if ($purchasedCredits >= 500 && $purchasedCredits < 1000) {
-            // Apply 5% bonus credits
-            $bonusCredits = intval($purchasedCredits * 0.05);
-          } elseif ($purchasedCredits >= 1000) {
-            $bonusCredits = intval($purchasedCredits * 0.1);
-          }
-        }
 
         // Compare the actual amount paid with the purchase price
         if (!BTCPayClient::amountEqual($purchasePrice, $invoice->getAmount())) {
@@ -141,12 +122,12 @@ class BTCPayWebhook
         error_log("Order type: " . $orderType . PHP_EOL);
         error_log("Order period: " . $orderPeriod . PHP_EOL);
         error_log("Purchase price: " . $purchasePrice . PHP_EOL);
-        error_log("Purchased credits: " . $purchasedCredits . PHP_EOL);
 
-        if ($purchasedCredits !== 0 && $orderType === 'credits-topup') {
+        if ($orderType === 'credits-topup') {
           $apiBase = substr($_SERVER['AI_GEN_API_ENDPOINT'], 0, strrpos($_SERVER['AI_GEN_API_ENDPOINT'], '/'));
           $credits = new Credits($userNpub, $apiBase, $_SERVER['AI_GEN_API_HMAC_KEY'], $link);
-          $credits->topupCredits($purchasedCredits, $orderId, $invoice->getData());
+          // Apply credits based on the invoice
+          $credits->applyCreditsBasedOnInvoiceId(invoice: $invoice);
         } else {
           // Create a new account instance
           $account = new Account($userNpub, $link);

@@ -6,6 +6,7 @@ require $_SERVER['DOCUMENT_ROOT'] . '/vendor/autoload.php';
 
 // Import Invoice client class.
 use BTCPayServer\Client\Invoice;
+use BTCPayServer\Result\Invoice as ResultInvoice;
 use BTCPayServer\Client\InvoiceCheckoutOptions;
 use BTCPayServer\Util\PreciseNumber;
 
@@ -34,7 +35,7 @@ class BTCPayClient
     return $this->invoice->getInvoice($this->storeId, $invoiceId);
   }
 
-  public function createInvoice(string $amount, string $redirectUrl = '', array $metadata = [], string $orderIdPrefix = 'nb_signup_order'): string
+  public function createInvoice(string $amount, string $redirectUrl = '', array $metadata = [], string $orderIdPrefix = 'nb_signup_order', bool $returnInvoice = false): string | ResultInvoice
   {
     $invoiceAmount = PreciseNumber::parseString($amount);
     $checkoutOptions = new InvoiceCheckoutOptions();
@@ -61,7 +62,7 @@ class BTCPayClient
       error_log($e->getMessage());
       return '';
     }
-    return $invoice->getId();
+    return ($returnInvoice ? $invoice : $invoice->getId());
   }
 
   static public function amountEqual(int $intAmount, PreciseNumber $pnAmount): bool
@@ -94,5 +95,10 @@ class BTCPayClient
     $preciseFirstNumber = PreciseNumber::parseString($strAmount);
     // Conver both to string to integer and compare
     return intval($preciseFirstNumber) >= intval($pnAmount);
+  }
+
+  static public function intToString(int $intAmount): string
+  {
+    return (string)PreciseNumber::parseInt($intAmount);
   }
 }

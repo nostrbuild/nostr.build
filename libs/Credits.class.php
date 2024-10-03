@@ -2,7 +2,11 @@
 
 declare(strict_types=1);
 
+use BTCPayServer\Result\Invoice as Invoice;
+
+require_once $_SERVER['DOCUMENT_ROOT'] . '/config.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/Account.class.php';
+require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/BTCPayClient.class.php';
 
 /**
  * Class Credits
@@ -14,11 +18,13 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/Account.class.php';
  */
 class Credits
 {
+  private int $pricePerCredit = 50;
   private string $userNpub;
   private string $baseApiUrl;
   private string $apiKey;
   private mysqli $db;
   private Account $account;
+  private ?Invoice $invoice = null;
 
   /**
    * Constructor for the Credits class.
@@ -116,6 +122,134 @@ class Credits
     }
 
     return $this->fetchRequest($url);
+  }
+
+  public function getInvoice(int $amount): array
+  {
+    // Check if $this->invoice is null and if not, if the invoice $amount is the same, and it is not expired
+    if (
+      $this->invoice !== null &&
+      $this->invoice->getAmount() === $amount &&
+      !$this->invoice->isExpired() &&
+      !$this->invoice->isSettled() &&
+      $this->invoice->getData()['metadata']['userNpub'] === $this->userNpub &&
+      $this->invoice->getData()['metadata']['orderType'] === 'credits-topup' &&
+      // Check if expiration time is more than 5 minutes
+      $this->invoice->getExpirationTime() - time() > 300
+    ) {
+      return [
+        'invoiceId' => $this->invoice->getId(),
+        'metadata' => $this->invoice->getData()['metadata']
+      ];
+    }
+    global $btcpayConfig;
+    $btcpayClient = new BTCPayClient(
+      $btcpayConfig['apiKey'],
+      $btcpayConfig['host'],
+      $btcpayConfig['storeId'],
+    );
+    // Calculate the price based on the amount of credits
+    $price = $btcpayClient->intToString($amount * $this->pricePerCredit);
+    // Calculate the bonus points based on the ammount of credits purchased
+    $bonusCredits = 0;
+    if ($amount >= 500 && $amount < 1000) {
+      // Apply 5% bonus credits
+      $bonusCredits = intval($amount * 0.05);
+    } elseif ($amount >= 1000) {
+      $bonusCredits = intval($amount * 0.1);
+    }
+    // Prepare invoice details
+    $invoiceMetadata = [
+      'userNpub' => $this->userNpub,
+      'orderType' => 'credits-topup',
+      'purchasePrice' => $price,
+      'purchasedCredits' => $amount,
+      'bonusCredits' => $bonusCredits
+    ];
+
+
+    $invoice = $btcpayClient->createInvoice($price, '', $invoiceMetadata, 'nb_topup_order', true);
+    $this->invoice = $invoice;
+
+    return [
+      'invoiceId' => $invoice->getId(),
+      'metadata' => $invoiceMetadata
+    ];
+  }
+
+  public function fetchInvoice(string $invoiceId): Invoice
+  {
+    // Check if $this->invoice is null and if not, if the invoice ID is the same as the one being fetched
+    if ($this->invoice !== null && $this->invoice->getId() === $invoiceId) {
+      return $this->invoice;
+    }
+
+    global $btcpayConfig;
+    $btcpayClient = new BTCPayClient(
+      $btcpayConfig['apiKey'],
+      $btcpayConfig['host'],
+      $btcpayConfig['storeId'],
+    );
+    $this->invoice = $btcpayClient->getInvoice($invoiceId);
+    return $this->invoice;
+  }
+
+  public function isInvoiceExpired(string $invoiceId): bool
+  {
+    $invoice = $this->fetchInvoice($invoiceId);
+    return $invoice->isExpired();
+  }
+
+  public function isInvoiceSettled(string $invoiceId): bool
+  {
+    $invoice = $this->fetchInvoice($invoiceId);
+    return $invoice->isSettled();
+  }
+
+  public function applyCreditsBasedOnInvoiceId(?string $invoiceId = null, ?Invoice $invoice = null): void
+  {
+    if ($invoiceId === null && $invoice === null) {
+      throw new Exception('Either invoice ID or invoice object must be provided.');
+    }
+
+    $invoice = ($invoice === null ? $this->fetchInvoice($invoiceId) : $invoice);
+    if ($invoice->isSettled()) {
+      $metadata = $invoice->getData()['metadata'];
+      $purchasedCredits = intval($metadata['purchasedCredits']);
+      $bonusCredits = intval($metadata['bonusCredits']);
+
+      // Verify that the invoice is for credits top-up
+      if ($metadata['orderType'] !== 'credits-topup') {
+        throw new Exception('Invalid invoice type.');
+      }
+
+      // Verify that the invoice is for the correct user
+      if ($metadata['userNpub'] !== $this->userNpub) {
+        throw new Exception('Invalid invoice user.');
+      }
+
+      // Verify that the invoice paid amount is correct and matches the credits
+      $price = $metadata['purchasePrice'];
+      $expectedPrice = $purchasedCredits * $this->pricePerCredit;
+
+      // Compare the actual amount paid with the purchase price
+      if ($price !== $expectedPrice) {
+        throw new Exception('Invalid invoice price.');
+      }
+
+      // Ensure that settled invoice amount is equal to the purchase price
+      if (!BTCPayClient::amountEqual($price, $invoice->getAmount())) {
+        error_log("The actual amount paid is less than the purchase price." . PHP_EOL);
+        throw new Exception('Invalid invoice amount.');
+      }
+
+      // Complete the top-up transaction
+      $this->topupCredits($purchasedCredits, $invoiceId, $invoice->getData());
+      if ($bonusCredits !== 0)
+        $this->topupCredits($bonusCredits, $invoiceId . '-bonus', $invoice->getData());
+    } else {
+      throw new Exception('Invoice is not paid.');
+    }
   }
 
   private function fetchRequest(string $url, string $method = 'GET', ?string $body = null): array
