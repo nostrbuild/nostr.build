@@ -875,6 +875,45 @@ Alpine.store('profileStore', {
     this.profileInfo.referralCode = data.referralCode;
     this.profileInfo.referralLink = `https://${window.location.hostname}/plans/?ref=${data.referralCode}`;
   },
+  // Credits
+  async getCreditHistory(type = "all", limit = 100, offset = 0) {
+    const params = {
+      action: 'get_credits_tx_history',
+      type,
+      limit,
+      offset,
+    };
+    const api = getApiFetcher(apiUrl, 'application/json');
+
+    api.get('', {
+      params
+    })
+      .then(response => response.data)
+      .then(data => {
+        console.debug('Credit history:', data);
+      })
+      .catch(error => {
+        console.error('Error fetching credit history:', error);
+      });
+  },
+  getCreditsInvoice(credits = 0) {
+    const params = {
+      action: 'get_credits_invoice',
+      credits,
+    };
+    const api = getApiFetcher(apiUrl, 'application/json');
+
+    api.get('', {
+      params
+    })
+      .then(response => response.data)
+      .then(data => {
+        console.debug('Credit invoice:', data);
+      })
+      .catch(error => {
+        console.error('Error fetching credit invoice:', error);
+      });
+  }
 });
 
 Alpine.store('nostrStore', {
