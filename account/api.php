@@ -666,7 +666,7 @@ if (isset($_GET["action"])) {
 		// Check for Advanced Models access
 		$advancedModels = ["@cf/black-forest-labs/flux-1-schnell"];
 		if (isset($_POST['model']) && in_array($_POST['model'], $advancedModels)) {
-			if (!$perm->validatePermissionsLevelAny(10, 99)) {
+			if (!$perm->validatePermissionsLevelAny(1, 10, 99)) {
 				http_response_code(403);
 				echo json_encode(array("error" => "You do not have permission to generate AI images using the {$_POST['model']} model"));
 				// PERSIST: $link->close();
