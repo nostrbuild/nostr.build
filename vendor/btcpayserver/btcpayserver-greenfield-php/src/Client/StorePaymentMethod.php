@@ -15,9 +15,12 @@ use BTCPayServer\Result\StorePaymentMethodCollection;
  */
 class StorePaymentMethod extends AbstractClient
 {
-    public function getPaymentMethods(string $storeId): array
+    public function getPaymentMethods(string $storeId, bool $includeConfig = false): array
     {
         $url = $this->getApiUrl() . 'stores/' . urlencode($storeId) . '/payment-methods';
+        if ($includeConfig) {
+            $url .= '?includeConfig=true';
+        }
         $headers = $this->getRequestHeaders();
         $method = 'GET';
         $response = $this->getHttpClient()->request($method, $url, $headers);

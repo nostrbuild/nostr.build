@@ -20,6 +20,12 @@ class PullPayment extends AbstractResult
         return $data['name'];
     }
 
+    public function getDescription(): string
+    {
+        $data = $this->getData();
+        return $data['description'];
+    }
+
     public function getCurrency(): string
     {
         $data = $this->getData();
