@@ -217,6 +217,7 @@ class Credits
       $metadata = $invoice->getData()['metadata'];
       $purchasedCredits = intval($metadata['purchasedCredits']);
       $bonusCredits = intval($metadata['bonusCredits']);
+      $orderId = $metadata['orderId'];
 
       // Verify that the invoice is for credits top-up
       if ($metadata['orderType'] !== 'credits-topup') {
@@ -244,9 +245,9 @@ class Credits
       }
 
       // Complete the top-up transaction
-      $this->topupCredits($purchasedCredits, $invoice->getId(), $invoice->getData());
+      $this->topupCredits($purchasedCredits, $orderId, $invoice->getData());
       if ($bonusCredits !== 0)
-        $this->topupCredits($bonusCredits, $invoice->getId() . '-bonus', $invoice->getData());
+        $this->topupCredits($bonusCredits, $orderId . '-bonus', $invoice->getData());
     } else {
       throw new Exception('Invoice is not paid.');
     }
