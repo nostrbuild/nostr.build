@@ -217,7 +217,7 @@ SVG;
   <meta charSet="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Nostr.build account signup</title>
-  <link rel="stylesheet" href="/styles/twbuild.css?v=ce28484c00498a26744458cbc048ebb1" />
+  <link rel="stylesheet" href="/styles/twbuild.css?v=4b57243cf67fb00939bd7717bc96b284" />
   <link rel="stylesheet" href="/styles/index.css?v=d92cc716e5a959e5720d593defd68e21" />
   <link rel="stylesheet" href="/styles/signup.css?v=8878cbf7163f77b3a4fb9b30804c73ca" />
   <link rel="icon" href="https://cdn.nostr.build/assets/primo_nostr.png" />
@@ -391,17 +391,12 @@ SVG;
                         <svg class="h-6 w-5 flex-none text-purple-300" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
                           <path fill-rule="evenodd" d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.05-.143z" clip-rule="evenodd" />
                         </svg>
-                        <span class="text-blue-300 text-lg" x-text="(period === '1y' ? '<?= $plan->bonusCredits ?>' : (period === '2y' ? '<?= $plan->bonusCredits2y ?>' : '<?= $plan->bonusCredits3y ?>'))"></span>signup bonus credits**
+                        <span class="text-blue-300 text-lg" x-text="(period === '1y' ? '<?= $plan->bonusCredits ?>' : (period === '2y' ? '<?= $plan->bonusCredits2y ?>' : '<?= $plan->bonusCredits3y ?>'))"></span>
+                        <?php if (!empty($_SESSION['purchase_ref'])): ?>
+                          <span class="text-blue-300 font-extrabold text-xs caption-top animate-[pulse_3s_ease-in-out_infinite]" x-text="'(+' + (period === '1y' ? '<?= intval($plan->bonusCredits * 0.05) ?>' : (period === '2y' ? '<?= intval($plan->bonusCredits2y * 0.05) ?>' : '<?= intval($plan->bonusCredits3y * 0.05) ?>')) + ' referral)'"></span>
+                        <?php endif; ?>
+                        bonus credits**
                       </li>
-                      <!-- Referral Credits -->
-                      <?php if (!empty($_SESSION['purchase_ref'])): ?>
-                        <li class="flex gap-x-3">
-                          <svg class="h-6 w-5 flex-none text-purple-300" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                            <path fill-rule="evenodd" d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.05-.143z" clip-rule="evenodd" />
-                          </svg>
-                          <span class="text-blue-300 text-lg" x-text="(period === '1y' ? '<?= intval($plan->bonusCredits * 0.05) ?>' : (period === '2y' ? '<?= intval($plan->bonusCredits2y * 0.05) ?>' : '<?= intval($plan->bonusCredits3y * 0.05) ?>'))"></span>referral bonus credits**
-                        </li>
-                      <?php endif; ?>
                     <?php endif; ?>
                     <!-- /Bonus Credits -->
                     <?php foreach ($plan->features as $feature) : ?>
@@ -426,7 +421,7 @@ SVG;
           <?php if (count(Plans::$PLANS) > 0) : ?>
             <div class="mt-2 text-pretty text-right text-sm font-semibold text-purple-200">
               <p>* Coming soon</p>
-              <p>** Used by AI features</p>
+              <p>** Used by AI and other features</p>
             </div>
           <?php endif; ?>
           </div>
