@@ -247,7 +247,7 @@ class Credits
       // Complete the top-up transaction
       $this->topupCredits($purchasedCredits, $orderId, $invoice->getData());
       if ($bonusCredits !== 0)
-        $this->topupCredits($bonusCredits, $orderId . '-bonus', $invoice->getData());
+        $this->topupCredits($bonusCredits, $orderId . '/bonus', $invoice->getData());
     } else {
       throw new Exception('Invoice is not paid.');
     }

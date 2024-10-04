@@ -175,8 +175,8 @@ class BTCPayWebhook
           // Based on a 10% of the initial bonus credits, split between the referrer and the referred
           $referralBonus = intval($referralInitialBonus * 0.1 / 2);
           // Apply bonus credits to the referrer and the referred
-          $referrerCredits->topupCredits($referralBonus, $orderId . '-referrer-bonus', $invoice->getData());
-          $referralCredits->topupCredits($referralBonus, $orderId . '-referral-bonus', $invoice->getData());
+          $referrerCredits->topupCredits($referralBonus, $orderId . '/referrer-bonus', $invoice->getData());
+          $referralCredits->topupCredits($referralBonus, $orderId . '/referral-bonus', $invoice->getData());
         }
       } catch (Exception $e) {
         error_log("Failed to update account: " . $e . PHP_EOL);

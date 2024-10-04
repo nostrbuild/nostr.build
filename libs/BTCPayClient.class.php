@@ -35,6 +35,11 @@ class BTCPayClient
     return $this->invoice->getInvoice($this->storeId, $invoiceId);
   }
 
+  public function getInvoiceByOrderId($orderId): BTCPayServer\Result\Invoice
+  {
+    return $this->invoice->getInvoicesByOrderIds($this->storeId, [$orderId])[0];
+  }
+
   public function createInvoice(string $amount, string $redirectUrl = '', array $metadata = [], string $orderIdPrefix = 'nb_signup_order', bool $returnInvoice = false): string | ResultInvoice
   {
     $invoiceAmount = PreciseNumber::parseString($amount);
