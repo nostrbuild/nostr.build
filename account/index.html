@@ -19,7 +19,7 @@
 	<script defer src="/scripts/dist/account-v2.js?v=36347ac42081bf007c752ea5c67affb0"></script>
 	<link href="/scripts/dist/account-v2.css?v=5ecc26aa69603a0fc007bf24b7636047" rel="stylesheet">
 
-	<link href="/styles/twbuild.css?v=4b57243cf67fb00939bd7717bc96b284" rel="stylesheet">
+	<link href="/styles/twbuild.css?v=0005df9bf24fbd8e01b6d58ac78646b2" rel="stylesheet">
 
 	<!-- Pre-connect and DNS prefetch -->
 	<link rel="preconnect" href="https://i.nostr.build" crossorigin>
@@ -3575,26 +3575,37 @@ onDropCB(event) {
 										</div>
 
 										<!-- Referral Link -->
-										<div x-cloak x-show="profileStore.profileInfo.isReferralEligible"
-											class="space-y-2 px-4 grid sm:grid-cols-3 sm:gap-4 sm:space-y-0 sm:px-6 sm:py-3 min-w-0 cursor-copy"
+										<div x-data="{ showReferralInfo: false }" x-cloak
+											x-show="profileStore.profileInfo.isReferralEligible"
+											class="space-y-2 px-4 grid grid-cols-1 sm:grid-cols-3 sm:gap-4 sm:space-y-0 sm:px-6 sm:py-3 min-w-0 cursor-copy"
 											@click="copyUrlToClipboard(profileStore.profileInfo.referralLink); showToast = true">
-											<div>
-												<p class="inline-block text-sm font-medium leading-6 text-nbpurple-200 sm:mt-1.5">Referral
-													Link</p>
-												<svg aria-hidden="true" class="inline-flex items-center gap-x-1.5 ml-1 size-5 text-nbpurple-100"
-													viewBox="0 0 20 20" fill="currentColor">
-													<path fill-rule="evenodd"
-														d="M15.988 3.012A2.25 2.25 0 0 1 18 5.25v6.5A2.25 2.25 0 0 1 15.75 14H13.5v-3.379a3 3 0 0 0-.879-2.121l-3.12-3.121a3 3 0 0 0-1.402-.791 2.252 2.252 0 0 1 1.913-1.576A2.25 2.25 0 0 1 12.25 1h1.5a2.25 2.25 0 0 1 2.238 2.012ZM11.5 3.25a.75.75 0 0 1 .75-.75h1.5a.75.75 0 0 1 .75.75v.25h-3v-.25Z"
-														clip-rule="evenodd"></path>
-													<path
-														d="M3.5 6A1.5 1.5 0 0 0 2 7.5v9A1.5 1.5 0 0 0 3.5 18h7a1.5 1.5 0 0 0 1.5-1.5v-5.879a1.5 1.5 0 0 0-.44-1.06L8.44 6.439A1.5 1.5 0 0 0 7.378 6H3.5Z">
-													</path>
-												</svg>
+											<!-- First Row -->
+											<div class="flex items-center">
+												<p class="inline-block text-sm font-medium leading-6 text-nbpurple-200 sm:mt-1.5">
+													Referral Link
+												</p>
+												<button type="button" @click.stop="showReferralInfo = !showReferralInfo"
+													class="ml-2 text-nbpurple-100">
+													<!-- Info Icon -->
+													<svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+														<path fill-rule="evenodd"
+															d="M10 18a8 8 0 100-16 8 8 0 000 16zm.75-11.25a.75.75 0 11-1.5 0v-.5a.75.75 0 011.5 0v.5zm0 2a.75.75 0 00-1.5 0v5a.75.75 0 001.5 0v-5z"
+															clip-rule="evenodd" />
+													</svg>
+												</button>
 											</div>
-											<div class="sm:col-span-2 overflow-x-hidden">
+											<div class="overflow-x-hidden sm:col-span-2">
 												<p x-text="profileStore.profileInfo.referralLink"
 													class="block w-full py-1.5 text-nbpurple-50 font-bold text-xs sm:text-sm sm:leading-6 truncate">
 												</p>
+											</div>
+											<!-- Explanatory Text -->
+											<div x-show="showReferralInfo" x-transition
+												class="col-span-1 sm:col-span-3 text-xs text-nbpurple-200 mt-2 sm:mt-0">
+												Share your referral link with friends and family to receive a <strong>10% bonus credit</strong>
+												equally split between you
+												and the new user. The bonus credit is calculated based on the new user's subscription level and
+												length.
 											</div>
 										</div>
 

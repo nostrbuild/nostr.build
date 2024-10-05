@@ -72,7 +72,7 @@ $past_promotions = $promotions->getPastPromotions();
 
 <head>
   <title>Manage Promotions</title>
-  <link rel="stylesheet" href="/styles/twbuild.css?v=4b57243cf67fb00939bd7717bc96b284" />
+  <link rel="stylesheet" href="/styles/twbuild.css?v=0005df9bf24fbd8e01b6d58ac78646b2" />
 </head>
 
 <body class="bg-gray-100">
