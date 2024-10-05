@@ -913,6 +913,23 @@ Alpine.store('profileStore', {
       .catch(error => {
         console.error('Error fetching credit invoice:', error);
       });
+  },
+  getCreditsBalance() {
+    const params = {
+      action: 'get_credits_balance',
+    };
+    const api = getApiFetcher(apiUrl, 'application/json');
+
+    api.get('', {
+      params
+    })
+      .then(response => response.data)
+      .then(data => {
+        console.debug('Credit balance:', data);
+      })
+      .catch(error => {
+        console.error('Error fetching credit balance:', error);
+      });
   }
 });
 

@@ -197,7 +197,7 @@ function getAndStoreSDCoreGeneratedImage(string $prompt, string $negativePrompt 
 	global $account;
 	global $link;
 	global $s3;
-	if(is_null($account)) {
+	if (is_null($account)) {
 		$account = new Account($_SESSION['usernpub'], $link);
 	}
 	// Remove the last path component from the URL
@@ -239,6 +239,26 @@ function getAndStoreSDCoreGeneratedImage(string $prompt, string $negativePrompt 
 
 	// Initialize cURL
 	$ch = curl_init($apiUrl);
+
+	$customHeaders = [];  // Array to store custom headers
+
+	// Define a callback function to capture headers
+	curl_setopt($ch, CURLOPT_HEADERFUNCTION, function ($curl, $headerLine) use (&$customHeaders) {
+		// Extract the header name and value
+		$parts = explode(':', $headerLine, 2);
+
+		if (count($parts) === 2) {
+			$headerName = strtolower(trim($parts[0]));
+			$headerValue = trim($parts[1]);
+			// Add the custom headers you care about
+			if (in_array($headerName, ['x-sd-finish-reason', 'x-sd-seed', 'x-sd-available-balance', 'x-sd-debited', 'x-sd-transaction-id'])) {
+				$customHeaders[$headerName] = $headerValue;
+			}
+		}
+		return strlen($headerLine);  // This is required for the callback to work
+	});
+
+
 	// Set cURL options
 	curl_setopt($ch, CURLOPT_POST, true);
 	curl_setopt($ch, CURLOPT_POSTFIELDS, $requestBody);
@@ -264,6 +284,18 @@ function getAndStoreSDCoreGeneratedImage(string $prompt, string $negativePrompt 
 
 	// Close the cURL handle
 	curl_close($ch);
+
+	// Get response headers: 
+	/* x-sd-finish-reason, x-sd-seed, x-sd-available-balance, x-sd-debited, x-sd-transaction-id */
+	// Get the response headers
+	error_log("SD Core Image generation response headers: " . json_encode($customHeaders));
+	$finishReason = $customHeaders['x-sd-finish-reason'] ?? null;
+	$responseSeed = $customHeaders['x-sd-seed'] ?? null;
+	$availableBalance = $customHeaders['x-sd-available-balance'] ?? null;
+	$responseDebited = $customHeaders['x-sd-debited'] ?? null;
+	$transactionId = $customHeaders['x-sd-transaction-id'] ?? null;
+
+
 	// If we get image/png content type, store it in temporary file
 	$tempFile = generateUniqueFilename("ai_image_", sys_get_temp_dir());
 	if ($contentType === 'image/png' || $contentType === 'image/jpeg' || $contentType === 'image/webp') {
@@ -307,6 +339,11 @@ function getAndStoreSDCoreGeneratedImage(string $prompt, string $negativePrompt 
 	if (empty($fileData)) {
 		throw new Exception("Failed to import media from URL");
 	}
+	// Extract mediaId from the $fileData
+	$mediaId = $fileData[0]['name'];
+	// Update transaction with mediaId
+	$credits = new Credits($_SESSION['usernpub'], $apiBase, $_SERVER['AI_GEN_API_HMAC_KEY'], $link);
+	$credits->updateTransactionWithMediaId($transactionId, $mediaId);
 
 	return getReturnFilesArray($fileData);
 }
@@ -634,6 +671,16 @@ if (isset($_GET["action"])) {
 	} else {
 		http_response_code(400);
 		echo json_encode(array("error" => "Invalid action"));
+	}
+} else if ($action == "get_credits_balance") {
+	try {
+		$credits = getSDUserCredits();
+		http_response_code(200);
+		echo json_encode($credits);
+	} catch (Exception $e) {
+		error_log($e->getMessage());
+		http_response_code(500);
+		echo json_encode(array("error" => "Failed to get credits balance"));
 	}
 } elseif (isset($_POST['action'])) {
 	// Handle AI image generation
