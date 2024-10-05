@@ -873,7 +873,7 @@ Alpine.store('profileStore', {
     this.profileInfo.debitedCredits = data.debitedCredits;
     this.profileInfo.creditedCredits = data.creditedCredits;
     this.profileInfo.referralCode = data.referralCode;
-    this.profileInfo.referralLink = `https://${window.location.hostname}/plans/?ref=${data.referralCode}`;
+    this.profileInfo.referralLink = `https://getnb.me/${data.referralCode}`;
   },
   // Credits
   async getCreditHistory(type = "all", limit = 100, offset = 0) {
