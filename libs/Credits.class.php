@@ -124,6 +124,25 @@ class Credits
     return $this->fetchRequest($url);
   }
 
+  public function getTransactionDetails(string $transactionId): array
+  {
+    $url = $this->baseApiUrl . "/sd/credits/tx/{$transactionId}";
+    return $this->fetchRequest($url);
+  }
+
+  public function getTransactionDetailsByMediaId(string $mediaId): array
+  {
+    $url = $this->baseApiUrl . "/sd/credits/tx/media/{$mediaId}";
+    return $this->fetchRequest($url);
+  }
+
+  public function updateTransactionWithMediaId(string $transactionId, string $mediaId): array
+  {
+    $url = $this->baseApiUrl . "/sd/credits/tx/{$transactionId}";
+    $body = json_encode(['mediaId' => $mediaId]);
+    return $this->fetchRequest($url, 'PUT', $body);
+  }
+
   public function getInvoice(int $amount): array
   {
     // Check if $this->invoice is null and if not, if the invoice $amount is the same, and it is not expired
