@@ -52,6 +52,30 @@ if (isset($_GET['reset'])) {
   exit;
 }
 
+// Capture referral code if it exists
+if (
+  isset($_GET['ref']) &&
+  !isset($_SESSION['purchase_ref']) &&
+  $_GET['ref'] !== $_SESSION['purchase_ref']
+) {
+  // Get the referral npub from the referral code
+  $referralNpub = findNpubByReferralCode($link, $_GET['ref']);
+  // Check if referrl account has valid level
+  if (!empty($referralNpub)) {
+    $referrerAccount = new Account($referralNpub, $link);
+    $_SESSION['purchase_ref_npub'] = $referralNpub;
+    $_SESSION['purchase_ref'] = $_GET['ref'];
+    // Get the account pfp link and nym from the referral npub
+    $_SESSION['purchase_ref_pfp'] = $referrerAccount->getAccount()['ppic'];
+    $_SESSION['purchase_ref_nym'] = $referrerAccount->getAccount()['nym'];
+
+
+    // Redirect to a clean URL
+    header('Location: /plans/');
+    exit;
+  }
+}
+
 // Set the purchase period from _GET or _SESSION
 if (isset($_GET['period']) && in_array($_GET['period'], ['1y', '2y', '3y'])) { // Always validate user input
   $_SESSION['purchase_period'] = $_GET['period'];
@@ -193,7 +217,7 @@ SVG;
   <meta charSet="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Nostr.build account signup</title>
-  <link rel="stylesheet" href="/styles/twbuild.css?v=f38b8554a8a8c48f251a4d1f4070cb09" />
+  <link rel="stylesheet" href="/styles/twbuild.css?v=4b57243cf67fb00939bd7717bc96b284" />
   <link rel="stylesheet" href="/styles/index.css?v=d92cc716e5a959e5720d593defd68e21" />
   <link rel="stylesheet" href="/styles/signup.css?v=8878cbf7163f77b3a4fb9b30804c73ca" />
   <link rel="icon" href="https://cdn.nostr.build/assets/primo_nostr.png" />
@@ -286,6 +310,23 @@ SVG;
               <p class="mt-2 text-xs text-purple-300" x-cloak x-show="period === '1y'">
                 ❤️ Support nostr.build ❤️
               </p>
+              <!-- Referral information, if provided -->
+              <?php if ($currentAccountLevel === null && !empty($_SESSION['purchase_ref_npub'])) : ?>
+                <p class="mt-2 text-lg text-purple-300">
+                  Referred by :
+                </p>
+                <div class="flex justify-center group">
+                  <div class="flex items-center">
+                    <div>
+                      <img class="inline-block h-9 w-9 rounded-full" src="<?= !empty($_SESSION['purchase_ref_pfp']) ? htmlentities($_SESSION['purchase_ref_pfp']) : '/signup/logo/nblogo@0.1x.png' ?>" alt="Referrer Picture">
+                    </div>
+                    <div class="ml-3">
+                      <p class="text-sm font-medium text-gray-300 group-hover:text-gray-100"><?= !empty($_SESSION['purchase_ref_nym']) ? htmlspecialchars($_SESSION['purchase_ref_nym']) : 'Anon' ?></p>
+                      <p class="text-xs font-medium text-gray-500 group-hover:text-gray-300"><?= !empty($_SESSION['purchase_ref_npub']) ? substr(htmlspecialchars($_SESSION['purchase_ref_npub']), 0, 16) . '...' : 'npub1...' ?></p>
+                    </div>
+                  </div>
+                </div>
+              <?php endif; ?>
             </div>
           <?php endif; ?>
           <div class="mx-auto mt-8 max-w-7xl px-6 lg:px-8">
@@ -305,6 +346,11 @@ SVG;
                   <?php if ($plan->id === 1) : ?>
                     <div class="absolute top-0 right-0 transform -translate-y-1/2 -translate-x-1/3">
                       <p class="rounded-full bg-purple-700 text-purple-100 px-2.5 py-1 text-xs font-semibold leading-5">Popular</p>
+                    </div>
+                  <?php endif; ?>
+                  <?php if ($plan->id === 10) : ?>
+                    <div class="absolute top-0 right-0 transform -translate-y-1/2 -translate-x-1/3">
+                      <p class="rounded-full bg-amber-700 text-purple-100 px-2.5 py-1 text-xs font-semibold leading-5">Exclusive</p>
                     </div>
                   <?php endif; ?>
                   <!-- Current Plan Badge -->
@@ -339,6 +385,20 @@ SVG;
                     </a>
                   <?php endif; ?>
                   <ul role="list" class="mt-8 space-y-3 text-sm leading-6 text-gray-300">
+                    <!-- Bonus Credits -->
+                    <?php if ($currentAccountLevel === null) : ?>
+                      <li class="flex gap-x-3">
+                        <svg class="h-6 w-5 flex-none text-purple-300" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                          <path fill-rule="evenodd" d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.05-.143z" clip-rule="evenodd" />
+                        </svg>
+                        <span class="text-blue-300 text-lg" x-text="(period === '1y' ? '<?= $plan->bonusCredits ?>' : (period === '2y' ? '<?= $plan->bonusCredits2y ?>' : '<?= $plan->bonusCredits3y ?>'))"></span>
+                        <?php if (!empty($_SESSION['purchase_ref'])): ?>
+                          <span class="text-blue-300 font-extrabold text-xs caption-top animate-[pulse_3s_ease-in-out_infinite]" x-text="'(+' + (period === '1y' ? '<?= intval($plan->bonusCredits * 0.05) ?>' : (period === '2y' ? '<?= intval($plan->bonusCredits2y * 0.05) ?>' : '<?= intval($plan->bonusCredits3y * 0.05) ?>')) + ' referral)'"></span>
+                        <?php endif; ?>
+                        bonus credits**
+                      </li>
+                    <?php endif; ?>
+                    <!-- /Bonus Credits -->
                     <?php foreach ($plan->features as $feature) : ?>
                       <li class="flex gap-x-3">
                         <svg class="h-6 w-5 flex-none text-purple-300" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
@@ -359,7 +419,10 @@ SVG;
             </div>
           </div>
           <?php if (count(Plans::$PLANS) > 0) : ?>
-            <div class="text-pretty text-right text-sm font-semibold leading-8 text-purple-200">* Coming soon</div>
+            <div class="mt-2 text-pretty text-right text-sm font-semibold text-purple-200">
+              <p>* Coming soon</p>
+              <p>** Used by AI and other features</p>
+            </div>
           <?php endif; ?>
           </div>
 
@@ -532,7 +595,7 @@ SVG;
           <?php
           // Helper function to create the invoice
           // TODO: Relocate this function to a more appropriate file
-          function createInvoice(BTCPayClient $btcpayClient, Plan $plan, string $npub, string $period, string $orderType, string $orderIdPrefix = 'nb_signup_order', string $redirectUrl)
+          function createInvoice(BTCPayClient $btcpayClient, Plan $plan, string $npub, string $period, string $orderType, string $orderIdPrefix = 'nb_signup_order', string $redirectUrl, ?string $referralCode = null): ?string
           {
             $period = $_SESSION['purchase_period'];
             $price = match ($period) {
@@ -558,6 +621,7 @@ SVG;
                   'orderPeriod' => $period,
                   'orderType' => $orderType,
                   'purchasePrice' => $price, // Can be used to verify that the full amount was paid.
+                  'referralCode' => $referralCode ?? '',
                 ]
               );
             } else {
@@ -584,7 +648,17 @@ SVG;
 
           if (!isset($_SESSION['purchase_invoiceId']) || $_SESSION['purchase_invoiceId'] === null) {
             // If no invoice exists, create a new one
-            $_SESSION['purchase_invoiceId'] = createInvoice($btcpayClient, $_selectedPlan, $_SESSION['purchase_npub'], $_SESSION['purchase_period'], $orderType, $orderIdPrefix, $redirectUrl);
+            $referralCode = (isset($_SESSION['purchase_ref']) ? $_SESSION['purchase_ref'] : null);
+            $_SESSION['purchase_invoiceId'] = createInvoice(
+              $btcpayClient,
+              $_selectedPlan,
+              $_SESSION['purchase_npub'],
+              $_SESSION['purchase_period'],
+              $orderType,
+              $orderIdPrefix,
+              $redirectUrl,
+              $referralCode
+            );
           } else {
             try {
               $invoice = $btcpayClient->getInvoice($_SESSION['purchase_invoiceId']);

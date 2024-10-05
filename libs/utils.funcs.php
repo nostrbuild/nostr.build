@@ -1,5 +1,5 @@
 <?php
-require __DIR__.'/../vendor/autoload.php';
+require __DIR__ . '/../vendor/autoload.php';
 
 use Hidehalo\Nanoid\Client;
 use Hidehalo\Nanoid\GeneratorInterface;
@@ -356,4 +356,23 @@ function getUniqueNanoId(): string
   $alphabet = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
   // 16 characters long ID
   return $nano->formattedId(alphabet: $alphabet, size: 16);
+}
+
+/**
+ * Generates a unique code.
+ *
+ * This function creates a unique code that can be used for various purposes
+ * such as identifiers, tokens, etc.
+ *
+ * @return string A unique code.
+ */
+function generateUniqueCode()
+{
+  // Generate 4-character segments from the SHA2 hash
+  $segment1 = substr(hash('sha256', rand() . rand()), 0, 4);
+  $segment2 = substr(hash('sha256', rand() . rand()), 0, 4);
+  $segment3 = substr(hash('sha256', rand() . rand()), 0, 4);
+
+  // Concatenate the segments with dashes
+  return strtoupper($segment1 . '-' . $segment2 . '-' . $segment3);
 }

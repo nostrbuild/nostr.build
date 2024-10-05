@@ -28,6 +28,9 @@ desc users;
 | plan_until_date        | datetime     | YES  |     | NULL              |                   |
 | last_notification_date | datetime     | YES  |     | NULL              |                   |
 | subscription_period    | varchar(10)  | YES  |     | 1y                |                   |
+| default_folder         | varchar(255) | YES  |     | NULL              |                   |
+| addon_storage          | bigint       | YES  |     | 0                 |                   |
+| referral_code          | varchar(14)  | YES  | UNI | NULL              |                   |
 +------------------------+--------------+------+-----+-------------------+-------------------+
 
  desc users_images;
@@ -50,12 +53,8 @@ desc users;
 +--------------+--------------+------+-----+------------------------------+-------------------+
 */
 
-class DuplicateUserException extends Exception
-{
-}
-class InvalidAccountLevelException extends Exception
-{
-}
+class DuplicateUserException extends Exception {}
+class InvalidAccountLevelException extends Exception {}
 
 enum AccountLevel: int
 {
@@ -164,6 +163,7 @@ class Account
     $_SESSION['npub_verified'] = $this->account['npub_verified'] ?? 0;
     $_SESSION['allow_npub_login'] = $this->account['allow_npub_login'] ?? 0;
     $_SESSION['addon_storage'] = $this->account['addon_storage'] ?? 0;
+    $_SESSION['referral_code'] = $this->account['referral_code'] ?? '';
 
     $accFlags = json_decode($this->account['accflags'] ?? '{}', true);
     if (json_last_error() === JSON_ERROR_NONE) {
@@ -171,6 +171,11 @@ class Account
     } else {
       $_SESSION['accflags'] = [];
     }
+  }
+
+  public function getAccountReferralCode(): string
+  {
+    return $this->account['referral_code'] ?? '';
   }
 
   public function getAccountFlags(): array
@@ -380,7 +385,7 @@ class Account
     $hashed_password = password_hash(trim($password), PASSWORD_DEFAULT); // Creates a password hash
     $pbkdf2_hashed_password = hashPasswordPBKDF2(trim($password)); // Creates a PBKDF2 password hash
 
-    $sql = "INSERT INTO users (usernpub, password, pbkdf2_password, acctlevel, npub_verified, allow_npub_login) VALUES (?, ?, ?, ?, ?, ?)";
+    $sql = "INSERT INTO users (usernpub, password, pbkdf2_password, acctlevel, npub_verified, allow_npub_login, referral_code) VALUES (?, ?, ?, ?, ?, ?, ?)";
     $stmt = $this->db->prepare($sql);
 
     if (!$stmt) {
@@ -388,7 +393,9 @@ class Account
     }
 
     try {
-      $stmt->bind_param('sssiii', $this->npub, $hashed_password, $pbkdf2_hashed_password, $level, $npub_verified, $allow_npub_login);
+      // Generate referral code
+      $referralCode = generateUniqueCode();
+      $stmt->bind_param('sssiiis', $this->npub, $hashed_password, $pbkdf2_hashed_password, $level, $npub_verified, $allow_npub_login, $referralCode);
       if (!$stmt->execute()) {
         if ($this->db->errno == 1062) { // Duplicate entry error code
           throw new DuplicateUserException("User with npub $this->npub already exists (race condition)");
@@ -850,6 +857,7 @@ class Account
   /**
    * Summary of setPlan
    * @param int $planLevel
+   * @param string $period
    * @param bool $new
    * @throws \Exception
    * @return void
@@ -1057,4 +1065,45 @@ class Account
     }
     return false;
   }
+}
+
+// Helper function to find npub by referral code
+/**
+ * Finds the npub (public key) associated with a given referral code.
+ *
+ * @param mysqli $db The MySQLi database connection object.
+ * @param string $referralCode The referral code to search for.
+ * @return string The npub (public key) associated with the referral code.
+ */
+function findNpubByReferralCode(mysqli $db, string $referralCode): string
+{
+  $sql = "SELECT usernpub FROM users WHERE referral_code = ? AND acctlevel IN (1,2,10) AND plan_until_date > NOW()";
+  $stmt = $db->prepare($sql);
+
+  if (!$stmt) {
+    throw new Exception("Error preparing statement: " . $db->error);
+  }
+
+  try {
+    // Upper case referral code
+    $referralCode = strtoupper($referralCode);
+    if (!$stmt->bind_param('s', $referralCode)) {
+      throw new Exception("Error binding parameters: " . $stmt->error);
+    }
+
+    if (!$stmt->execute()) {
+      throw new Exception("Error executing statement: " . $stmt->error);
+    }
+
+    $result = $stmt->get_result();
+    if (!$result) {
+      throw new Exception("Error getting result: " . $stmt->error);
+    }
+
+    $npub = $result->fetch_assoc()['usernpub'] ?? '';
+  } finally {
+    $stmt->close();
+  }
+
+  return $npub;
 }

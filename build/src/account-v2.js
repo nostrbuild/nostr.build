@@ -61,12 +61,12 @@ window.getApiFetcher = function (baseUrl, contentType = 'multipart/form-data', t
   );
 
   axiosRetry(api, {
-    retries: 5, // Make it resilient
+    retries: 3, // Make it resilient
     //retryDelay: axiosRetry.exponentialDelay,
     retryDelay: (
       retryNumber = 0,
       _error = undefined,
-      delayFactor = 200 // Slow down there, cowboy
+      delayFactor = 300 // Slow down there, cowboy
     ) => {
       const delay = 2 ** retryNumber * delayFactor;
       const randomSum = delay * 0.2 * Math.random(); // 0-20% of the delay
@@ -192,6 +192,27 @@ window.formatBytes = (bytes) => {
   const i = Math.floor(Math.log(bytes) / Math.log(k));
 
   return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + sizes[i];
+}
+
+window.loadBTCPayJS = () => {
+  // Check if the script is already loaded
+  if (!document.querySelector('script[src="https://btcpay.nostr.build/modal/btcpay.js"]')) {
+    // Create a new script element
+    const script = document.createElement('script');
+    script.src = "https://btcpay.nostr.build/modal/btcpay.js";
+    script.async = true;
+
+    // Append the script to the body
+    document.body.appendChild(script);
+
+    script.onload = function () {
+      console.log('Script loaded successfully');
+    };
+
+    script.onerror = function () {
+      console.log('Failed to load the script');
+    };
+  }
 }
 
 // Bech32 encoding and decoding library
@@ -482,6 +503,10 @@ Alpine.store('profileStore', {
     storageUsed: 0,
     storageLimit: 0,
     totalStorageLimit: '',
+    availableCredits: 0,
+    debitedCredits: 0,
+    creditedCredits: 0,
+    referralCode: '',
     get creatorPageLink() {
       return `https://${window.location.hostname}/creators/creator/?user=${this.userId}`;
     },
@@ -562,14 +587,19 @@ Alpine.store('profileStore', {
     },
     // Stable Diffusion
     get isAISDiffusionEligible() {
-      return [1,10, 99].includes(this.accountLevel) && this.isAIStudioEligible &&
+      return [1, 10, 99].includes(this.accountLevel) && this.isAIStudioEligible &&
         !this.accountExpired && !this.storageOverLimit;
     },
     // FLUX.1 [schnell]
     get isFluxSchnellEligible() {
-      return [10, 99].includes(this.accountLevel) && this.isAIStudioEligible &&
+      return [1, 10, 99].includes(this.accountLevel) && this.isAIStudioEligible &&
         !this.accountExpired && !this.storageOverLimit;
-    }, 
+    },
+    // SD Core
+    get isSDCoreEligible() {
+      return [1, 2, 10, 99].includes(this.accountLevel) && this.isAIStudioEligible &&
+        !this.accountExpired && !this.storageOverLimit;
+    },
     // Other Features
     // Creators Page
     get isCreatorsPageEligible() {
@@ -602,6 +632,11 @@ Alpine.store('profileStore', {
       return [1, 2, 10, 99].includes(this.accountLevel) &&
         !this.accountExpired;
     },
+    // Referral program
+    get isReferralEligible() {
+      return [1, 2, 10].includes(this.accountLevel) &&
+        !this.accountExpired;
+    },
     allowed(permission) {
       switch (permission) {
         case 'isAdmin':
@@ -616,6 +651,8 @@ Alpine.store('profileStore', {
           return this.isAISDXLLightningEligible;
         case 'isFluxSchnellEligible':
           return this.isFluxSchnellEligible;
+        case 'isSDCoreEligible':
+          return this.isSDCoreEligible;
         case 'isAISDiffusionEligible':
           return this.isAISDiffusionEligible;
         case 'isCreatorsPageEligible':
@@ -630,6 +667,8 @@ Alpine.store('profileStore', {
           return this.isSearchEligible;
         case 'isFreeGalleryEligible':
           return this.isFreeGalleryEligible;
+        case 'isReferralEligible':
+          return this.isReferralEligible;
         default:
           return false;
       }
@@ -830,7 +869,68 @@ Alpine.store('profileStore', {
     this.profileInfo.storageUsed = data.storageUsed;
     this.profileInfo.storageLimit = data.storageLimit;
     this.profileInfo.totalStorageLimit = data.totalStorageLimit;
+    this.profileInfo.availableCredits = data.availableCredits;
+    this.profileInfo.debitedCredits = data.debitedCredits;
+    this.profileInfo.creditedCredits = data.creditedCredits;
+    this.profileInfo.referralCode = data.referralCode;
+    this.profileInfo.referralLink = `https://getnb.me/${data.referralCode}`;
   },
+  // Credits
+  async getCreditHistory(type = "all", limit = 100, offset = 0) {
+    const params = {
+      action: 'get_credits_tx_history',
+      type,
+      limit,
+      offset,
+    };
+    const api = getApiFetcher(apiUrl, 'application/json');
+
+    api.get('', {
+      params
+    })
+      .then(response => response.data)
+      .then(data => {
+        console.debug('Credit history:', data);
+      })
+      .catch(error => {
+        console.error('Error fetching credit history:', error);
+      });
+  },
+  getCreditsInvoice(credits = 0) {
+    const params = {
+      action: 'get_credits_invoice',
+      credits,
+    };
+    const api = getApiFetcher(apiUrl, 'application/json');
+
+    api.get('', {
+      params
+    })
+      .then(response => response.data)
+      .then(data => {
+        console.debug('Credit invoice:', data);
+      })
+      .catch(error => {
+        console.error('Error fetching credit invoice:', error);
+      });
+  },
+  getCreditsBalance() {
+    const params = {
+      action: 'get_credits_balance',
+    };
+    const api = getApiFetcher(apiUrl, 'application/json');
+
+    api.get('', {
+      params
+    })
+      .then(response => response.data)
+      .then(data => {
+        console.debug('Credit balance:', data);
+      })
+      .catch(error => {
+        console.error('Error fetching credit balance:', error);
+      });
+  }
 });
 
 Alpine.store('nostrStore', {
@@ -2964,13 +3064,17 @@ Alpine.store('GAI', {
     this.ImageFilesize = '';
     this.ImageDimensions = '0x0';
   },
-  async generateImage(title, prompt, selectedModel) {
+  async generateImage(title, prompt, selectedModel, negativePrompt = '', aspectRatio = '1:1', stylePreset = '') {
     // Access the form inputs passed as arguments
     console.debug('Title:', title);
     console.debug('Prompt:', prompt);
     console.debug('Selected Model:', selectedModel);
+    console.debug('Negative Prompt:', negativePrompt);
+    console.debug('Aspect Ratio:', aspectRatio);
+    console.debug('Style Preset:', stylePreset);
     // Switch to aiImagesFolderName folder
     menuStore = Alpine.store('menuStore');
+    profileStore = Alpine.store('profileStore');
     if (menuStore.activeFolder !== aiImagesFolderName) {
       console.debug('Switching to folder:', aiImagesFolderName);
       console.debug('Current folder:', menuStore.activeFolder);
@@ -2982,6 +3086,9 @@ Alpine.store('GAI', {
       prompt: prompt,
       model: selectedModel,
       action: 'generate_ai_image',
+      negative_prompt: negativePrompt,
+      aspect_ratio: aspectRatio,
+      style_preset: stylePreset,
     };
 
     // Send the form data to the server
@@ -3006,6 +3113,11 @@ Alpine.store('GAI', {
         data.ai_prompt = prompt;
         // Update the file stats for the folder
         menuStore.updateFolderStatsFromFile(data, aiImagesFolderName, true);
+        // Update availableCredits and debitedCredits
+        if (selectedModel === '@sd/core') {
+          profileStore.profileInfo.availableCredits -= 3;
+          profileStore.profileInfo.debitedCredits += 3;
+        }
         // Add file to the grid
         Alpine.store('fileStore').injectFile(data);
         this.file = data;
@@ -3015,7 +3127,7 @@ Alpine.store('GAI', {
         this.ImageLoading = false;
       })
       .finally(() => {
-        this.ImageLoading = false;
+        //this.ImageLoading = false;
         console.debug('Image loading:', this.ImageLoading);
       });
   },
