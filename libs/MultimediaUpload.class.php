@@ -782,7 +782,7 @@ class MultimediaUpload
         }
         // Generate transformed file hash
         $transformedFileSha256 = $this->generateFileName(0);
-        if (!$this->uploadToS3($newFilePrefix . $newFileName, $transformedFileSha256, $s3Backup)) {
+        if (!$this->uploadToS3($newFilePrefix . $newFileName, $fileSha256, $s3Backup)) {
           $returnError[] = [false, 500, 'Failed to upload to S3'];
           throw new Exception('Upload to S3 failed');
         }
