@@ -690,9 +690,6 @@ class MultimediaUpload
             error_log("Video repackaging failed: " . $e->getMessage());
           }
         }
-        // Begin a database transaction, so that we can rollback if anything fails
-        $this->db->begin_transaction(MYSQLI_TRANS_START_WITH_CONSISTENT_SNAPSHOT);
-
         // By this time the image has been processed and saved to a temporary location
         // It is now ready to be uploaded to S3 and information about it stored in the database
         // Determine if we will backup the upload to S3 based on account level
