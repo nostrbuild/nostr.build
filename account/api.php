@@ -668,19 +668,19 @@ if (isset($_GET["action"])) {
 			http_response_code(500);
 			echo json_encode(array("error" => "Failed to get credits invoice"));
 		}
+	} else if ($action == "get_credits_balance") {
+		try {
+			$credits = getSDUserCredits();
+			http_response_code(200);
+			echo json_encode($credits);
+		} catch (Exception $e) {
+			error_log($e->getMessage());
+			http_response_code(500);
+			echo json_encode(array("error" => "Failed to get credits balance"));
+		}
 	} else {
 		http_response_code(400);
 		echo json_encode(array("error" => "Invalid action"));
-	}
-} else if ($action == "get_credits_balance") {
-	try {
-		$credits = getSDUserCredits();
-		http_response_code(200);
-		echo json_encode($credits);
-	} catch (Exception $e) {
-		error_log($e->getMessage());
-		http_response_code(500);
-		echo json_encode(array("error" => "Failed to get credits balance"));
 	}
 } elseif (isset($_POST['action'])) {
 	// Handle AI image generation
