@@ -934,7 +934,7 @@ if (isset($_GET["action"])) {
 			return $tag[0] === 'e';
 		})) : [];
 
-		if (!$signedEvent || (empty($mediaIds) && $eventKind !== 5) || ($eventId === 5 && empty($eventIdsToDelete)) || !$eventId || !$eventCreatedAt || !$eventContent) {
+		if (!$signedEvent || (empty($mediaIds) && $eventKind !== 5) || ($eventKind === 5 && empty($eventIdsToDelete)) || !$eventId || !$eventCreatedAt || !$eventContent) {
 			http_response_code(400);
 			echo json_encode(array("error" => "No event to publish or delete"));
 			exit;
@@ -956,18 +956,30 @@ if (isset($_GET["action"])) {
 
 			switch ($eventKind) {
 				case 5:
-					// Delete the Nostr event from the database
-					$sql = "DELETE FROM users_nostr_notes WHERE usernpub = ? AND note_id = ?";
-					$stmt = $link->prepare($sql);
-					$stmt->bind_param("ss", $_SESSION['usernpub'], $eventId);
-					$stmt->execute();
-					$stmt->close();
-					// Delete the images associated with the event
-					$sql = "DELETE FROM users_nostr_images WHERE usernpub = ? AND note_id = ?";
-					$stmt = $link->prepare($sql);
-					$stmt->bind_param("ss", $_SESSION['usernpub'], $eventId);
-					$stmt->execute();
-					$stmt->close();
+					// Lopp through the event IDs to delete
+					// Prepare the SQL statement for deleting Nostr events
+					$sqlDeleteEvent = "DELETE FROM users_nostr_notes WHERE usernpub = ? AND note_id = ?";
+					$stmtDeleteEvent = $link->prepare($sqlDeleteEvent);
+
+					// Prepare the SQL statement for deleting images associated with Nostr events
+					$sqlDeleteImage = "DELETE FROM users_nostr_images WHERE usernpub = ? AND note_id = ?";
+					$stmtDeleteImage = $link->prepare($sqlDeleteImage);
+
+					foreach ($eventIdsToDelete as $eventToDelete) {
+						error_log("Deleting Nostr event from the database, event id {$eventToDelete}");
+
+						// Bind parameters and execute for deleting the event
+						$stmtDeleteEvent->bind_param("ss", $_SESSION['usernpub'], $eventToDelete);
+						$stmtDeleteEvent->execute();
+
+						// Bind parameters and execute for deleting associated images
+						$stmtDeleteImage->bind_param("ss", $_SESSION['usernpub'], $eventToDelete);
+						$stmtDeleteImage->execute();
+					}
+
+					// Close the statements after the loop
+					$stmtDeleteEvent->close();
+					$stmtDeleteImage->close();
 					break;
 				case 1:
 					// Store the Nostr event in the database, or delete it if it is kind 5 (delete)

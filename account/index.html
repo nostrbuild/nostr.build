@@ -16,10 +16,10 @@
 	<meta name="msapplication-TileColor" content="#9f00a7">
 	<meta name="theme-color" content="#ffffff">
 
-	<script defer src="/scripts/dist/account-v2.js?v=36347ac42081bf007c752ea5c67affb0"></script>
+	<script defer src="/scripts/dist/account-v2.js?v=73e54416d1127872db7357a689a59b14"></script>
 	<link href="/scripts/dist/account-v2.css?v=5ecc26aa69603a0fc007bf24b7636047" rel="stylesheet">
 
-	<link href="/styles/twbuild.css?v=0005df9bf24fbd8e01b6d58ac78646b2" rel="stylesheet">
+	<link href="/styles/twbuild.css?v=6c2325e7c7eca3b38d9d87535f36eccb" rel="stylesheet">
 
 	<!-- Pre-connect and DNS prefetch -->
 	<link rel="preconnect" href="https://i.nostr.build" crossorigin>
@@ -1862,6 +1862,7 @@ onDropCB(event) {
 									const checkStatus = () => {
 										checkMediaVirusScanStatus(file.url, file.media_type).then(results => {
 											scanResults = results;
+											file.scanResults = scanResults;
 											if (results?.status === 'pending') {
 												setTimeout(checkStatus, 30000);
 											}
@@ -1959,139 +1960,6 @@ onDropCB(event) {
 											</button>
 										</div>
 										<!-- /Multi-select (ZOOMED) -->
-										<!-- Media actions -->
-										<div x-cloak x-show="showMediaActions"
-											@click.outside="showMediaActions = false || fileStore.deleteConfirmation.isOpen || fileStore.shareMedia.isOpen || fileStore.moveToFolder.isOpen"
-											class="absolute inset-0 object-contain bg-black/80 py-1 px-3 sm:py-2 z-[9] flex flex-col">
-											<div class="m-auto w-5/6 grid gap-1 grid-cols-3 place-items-center">
-												<!-- Buttons -->
-												<!-- Delete button -->
-												<button x-data="{deleteClick: false}" @click="fileStore.deleteConfirmation.open(file.id)"
-													class="p-1 bg-nbpurple-600/10 text-nbpurple-50 rounded-md hover:bg-nbpurple-700/10 focus:outline-none focus:ring-2 focus:ring-nbpurple-500/10"
-													aria-label="Delete media file">
-													<svg x-show="!deleteClick" class="max-h-11 w-full inline-block" fill="none"
-														viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true"
-														x-transition:enter="transition-opacity duration-500" x-transition:enter-start="opacity-0"
-														x-transition:enter-end="opacity-100">
-														<path stroke-linecap="round" stroke-linejoin="round"
-															d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
-													</svg>
-													<svg x-cloak x-show="deleteClick"
-														class="max-h-11 animate-[pulse_3s_ease-in-out_infinite] w-full inline-block" fill="none"
-														viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true"
-														x-transition:enter="transition-opacity duration-500" x-transition:enter-start="opacity-0"
-														x-transition:enter-end="opacity-100">
-														<path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" />
-													</svg>
-												</button>
-												<!-- Share button -->
-												<button x-cloak
-													x-show="profileStore.profileInfo.isShareEligible && (!scanResults || scanResults?.status === 'clean')"
-													x-data="{shareClick: false}" @click="fileStore.shareMedia.open(file.id)"
-													class="p-1 bg-nbpurple-600/10 text-nbpurple-50 rounded-md hover:bg-nbpurple-700/10 focus:outline-none focus:ring-2 focus:ring-nbpurple-500/10"
-													aria-label="Share media file">
-													<svg x-show="!shareClick" class="max-h-11 w-full inline-block" fill="none" viewBox="0 0 24 24"
-														stroke-width="1.5" stroke="currentColor" aria-hidden="true"
-														x-transition:enter="transition-opacity duration-500" x-transition:enter-start="opacity-0"
-														x-transition:enter-end="opacity-100">
-														<path stroke-linecap="round" stroke-linejoin="round"
-															d="M7.5 7.5h-.75A2.25 2.25 0 0 0 4.5 9.75v7.5a2.25 2.25 0 0 0 2.25 2.25h7.5a2.25 2.25 0 0 0 2.25-2.25v-7.5a2.25 2.25 0 0 0-2.25-2.25h-.75m0-3-3-3m0 0-3 3m3-3v11.25m6-2.25h.75a2.25 2.25 0 0 1 2.25 2.25v7.5a2.25 2.25 0 0 1-2.25 2.25h-7.5a2.25 2.25 0 0 1-2.25-2.25v-.75" />
-													</svg>
-													<svg x-cloak x-show="shareClick"
-														class="max-h-11 animate-[pulse_3s_ease-in-out_infinite] w-full inline-block" fill="none"
-														viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true"
-														x-transition:enter="transition-opacity duration-500" x-transition:enter-start="opacity-0"
-														x-transition:enter-end="opacity-100">
-														<path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" />
-													</svg>
-												</button>
-												<!-- Move button -->
-												<button x-data="{moveClick: false}" @click="fileStore.moveToFolder.open(file.id)"
-													class="p-1 bg-nbpurple-600/10 text-nbpurple-50 rounded-md hover:bg-nbpurple-700/10 focus:outline-none focus:ring-2 focus:ring-nbpurple-500/10"
-													aria-label="Move media file to folder">
-													<svg x-show="!moveClick" class="max-h-11 w-full inline-block" fill="none" viewBox="0 0 24 24"
-														stroke-width="1.5" stroke="currentColor" aria-hidden="true"
-														x-transition:enter="transition-opacity duration-500" x-transition:enter-start="opacity-0"
-														x-transition:enter-end="opacity-100">
-														<path stroke-linecap="round" stroke-linejoin="round"
-															d="M2 9V5a2 2 0 0 1 2-2h3.9a2 2 0 0 1 1.69.9l.81 1.2a2 2 0 0 0 1.67.9H20a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-1" />
-														<path stroke-linecap="round" stroke-linejoin="round" d="M2 13h10" />
-														<path stroke-linecap="round" stroke-linejoin="round" d="m9 16 3-3-3-3" />
-													</svg>
-													<svg x-cloak x-show="moveClick"
-														class="max-h-11 animate-[pulse_3s_ease-in-out_infinite] w-full inline-block" fill="none"
-														viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true"
-														x-transition:enter="transition-opacity duration-500" x-transition:enter-start="opacity-0"
-														x-transition:enter-end="opacity-100">
-														<path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" />
-													</svg>
-												</button>
-												<!-- Copy link -->
-												<button x-cloak x-show="!scanResults || scanResults?.status === 'clean'"
-													x-data="{copyClick: false}"
-													@click="copyUrlToClipboard(file.url); copyClick = true; setTimeout(() => copyClick = false, 2000); showToast = true"
-													class="p-1 bg-nbpurple-600/10 text-nbpurple-50 rounded-md hover:bg-nbpurple-700/10 focus:outline-none focus:ring-2 focus:ring-nbpurple-500/10"
-													aria-label="Copy image URL to clipboard">
-													<svg x-show="!copyClick" class="max-h-11 w-full inline-block" fill="none" viewBox="0 0 24 24"
-														stroke-width="1.5" stroke="currentColor" aria-hidden="true"
-														x-transition:enter="transition-opacity duration-500" x-transition:enter-start="opacity-0"
-														x-transition:enter-end="opacity-100">
-														<path stroke-linecap="round" stroke-linejoin="round"
-															d="M11.35 3.836c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 0 0 .75-.75 2.25 2.25 0 0 0-.1-.664m-5.8 0A2.251 2.251 0 0 1 13.5 2.25H15c1.012 0 1.867.668 2.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m8.9-4.414c.376.023.75.05 1.124.08 1.131.094 1.976 1.057 1.976 2.192V16.5A2.25 2.25 0 0 1 18 18.75h-2.25m-7.5-10.5H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V18.75m-7.5-10.5h6.375c.621 0 1.125.504 1.125 1.125v9.375m-8.25-3 1.5 1.5 3-3.75" />
-													</svg>
-													<svg x-cloak x-show="copyClick"
-														class="max-h-11 animate-[pulse_3s_ease-in-out_infinite] w-full inline-block" fill="none"
-														viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true"
-														x-transition:enter="transition-opacity duration-500" x-transition:enter-start="opacity-0"
-														x-transition:enter-end="opacity-100">
-														<path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" />
-													</svg>
-												</button>
-												<!-- Nostr Share -->
-												<button x-cloak
-													x-show="profileStore.profileInfo.isNostrShareEligible && (!scanResults || scanResults?.status === 'clean')"
-													@click="nostrStore.share.open(file.id)"
-													class="p-1 bg-nbpurple-600/10 text-nostrpurple-50 rounded-md hover:bg-nbpurple-700/10 focus:outline-none focus:ring-2 focus:ring-nbpurple-500/10"
-													aria-label="Share image on Nostr">
-													<svg class="max-h-11 w-full inline-block" stroke="currentColor" fill="currentColor"
-														viewBox="0 0 256 256" xmlns="http://www.w3.org/2000/svg">
-														<circle cx="137.9" cy="99" fill="#fff" r="12.1" />
-														<path
-															d="M210.8 115.9c0-47.3-27.7-68.7-64.4-68.7-16.4 0-31 4.4-42.4 12.5-3.8 2.7-9 .1-9-4.5 0-3.1-2.5-5.7-5.7-5.7H57.7c-3.1 0-5.7 2.5-5.7 5.7v144c0 3.1 2.5 5.7 5.7 5.7h33.7c3.1 0 5.6-2.5 5.6-5.6v-8.4c0-62.8-33.2-109.8-.4-116 30-5.7 64.1-3 64.5 20.1 0 2 .3 8 8.6 11.2 5 2 12.6 2.6 22.6 2.4 0 0 9.1-.7 9.1 8.5 0 11.5-20.4 10.7-20.4 10.7-6.7.3-22.6-1.5-31.7 1.2-4.8 1.5-9 4.2-11.5 9.1-4.2 8.3-6.2 26.5-6.5 45.5v15.5c0 3.1 2.5 5.7 5.7 5.7h68c3.1 0 5.7-2.5 5.7-5.7v-83.2z"
-															fill="#fff" />
-													</svg>
-												</button>
-												<!-- Edit button -->
-												<button x-data="{editClick: false}" @click="fileStore.mediaEdit.open(file)"
-													class="p-1 bg-nbpurple-600/10 text-nbpurple-50 rounded-md hover:bg-nbpurple-700/10 focus:outline-none focus:ring-2 focus:ring-nbpurple-500/10"
-													aria-label="Delete media file">
-													<svg x-show="!editClick" class="max-h-11 w-full inline-block" fill="none" viewBox="0 0 24 24"
-														stroke-width="1.5" stroke="currentColor" aria-hidden="true"
-														x-transition:enter="transition-opacity duration-500" x-transition:enter-start="opacity-0"
-														x-transition:enter-end="opacity-100" stroke-linecap="round" stroke-linejoin="round">
-														<path d="M14 2v4a2 2 0 0 0 2 2h4" />
-														<path d="m3.2 12.9-.9-.4" />
-														<path d="m3.2 15.1-.9.4" />
-														<path d="M4.677 21.5a2 2 0 0 0 1.313.5H18a2 2 0 0 0 2-2V7l-5-5H6a2 2 0 0 0-2 2v2.5" />
-														<path d="m4.9 11.2-.4-.9" />
-														<path d="m4.9 16.8-.4.9" />
-														<path d="m7.5 10.3-.4.9" />
-														<path d="m7.5 17.7-.4-.9" />
-														<path d="m9.7 12.5-.9.4" />
-														<path d="m9.7 15.5-.9-.4" />
-														<circle cx="6" cy="14" r="3" />
-													</svg>
-													<svg x-cloak x-show="editClick"
-														class="max-h-11 animate-[pulse_3s_ease-in-out_infinite] w-full inline-block" fill="none"
-														viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true"
-														x-transition:enter="transition-opacity duration-500" x-transition:enter-start="opacity-0"
-														x-transition:enter-end="opacity-100">
-														<path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" />
-													</svg>
-												</button>
-											</div>
-										</div>
-										<!-- /Media actions -->
 
 										<!-- Uppy Preview -->
 										<template x-if="file.mime.startsWith('uppy/') && file.uppy.preview">
@@ -2187,9 +2055,9 @@ onDropCB(event) {
 											</div>
 											<div>
 												<!-- Normal actions -->
-												<div x-show="!multiSelect" x-data="{copyClick: false}">
+												<div x-show="!multiSelect">
 													<!-- Media actions -->
-													<button @click="showMediaActions = !showMediaActions"
+													<button @click="fileStore.mediaProperties.open(file)"
 														class="mt-1 px-1 py-1 bg-transparent text-nbpurple-50 rounded-md hover:text-nbpurple-200 focus:outline-none"
 														aria-label="Show media actions">
 														<svg class="size-5 inline-block" fill="none" viewBox="0 0 20 20" stroke-width="1.5"
@@ -2223,7 +2091,7 @@ onDropCB(event) {
 									<!-- Uppy status -->
 									<template x-if="file.uppy && zoom < 2">
 										<div class="flex justify-between items-center">
-											<div class="overflow-x-clip overflow-ellipsis">
+											<div class="overflow-hidden whitespace-nowrap text-ellipsis">
 												<p :class="{'animate-pulse': file.uppy?.progress >= 100 && !file.uppy.uploadError }"
 													class="pointer-events-none mt-2 truncate block text-xs font-medium text-nbpurple-200"
 													x-text="file.uppy?.progress < 100 ? file.name : file.uppy.uploadError ? file.uppy.errorMessage : 'Processing...'">
@@ -2963,7 +2831,7 @@ onDropCB(event) {
 					}
 			}" x-init="updateCurrentFile(); $watch('fileStore.modalFile', () => updateCurrentFile())"
 					class="absolute inset-0 top-0 h-[10%] object-contain bg-black/80 z-[8] flex flex-col">
-					<div class="m-auto w-[80%] grid gap-1 grid-cols-6 place-items-center">
+					<div class="m-auto w-[80%] grid gap-1 grid-cols-5 place-items-center">
 						<!-- Buttons -->
 						<!-- Delete button -->
 						<button x-data="{deleteClick: false}"
@@ -3062,34 +2930,6 @@ onDropCB(event) {
 								<path
 									d="M210.8 115.9c0-47.3-27.7-68.7-64.4-68.7-16.4 0-31 4.4-42.4 12.5-3.8 2.7-9 .1-9-4.5 0-3.1-2.5-5.7-5.7-5.7H57.7c-3.1 0-5.7 2.5-5.7 5.7v144c0 3.1 2.5 5.7 5.7 5.7h33.7c3.1 0 5.6-2.5 5.6-5.6v-8.4c0-62.8-33.2-109.8-.4-116 30-5.7 64.1-3 64.5 20.1 0 2 .3 8 8.6 11.2 5 2 12.6 2.6 22.6 2.4 0 0 9.1-.7 9.1 8.5 0 11.5-20.4 10.7-20.4 10.7-6.7.3-22.6-1.5-31.7 1.2-4.8 1.5-9 4.2-11.5 9.1-4.2 8.3-6.2 26.5-6.5 45.5v15.5c0 3.1 2.5 5.7 5.7 5.7h68c3.1 0 5.7-2.5 5.7-5.7v-83.2z"
 									fill="#fff" />
-							</svg>
-						</button>
-						<!-- Edit button -->
-						<button x-data="{editClick: false}" @click="fileStore.closeModal(); fileStore.mediaEdit.open(currentFile)"
-							class="p-1 bg-nbpurple-600/10 text-nbpurple-50 rounded-md hover:bg-nbpurple-700/10 focus:outline-none focus:ring-2 focus:ring-nbpurple-500/10"
-							aria-label="Delete media file">
-							<svg x-show="!editClick" class="max-h-11 w-full inline-block" fill="none" viewBox="0 0 24 24"
-								stroke-width="1.5" stroke="currentColor" aria-hidden="true"
-								x-transition:enter="transition-opacity duration-500" x-transition:enter-start="opacity-0"
-								x-transition:enter-end="opacity-100" stroke-linecap="round" stroke-linejoin="round">
-								<path d="M14 2v4a2 2 0 0 0 2 2h4" />
-								<path d="m3.2 12.9-.9-.4" />
-								<path d="m3.2 15.1-.9.4" />
-								<path d="M4.677 21.5a2 2 0 0 0 1.313.5H18a2 2 0 0 0 2-2V7l-5-5H6a2 2 0 0 0-2 2v2.5" />
-								<path d="m4.9 11.2-.4-.9" />
-								<path d="m4.9 16.8-.4.9" />
-								<path d="m7.5 10.3-.4.9" />
-								<path d="m7.5 17.7-.4-.9" />
-								<path d="m9.7 12.5-.9.4" />
-								<path d="m9.7 15.5-.9-.4" />
-								<circle cx="6" cy="14" r="3" />
-							</svg>
-							<svg x-cloak x-show="editClick"
-								class="max-h-11 animate-[pulse_3s_ease-in-out_infinite] w-full inline-block" fill="none"
-								viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true"
-								x-transition:enter="transition-opacity duration-500" x-transition:enter-start="opacity-0"
-								x-transition:enter-end="opacity-100">
-								<path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" />
 							</svg>
 						</button>
 					</div>
@@ -3350,132 +3190,971 @@ onDropCB(event) {
 			</div>
 		</div>
 
-		<!-- Media properties window -->
-		<div x-cloak class="relative z-50" aria-labelledby="modal-title" role="dialog" aria-modal="true">
-			<div x-show="fileStore.mediaEdit.isOpen" x-transition:enter="ease-out duration-300"
-				x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100"
-				x-transition:leave="ease-in duration-200" x-transition:leave-start="opacity-100"
-				x-transition:leave-end="opacity-0" class="fixed inset-0 bg-nbpurple-900 bg-opacity-75 transition-opacity"></div>
+		<!-- Media edit and detail panel -->
+		<div x-cloak x-show="fileStore.mediaProperties.isOpen" class="relative z-50" role="dialog" aria-modal="true" x-data="{
+			touchStartX: 0,
+			touchEndX: 0,
+			touchStartY: 0,
+			touchEndY: 0,
+			touchStartTime: 0,
+			touchEndTime: 0,
+			handleSwipe() { 
+				const deltaX = this.touchEndX - this.touchStartX;
+				const deltaY = Math.abs(this.touchEndY - this.touchStartY);
+				const timeDelta = this.touchEndTime - this.touchStartTime;
+        const speed = deltaX / timeDelta; // px/ms
+				if (deltaX > 90 && deltaX > deltaY && speed > 0.5)
+				{
+					fileStore.mediaProperties.close();
+					$refs.slideoverContent.scrollTop = 0
+				}
+			}
+	}" @touchstart="touchStartX = $event.touches[0].clientX; touchStartY = $event.touches[0].clientY, touchStartTime = performance.now()"
+			@touchend="touchEndX = $event.changedTouches[0].clientX; touchEndY = $event.changedTouches[0].clientY; touchEndTime = performance.now(); handleSwipe()">
+			<div x-cloak x-show="fileStore.mediaProperties.isOpen"
+				class="fixed inset-0 bg-nbpurple-900 bg-opacity-75 transition-opacity" aria-hidden="true"
+				x-transition:enter="ease-in-out duration-500" x-transition:leave="ease-in-out duration-500"
+				x-transition:enter-start="opacity-0" x-transition:leave-start="opacity-100" x-transition:enter-end="opacity-100"
+				x-transition:leave-end="opacity-0">
+			</div>
 
-			<div x-show="fileStore.mediaEdit.isOpen" x-transition:enter="ease-out duration-300"
-				x-transition:enter-start="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
-				x-transition:enter-end="opacity-100 translate-y-0 sm:scale-100" x-transition:leave="ease-in duration-200"
-				x-transition:leave-start="opacity-100 translate-y-0 sm:scale-100"
-				x-transition:leave-end="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
-				class="fixed inset-0 z-50 overflow-y-auto">
-				<div class="flex min-h-screen items-end justify-center p-4 text-center sm:items-center sm:p-0">
-					<div @click.outside="!fileStore.mediaEdit.isLoading && fileStore.mediaEdit.close(true)"
-						@keydown.escape="!fileStore.mediaEdit.isLoading && fileStore.mediaEdit.close(true)"
-						class="relative transform overflow-hidden rounded-lg bg-nbpurple-700 text-left shadow-xl transition-all mb-24 w-full h-full max-w-72 mx-1 sm:my-8 sm:w-full sm:max-w-lg">
-						<div class="bg-nbpurple-700 px-4 pb-4 pt-5 sm:p-6 sm:pb-4">
-							<div class="sm:flex sm:items-start">
-								<div
-									class="mx-auto flex size-12 flex-shrink-0 items-center justify-center rounded-full bg-nbpurple-100 sm:mx-0 sm:size-10">
-									<svg class="size-6 text-nbpurple-600" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
-										stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
-										<path
-											d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z" />
-										<path d="m15 5 4 4" />
+			<div class="fixed inset-0 overflow-hidden">
+				<div class="absolute inset-0 overflow-hidden">
+					<div class="pointer-events-none fixed inset-y-0 right-0 flex max-w-full sm:pl-10">
+						<!--
+          Slide-over panel, show/hide based on slide-over state.
+        -->
+						<div x-cloak x-show="fileStore.mediaProperties.isOpen"
+							class="pointer-events-auto relative w-screen sm:max-w-screen-sm"
+							x-transition:enter="transform transition ease-in-out duration-500 sm:duration-700"
+							x-transition:enter-start="translate-x-full" x-transition:enter-end="translate-x-0"
+							x-transition:leave="transform transition ease-in-out duration-500 sm:duration-700"
+							x-transition:leave-start="translate-x-0" x-transition:leave-end="translate-x-full">
+							<!--
+            Close button, show/hide based on slide-over state.
+          -->
+							<div class="absolute left-0 top-0 ml-2 sm:-ml-8 flex sm:pr-2 sm:pt-4 pt-2"
+								x-transition:enter="ease-in-out duration-500" x-transition:enter-start="opacity-0"
+								x-transition:enter-end="opacity-100" x-transition:leave="ease-in-out duration-500"
+								x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0">
+								<button type="button" @click="fileStore.mediaProperties.close(); $refs.slideoverContent.scrollTop = 0"
+									class="relative rounded-md text-nbpurple-300 hover:text-nbpurple-50 focus:outline-none focus:ring-2 focus:ring-nbpurple-50">
+									<span class="absolute -inset-2.5"></span>
+									<span class="sr-only">Close panel</span>
+									<svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"
+										aria-hidden="true" data-slot="icon">
+										<path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
 									</svg>
-								</div>
-								<div class="mt-3 text-center sm:ml-4 sm:mt-0 sm:text-left">
-									<h3 class="text-base font-semibold leading-6 text-nbpurple-50" id="modal-title">Edit Media Properties
-									</h3>
-									<div class="mt-2">
-										<!-- Selected media -->
-										<div class="flex items-center justify-center">
-											<div class="isolate flex overflow-hidden pl-3 pr-1 py-2">
-												<!-- image -->
-												<img x-show="fileStore.mediaEdit.targetFile?.media_type === 'image'"
-													class="object-cover rounded-md size-28" :src="fileStore.mediaEdit.targetFile?.thumb"
-													:alt="fileStore.mediaEdit.targetFile?.name">
-												<!-- video -->
-												<video x-show="fileStore.mediaEdit.targetFile?.media_type === 'video'" loop muted autoplay
-													playsinline preload="auto" crossorigin="use-credentials"
-													class="object-cover rounded-md size-28">
-													<source :src="fileStore.mediaEdit.targetFile?.url" type="video/mp4">
-												</video>
-												<!-- audio -->
-												<img x-show="fileStore.mediaEdit.targetFile?.media_type === 'audio'"
-													src="https://cdn.nostr.build/assets/audio/jpg/audio-wave@0.25x.jpg"
-													:alt="'Poster for ' + fileStore.mediaEdit.targetFile?.name" loading="eager"
-													class="object-cover rounded-md size-28" />
-												<!-- svg -->
-												<img x-show="fileStore.mediaEdit.targetFile?.mime === 'image/svg+xml'"
-													class="object-cover rounded-md size-28" :src="fileStore.mediaEdit.targetFile?.url"
-													:alt="fileStore.mediaEdit.targetFile?.url">
-												<!-- other -->
+								</button>
+							</div>
+
+							<!-- Slide-over panel, show/hide based on slide-over state. -->
+							<div @click.away="fileStore.mediaProperties.close(); $refs.slideoverContent.scrollTop = 0"
+								x-ref="slideoverContent" class="h-full overflow-y-auto bg-black p-8 scroll-smooth">
+
+								<div class="space-y-6 pb-16">
+									<div class="sticky top-0 bg-black bg-opacity-10 backdrop-blur-md z-10 pb-4">
+										<div class="aspect-h-7 aspect-w-10 block w-full overflow-hidden rounded-lg">
+											<!-- Loading placeholders -->
+											<div x-show="!fileStore.mediaProperties.contentLoaded"
+												:id="'placeholdersP_' + fileStore.mediaProperties.targetFile?.id">
 												<div
-													x-show="!['image', 'video', 'audio'].includes(fileStore.mediaEdit.targetFile?.media_type) && fileStore.mediaEdit.targetFile?.mime !== 'image/svg+xml'"
-													x-html="getIconByMime(fileStore.mediaEdit.targetFile?.mime, 'size-28 text-nbpurple-50')">
+													x-html="getIconByMime(fileStore.mediaProperties.targetFile?.mime, 'absolute inset-0 pointer-events-none object-cover h-full w-full text-nbpurple-400 animate-pulse opacity-100 transition-opacity duration-500 ease-in', 2, true)">
+												</div>
+											</div>
+											<!-- /Loading placeholders -->
+											<!-- Image -->
+											<template x-if="fileStore.mediaProperties.targetFile?.media_type === 'image'">
+												<img :id="'mediaP_' + fileStore.mediaProperties.targetFile?.id"
+													@load="$el.classList.remove('opacity-0'); fileStore.mediaProperties.contentLoaded = true;"
+													@error="fileStore.mediaProperties.contentLoaded = true, fileStore.mediaProperties.targetFile?.loadError"
+													:src="fileStore.mediaProperties.targetFile?.responsive['240p']"
+													:srcset="fileStore.mediaProperties.targetFile?.srcset"
+													:sizes="fileStore.mediaProperties.targetFile?.sizes"
+													:alt="fileStore.mediaProperties.targetFile?.title ?? fileStore.mediaProperties.targetFile?.name"
+													:width="fileStore.mediaProperties.targetFile?.width"
+													:height="fileStore.mediaProperties.targetFile?.height" loading="eager"
+													class="opacity-0 transition-opacity duration-500 ease-in pointer-events-auto object-contain" />
+											</template>
+											<!-- Video -->
+											<template x-if="fileStore.mediaProperties.targetFile?.media_type === 'video'">
+												<video :id="'mediaP_' + fileStore.mediaProperties.targetFile?.id" crossorigin="use-credentials"
+													controls playsinline preload="auto"
+													x-effect="fileStore.mediaProperties.isOpen ? $el.load() : $el.pause()"
+													x-init="fileStore.mediaProperties.isOpen ? $el.load() : $el.pause()"
+													@loadedmetadata="fileStore.mediaProperties.contentLoaded = true;"
+													@error="setTimeout(()=>{$el.load()}, 5000)" class="pointer-events-auto object-cover">
+													<source :src="fileStore.mediaProperties.targetFile?.url" type="video/mp4">
+													<p>
+														Your browser does not support the video tag.
+														<a :href="fileStore.mediaProperties.targetFile?.url" download>Download the video</a>
+													</p>
+												</video>
+											</template>
+											<!-- Audio -->
+											<template x-if="fileStore.mediaProperties.targetFile?.media_type === 'audio'">
+												<!-- Default poster -->
+												<!-- Use video player to play audio files -->
+												<video crossorigin="use-credentials" controls playsinline preload="auto"
+													x-effect="fileStore.mediaProperties.isOpen ? $el.load() : $el.pause()"
+													x-init="fileStore.mediaProperties.isOpen ? $el.load() : $el.pause()"
+													poster="https://cdn.nostr.build/assets/audio/jpg/audio-wave@0.75x.jpg"
+													@loadedmetadata="fileStore.mediaProperties.contentLoaded = true;"
+													class="pointer-events-auto object-cover">
+													<source :src="fileStore.mediaProperties.targetFile?.url"
+														:type="fileStore.mediaProperties.targetFile?.mime">
+												</video>
+											</template>
+											<!-- PDF -->
+											<template
+												x-if="fileStore.mediaProperties.targetFile?.media_type === 'document' && fileStore.mediaProperties.targetFile?.mime.startsWith('application/pdf')">
+												<iframe class="object-scale-down" :id="'mediaP_' + fileStore.mediaProperties.targetFile?.id"
+													:src="fileStore.mediaProperties.targetFile?.url"
+													:type="fileStore.mediaProperties.targetFile?.mime" class="pointer-events-none" loading="eager"
+													@load="fileStore.mediaProperties.contentLoaded = true;">
+												</iframe>
+											</template>
+											<!-- SVG -->
+											<template
+												x-if="fileStore.mediaProperties.targetFile?.media_type === 'other' && fileStore.mediaProperties.targetFile?.mime === 'image/svg+xml'">
+												<embed class="object-contain" :id="'mediaP_' + fileStore.mediaProperties.targetFile?.id"
+													:src="fileStore.mediaProperties.targetFile?.url"
+													:type="fileStore.mediaProperties.targetFile?.mime" class="pointer-events-none"
+													@load="fileStore.mediaProperties.contentLoaded = true;">
+												</embed>
+											</template>
+											<!-- All other types -->
+											<template x-if="fileStore.mediaProperties.targetFile &&
+												!fileStore.mediaProperties.targetFile?.uppy &&
+												!['image', 'video', 'audio'].includes(fileStore.mediaProperties.targetFile?.media_type) &&
+												!fileStore.mediaProperties.targetFile?.mime.startsWith('application/pdf') &&
+												!fileStore.mediaProperties.targetFile?.mime.startsWith('image/svg+xml')">
+												<div :id="'mediaP_' + fileStore.mediaProperties.targetFile?.id"
+													class="flex items-center justify-center h-full"
+													x-init="fileStore.mediaProperties.contentLoaded = true"
+													x-html="getIconByMime(fileStore.mediaProperties.targetFile?.mime, 'size-1/3 text-nbpurple-300', 2, true)">
+												</div>
+											</template>
+										</div>
+										<div class="mt-4 flex items-start justify-between">
+											<div x-show="!fileStore.mediaProperties.editTitle"
+												class="w-[90%] overflow-hidden whitespace-nowrap text-ellipsis">
+												<h2
+													class="text-base font-semibold leading-6 text-nbpurple-100 overflow-hidden whitespace-nowrap text-ellipsis">
+													<span class="sr-only">Details
+														for
+													</span><span
+														x-text="fileStore.mediaProperties.targetFile?.title?.length > 0 ? fileStore.mediaProperties.targetFile?.title : fileStore.mediaProperties.targetFile?.name"></span>
+												</h2>
+												<p class="text-sm font-medium text-nbpurple-500"
+													x-text="formatBytes(fileStore.mediaProperties.targetFile?.size)">3.9 MB</p>
+											</div>
+											<input x-show="fileStore.mediaProperties.editTitle" type="text" name="title"
+												:id="'title' + fileStore.mediaProperties.targetFile?.id"
+												x-model="fileStore.mediaProperties.newTitle" autocomplete="off"
+												class="w-[90%] rounded-md border-0 py-1.5 bg-nbpurple-600 text-nbpurple-100 font-medium shadow-sm ring-1 ring-inset ring-nbpurple-300 placeholder:text-nbpurple-400 focus:ring-2 focus:ring-inset focus:ring-nbpurple-600 sm:text-sm sm:leading-6">
+
+											<button x-show="!fileStore.mediaProperties.editTitle" type="button"
+												@click="fileStore.mediaProperties.editTitle = true"
+												class="relative -mr-2 flex size-8 items-center justify-center rounded-full bg-black text-nbpurple-100 hover:bg-nbpurple-500 hover:text-nbpurple-200 focus:outline-none focus:ring-2 focus:ring-nbpurple-500">
+												<span class="absolute -inset-1.5"></span>
+												<svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"
+													data-slot="icon">
+													<path
+														d="m2.695 14.762-1.262 3.155a.5.5 0 0 0 .65.65l3.155-1.262a4 4 0 0 0 1.343-.886L17.5 5.501a2.121 2.121 0 0 0-3-3L3.58 13.419a4 4 0 0 0-.885 1.343Z" />
+												</svg>
+												<span class="sr-only">Add/Edit title</span>
+											</button>
+											<button x-show="fileStore.mediaProperties.editTitle" type="button"
+												:disable="fileStore.mediaProperties.isSavingTitle"
+												@click="fileStore.mediaProperties.cancelTitleEdit()"
+												class="relative mx-1 flex size-8 items-center justify-center rounded-full bg-black text-nbpurple-100 hover:bg-nbpurple-500 hover:text-nbpurple-200 focus:outline-none focus:ring-2 focus:ring-nbpurple-500">
+												<span class="absolute -inset-1.5"></span>
+												<svg class="size-5" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor"
+													stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+													<circle cx="12" cy="12" r="10" />
+													<path d="m15 9-6 6" />
+													<path d="m9 9 6 6" />
+												</svg>
+												<span class="sr-only">Cancel editing title</span>
+											</button>
+											<button x-show="fileStore.mediaProperties.editTitle" type="button"
+												:disable="fileStore.mediaProperties.isSavingTitle"
+												@click="fileStore.mediaProperties.saveTitle()"
+												class="relative -mr-2 flex size-8 items-center justify-center rounded-full bg-black text-nbpurple-100 hover:bg-nbpurple-500 hover:text-nbpurple-200 focus:outline-none focus:ring-2 focus:ring-nbpurple-500">
+												<span class="absolute -inset-1.5"></span>
+												<svg x-show="!fileStore.mediaProperties.isSavingTitle" class="size-5" aria-hidden="true"
+													viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"
+													stroke-linecap="round" stroke-linejoin="round">
+													<path
+														d="M15.2 3a2 2 0 0 1 1.4.6l3.8 3.8a2 2 0 0 1 .6 1.4V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z" />
+													<path d="M17 21v-7a1 1 0 0 0-1-1H8a1 1 0 0 0-1 1v7" />
+													<path d="M7 3v4a1 1 0 0 0 1 1h7" />
+												</svg>
+												<svg x-cloak x-show="fileStore.mediaProperties.isSavingTitle" class="animate-spin size-5"
+													aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"
+													stroke-linecap="round" stroke-linejoin="round">
+													<circle cx="12" cy="12" r="10" />
+													<path d="M6 12c0-1.7.7-3.2 1.8-4.2" />
+													<circle cx="12" cy="12" r="2" />
+													<path d="M18 12c0 1.7-.7 3.2-1.8 4.2" />
+												</svg>
+												<span class="sr-only">Save title</span>
+											</button>
+										</div>
+										<!-- Tab Selector -->
+										<div class="p-1 sm:px-2 lg:px-3 -mb-4">
+											<div class="mx-auto max-w-sm">
+												<div class="xs:hidden">
+													<label for="mediat_prop_tabs" class="sr-only">Select a tab</label>
+													<!-- Use an "onChange" listener to redirect the user to the selected tab URL. -->
+													<select id="mediat_prop_tabs" name="mediat_prop_tabs"
+														class="block w-full rounded-md border-none bg-white/5 py-2 pl-3 pr-10 text-base text-nbpurple-50 shadow-sm ring-1 ring-inset ring-white/10 focus:ring-2 focus:ring-inset focus:ring-nbpurple-500 sm:text-sm"
+														x-model="fileStore.mediaProperties.currentTab">
+														<option value="share" :selected="fileStore.mediaProperties.currentTab === $el.value">
+															Share</option>
+														<option value="props" :selected="fileStore.mediaProperties.currentTab === $el.value">
+															Properties</option>
+														<option value="stats" :selected="fileStore.mediaProperties.currentTab === $el.value">
+															Statistics</option>
+														<option value="ai_tools" :selected="fileStore.mediaProperties.currentTab === $el.value">
+															AI
+															Tools</option>
+													</select>
+												</div>
+												<div class="hidden xs:block">
+													<nav class="flex border-b border-white/10">
+														<ul role="list"
+															class="flex min-w-full flex-none gap-x-6 justify-between px-2 text-xs font-semibold leading-6 text-nbpurple-300">
+															<li>
+																<button @click="fileStore.mediaProperties.currentTab = 'share'"
+																	:class="{ 'text-nbpurple-200 border-b-2 border-nbpurple-500': fileStore.mediaProperties.currentTab === 'share' }">Share</button>
+															</li>
+															<li>
+																<button @click="fileStore.mediaProperties.currentTab = 'props'"
+																	:class="{ 'text-nbpurple-200 border-b-2 border-nbpurple-500': fileStore.mediaProperties.currentTab === 'props' }">Properties</button>
+															</li>
+															<li>
+																<button @click="fileStore.mediaProperties.currentTab = 'stats'"
+																	:class="{ 'text-nbpurple-200 border-b-2 border-nbpurple-500': fileStore.mediaProperties.currentTab === 'stats' }">Statistics</button>
+															</li>
+															<li>
+																<button @click="fileStore.mediaProperties.currentTab = 'ai_tools'"
+																	:class="{ 'text-nbpurple-200 border-b-2 border-nbpurple-500': fileStore.mediaProperties.currentTab === 'ai_tools' }">AI
+																	Tools</button>
+															</li>
+														</ul>
+													</nav>
 												</div>
 											</div>
 										</div>
-										<!-- /List of selected media -->
-										<!-- Error message -->
-										<div x-cloak x-show="fileStore.mediaEdit.isError"
-											class="mt-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative"
-											role="alert">
-											<strong class="font-bold">Error!</strong>
-											<span class="block sm:inline">An error occurred while saving your edits.</span>
+										<!-- /Tab Selector -->
+									</div>
+									<!-- Main File Info -->
+									<div x-data="{
+											deleteNostrNoteConfirmation: false,
+											deleteNostrNoteId: null,
+											isDeletingNostrNote: false,
+											openDeleteNostrNoteDialog(noteId) {
+												this.deleteNostrNoteId = noteId;
+												this.deleteNostrNoteConfirmation = true;
+											},
+											closeDeleteNostrNoteDialog() {
+												this.deleteNostrNoteId = null;
+												this.deleteNostrNoteConfirmation = false;
+												this.isDeletingNostrNote = false;
+											},
+											deleteNostrNote() {
+												this.isDeletingNostrNote = true;
+												nostrStore.deleteEvent(this.deleteNostrNoteId).then(() => {
+													console.log('Note deleted:', this.deleteNostrNoteId);
+													this.closeDeleteNostrNoteDialog();
+												}).catch((error) => {
+													console.error('Error deleting note:', error);
+													this.isDeletingNostrNote = false;
+												});
+											}
+										}" x-show="fileStore.mediaProperties.currentTab === 'props'">
+										<!-- Delete nostr event confirmation overlay -->
+										<div x-cloak x-show="deleteNostrNoteConfirmation"
+											class="fixed inset-0 z-10 bg-black/95 rounded-lg p-8 flex flex-col columns-1 items-center justify-center h-screen">
+											<div class="flex flex-col items-center">
+												<div class="flex items center justify-center">
+													<svg x-show="!isDeletingNostrNote" class="size-12 text-red-700" fill="none"
+														viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true">
+														<path stroke-linecap="round" stroke-linejoin="round"
+															d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
+													</svg>
+													<!-- Loading spinner -->
+													<svg x-cloak x-show="isDeletingNostrNote" class="animate-spin size-12 text-red-700"
+														fill="none" viewBox="0 0 24 24">
+														<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4">
+														</circle>
+														<path class="opacity-75" fill="currentColor"
+															d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
+														</path>
+													</svg>
+												</div>
+												<div class="mt-3 text-center">
+													<h3 class="text-base font-semibold leading-6 text-nbpurple-50" id="modal-title">Delete
+														Nostr Note
+													</h3>
+													<div class="mt-2 text-center">
+														<p class="text-sm text-nbpurple-100">Are you sure you want to send deletion request for the
+															note
+															with ID:</p>
+														<p class="font-mono text-xs text-nbpurple-50 truncate max-w-xs mx-auto"
+															x-text="deleteNostrNoteId"></p>
+													</div>
+												</div>
+											</div>
+											<div class="mt-5 flex justify-center">
+												<button @click="deleteNostrNote()" type="button" :disabled="isDeletingNostrNote"
+													class="flex-1 rounded-md bg-red-600 px-3 py-2 text-sm font-semibold text-red-50 shadow-sm hover:bg-red-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-600 disabled:bg-red-600/50">
+													Delete
+												</button>
+												<button @click="closeDeleteNostrNoteDialog()" type="button" :disabled="isDeletingNostrNote"
+													class="ml-3 flex-1 rounded-md bg-nbpurple-600 px-3 py-2 text-sm font-semibold text-nbpurple-100 shadow-sm ring-1 ring-inset ring-nbpurple-300 hover:bg-nbpurple-500 disabled:bg-nbpurple-600/50">
+													Cancel
+												</button>
+											</div>
+										</div>
+										<!-- /Delete nostr event confirmation overlay -->
+										<h3 class="font-medium text-nbpurple-100">Information</h3>
+										<dl class="mt-2 divide-y divide-nbpurple-200 border-b border-t border-nbpurple-200">
+											<div class="flex justify-between py-3 text-sm font-medium">
+												<dt class="text-nbpurple-300">Uploaded by</dt>
+												<dd class="text-nbpurple-100 pl-1" x-text="profileStore.profileInfo?.name ?? 'Anon'"></dd>
+											</div>
+											<div class="flex justify-between py-3 text-sm font-medium">
+												<dt class="text-nbpurple-300">Created</dt>
+												<dd class="text-nbpurple-100 pl-1"
+													x-text="new Date(fileStore.mediaProperties.targetFile?.created_at).toString().replace(/\s\(.*\)/,'')">
+												</dd>
+											</div>
+											<div
+												x-show="fileStore.mediaProperties.targetFile?.width && fileStore.mediaProperties.targetFile?.height"
+												class="flex justify-between py-3 text-sm font-medium">
+												<dt class="text-nbpurple-300">Dimensions</dt>
+												<dd class="text-nbpurple-100 pl-1"
+													x-text="fileStore.mediaProperties.targetFile?.width?.toString() + 'x' + fileStore.mediaProperties.targetFile?.height?.toString()">
+												</dd>
+											</div>
+											<!-- Parent Folder -->
+											<div x-data="{
+												fileMoved: false,
+												newParentFolder: '',
+												editParentFolder: false,
+												savingParentFolder: false,
+												parentFolderId: null,
+												openParentFolderEdit()
+												{
+													this.editParentFolder = true;
+													this.parentFolderId = menuStore.folders.find(folder => folder.name === menuStore.activeFolder).id;
+													fileStore.moveToFolder.selectedFolderName = menuStore.activeFolder;
+													fileStore.moveToFolder.destinationFolderId = this.parentFolderId;
+													fileStore.moveToFolder.selectedIds = [fileStore.mediaProperties.targetFile.id];
+													fileStore.mediaProperties.callback = this.closeParentFolderEdit.bind(this)
+													this.$nextTick(() => {
+														this.$refs.parentFolderInput.focus();
+													});
+												},
+												saveParentFolder()
+												{
+													console.log('Saving parent folder:', this.newParentFolder);
+													this.savingParentFolder = true;
+													this.newParentFolder = fileStore.moveToFolder.selectedFolderName;
+													fileStore.moveToFolderConfirm().then(() => {
+														console.log('Moved to folder:', this.newParentFolder);
+														this.fileMoved = true;
+														this.savingParentFolder = false;
+														this.closeParentFolderEdit();
+													}).catch(() => {
+														console.error('Error moving to folder:', this.newParentFolder);
+														this.savingParentFolder = false;
+													});
+												},
+												closeParentFolderEdit()
+												{
+													this.editParentFolder = false;
+													this.savingParentFolder = false;
+													this.parentFolderId = null;
+													fileStore.mediaProperties.callback = null;
+												}
+												}" class="flex justify-between py-3 text-sm font-medium">
+												<dt class="text-nbpurple-300 flex items-center">Parent Folder</dt>
+												<dd class="text-nbpurple-100 pl-1 flex items-center">
+													<span x-show="!fileStore.mediaProperties.editParentFolder" class="max-w-xs truncate"
+														x-text="fileStore.mediaProperties.newParentFolder?.length > 0 ? fileStore.mediaProperties.newParentFolder : menuStore.activeFolder"></span>
+													<!-- Edit parent folder -->
+													<div x-show="fileStore.mediaProperties.editParentFolder" class="sm:flex sm:items-start mr-2">
+														<div class="text-center sm:mt-0 sm:text-left w-full">
+															<div class="flex items-center">
+																<label for="pf-combobox" class="sr-only">Select
+																	Folder</label>
+																<div class="relative w-full z-auto">
+																	<input id="pf-combobox" type="text"
+																		x-model="fileStore.moveToFolder.selectedFolderName"
+																		@input="fileStore.moveToFolder.searchTerm = $event.target.value; fileStore.moveToFolder.isDropdownOpen = true"
+																		@click="fileStore.moveToFolder.toggleDropdown()"
+																		@click.away="fileStore.moveToFolder.isDropdownOpen = false"
+																		class="w-full rounded-md border-0 bg-nbpurple-50 py-1.5 pl-3 pr-12 text-nbpurple-900 shadow-sm ring-1 ring-inset ring-nbpurple-300 focus:ring-2 focus:ring-inset focus:ring-nbpurple-600 sm:text-sm sm:leading-6"
+																		role="pf-combobox" aria-controls="options"
+																		:aria-expanded="fileStore.moveToFolder.isDropdownOpen.toString()">
+																	<button type="button" @click.stop="fileStore.moveToFolder.toggleDropdown()"
+																		class="absolute inset-y-0 right-0 flex items-center rounded-r-md px-2 focus:outline-none">
+																		<svg class="h-5 w-5 text-nbpurple-400" viewBox="0 0 20 20" fill="currentColor"
+																			aria-hidden="true">
+																			<path fill-rule="evenodd"
+																				d="M10 3a.75.75 0 01.55.24l3.25 3.5a.75.75 0 11-1.1 1.02L10 4.852 7.3 7.76a.75.75 0 01-1.1-1.02l3.25-3.5A.75.75 0 0110 3zm-3.76 9.2a.75.75 0 011.06.04l2.7 2.908 2.7-2.908a.75.75 0 111.1 1.02l-3.25 3.5a.75.75 0 01-1.1 0l-3.25-3.5a.75.75 0 01.04-1.06z"
+																				clip-rule="evenodd" />
+																		</svg>
+																	</button>
+																	<ul x-show="fileStore.moveToFolder.isDropdownOpen"
+																		@click.away="fileStore.moveToFolder.isDropdownOpen = false"
+																		class="absolute z-10 mt-1 max-h-40 w-full overflow-auto rounded-md bg-nbpurple-50 py-1 text-base shadow-lg ring-1 ring-nbpurple-950 ring-opacity-5 focus:outline-none sm:text-sm"
+																		id="options" role="listbox">
+																		<template
+																			x-for="folder in menuStore.folders.filter(f => f.name.toLowerCase().includes(fileStore.moveToFolder.searchTerm.toLowerCase()))">
+																			<li class="relative cursor-default select-none py-2 pl-3 pr-9 text-nbpurple-900"
+																				:id="'option-' + folder.id" role="option"
+																				@click="fileStore.moveToFolder.destinationFolderId = folder.id; fileStore.moveToFolder.selectedFolderName = folder.name; fileStore.moveToFolder.isDropdownOpen = false; fileStore.moveToFolder.searchTerm = ''"
+																				@mouseenter="fileStore.moveToFolder.hoveredFolder = folder.id"
+																				@mouseleave="fileStore.moveToFolder.hoveredFolder = null"
+																				:class="{ 'bg-nbpurple-600 text-nbpurple-50': folder.id === fileStore.moveToFolder.hoveredFolder, 'text-nbpurple-900': folder.id !== fileStore.moveToFolder.hoveredFolder }">
+																				<div class="flex">
+																					<span x-text="folder.name" class="truncate"
+																						:class="{ 'font-semibold': folder.id === fileStore.moveToFolder.destinationFolderId }"></span>
+																				</div>
+																				<span x-show="folder.id === fileStore.moveToFolder.destinationFolderId"
+																					class="absolute inset-y-0 right-0 flex items-center pr-4"
+																					:class="{ 'text-nbpurple-50': folder.id === fileStore.moveToFolder.hoveredFolder, 'text-nbpurple-600': folder.id !== fileStore.moveToFolder.hoveredFolder }">
+																					<svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"
+																						aria-hidden="true">
+																						<path fill-rule="evenodd"
+																							d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.05-.143z"
+																							clip-rule="evenodd" />
+																					</svg>
+																				</span>
+																			</li>
+																		</template>
+																	</ul>
+																</div>
+															</div>
+														</div>
+													</div>
+													<button x-show="fileStore.mediaProperties.editParentFolder" type="button" :disable="fileStore.mediaProperties.savingParentFolder"
+														@click="fileStore.mediaProperties.closeParentFolderEdit()"
+														class="relative mx-1 flex size-8 items-center justify-center rounded-full bg-black text-nbpurple-100 hover:bg-nbpurple-500 hover:text-nbpurple-200 focus:outline-none focus:ring-2 focus:ring-nbpurple-500">
+														<span class="absolute -inset-1.5"></span>
+														<svg class="size-5" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor"
+															stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+															<circle cx="12" cy="12" r="10" />
+															<path d="m15 9-6 6" />
+															<path d="m9 9 6 6" />
+														</svg>
+														<span class="sr-only">Cancel Changing Parent Folder</span>
+													</button>
+													<button x-show="fileStore.mediaProperties.editParentFolder" type="button"
+														:disable="fileStore.mediaProperties.savingParentFolder || fileStore.moveToFolder.destinationFolderId === fileStore.mediaProperties.parentFolderId"
+														@click="fileStore.mediaProperties.saveParentFolder()"
+														class="relative -mr-2 flex size-8 items-center justify-center rounded-full bg-black text-nbpurple-100 hover:bg-nbpurple-500 hover:text-nbpurple-200 focus:outline-none focus:ring-2 focus:ring-nbpurple-500">
+														<span class="absolute -inset-1.5"></span>
+														<svg x-show="!fileStore.mediaProperties.savingParentFolder" class="size-5" aria-hidden="true" viewBox="0 0 24 24"
+															fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"
+															stroke-linejoin="round">
+															<path
+																d="M15.2 3a2 2 0 0 1 1.4.6l3.8 3.8a2 2 0 0 1 .6 1.4V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z" />
+															<path d="M17 21v-7a1 1 0 0 0-1-1H8a1 1 0 0 0-1 1v7" />
+															<path d="M7 3v4a1 1 0 0 0 1 1h7" />
+														</svg>
+														<svg x-cloak x-show="fileStore.mediaProperties.savingParentFolder" class="animate-spin size-5" aria-hidden="true"
+															viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"
+															stroke-linecap="round" stroke-linejoin="round">
+															<circle cx="12" cy="12" r="10" />
+															<path d="M6 12c0-1.7.7-3.2 1.8-4.2" />
+															<circle cx="12" cy="12" r="2" />
+															<path d="M18 12c0 1.7-.7 3.2-1.8 4.2" />
+														</svg>
+														<span class="sr-only">Save Parent Folder</span>
+													</button>
+													<!-- /Edit parent folder -->
+													<button x-show="!fileStore.mediaProperties.editParentFolder && !fileStore.mediaProperties.fileMoved" type="button" @click="fileStore.mediaProperties.openParentFolderEdit()"
+														class="relative ml-1 -mr-2 flex size-8 items-center justify-center rounded-full bg-black text-nbpurple-100 hover:bg-nbpurple-500 hover:text-nbpurple-200 focus:outline-none focus:ring-2 focus:ring-nbpurple-500">
+														<span class="absolute -inset-1.5"></span>
+														<svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"
+															data-slot="icon">
+															<path
+																d="m2.695 14.762-1.262 3.155a.5.5 0 0 0 .65.65l3.155-1.262a4 4 0 0 0 1.343-.886L17.5 5.501a2.121 2.121 0 0 0-3-3L3.58 13.419a4 4 0 0 0-.885 1.343Z" />
+														</svg>
+														<span class="sr-only">Change Parent Folder</span>
+													</button>
+												</dd>
+											</div>
+											<!-- File type -->
+											<div class="flex justify-between py-3 text-sm font-medium">
+												<dt class="text-nbpurple-300">File Type</dt>
+												<dd class="text-nbpurple-100 pl-1 max-w-xs truncate"
+													x-text="fileStore.mediaProperties.targetFile?.mime"></dd>
+											</div>
+											<div x-show="fileStore.mediaProperties.targetFile?.scanResults?.status"
+												class="flex justify-between py-3 text-sm font-medium">
+												<dt class="text-nbpurple-300">Virus Scan Status</dt>
+												<dd class="text-nbpurple-100 pl-1"
+													x-text="fileStore.mediaProperties.targetFile?.scanResults?.status + ' (' + fileStore.mediaProperties.targetFile?.scanResults?.message + ')'">
+												</dd>
+											</div>
+											<div
+												x-show="fileStore.mediaProperties.targetFile?.scanResults?.status && fileStore.mediaProperties.targetFile?.scanResults?.status !== 'pending'"
+												class="flex justify-between py-3 text-sm font-medium">
+												<dt class="text-nbpurple-300">Scanned Date</dt>
+												<dd class="text-nbpurple-100 pl-1"
+													x-text="new Date(fileStore.mediaProperties.targetFile?.scanResults?.date).toString().replace(/\s\(.*\)/,'')">
+												</dd>
+											</div>
+											<div x-show="fileStore.mediaProperties.targetFile?.scanResults?.version"
+												class="flex justify-between py-3 text-sm font-medium">
+												<dt class="text-nbpurple-300">Scanner Version</dt>
+												<dd class="text-nbpurple-100 pl-1"
+													x-text="fileStore.mediaProperties.targetFile?.scanResults?.version"></dd>
+											</div>
+											<!-- Nostr Shares count and dates when it was shared together with note IDs -->
+											<template x-if="fileStore.mediaProperties.targetFile?.associated_notes?.length > 0">
+												<div class="flex justify-between py-3 text-sm font-medium">
+													<dt class="text-nbpurple-300">Nostr notes</dt>
+													<dd class="text-nbpurple-100 pl-1">
+														<table class="min-w-full table-auto">
+															<thead>
+																<tr class="text-left text-sm font-medium text-nbpurple-300">
+																	<th class="px-4 py-2">Note ID</th>
+																	<th class="px-4 py-2">Delete</th>
+																	<th class="px-4 py-2">Date</th>
+																</tr>
+															</thead>
+															<tbody>
+																<template
+																	x-for="(note, index) in fileStore.mediaProperties.targetFile?.associated_notes.split(',').map(n => { const [id, date] = n.split(':'); return { id, date }; })"
+																	:key="note.id">
+																	<tr class="text-sm text-nbpurple-100">
+																		<td class="px-2 py-1 max-w-xs truncate">
+																			<span class="sr-only" x-text="note.id"></span>
+																			<!-- Copy to clipboard -->
+																			<button type="button" x-data="{ idCopied: false }"
+																				@click="copyTextToClipboard(note.id, () => {idCopied = true; showToast = true}, () => {idCopied = false})"
+																				class="relative ml-1 flex h-8 w-fit px-2 items-center justify-center rounded-full bg-black text-nbpurple-100 hover:bg-nbpurple-500 hover:text-nbpurple-200 focus:outline-none focus:ring-2 focus:ring-nbpurple-500">
+																				<span class="absolute -inset-1.5"></span>
+																				<svg x-show="!idCopied" class="size-5 transition-all" fill="none"
+																					viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"
+																					aria-hidden="true">
+																					<path stroke-linecap="round" stroke-linejoin="round"
+																						d="M11.35 3.836c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 0 0 .75-.75 2.25 2.25 0 0 0-.1-.664m-5.8 0A2.251 2.251 0 0 1 13.5 2.25H15c1.012 0 1.867.668 2.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m8.9-4.414c.376.023.75.05 1.124.08 1.131.094 1.976 1.057 1.976 2.192V16.5A2.25 2.25 0 0 1 18 18.75h-2.25m-7.5-10.5H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V18.75m-7.5-10.5h6.375c.621 0 1.125.504 1.125 1.125v9.375m-8.25-3 1.5 1.5 3-3.75" />
+																				</svg>
+																				<svg x-cloak x-show="idCopied" class="size-5 transition-all" fill="none"
+																					viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"
+																					aria-hidden="true">
+																					<path stroke-linecap="round" stroke-linejoin="round"
+																						d="m4.5 12.75 6 6 9-13.5" />
+																				</svg>
+																				<span class="ml-1">Copy</span>
+																			</button>
+																		</td>
+																		<td class="px-4 py-2">
+																			<button type="button" @click="openDeleteNostrNoteDialog(note.id)"
+																				class="relative flex h-8 w-fit px-2 items-center justify-center rounded-full bg-black text-nbpurple-100 hover:bg-nbpurple-500 hover:text-nbpurple-200 focus:outline-none focus:ring-2 focus:ring-nbpurple-500">
+																				<span class="absolute -inset-1.5"></span>
+																				<svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+																					stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+																					<circle cx="12" cy="12" r="10" />
+																					<path d="m15 9-6 6" />
+																					<path d="m9 9 6 6" />
+																				</svg>
+																				<span class="sr-only">Request note deletion</span>
+																			</button>
+																		</td>
+																		<td class="px-4 py-2">
+																			<span x-text="new Date(note.date * 1000).toDateString()"></span>
+																		</td>
+																	</tr>
+																</template>
+															</tbody>
+														</table>
+													</dd>
+												</div>
+											</template>
+
+										</dl>
+									</div>
+									<!-- Description -->
+									<div x-show="fileStore.mediaProperties.currentTab === 'props'">
+										<h3 class="font-medium text-nbpurple-100">Description</h3>
+										<div class="mt-2 flex items-center justify-between">
+											<p x-show="!fileStore.mediaProperties.editDescription" class="text-sm italic text-nbpurple-300"
+												x-text="fileStore.mediaProperties.targetFile?.description?.length > 0 ? fileStore.mediaProperties.targetFile.description : 'Add a description to this media.'">
+											</p>
+											<textarea x-show="fileStore.mediaProperties.editDescription"
+												x-model="fileStore.mediaProperties.newDescription" autocomplete="off"
+												placeholder="Add a description to this media."
+												class="block w-full rounded-md border-0 py-1.5 bg-nbpurple-600 text-nbpurple-100 font-medium shadow-sm ring-1 ring-inset ring-nbpurple-300 placeholder:text-nbpurple-400 focus:ring-2 focus:ring-inset focus:ring-nbpurple-600 sm:text-sm sm:leading-6">
+											</textarea>
+											<button x-show="!fileStore.mediaProperties.editDescription" type="button"
+												@click="fileStore.mediaProperties.editDescription = true"
+												class="relative -mr-2 flex size-8 items-center justify-center rounded-full bg-black text-nbpurple-100 hover:bg-nbpurple-500 hover:text-nbpurple-200 focus:outline-none focus:ring-2 focus:ring-nbpurple-500">
+												<span class="absolute -inset-1.5"></span>
+												<svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"
+													data-slot="icon">
+													<path
+														d="m2.695 14.762-1.262 3.155a.5.5 0 0 0 .65.65l3.155-1.262a4 4 0 0 0 1.343-.886L17.5 5.501a2.121 2.121 0 0 0-3-3L3.58 13.419a4 4 0 0 0-.885 1.343Z" />
+												</svg>
+												<span class="sr-only">Add/Edit description</span>
+											</button>
+											<button x-show="fileStore.mediaProperties.editDescription" type="button"
+												:disable="fileStore.mediaProperties.isSavingDescription"
+												@click="fileStore.mediaProperties.cancelDescriptionEdit()"
+												class="relative mx-1 flex size-8 items-center justify-center rounded-full bg-black text-nbpurple-100 hover:bg-nbpurple-500 hover:text-nbpurple-200 focus:outline-none focus:ring-2 focus:ring-nbpurple-500">
+												<span class="absolute -inset-1.5"></span>
+												<svg class="size-5" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor"
+													stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+													<circle cx="12" cy="12" r="10" />
+													<path d="m15 9-6 6" />
+													<path d="m9 9 6 6" />
+												</svg>
+												<span class="sr-only">Cancel editing description</span>
+											</button>
+											<button x-show="fileStore.mediaProperties.editDescription" type="button"
+												:disable="fileStore.mediaProperties.isSavingDescription"
+												@click="fileStore.mediaProperties.saveDescription()"
+												class="relative -mr-2 flex size-8 items-center justify-center rounded-full bg-black text-nbpurple-100 hover:bg-nbpurple-500 hover:text-nbpurple-200 focus:outline-none focus:ring-2 focus:ring-nbpurple-500">
+												<span class="absolute -inset-1.5"></span>
+												<svg x-show="!fileStore.mediaProperties.isSavingDescription" class="size-5" aria-hidden="true"
+													viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"
+													stroke-linecap="round" stroke-linejoin="round">
+													<path
+														d="M15.2 3a2 2 0 0 1 1.4.6l3.8 3.8a2 2 0 0 1 .6 1.4V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z" />
+													<path d="M17 21v-7a1 1 0 0 0-1-1H8a1 1 0 0 0-1 1v7" />
+													<path d="M7 3v4a1 1 0 0 0 1 1h7" />
+												</svg>
+												<svg x-cloak x-show="fileStore.mediaProperties.isSavingDescription" class="animate-spin size-5"
+													aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"
+													stroke-linecap="round" stroke-linejoin="round">
+													<circle cx="12" cy="12" r="10" />
+													<path d="M6 12c0-1.7.7-3.2 1.8-4.2" />
+													<circle cx="12" cy="12" r="2" />
+													<path d="M18 12c0 1.7-.7 3.2-1.8 4.2" />
+												</svg>
+												<span class="sr-only">Save description</span>
+											</button>
 										</div>
 									</div>
-									<!-- Edit form -->
-									<div>
-										<form class="flex w-full h-full flex-col overflow-y-scroll"
-											@submit.prevent="fileStore.mediaEdit.save()">
-
-											<!-- Title -->
-											<div class="space-y-2 px-4 sm:grid sm:grid-cols-3 sm:gap-4 sm:space-y-0 sm:px-6 sm:py-5">
-												<div>
-													<label for="title"
-														class="block text-sm font-medium leading-6 text-nbpurple-200 sm:mt-1.5">Title</label>
-												</div>
-												<div class="sm:col-span-2">
-													<input type="text" name="title" id="title" x-model="fileStore.mediaEdit.editTitle"
-														autocomplete="off"
-														class="block w-full rounded-md border-0 py-1.5 bg-nbpurple-600 text-nbpurple-100 font-medium shadow-sm ring-1 ring-inset ring-nbpurple-300 placeholder:text-nbpurple-400 focus:ring-2 focus:ring-inset focus:ring-nbpurple-600 sm:text-sm sm:leading-6">
-												</div>
-											</div>
-											<!-- Description -->
-											<div class="space-y-2 px-4 sm:grid sm:grid-cols-3 sm:gap-4 sm:space-y-0 sm:px-6 sm:py-5">
-												<div>
-													<label for="description"
-														class="block text-sm font-medium leading-6 text-nbpurple-200 sm:mt-1.5">Description</label>
-												</div>
-												<div class="sm:col-span-2">
-													<textarea name="description" id="description" x-model="fileStore.mediaEdit.editDescription"
-														autocomplete="off"
-														class="block w-full rounded-md border-0 py-1.5 bg-nbpurple-600 text-nbpurple-100 font-medium shadow-sm ring-1 ring-inset ring-nbpurple-300 placeholder:text-nbpurple-400 focus:ring-2 focus:ring-inset focus:ring-nbpurple-600 sm:text-sm sm:leading-6">
-													</textarea>
-												</div>
-											</div>
-
-										</form>
+									<!-- /Descriptiom -->
+									<!-- AI Prompt -->
+									<div
+										x-show="fileStore.mediaProperties.currentTab === 'props' && fileStore.mediaProperties.targetFile?.ai_prompt?.length > 0">
+										<h3 class="font-medium text-nbpurple-100">AI Prompt</h3>
+										<div class="mt-2 flex items-center justify-between">
+											<p class="text-sm italic text-nbpurple-300"
+												x-text="fileStore.mediaProperties.targetFile?.ai_prompt">
+											</p>
+											<button type="button" x-data="{ promptCopied: false }"
+												@click="copyTextToClipboard(fileStore.mediaProperties.targetFile?.ai_prompt, () => {promptCopied = true; showToast = true}, () => {promptCopied = false})"
+												class="relative ml-1 flex size-8 items-center justify-center rounded-full bg-black text-nbpurple-100 hover:bg-nbpurple-500 hover:text-nbpurple-200 focus:outline-none focus:ring-2 focus:ring-nbpurple-500">
+												<span class="absolute -inset-1.5"></span>
+												<svg x-show="!promptCopied" class="size-5 transition-all" fill="none" viewBox="0 0 24 24"
+													stroke-width="1.5" stroke="currentColor" aria-hidden="true">
+													<path stroke-linecap="round" stroke-linejoin="round"
+														d="M11.35 3.836c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 0 0 .75-.75 2.25 2.25 0 0 0-.1-.664m-5.8 0A2.251 2.251 0 0 1 13.5 2.25H15c1.012 0 1.867.668 2.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m8.9-4.414c.376.023.75.05 1.124.08 1.131.094 1.976 1.057 1.976 2.192V16.5A2.25 2.25 0 0 1 18 18.75h-2.25m-7.5-10.5H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V18.75m-7.5-10.5h6.375c.621 0 1.125.504 1.125 1.125v9.375m-8.25-3 1.5 1.5 3-3.75" />
+												</svg>
+												<svg x-cloak x-show="promptCopied" class="size-5 transition-all" fill="none" viewBox="0 0 24 24"
+													stroke-width="1.5" stroke="currentColor" aria-hidden="true">
+													<path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" />
+												</svg>
+											</button>
+										</div>
 									</div>
-									<!-- /Edit form -->
+									<!-- /AI Prompt -->
+									<!-- Sharing -->
+
+									<div x-show="fileStore.mediaProperties.currentTab === 'share'">
+										<h3 class="font-medium text-nbpurple-100">Share</h3>
+										<ul role="list" class="mt-2 divide-y divide-nbpurple-200 border-b border-t border-nbpurple-200">
+											<!-- URL Link sharing -->
+											<li class="flex items-center justify-between py-3">
+												<div class="flex items-center overflow-hidden whitespace-nowrap text-ellipsis">
+													<p
+														class="ml-4 text-sm font-medium text-nbpurple-100 overflow-hidden whitespace-nowrap text-ellipsis">
+														URL:<span x-text="fileStore.mediaProperties.targetFile?.url"
+															class="text-sm font-medium text-nbpurple-100 pl-1"></span></p>
+												</div>
+												<button type="button" x-data="{ linkCopied: false }"
+													@click="copyUrlToClipboard(fileStore.mediaProperties.targetFile?.url); linkCopied = true; setTimeout(() => linkCopied = false, 2000); showToast = true"
+													class="relative ml-4 flex size-8 items-center justify-center rounded-full bg-black text-nbpurple-100 hover:bg-nbpurple-500 hover:text-nbpurple-200 focus:outline-none focus:ring-2 focus:ring-nbpurple-500">
+													<span class="absolute -inset-1.5"></span>
+													<svg x-show="!linkCopied" class="size-5 transition-all" fill="none" viewBox="0 0 24 24"
+														stroke-width="1.5" stroke="currentColor" aria-hidden="true">
+														<path stroke-linecap="round" stroke-linejoin="round"
+															d="M11.35 3.836c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 0 0 .75-.75 2.25 2.25 0 0 0-.1-.664m-5.8 0A2.251 2.251 0 0 1 13.5 2.25H15c1.012 0 1.867.668 2.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m8.9-4.414c.376.023.75.05 1.124.08 1.131.094 1.976 1.057 1.976 2.192V16.5A2.25 2.25 0 0 1 18 18.75h-2.25m-7.5-10.5H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V18.75m-7.5-10.5h6.375c.621 0 1.125.504 1.125 1.125v9.375m-8.25-3 1.5 1.5 3-3.75" />
+													</svg>
+													<svg x-cloak x-show="linkCopied" class="size-5 transition-all" fill="none" viewBox="0 0 24 24"
+														stroke-width="1.5" stroke="currentColor" aria-hidden="true">
+														<path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" />
+													</svg>
+													<span class="sr-only">Copy link</span>
+												</button>
+											</li>
+											<!-- Direct sharing on Creator Page -->
+											<li x-show="profileStore.profileInfo.isCreatorsPageEligible"
+												class="flex items-center justify-between py-3">
+												<div class="flex items-center">
+													<a target="_blank" :href="profileStore.profileInfo.creatorPageLink"
+														class="ml-4 text-sm font-medium text-nbpurple-100 flex flex-shrink">Creators Page</p>
+														<svg class="size-5 ml-1" aria-hidden="true" viewBox="0 0 24 24" fill="none"
+															stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+															<path d="M15 3h6v6" />
+															<path d="M10 14 21 3" />
+															<path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+														</svg>
+													</a>
+												</div>
+												<div x-data="{
+													enabled: false,
+													init() {
+														this.enabled = this.getFlag();
+														this.$watch('fileStore.mediaProperties?.targetFile', () => {
+															this.enabled = this.getFlag();
+														});
+													},
+													getFlag() {
+														return fileStore.mediaProperties?.targetFile?.flag
+													}
+												}" class="relative ml-4 flex">
+													<button :disabled="fileStore.mediaProperties.isSharing" :class="{
+																											'bg-nbpurple-600': enabled,
+																											'bg-nbpurple-300': !enabled
+																										}" type="button"
+														class="cursor-pointer relative inline-flex h-6 w-11 flex-shrink-0 rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-nbpurple-600 focus:ring-offset-2"
+														role="switch" :aria-checked="enabled" aria-labelledby="creator-page-share-single"
+														@click="fileStore.mediaProperties.toggleCreatorSharing()">
+														<span aria-hidden="true" :class="enabled ? 'translate-x-5' : 'translate-x-0'"
+															class="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-nbpurple-50 shadow ring-0 transition duration-200 ease-in-out"></span>
+														<!-- isSharing state spinner -->
+														<svg x-cloak x-show="fileStore.mediaProperties.isSharing" class="animate-spin size-5"
+															aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+															stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+															<circle cx="12" cy="12" r="10" />
+															<path d="M6 12c0-1.7.7-3.2 1.8-4.2" />
+															<circle cx="12" cy="12" r="2" />
+															<path d="M18 12c0 1.7-.7 3.2-1.8 4.2" />
+														</svg>
+													</button>
+												</div>
+											</li>
+											<!-- Direct sharing to Nostr -->
+											<li
+												x-show="profileStore.profileInfo.isNostrShareEligible && !fileStore.mediaProperties.isNostrShareDialogOpen"
+												class="flex items-center justify-between py-3">
+												<div class="flex items-center">
+													<p class="ml-4 text-sm font-medium text-nbpurple-100">Nostr</p>
+												</div>
+												<button :disabled="fileStore.shareMedia.isLoading"
+													@click="fileStore.mediaProperties.openNostrDialog();"
+													class="ring-1 ring-nostrpurple-400 px-2 py-1 bg-nostrpurple-500 text-nostrpurple-50 rounded-md hover:bg-nostrpurple-400 focus:outline-none focus:ring-2 focus:ring-nostrpurple-300 shadow-sm hover:shadow-nostrpurple-100 disabled:cursor-not-allowed disabled:bg-nostrpurple-200"
+													aria-label="Share images(s) on Nostr">
+													<svg aria-hidden="true" class="size-6 inline-block" stroke="currentColor" fill="currentColor"
+														viewBox="0 0 256 256" xmlns="http://www.w3.org/2000/svg">
+														<circle cx="137.9" cy="99" fill="#fff" r="12.1" />
+														<path
+															d="M210.8 115.9c0-47.3-27.7-68.7-64.4-68.7-16.4 0-31 4.4-42.4 12.5-3.8 2.7-9 .1-9-4.5 0-3.1-2.5-5.7-5.7-5.7H57.7c-3.1 0-5.7 2.5-5.7 5.7v144c0 3.1 2.5 5.7 5.7 5.7h33.7c3.1 0 5.6-2.5 5.6-5.6v-8.4c0-62.8-33.2-109.8-.4-116 30-5.7 64.1-3 64.5 20.1 0 2 .3 8 8.6 11.2 5 2 12.6 2.6 22.6 2.4 0 0 9.1-.7 9.1 8.5 0 11.5-20.4 10.7-20.4 10.7-6.7.3-22.6-1.5-31.7 1.2-4.8 1.5-9 4.2-11.5 9.1-4.2 8.3-6.2 26.5-6.5 45.5v15.5c0 3.1 2.5 5.7 5.7 5.7h68c3.1 0 5.7-2.5 5.7-5.7v-83.2z"
+															fill="#fff" />
+													</svg>
+													Share via Nostr
+												</button>
+											</li>
+											<template x-if="fileStore.mediaProperties.isNostrShareDialogOpen">
+												<li class="flex items-center justify-between py-3">
+													<div class="flex items-center w-full">
+														<div
+															class="relative transform overflow-hidden rounded-lg bg-nostrpurple-700 text-left shadow-xl transition-all w-full max-w-xl">
+															<div class="bg-nostrpurple-700 px-4 pb-4 pt-5">
+																<div class="">
+																	<div class="w-full mt-3 text-center">
+																		<h3 class="text-base font-semibold leading-6 text-nbpurple-50" id="ns-modal-title">
+																			Share
+																			via Nostr</h3>
+																		<div class="mt-2">
+																			<!-- Profile -->
+																			<div class="group block flex-shrink-0">
+																				<div class="flex items-center">
+																					<div class="flex-shrink-0">
+																						<img class="size-9 rounded-full object-cover"
+																							:src="profileStore.profileInfo.pfpUrl"
+																							:alt="profileStore.profileInfo.name">
+																					</div>
+																					<div class="ml-3 text-left overflow-hidden">
+																						<p
+																							class="text-sm font-medium text-nostrpurple-100 group-hover:text-nostrpurple-200 truncate">
+																							<span class="inline-block max-w-full truncate"
+																								x-text="profileStore.profileInfo.name">Anon</span>
+																						</p>
+																						<p
+																							class="text-xs font-medium text-nostrpurple-50 group-hover:text-nostrpurple-100 truncate">
+																							<span class="inline-block max-w-full truncate"
+																								x-text="abbreviateBech32(await nostrStore.nostrGetBech32Npub())">npub1...</span>
+																						</p>
+																					</div>
+																				</div>
+																			</div>
+																			<!-- /Profile -->
+																			<div class="w-full">
+																				<label for="nostr-comment" class="sr-only">Add your note</label>
+																				<div class="mt-2">
+																					<textarea x-model="nostrStore.share.note" rows="4" name="nostr-comment"
+																						id="nostr-comment"
+																						class="block w-full rounded-md border-0 py-1.5 bg-nostrpurple-600 text-nostrpurple-50 shadow-sm ring-1 ring-inset ring-nostrpurple-300 placeholder:text-nostrpurple-400 focus:ring-2 focus:ring-inset focus:ring-nostrpurple-600"></textarea>
+																				</div>
+																			</div>
+																			<!-- Error message -->
+																			<div x-cloak x-show="nostrStore.share.isError"
+																				class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative overflow-y-auto scrollbar-hide max-h-36"
+																				role="alert">
+																				<template x-for="error in nostrStore.share.getDeduplicatedErrors()">
+																					<p x-html="error" class="text-xs xs:text-sm"></p>
+																				</template>
+																			</div>
+																			<!-- /Error message -->
+																		</div>
+																	</div>
+																</div>
+															</div>
+															<div class="bg-nostrpurple-700 -mt-2 px-4 pb-3 pt-0 gap-3 flex flex-row-reverse">
+																<button :disabled="nostrStore.share.isLoading || nostrStore.share.isCriticalError"
+																	@click="await nostrStore.share.send([fileStore.mediaProperties.targetFile]).then(()=>fileStore.mediaProperties.closeNostrDialog())"
+																	type="button"
+																	class="mt-3 inline-flex w-full justify-center rounded-md bg-nostrpurple-600 px-4 py-2 text-base font-medium text-nostrpurple-50 shadow-sm hover:bg-nostrpurple-500 focus:outline-none focus:ring-2 focus:ring-nostrpurple-500 focus:ring-offset-2 disabled:bg-nostrpurple-300 disabled:cursor-not-allowed">
+																	<svg x-show="nostrStore.share.isLoading"
+																		class="animate-spin -ml-1 mr-3 h-5 w-5 text-nostrpurple-50" fill="none"
+																		viewBox="0 0 24 24">
+																		<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor"
+																			stroke-width="4">
+																		</circle>
+																		<path class="opacity-75" fill="currentColor"
+																			d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
+																		</path>
+																	</svg>
+																	Share
+																</button>
+																<button :disabled="nostrStore.share.isLoading"
+																	@click="fileStore.mediaProperties.closeNostrDialog()" type="button"
+																	class="mt-3 inline-flex w-full justify-center rounded-md bg-nostrpurple-100 px-4 py-2 text-base font-medium text-nostrpurple-700 shadow-sm hover:bg-nostrpurple-200 focus:outline-none focus:ring-2 focus:ring-nostrpurple-500 focus:ring-offset-2">Cancel</button>
+															</div>
+														</div>
+													</div>
+												</li>
+											</template>
+										</ul>
+									</div>
+									<!-- /Sharing -->
+									<!-- Stats -->
+									<div x-cloak x-show="fileStore.mediaProperties.currentTab === 'stats'" class="flex justify-center">
+										<p class="animate-pulse flex flex-col items-center justify-center text-nbpurple-200 text-center text-lg h-72"
+											x-transition:enter="transition-opacity duration-900" x-transition:enter-start="opacity-0"
+											x-transition:enter-end="opacity-100">
+											<span>Coming soon ...</span>
+											<br />
+											<!-- Rocket boom! -->
+											<svg class="w-full text-nbpurple-400" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+												stroke="currentColor">
+												<path stroke-linecap="round" stroke-linejoin="round"
+													d="M15.59 14.37a6 6 0 0 1-5.84 7.38v-4.8m5.84-2.58a14.98 14.98 0 0 0 6.16-12.12A14.98 14.98 0 0 0 9.631 8.41m5.96 5.96a14.926 14.926 0 0 1-5.841 2.58m-.119-8.54a6 6 0 0 0-7.381 5.84h4.8m2.581-5.84a14.927 14.927 0 0 0-2.58 5.84m2.699 2.7c-.103.021-.207.041-.311.06a15.09 15.09 0 0 1-2.448-2.448 14.9 14.9 0 0 1 .06-.312m-2.24 2.39a4.493 4.493 0 0 0-1.757 4.306 4.493 4.493 0 0 0 4.306-1.758M16.5 9a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0Z" />
+											</svg>
+										</p>
+									</div>
+									<!-- /Stats -->
+									<!-- AI Tools -->
+									<div x-show="fileStore.mediaProperties.currentTab === 'ai_tools'" class="flex justify-center">
+										<p class="animate-pulse flex flex-col items-center justify-center text-nbpurple-200 text-center text-lg h-72"
+											x-transition:enter="transition-opacity duration-900" x-transition:enter-start="opacity-0"
+											x-transition:enter-end="opacity-100">
+											<span>Coming soon ...</span>
+											<br />
+											<!-- Rocket boom! -->
+											<svg class="w-full text-nbpurple-400" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+												stroke="currentColor">
+												<path stroke-linecap="round" stroke-linejoin="round"
+													d="M15.59 14.37a6 6 0 0 1-5.84 7.38v-4.8m5.84-2.58a14.98 14.98 0 0 0 6.16-12.12A14.98 14.98 0 0 0 9.631 8.41m5.96 5.96a14.926 14.926 0 0 1-5.841 2.58m-.119-8.54a6 6 0 0 0-7.381 5.84h4.8m2.581-5.84a14.927 14.927 0 0 0-2.58 5.84m2.699 2.7c-.103.021-.207.041-.311.06a15.09 15.09 0 0 1-2.448-2.448 14.9 14.9 0 0 1 .06-.312m-2.24 2.39a4.493 4.493 0 0 0-1.757 4.306 4.493 4.493 0 0 0 4.306-1.758M16.5 9a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0Z" />
+											</svg>
+										</p>
+									</div>
+									<!-- /AI Tools -->
+									<!-- Download / Delete -->
+									<div x-show="fileStore.mediaProperties.currentTab === 'share'" class="flex">
+										<!-- Delete dialog -->
+										<div x-cloak x-show="fileStore.mediaProperties.isDeleteDialogOpen"
+											class="fixed inset-0 z-10 bg-black/95 rounded-lg p-8 flex flex-col columns-1 items-center justify-center h-screen">
+											<div class="flex flex-col items-center">
+												<div class="flex items center justify-center">
+													<svg x-show="!fileStore.mediaProperties.isDeleting" class="size-12 text-red-700" fill="none"
+														viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true">
+														<path stroke-linecap="round" stroke-linejoin="round"
+															d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
+													</svg>
+													<!-- Loading spinner -->
+													<svg x-cloak x-show="fileStore.mediaProperties.isDeleting"
+														class="animate-spin size-12 text-red-700" fill="none" viewBox="0 0 24 24">
+														<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4">
+														</circle>
+														<path class="opacity-75" fill="currentColor"
+															d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
+														</path>
+													</svg>
+												</div>
+												<div class="mt-3 text-center">
+													<h3 class="text-base font-semibold leading-6 text-nbpurple-50" id="modal-title">Delete
+														Media
+													</h3>
+													<div class="mt-2">
+														<p class="text-sm text-nbpurple-100">Are you sure you want to delete this media?</p>
+													</div>
+												</div>
+												<!-- Delete associated Nostr notes checkbox -->
+												<template x-if="fileStore.mediaProperties.targetFile?.associated_notes?.length > 0">
+													<div class="mt-3 flex items-center justify-center">
+														<input type="checkbox" id="delete-associated-notes"
+															x-model="fileStore.mediaProperties.deleteAssociatedNotes"
+															class="rounded text-nbpurple-700 border-gray-300 shadow-sm focus:border-nbpurple-300 focus:ring focus:ring-nbpurple-200 focus:ring-opacity-50">
+														<label for="delete-associated-notes" class="ml-2 text-sm text-nbpurple-100">Delete
+															associated Nostr notes</label>
+													</div>
+												</template>
+												<!-- /Delete associated Nostr notes checkbox -->
+											</div>
+											<div class="mt-5 flex justify-center">
+												<button @click="fileStore.mediaProperties.delete(); $refs.slideoverContent.scrollTop = 0"
+													type="button" :disabled="fileStore.mediaProperties.isDeleting"
+													class="flex-1 rounded-md bg-red-600 px-3 py-2 text-sm font-semibold text-red-50 shadow-sm hover:bg-red-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-600 disabled:bg-red-600/50">
+													Delete
+												</button>
+												<button @click="fileStore.mediaProperties.isDeleteDialogOpen = false" type="button"
+													:disabled="fileStore.mediaProperties.isDeleting"
+													class="ml-3 flex-1 rounded-md bg-nbpurple-600 px-3 py-2 text-sm font-semibold text-nbpurple-100 shadow-sm ring-1 ring-inset ring-nbpurple-300 hover:bg-nbpurple-500 disabled:bg-nbpurple-600/50">
+													Cancel
+												</button>
+											</div>
+										</div>
+										<!-- /Delete dialog -->
+										<button type="button"
+											@click="downloadFile(fileStore.mediaProperties.targetFile?.url, $el.parentElement)"
+											class="flex-1 rounded-md bg-nbpurple-600 px-3 py-2 text-sm font-semibold text-nbpurple-50 shadow-sm hover:bg-nbpurple-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-nbpurple-600">Download</button>
+										<button type="button" @click="fileStore.mediaProperties.isDeleteDialogOpen = true"
+											class="ml-3 flex-1 rounded-md bg-red-600 px-3 py-2 text-sm font-semibold text-nbpurple-100 shadow-sm ring-1 ring-inset ring-red-300 hover:bg-red-500">Delete</button>
+									</div>
+									<!-- /Download / Delete -->
 								</div>
 							</div>
-						</div>
-						<div class="bg-nbpurple-700 px-4 py-3 gap-3 flex flex-row-reverse sm:px-6">
-							<button :disabled="fileStore.mediaEdit.isLoading" @click="fileStore.mediaEdit.save()" type="button"
-								class="mt-3 inline-flex w-full justify-center rounded-md bg-nbpurple-600 px-4 py-2 text-base font-medium text-nbpurple-50 shadow-sm hover:bg-nbpurple-500 focus:outline-none focus:ring-2 focus:ring-nbpurple-500 focus:ring-offset-2 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">
-								<svg x-show="fileStore.mediaEdit.isLoading" class="animate-spin -ml-1 mr-3 h-5 w-5 text-nbpurple-50"
-									xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-									<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-									<path class="opacity-75" fill="currentColor"
-										d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
-									</path>
-								</svg>
-								Save
-							</button>
-							<button :disabled="fileStore.mediaEdit.isLoading" @click="fileStore.mediaEdit.close(true)" type="button"
-								class="mt-3 inline-flex w-full justify-center rounded-md bg-nbpurple-200 px-4 py-2 text-base font-medium text-nbpurple-700 shadow-sm hover:bg-nbpurple-50 focus:outline-none focus:ring-2 focus:ring-nbpurple-500 focus:ring-offset-2 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">Cancel</button>
 						</div>
 					</div>
 				</div>
 			</div>
 		</div>
+
 
 		<!-- Profile edit modal -->
 		<div class="relative z-50" aria-labelledby="slide-over-title" role="dialog" aria-modal="true">
