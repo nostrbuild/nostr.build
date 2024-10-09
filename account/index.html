@@ -19,7 +19,7 @@
 	<script defer src="/scripts/dist/account-v2.js?v=73e54416d1127872db7357a689a59b14"></script>
 	<link href="/scripts/dist/account-v2.css?v=5ecc26aa69603a0fc007bf24b7636047" rel="stylesheet">
 
-	<link href="/styles/twbuild.css?v=6c2325e7c7eca3b38d9d87535f36eccb" rel="stylesheet">
+	<link href="/styles/twbuild.css?v=ffa61537610d3da73f779b9e44c0c19e" rel="stylesheet">
 
 	<!-- Pre-connect and DNS prefetch -->
 	<link rel="preconnect" href="https://i.nostr.build" crossorigin>
@@ -2040,7 +2040,7 @@ onDropCB(event) {
 									</div>
 									<template x-if="!file.uppy && zoom < 2">
 										<div class="flex justify-between items-center">
-											<div class="w-5/6 overflow-hidden whitespace-nowrap text-ellipsis">
+											<div class="w-4/6 sm:w-3/4 overflow-hidden whitespace-nowrap text-ellipsis">
 												<p
 													class="pointer-events-none mt-2 flex text-md font-medium text-nbpurple-300 items-center align-middle">
 													<span :class="{'mr-1': scanResults}"
@@ -2056,9 +2056,31 @@ onDropCB(event) {
 											<div>
 												<!-- Normal actions -->
 												<div x-show="!multiSelect">
+													<!-- Copy link -->
+													<button x-cloak x-show="!file.scanResults || file?.scanResults?.status === 'clean'"
+														x-data="{copyClick: false}"
+														@click="copyUrlToClipboard(file.url); copyClick = true; setTimeout(() => copyClick = false, 2000); showToast = true"
+														class="mt-1 p-0.5 bg-transparent text-nbpurple-50 rounded-md hover:text-nbpurple-200 focus:outline-none"
+														aria-label="Copy image URL to clipboard">
+														<svg x-show="!copyClick" class="size-5 inline-block" fill="none" viewBox="0 0 24 24"
+															stroke-width="1.5" stroke="currentColor" aria-hidden="true"
+															x-transition:enter="transition-opacity duration-500" x-transition:enter-start="opacity-0"
+															x-transition:enter-end="opacity-100">
+															<path stroke-linecap="round" stroke-linejoin="round"
+																d="M11.35 3.836c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 0 0 .75-.75 2.25 2.25 0 0 0-.1-.664m-5.8 0A2.251 2.251 0 0 1 13.5 2.25H15c1.012 0 1.867.668 2.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m8.9-4.414c.376.023.75.05 1.124.08 1.131.094 1.976 1.057 1.976 2.192V16.5A2.25 2.25 0 0 1 18 18.75h-2.25m-7.5-10.5H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V18.75m-7.5-10.5h6.375c.621 0 1.125.504 1.125 1.125v9.375m-8.25-3 1.5 1.5 3-3.75" />
+														</svg>
+														<svg x-cloak x-show="copyClick"
+															class="size-5 animate-[pulse_3s_ease-in-out_infinite] inline-block" fill="none"
+															viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true"
+															x-transition:enter="transition-opacity duration-500" x-transition:enter-start="opacity-0"
+															x-transition:enter-end="opacity-100">
+															<path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" />
+														</svg>
+													</button>
+													<!-- Nostr Share -->
 													<!-- Media actions -->
 													<button @click="fileStore.mediaProperties.open(file)"
-														class="mt-1 px-1 py-1 bg-transparent text-nbpurple-50 rounded-md hover:text-nbpurple-200 focus:outline-none"
+														class="mt-1 p-0.5 bg-transparent text-nbpurple-50 rounded-md hover:text-nbpurple-200 focus:outline-none"
 														aria-label="Show media actions">
 														<svg class="size-5 inline-block" fill="none" viewBox="0 0 20 20" stroke-width="1.5"
 															stroke="currentColor" stroke-linecap="round">
@@ -3643,7 +3665,8 @@ onDropCB(event) {
 															</div>
 														</div>
 													</div>
-													<button x-show="fileStore.mediaProperties.editParentFolder" type="button" :disable="fileStore.mediaProperties.savingParentFolder"
+													<button x-show="fileStore.mediaProperties.editParentFolder" type="button"
+														:disable="fileStore.mediaProperties.savingParentFolder"
 														@click="fileStore.mediaProperties.closeParentFolderEdit()"
 														class="relative mx-1 flex size-8 items-center justify-center rounded-full bg-black text-nbpurple-100 hover:bg-nbpurple-500 hover:text-nbpurple-200 focus:outline-none focus:ring-2 focus:ring-nbpurple-500">
 														<span class="absolute -inset-1.5"></span>
@@ -3660,17 +3683,17 @@ onDropCB(event) {
 														@click="fileStore.mediaProperties.saveParentFolder()"
 														class="relative -mr-2 flex size-8 items-center justify-center rounded-full bg-black text-nbpurple-100 hover:bg-nbpurple-500 hover:text-nbpurple-200 focus:outline-none focus:ring-2 focus:ring-nbpurple-500">
 														<span class="absolute -inset-1.5"></span>
-														<svg x-show="!fileStore.mediaProperties.savingParentFolder" class="size-5" aria-hidden="true" viewBox="0 0 24 24"
-															fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"
-															stroke-linejoin="round">
+														<svg x-show="!fileStore.mediaProperties.savingParentFolder" class="size-5"
+															aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+															stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
 															<path
 																d="M15.2 3a2 2 0 0 1 1.4.6l3.8 3.8a2 2 0 0 1 .6 1.4V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z" />
 															<path d="M17 21v-7a1 1 0 0 0-1-1H8a1 1 0 0 0-1 1v7" />
 															<path d="M7 3v4a1 1 0 0 0 1 1h7" />
 														</svg>
-														<svg x-cloak x-show="fileStore.mediaProperties.savingParentFolder" class="animate-spin size-5" aria-hidden="true"
-															viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"
-															stroke-linecap="round" stroke-linejoin="round">
+														<svg x-cloak x-show="fileStore.mediaProperties.savingParentFolder"
+															class="animate-spin size-5" aria-hidden="true" viewBox="0 0 24 24" fill="none"
+															stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
 															<circle cx="12" cy="12" r="10" />
 															<path d="M6 12c0-1.7.7-3.2 1.8-4.2" />
 															<circle cx="12" cy="12" r="2" />
@@ -3679,7 +3702,9 @@ onDropCB(event) {
 														<span class="sr-only">Save Parent Folder</span>
 													</button>
 													<!-- /Edit parent folder -->
-													<button x-show="!fileStore.mediaProperties.editParentFolder && !fileStore.mediaProperties.fileMoved" type="button" @click="fileStore.mediaProperties.openParentFolderEdit()"
+													<button
+														x-show="!fileStore.mediaProperties.editParentFolder && !fileStore.mediaProperties.fileMoved"
+														type="button" @click="fileStore.mediaProperties.openParentFolderEdit()"
 														class="relative ml-1 -mr-2 flex size-8 items-center justify-center rounded-full bg-black text-nbpurple-100 hover:bg-nbpurple-500 hover:text-nbpurple-200 focus:outline-none focus:ring-2 focus:ring-nbpurple-500">
 														<span class="absolute -inset-1.5"></span>
 														<svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"
