@@ -31,6 +31,8 @@ import { getIconByMime, getIcon } from '../lib/icons';
 window.getIconByMime = getIconByMime;
 window.getIcon = getIcon;
 
+import { nip19 } from 'nostr-tools';
+
 Alpine.plugin(focus);
 Alpine.plugin(intersect);
 Alpine.plugin(persist);
@@ -194,6 +196,15 @@ window.formatBytes = (bytes) => {
   return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + sizes[i];
 }
 
+window.downloadFile = (url, element = document.body) => {
+  url = url + '?download=true';
+  const a = document.createElement('a');
+  a.href = url;
+  element.appendChild(a);
+  a.click();
+  element.removeChild(a);
+}
+
 window.loadBTCPayJS = () => {
   // Check if the script is already loaded
   if (!document.querySelector('script[src="https://btcpay.nostr.build/modal/btcpay.js"]')) {
@@ -215,185 +226,6 @@ window.loadBTCPayJS = () => {
   }
 }
 
-// Bech32 encoding and decoding library
-const ALPHABET = 'qpzry9x8gf2tvdw0s3jn54khce6mua7l';
-const ALPHABET_MAP = {};
-for (var z = 0; z < ALPHABET.length; z++) {
-  var x = ALPHABET.charAt(z);
-  ALPHABET_MAP[x] = z;
-}
-
-function polymodStep(pre) {
-  var b = pre >> 25;
-  return (((pre & 0x1ffffff) << 5) ^
-    (-((b >> 0) & 1) & 0x3b6a57b2) ^
-    (-((b >> 1) & 1) & 0x26508e6d) ^
-    (-((b >> 2) & 1) & 0x1ea119fa) ^
-    (-((b >> 3) & 1) & 0x3d4233dd) ^
-    (-((b >> 4) & 1) & 0x2a1462b3));
-}
-
-function prefixChk(prefix) {
-  var chk = 1;
-  for (var i = 0; i < prefix.length; ++i) {
-    var c = prefix.charCodeAt(i);
-    if (c < 33 || c > 126)
-      return 'Invalid prefix (' + prefix + ')';
-    chk = polymodStep(chk) ^ (c >> 5);
-  }
-  chk = polymodStep(chk);
-  for (var i = 0; i < prefix.length; ++i) {
-    var v = prefix.charCodeAt(i);
-    chk = polymodStep(chk) ^ (v & 0x1f);
-  }
-  return chk;
-}
-
-function convertbits(data, inBits, outBits, pad) {
-  var value = 0;
-  var bits = 0;
-  var maxV = (1 << outBits) - 1;
-  var result = [];
-  for (var i = 0; i < data.length; ++i) {
-    value = (value << inBits) | data[i];
-    bits += inBits;
-    while (bits >= outBits) {
-      bits -= outBits;
-      result.push((value >> bits) & maxV);
-    }
-  }
-  if (pad) {
-    if (bits > 0) {
-      result.push((value << (outBits - bits)) & maxV);
-    }
-  } else {
-    if (bits >= inBits)
-      return 'Excess padding';
-    if ((value << (outBits - bits)) & maxV)
-      return 'Non-zero padding';
-  }
-  return result;
-}
-
-function toWords(bytes) {
-  return convertbits(bytes, 8, 5, true);
-}
-
-function fromWordsUnsafe(words) {
-  var res = convertbits(words, 5, 8, false);
-  if (Array.isArray(res))
-    return res;
-}
-
-function fromWords(words) {
-  var res = convertbits(words, 5, 8, false);
-  if (Array.isArray(res))
-    return res;
-  throw new Error(res);
-}
-
-function getLibraryFromEncoding(encoding) {
-  var ENCODING_CONST;
-  if (encoding === 'bech32') {
-    ENCODING_CONST = 1;
-  } else {
-    ENCODING_CONST = 0x2bc830a3;
-  }
-
-  function encode(prefix, words, LIMIT) {
-    LIMIT = LIMIT || 90;
-    if (prefix.length + 7 + words.length > LIMIT)
-      throw new TypeError('Exceeds length limit');
-    prefix = prefix.toLowerCase();
-    // determine chk mod
-    var chk = prefixChk(prefix);
-    if (typeof chk === 'string')
-      throw new Error(chk);
-    var result = prefix + '1';
-    for (var i = 0; i < words.length; ++i) {
-      var x = words[i];
-      if (x >> 5 !== 0)
-        throw new Error('Non 5-bit word');
-      chk = polymodStep(chk) ^ x;
-      result += ALPHABET.charAt(x);
-    }
-    for (var i = 0; i < 6; ++i) {
-      chk = polymodStep(chk);
-    }
-    chk ^= ENCODING_CONST;
-    for (var i = 0; i < 6; ++i) {
-      var v = (chk >> ((5 - i) * 5)) & 0x1f;
-      result += ALPHABET.charAt(v);
-    }
-    return result;
-  }
-
-  function __decode(str, LIMIT) {
-    LIMIT = LIMIT || 90;
-    if (str.length < 8)
-      return str + ' too short';
-    if (str.length > LIMIT)
-      return 'Exceeds length limit';
-    // don't allow mixed case
-    var lowered = str.toLowerCase();
-    var uppered = str.toUpperCase();
-    if (str !== lowered && str !== uppered)
-      return 'Mixed-case string ' + str;
-    str = lowered;
-    var split = str.lastIndexOf('1');
-    if (split === -1)
-      return 'No separator character for ' + str;
-    if (split === 0)
-      return 'Missing prefix for ' + str;
-    var prefix = str.slice(0, split);
-    var wordChars = str.slice(split + 1);
-    if (wordChars.length < 6)
-      return 'Data too short';
-    var chk = prefixChk(prefix);
-    if (typeof chk === 'string')
-      return chk;
-    var words = [];
-    for (var i = 0; i < wordChars.length; ++i) {
-      var c = wordChars.charAt(i);
-      var v = ALPHABET_MAP[c];
-      if (v === undefined)
-        return 'Unknown character ' + c;
-      chk = polymodStep(chk) ^ v;
-      // not in the checksum?
-      if (i + 6 >= wordChars.length)
-        continue;
-      words.push(v);
-    }
-    if (chk !== ENCODING_CONST)
-      return 'Invalid checksum for ' + str;
-    return {
-      prefix: prefix,
-      words: words
-    };
-  }
-
-  function decodeUnsafe(str, LIMIT) {
-    var res = __decode(str, LIMIT);
-    if (typeof res === 'object')
-      return res;
-  }
-
-  function decode(str, LIMIT) {
-    var res = __decode(str, LIMIT);
-    if (typeof res === 'object')
-      return res;
-    throw new Error(res);
-  }
-  return {
-    decodeUnsafe: decodeUnsafe,
-    decode: decode,
-    encode: encode,
-    toWords: toWords,
-    fromWordsUnsafe: fromWordsUnsafe,
-    fromWords: fromWords
-  };
-}
-window.bech32 = getLibraryFromEncoding('bech32');
 window.abbreviateBech32 = (bech32Address) => {
   return typeof bech32Address === 'string' ? `${bech32Address.substring(0, 15)}...${bech32Address.substring(bech32Address.length - 10)}` : '';
 };
@@ -934,19 +766,6 @@ Alpine.store('profileStore', {
 });
 
 Alpine.store('nostrStore', {
-  isExtensionInstalled() {
-    if (typeof window.nostr === 'undefined') {
-      console.error('Nostr extension not installed.');
-      // Set error in the share structure
-      this.share.isError = true;
-      this.share.isErrorMessages.push('Make sure your nostr extension (Alby, Nos2x, Nostr Connect) is installed and enabled.');
-      // Make sure that TW CSS class text-nostrpurple-700 is included or pinned
-      this.share.isErrorMessages.push('You can find one for you <a class="text-nostrpurple-700 font-bold animate-pulse" href="https://github.com/aljazceru/awesome-nostr?tab=readme-ov-file#nip-07-browser-extensions" target="_blank">HERE</a>.');
-      return false;
-    }
-
-    return true;
-  },
   share: {
     isOpen: false,
     isLoading: false,
@@ -994,14 +813,20 @@ Alpine.store('nostrStore', {
         this.callback();
       }
     },
-    async send() {
+    async isNostrExtensionEnabled() {
+      return (await window?.nostr?.getPublicKey()) !== null;
+    },
+    async send(files = [], callback = null) {
       const nostrStore = Alpine.store('nostrStore');
-      if (nostrStore.isExtensionInstalled()) {
-        //console.debug('Sending share request to Nostr:', this.selectedFiles, this.extNpub, this.note);
-      } else {
-        console.error('Nostr extension not installed.');
-        this.isError = true;
-        return;
+
+      // If mediaIds and note are not provided, use the selected files and note
+      if (files.length > 0) {
+        console.debug('Using provided files:', files);
+        this.selectedIds = files.map(file => file.id);
+        this.selectedFiles = files;
+        if (typeof callback === 'function') {
+          this.callback = callback;
+        }
       }
       this.isLoading = true;
       this.isError = false;
@@ -1109,11 +934,15 @@ Alpine.store('nostrStore', {
         // Remove the deletedEvents from associated_notes,
         // where the string starts with event ID and followed by unix epoch timestamp, until ','
         const deletedEvents = data.deletedEvents || [];
+        console.debug('Deleted events:', deletedEvents);
         deletedEvents.forEach(eventId => {
-          this.files.forEach(file => {
+          fileStore.files.forEach(file => {
             if (file.associated_notes?.includes(eventId)) {
               // Remove deleted events
+              console.debug('Removing deleted event:', eventId);
               file.associated_notes = file.associated_notes.split(',').filter(note => !note.startsWith(eventId)).join(',');
+              // Debug result
+              console.debug('Updated associated_notes:', file.associated_notes);
             }
           });
         });
@@ -1134,32 +963,30 @@ Alpine.store('nostrStore', {
       content: 'User requested deletion of these posts',
     };
     signedEvent = await window.nostr.signEvent(event);
+    const nostrStore = Alpine.store('nostrStore');
     //console.debug('Signed event:', this.signedEvent);
-    nostrStore.publishSignedEvent(signedEvent)
+    return nostrStore.publishSignedEvent(signedEvent)
       .then(() => {
         console.debug('Published Nostr event:', this.signedEvent);
-        this.close();
+        nostrStore.share.close();
       })
       .catch(error => {
         console.error('Error publishing Nostr event:', error);
-        this.isError = true;
-        this.isErrorMessages.push('Error publishing Nostr event.');
+        nostrStore.share.isError = true;
+        nostrStore.share.isErrorMessages.push('Error publishing Nostr event.');
       })
       .finally(() => {
-        this.isLoading = false;
+        nostrStore.share.isLoading = false;
       });
   },
   async nostrGetPublicKey() {
-    if (!this.isExtensionInstalled()) {
-      console.error('Nostr extension not installed.');
-      return;
-    }
     try {
       const publicKey = await window.nostr.getPublicKey();
       console.debug('Nostr public key:', publicKey);
       return publicKey;
     } catch (error) {
-      console.error('Error getting Nostr public key:', error);
+      console.error('Error getting Nostr public key:', error ?? 'Unknown error');
+      return null;
     }
   },
   async nostrGetBech32Npub() {
@@ -1170,7 +997,7 @@ Alpine.store('nostrStore', {
       this.share.isError = true;
       return;
     }
-    const publicKey = bech32.encode('npub', bech32.toWords(new Uint8Array(hexNpub.match(/.{1,2}/g).map(byte => parseInt(byte, 16)))));
+    const publicKey = nip19.npubEncode(hexNpub);
     const profileStore = Alpine.store('profileStore');
     if (publicKey && publicKey !== profileStore.profileInfo.npub) {
       console.error('Nostr public keys do not match:', publicKey, profileStore.profileInfo.npub);
@@ -1836,7 +1663,7 @@ Alpine.store('fileStore', {
       return;
     }
     // Proceed otherwise
-    this.moveItemsToFolder(this.moveToFolder.selectedIds, this.moveToFolder.destinationFolderId)
+    return this.moveItemsToFolder(this.moveToFolder.selectedIds, this.moveToFolder.destinationFolderId)
       .then(() => {
         this.moveToFolder.close();
         this.isError = false;
@@ -1966,46 +1793,239 @@ Alpine.store('fileStore', {
         console.error('Error sharing media on Creators page:', error);
       });
   },
-  mediaEdit: {
+  mediaProperties: {
     isOpen: false,
     isLoading: false,
     isError: false,
-    callback: null,
     targetFile: null,
-    editTitle: '',
-    editDescription: '',
-    open(file, callback) {
-      // Copy the file object
-      this.targetFile = Object.assign({}, file);
-      this.editTitle = this.targetFile?.title || this.targetFile?.name;
-      this.editDescription = this.targetFile?.description || '';
+    closeTimeout: null,
+    contentLoaded: false,
+    isNostrShareDialogOpen: false,
+    isDeleteDialogOpen: false,
+    isDeleting: false,
+    editTitle: false,
+    isSavingTitle: false,
+    editDescription: false,
+    isSavingDescription: false,
+    newTitle: '',
+    newDescription: '',
+    isSharing: false,
+    deleteAssociatedNotes: false,
+    // 'share' | 'props' | 'stats' | 'ai_tools'
+    currentTab: 'share',
+    // Callback for any active submenues to be closed
+    callback: null,
+    // Change folders
+    fileMoved: false,
+    newParentFolder: '',
+    editParentFolder: false,
+    savingParentFolder: false,
+    parentFolderId: null,
+
+    open(file) {
+      // Clear the timeout if it exists
+      if (this.closeTimeout) {
+        clearTimeout(this.closeTimeout);
+      }
+      this.currentTab = 'share'; // Default tab is 'share', set it before opening
+      this.targetFile = file;
       this.isOpen = true;
-      this.callback = callback;
+      this.contentLoaded = false;
+      this.newTitle = file.title ?? file.name;
+      this.newDescription = file.description;
+      this.callback = null;
+      if (this.isNostrExtensionEnabled === null) {
+        // We need to check only once if the Nostr extension is enabled
+        const nostrStore = Alpine.store('nostrStore');
+        nostrStore.share.isNostrExtensionEnabled().then(enabled => {
+          this.isNostrExtensionEnabled = enabled;
+        });
+      }
     },
-    close(dontCallback) {
-      this.targetFile = null;
+    close() {
+      // Prevent close if any actions are taking place
+      if (this.isLoading || this.isDeleting || this.isSavingTitle || this.isSavingDescription || this.isSharing) {
+        return;
+      }
       this.isError = false;
       this.isOpen = false;
       this.isLoading = false;
-      if (this.callback && !dontCallback) {
+      this.isDeleteDialogOpen = false;
+      this.isDeleting = false;
+      this.editingTitle = false;
+      this.isSavingTitle = false;
+      this.editDescription = false;
+      this.isSavingDescription = false;
+      this.newTitle = '';
+      this.newDescription = '';
+      this.isSharing = false;
+      this.deleteAssociatedNotes = false;
+      this.closeNostrDialog();
+      this.fileMoved = false;
+      this.newParentFolder = '';
+      this.editParentFolder = false;
+      this.savingParentFolder = false;
+      this.parentFolderId = null;
+      this.closeParentFolderEdit();
+      // Execute callback if provided
+      if (typeof this.callback === 'function') {
         this.callback();
       }
+      // Delay emptying the target file to allow for the modal to close
+      this.closeTimeout = setTimeout(() => {
+        this.targetFile = null;
+      }, 1000);
     },
-    save() {
-      this.isLoading = true;
-      this.targetFile.title = this.editTitle;
-      this.targetFile.description = this.editDescription;
+    openParentFolderEdit() {
+      const fileStore = Alpine.store('fileStore');
+      const menuStore = Alpine.store('menuStore');
+      this.editParentFolder = true;
+      this.parentFolderId = menuStore.folders.find(folder => folder.name === menuStore.activeFolder).id;
+      fileStore.moveToFolder.selectedFolderName = menuStore.activeFolder;
+      fileStore.moveToFolder.destinationFolderId = this.parentFolderId;
+      fileStore.moveToFolder.selectedIds = [fileStore.mediaProperties.targetFile.id];
+    },
+    saveParentFolder() {
+      const fileStore = Alpine.store('fileStore');
+      console.log('Saving parent folder:', this.newParentFolder);
+      this.savingParentFolder = true;
+      this.newParentFolder = fileStore.moveToFolder.selectedFolderName;
+      fileStore.moveToFolderConfirm().then(() => {
+        console.log('Moved to folder:', this.newParentFolder);
+        this.fileMoved = true;
+        this.savingParentFolder = false;
+        this.closeParentFolderEdit();
+      }).catch(() => {
+        console.error('Error moving to folder:', this.newParentFolder);
+        this.savingParentFolder = false;
+      });
+    },
+    closeParentFolderEdit() {
+      const fileStore = Alpine.store('fileStore');
+      this.editParentFolder = false;
+      this.savingParentFolder = false;
+      this.parentFolderId = null;
+    },
+    openNostrDialog() {
+      this.isNostrShareDialogOpen = true;
+    },
+    closeNostrDialog() {
+      this.isNostrShareDialogOpen = false;
+      const nostrStore = Alpine.store('nostrStore');
+      nostrStore.share.close();
+    },
+    saveDescription() {
+      this.isSavingDescription = true;
+      this.targetFile.description = this.newDescription;
       this.saveMediaEdit(this.targetFile)
         .then(() => {
-          this.close();
+          this.editDescription = false;
+          this.isError = false;
         })
         .catch(error => {
-          console.error('Error saving media edit:', error);
+          console.error('Error saving description:', error);
           this.isError = true;
         })
         .finally(() => {
-          this.isLoading = false;
+          this.isSavingDescription = false;
         });
+    },
+    saveTitle() {
+      this.isSavingTitle = true;
+      this.targetFile.title = this.newTitle;
+      this.saveMediaEdit(this.targetFile)
+        .then(() => {
+          this.editTitle = false;
+          this.isError = false;
+        })
+        .catch(error => {
+          console.error('Error saving title:', error);
+          this.isError = true;
+        })
+        .finally(() => {
+          this.isSavingTitle = false;
+        });
+    },
+    toggleCreatorSharing() {
+      this.isSharing = true;
+      this.targetFile.flag = this.targetFile.flag ? 0 : 1;
+      this.creatorPageShare(this.targetFile)
+        .then(() => {
+          this.isError = false;
+        })
+        .catch(error => {
+          console.error('Error sharing media:', error);
+          this.isError = true;
+          // Revert the flag
+          this.targetFile.flag = this.targetFile.flag ? 0 : 1;
+        })
+        .finally(() => {
+          this.isSharing = false;
+        });
+    },
+    cancelDescriptionEdit() {
+      if (!this.isSavingDescription) {
+        this.editDescription = false;
+        this.newDescription = this.targetFile.description;
+      }
+    },
+    cancelTitleEdit() {
+      if (!this.isSavingTitle) {
+        this.editTitle = false;
+        this.newTitle = this.targetFile.title ?? this.targetFile.name;
+      }
+    },
+    delete() {
+      const id = this.targetFile.id;
+      this.isDeleting = true;
+      if (this.deleteAssociatedNotes && this.targetFile.associated_notes?.length > 0) {
+        const noteIds = this.targetFile.associated_notes.split(',').map(id_ts => id_ts.split(':')[0]);
+        const nostrStore = Alpine.store('nostrStore');
+        nostrStore.deleteEvent(noteIds)
+          .then(() => {
+            console.debug('Deleted associated notes:', noteIds);
+            this.deleteMedia(id)
+              .then(() => {
+                this.isDeleting = false;
+                console.debug('Deleted media and its notes:', id, noteIds);
+                this.close();
+              })
+              .catch(error => {
+                console.error('Error deleting media:', error);
+                this.isError = true;
+              })
+              .finally(() => {
+                this.isDeleting = false;
+                this.deleteAssociatedNotes = false;
+              });
+          })
+          .catch(error => {
+            console.error('Error deleting associated notes:', error);
+            this.isError = true;
+          })
+          .finally(() => {
+            this.isDeleting = false;
+          });
+      } else {
+        this.deleteMedia(id)
+          .then(() => {
+            this.isDeleting = false;
+            console.debug('Deleted media:', id);
+            this.close();
+          })
+          .catch(error => {
+            console.error('Error deleting media:', error);
+            this.isError = true;
+          })
+          .finally(() => {
+            this.isDeleting = false;
+          });
+      }
+    },
+    deleteMedia(id) {
+      // Get the current store
+      const fileStore = Alpine.store('fileStore');
+      return fileStore.deleteItem(id);
     },
     async saveMediaEdit(file) {
       console.debug('Saving media edit:', file);
@@ -2029,6 +2049,34 @@ Alpine.store('fileStore', {
           }
         })
     },
+    async creatorPageShare(file) {
+      console.debug('Toggling sharing of the media on Creators page:', file.id);
+
+      const api = getApiFetcher(apiUrl, 'multipart/form-data');
+      const formData = {
+        action: 'share_creator_page',
+        shareFlag: file?.flag ? "true" : "false",
+        imagesToShare: JSON.stringify([file.id]),
+      };
+
+      return api.post('', formData)
+        .then(response => response.data)
+        .then(data => {
+          //console.debug('Shared media on Creators page:', data);
+          const sharedImageIds = data.sharedImages || [];
+          const menuStore = Alpine.store('menuStore');
+          const fileStore = Alpine.store('fileStore');
+
+          // Update the shared flag and count for each file
+          fileStore.files.forEach(file => {
+            if (sharedImageIds.includes(file.id)) {
+              file.flag = file?.flag ? 1 : 0;
+              // We can assume we are in the same folder as the files
+              menuStore.updateSharedStatsFromFile(file, menuStore.activeFolder, file?.flag);
+            }
+          });
+        })
+    }
   },
   deleteConfirmation: {
     isOpen: false,
