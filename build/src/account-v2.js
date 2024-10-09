@@ -432,6 +432,11 @@ Alpine.store('profileStore', {
       return [1, 2, 10, 99].includes(this.accountLevel) && this.isAIStudioEligible &&
         !this.accountExpired && !this.storageOverLimit;
     },
+    // AI Tools
+    get isAIToolsEligible() {
+      return [1, 2, 10, 99].includes(this.accountLevel) &&
+        !this.accountExpired;
+    },
     // Other Features
     // Creators Page
     get isCreatorsPageEligible() {
@@ -469,6 +474,11 @@ Alpine.store('profileStore', {
       return [1, 2, 10].includes(this.accountLevel) &&
         !this.accountExpired;
     },
+    // Analytics
+    get isAnalyticsEligible() {
+      return [1, 10, 99].includes(this.accountLevel) &&
+        !this.accountExpired;
+    },
     allowed(permission) {
       switch (permission) {
         case 'isAdmin':
@@ -485,6 +495,8 @@ Alpine.store('profileStore', {
           return this.isFluxSchnellEligible;
         case 'isSDCoreEligible':
           return this.isSDCoreEligible;
+        case 'isAIToolsEligible':
+          return this.isAIToolsEligible;
         case 'isAISDiffusionEligible':
           return this.isAISDiffusionEligible;
         case 'isCreatorsPageEligible':
@@ -501,6 +513,8 @@ Alpine.store('profileStore', {
           return this.isFreeGalleryEligible;
         case 'isReferralEligible':
           return this.isReferralEligible;
+        case 'isAnalyticsEligible':
+          return this.isAnalyticsEligible;
         default:
           return false;
       }

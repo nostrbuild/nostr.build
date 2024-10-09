@@ -16,7 +16,7 @@
 	<meta name="msapplication-TileColor" content="#9f00a7">
 	<meta name="theme-color" content="#ffffff">
 
-	<script defer src="/scripts/dist/account-v2.js?v=73e54416d1127872db7357a689a59b14"></script>
+	<script defer src="/scripts/dist/account-v2.js?v=2d44a8674114136433f56d09d98bbf4d"></script>
 	<link href="/scripts/dist/account-v2.css?v=5ecc26aa69603a0fc007bf24b7636047" rel="stylesheet">
 
 	<link href="/styles/twbuild.css?v=ffa61537610d3da73f779b9e44c0c19e" rel="stylesheet">
@@ -3437,9 +3437,9 @@ onDropCB(event) {
 															Share</option>
 														<option value="props" :selected="fileStore.mediaProperties.currentTab === $el.value">
 															Properties</option>
-														<option value="stats" :selected="fileStore.mediaProperties.currentTab === $el.value">
+														<option x-show="profileStore.profileInfo.isAnalyticsEligible" value="stats" :selected="fileStore.mediaProperties.currentTab === $el.value">
 															Statistics</option>
-														<option value="ai_tools" :selected="fileStore.mediaProperties.currentTab === $el.value">
+														<option x-show="profileStore.profileInfo.isAIToolsEligible" value="ai_tools" :selected="fileStore.mediaProperties.currentTab === $el.value">
 															AI
 															Tools</option>
 													</select>
@@ -3456,11 +3456,11 @@ onDropCB(event) {
 																<button @click="fileStore.mediaProperties.currentTab = 'props'"
 																	:class="{ 'text-nbpurple-200 border-b-2 border-nbpurple-500': fileStore.mediaProperties.currentTab === 'props' }">Properties</button>
 															</li>
-															<li>
+															<li x-show="profileStore.profileInfo.isAnalyticsEligible">
 																<button @click="fileStore.mediaProperties.currentTab = 'stats'"
 																	:class="{ 'text-nbpurple-200 border-b-2 border-nbpurple-500': fileStore.mediaProperties.currentTab === 'stats' }">Statistics</button>
 															</li>
-															<li>
+															<li x-show="profileStore.profileInfo.isAIToolsEligible">
 																<button @click="fileStore.mediaProperties.currentTab = 'ai_tools'"
 																	:class="{ 'text-nbpurple-200 border-b-2 border-nbpurple-500': fileStore.mediaProperties.currentTab === 'ai_tools' }">AI
 																	Tools</button>
@@ -4078,7 +4078,7 @@ onDropCB(event) {
 									</div>
 									<!-- /Sharing -->
 									<!-- Stats -->
-									<div x-cloak x-show="fileStore.mediaProperties.currentTab === 'stats'" class="flex justify-center">
+									<div x-cloak x-show="fileStore.mediaProperties.currentTab === 'stats' && profileStore.profileInfo.isAnalyticsEligible" class="flex justify-center">
 										<p class="animate-pulse flex flex-col items-center justify-center text-nbpurple-200 text-center text-lg h-72"
 											x-transition:enter="transition-opacity duration-900" x-transition:enter-start="opacity-0"
 											x-transition:enter-end="opacity-100">
@@ -4094,7 +4094,7 @@ onDropCB(event) {
 									</div>
 									<!-- /Stats -->
 									<!-- AI Tools -->
-									<div x-show="fileStore.mediaProperties.currentTab === 'ai_tools'" class="flex justify-center">
+									<div x-show="fileStore.mediaProperties.currentTab === 'ai_tools' && profileStore.profileInfo.isAIToolsEligible" class="flex justify-center">
 										<p class="animate-pulse flex flex-col items-center justify-center text-nbpurple-200 text-center text-lg h-72"
 											x-transition:enter="transition-opacity duration-900" x-transition:enter-start="opacity-0"
 											x-transition:enter-end="opacity-100">
