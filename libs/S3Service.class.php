@@ -202,7 +202,7 @@ class S3Service
       ]);
     }
     if (substr($e2BucketAndObjectNames['bucket'], -4) === '-pro') {
-      $additionalE2Bucket = $e2BucketAndObjectNames['bucket'] . '-pro';
+      $additionalE2Bucket = $e2BucketAndObjectNames['bucket'] . '-av';
       $promises['e2AvProDeletePromise'] = $this->e2->deleteObjectAsync([
         'Bucket' => $additionalE2Bucket,
         'Key'    => $e2BucketAndObjectNames['objectName']
