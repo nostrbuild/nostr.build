@@ -19,7 +19,7 @@
 	<script defer src="/scripts/dist/account-v2.js?v=2d44a8674114136433f56d09d98bbf4d"></script>
 	<link href="/scripts/dist/account-v2.css?v=5ecc26aa69603a0fc007bf24b7636047" rel="stylesheet">
 
-	<link href="/styles/twbuild.css?v=ffa61537610d3da73f779b9e44c0c19e" rel="stylesheet">
+	<link href="/styles/twbuild.css?v=76b022502a2493dcaded1f88863ce5b2" rel="stylesheet">
 
 	<!-- Pre-connect and DNS prefetch -->
 	<link rel="preconnect" href="https://i.nostr.build" crossorigin>
@@ -2040,7 +2040,7 @@ onDropCB(event) {
 									</div>
 									<template x-if="!file.uppy && zoom < 2">
 										<div class="flex justify-between items-center">
-											<div class="w-4/6 sm:w-3/4 overflow-hidden whitespace-nowrap text-ellipsis">
+											<div class="w-4/6 overflow-hidden whitespace-nowrap text-ellipsis">
 												<p
 													class="pointer-events-none mt-2 flex text-md font-medium text-nbpurple-300 items-center align-middle">
 													<span :class="{'mr-1': scanResults}"
@@ -2060,7 +2060,7 @@ onDropCB(event) {
 													<button x-cloak x-show="!file.scanResults || file?.scanResults?.status === 'clean'"
 														x-data="{copyClick: false}"
 														@click="copyUrlToClipboard(file.url); copyClick = true; setTimeout(() => copyClick = false, 2000); showToast = true"
-														class="mt-1 p-0.5 bg-transparent text-nbpurple-50 rounded-md hover:text-nbpurple-200 focus:outline-none"
+														class="mt-1 p-0 bg-transparent text-nbpurple-50 rounded-md hover:text-nbpurple-200 focus:outline-none"
 														aria-label="Copy image URL to clipboard">
 														<svg x-show="!copyClick" class="size-5 inline-block" fill="none" viewBox="0 0 24 24"
 															stroke-width="1.5" stroke="currentColor" aria-hidden="true"
@@ -2080,7 +2080,7 @@ onDropCB(event) {
 													<!-- Nostr Share -->
 													<!-- Media actions -->
 													<button @click="fileStore.mediaProperties.open(file)"
-														class="mt-1 p-0.5 bg-transparent text-nbpurple-50 rounded-md hover:text-nbpurple-200 focus:outline-none"
+														class="mt-1 p-0 bg-transparent text-nbpurple-50 rounded-md hover:text-nbpurple-200 focus:outline-none"
 														aria-label="Show media actions">
 														<svg class="size-5 inline-block" fill="none" viewBox="0 0 20 20" stroke-width="1.5"
 															stroke="currentColor" stroke-linecap="round">
