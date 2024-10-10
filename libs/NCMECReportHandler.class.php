@@ -128,6 +128,7 @@ class NCMECReportHandler
   private $additionalMetadata;
   private $incidentDetails;
   private $testReport;
+  private $retryCounter = 0;
 
   /**
    * Constructor for the NCMECReportHandler class.
@@ -163,16 +164,24 @@ class NCMECReportHandler
   {
     try {
       // Report the violation
-      $result = $this->reportViolation();
-
-      // Update the incident report ID and submitted report in the database if successful
-      if ($result['httpCode'] === 200) {
-        $reportId = $result['response'] ?? '';
-        // Get the sanitized report data (without Base64 media)
-        $sanitizedReportData = $this->getSanitizedReportData();
-        $this->updateIncidentReportId($reportId, json_encode($sanitizedReportData));
+      $result = [
+        'httpCode' => 0,
+        'error' => 'Unknown error'  
+      ];
+      while ($this->retryCounter < 3) {
+        $result = $this->reportViolation();
+        if ($result['httpCode'] === 200) {
+          // Update the incident report ID and submitted report in the database if successful
+          $reportId = $result['response'] ?? '';
+          // Get the sanitized report data (without Base64 media)
+          $sanitizedReportData = $this->getSanitizedReportData();
+          $this->updateIncidentReportId($reportId, json_encode($sanitizedReportData));
+          break;
+        } else {
+          $this->retryCounter++;
+          sleep(1 * $this->retryCounter);
+        }
       }
-
       return $result;
     } catch (Exception $e) {
       // Handle exceptions and return an error response
@@ -524,7 +533,8 @@ class NCMECReportHandler
 
 
     // Error handling
-    if ($result === false) {
+    if ($result === false || strstr($result, 'Null: Technical Error') !== false) {
+      error_log('NCMEC API Error: ' . curl_error($ch) . ' - ' . print_r($result, true));
       $error_msg = curl_error($ch);
       curl_close($ch);
       return [
