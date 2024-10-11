@@ -269,7 +269,7 @@ class NCMECReportHandler
    *
    * @return array The sanitized report data.
    */
-  public function getSanitizedReportData(): array
+  public function getSanitizedReportData(?bool $keepB64 = false): array
   {
     // Create a deep copy of the data
     $sanitizedData = [
@@ -280,8 +280,16 @@ class NCMECReportHandler
       'ReporteeName' => $this->reporteeName,
       'ReporteeIPAddress' => $this->reporteeIPAddress,
       'ViolationContentCollection' => [],
-      'AdditionalMetadata' => $this->additionalMetadata
+      //'AdditionalMetadata' => $this->additionalMetadata
     ];
+    if ($this->testReport) {
+      $sanitizedData['AdditionalMetadata'][] = ['Key' => 'IsTest', 'Value' => 'true'];
+    }
+
+    if ($keepB64) {
+      $sanitizedData['ViolationContentCollection'] = $this->violationContentCollection;
+      return $sanitizedData;
+    }
 
     // Loop through ViolationContentCollection and remove the Base64 media
     foreach ($this->violationContentCollection as $violation) {
