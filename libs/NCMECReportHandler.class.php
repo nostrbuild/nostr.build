@@ -164,23 +164,18 @@ class NCMECReportHandler
   {
     try {
       // Report the violation
-      $result = [
-        'httpCode' => 0,
-        'error' => 'Unknown error'  
-      ];
-      while ($this->retryCounter < 3) {
-        $result = $this->reportViolation();
-        if ($result['httpCode'] === 200) {
-          // Update the incident report ID and submitted report in the database if successful
-          $reportId = $result['response'] ?? '';
-          // Get the sanitized report data (without Base64 media)
-          $sanitizedReportData = $this->getSanitizedReportData();
-          $this->updateIncidentReportId($reportId, json_encode($sanitizedReportData));
-          break;
-        } else {
-          $this->retryCounter++;
-          sleep(1 * $this->retryCounter);
-        }
+      $result = $this->reportViolation();
+      if ($result['httpCode'] === 200) {
+        // Update the incident report ID and submitted report in the database if successful
+        $reportId = $result['response'] ?? '';
+        // Get the sanitized report data (without Base64 media)
+        $sanitizedReportData = $this->getSanitizedReportData();
+        $this->updateIncidentReportId($reportId, json_encode($sanitizedReportData));
+      } else {
+        return [
+          'httpCode' => 0,
+          'error' => 'Error submitting report: ' . ($result['error'] ?? json_encode($result['response']))
+        ];
       }
       return $result;
     } catch (Exception $e) {
@@ -533,7 +528,7 @@ class NCMECReportHandler
 
 
     // Error handling
-    if ($result === false || strstr($result, 'Null: Technical Error') !== false) {
+    if ($result === false) {
       error_log('NCMEC API Error: ' . curl_error($ch) . ' - ' . print_r($result, true));
       $error_msg = curl_error($ch);
       curl_close($ch);
@@ -542,6 +537,7 @@ class NCMECReportHandler
         'error' => $error_msg
       ];
     }
+    error_log('NCMEC API Result: ' . $result);
 
     // Get HTTP status code
     $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
