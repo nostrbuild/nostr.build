@@ -217,8 +217,8 @@ SVG;
   <meta charSet="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Nostr.build account signup</title>
-  <link rel="stylesheet" href="/styles/twbuild.css?v=76b022502a2493dcaded1f88863ce5b2" />
-  <link rel="stylesheet" href="/styles/index.css?v=d92cc716e5a959e5720d593defd68e21" />
+  <link rel="stylesheet" href="/styles/twbuild.css?v=1dc10d310a85c43ef66bbdb0670eb1da" />
+  <link rel="stylesheet" href="/styles/index.css?v=290253d31f2fde0932483cb54581766b" />
   <link rel="stylesheet" href="/styles/signup.css?v=8878cbf7163f77b3a4fb9b30804c73ca" />
   <link rel="icon" href="https://cdn.nostr.build/assets/primo_nostr.png" />
   <script defer src="/scripts/fw/alpinejs.min.js?v=34fbe266eb872c1a396b8bf9022b7105"></script>

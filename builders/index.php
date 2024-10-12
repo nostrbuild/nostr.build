@@ -20,7 +20,7 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/config.php';
 	<meta name="msapplication-TileColor" content="#9f00a7">
 	<meta name="theme-color" content="#ffffff">
 
-	<link rel="stylesheet" href="/styles/index.css?v=d92cc716e5a959e5720d593defd68e21" />
+	<link rel="stylesheet" href="/styles/index.css?v=290253d31f2fde0932483cb54581766b" />
 	<link rel="stylesheet" href="/styles/header.css?v=19cde718a50bd676387bbe7e9e24c639" />
 	<link rel="stylesheet" href="/styles/builders.css?v=0dd633698255982f3df87df8e3e2697e" />
 
