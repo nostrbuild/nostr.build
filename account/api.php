@@ -722,6 +722,19 @@ if (isset($_GET["action"])) {
 			echo json_encode(array("error" => "Failed to get credits balance"));
 		}
 	} else if ($action == "get_media_stats") {
+		// Check if account is expired
+		if ($daysRemaining <= 0) {
+			http_response_code(403);
+			echo json_encode(array("error" => "Your account has expired"));
+			// PERSIST: $link->close();
+			exit;
+		}
+		// Check user level and only allow 1, 10, 99
+		if (!$perm->validatePermissionsLevelAny(1, 10, 99)) {
+			http_response_code(403);
+			echo json_encode(array("error" => "You do not have permission to get media stats"));
+			exit;
+		}
 		$mediaId = isset($_GET['media_id']) ? $_GET['media_id'] : null;
 		$period = isset($_GET['period']) ? $_GET['period'] : "1h";
 		$interval = isset($_GET['interval']) ? $_GET['interval'] : "1m";
