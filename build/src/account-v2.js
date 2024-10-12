@@ -35,7 +35,8 @@ import { nip19 } from 'nostr-tools';
 
 // Chart.js
 import Chart from 'chart.js/auto';
-import 'chartjs-adapter-luxon';
+//import 'chartjs-adapter-luxon';
+import 'chartjs-scale-timestack';
 
 Alpine.plugin(focus);
 Alpine.plugin(intersect);
@@ -2752,7 +2753,7 @@ Alpine.store('fileStore', {
 
         // Prepare Chart.js data
         const chartData = {
-          labels: labels, //.map(label => label.getTime()),
+          labels: labels.map(label => label.getTime()),
           // Take only first two datasets for now
           datasets: datasets.slice(0, 2),
         };
@@ -2795,7 +2796,7 @@ Alpine.store('fileStore', {
             },
             scales: {
               x: {
-                type: 'timeseries', // Use time scale
+                type: 'timestack', // Use time scale
                 color: 'rgba(255, 255, 255, 0.8)',
                 time: {
                   unit: interval.endsWith('h') ? 'hour' : 'minute',
