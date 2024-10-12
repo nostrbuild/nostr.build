@@ -349,7 +349,11 @@ class NCMECReportHandler
         [
           'Name' => (empty($fileData['fileName']) ? 'Unknown' : $fileData['fileName']),
           'Value' => $this->getBase64MediaByHash($fileHash),
-          'Location' => null,
+          'Location' => [
+            "Latitude" => "",
+            "Longitude" => "",
+            "Altitude" => ""
+          ],
           'UploadIpAddress' => $uploadIpAddress,
           'UploadDateTime' => $incidentTime,
           'AdditionalMetadata' => [
@@ -424,7 +428,7 @@ class NCMECReportHandler
       $violationContentCollection[] = [
         'Name' => empty($violation['Name']) ? 'Unknown' : $violation['Name'],
         'Value' => $this->getBase64Media($fileHash),
-        'Location' => $violation['Location'] ?? null,
+        'Location' => $violation['Location'] ?? ["Latitude" => "", "Longitude" => "", "Altitude" => ""],
         'UploadIpAddress' => $violation['UploadIpAddress'] ?? '',
         'UploadDateTime' => $violation['UploadDateTime'] ?? '',
         'AdditionalMetadata' => $additionalMetadata
@@ -533,6 +537,8 @@ class NCMECReportHandler
     $result = curl_exec($ch);
     // DEBUG: Log response from NCMEC
     error_log('NCMEC API Response: ' . print_r($result, true));
+    // Print submission data
+    // error_log("\n" . 'NCMEC API Submission Data: ' . $data_string . "\n");
 
 
     // Error handling
