@@ -4089,7 +4089,7 @@ onDropCB(event) {
 											renderChart() {
 												console.log('Rendering chart');
 												const mediaId = fileStore.mediaProperties.targetFile.id;
-												fileStore.stats.renderCharts(mediaId, $refs.mediaStatsChart, this.chartPeriod, this.interval, this.chartGroupBy);
+												fileStore.stats.renderCharts(mediaId, $refs.mediaStatsChart, this.chartPeriod, this.chartInterval, this.chartGroupBy);
 											},
 											destroyChart() {
 												if ($refs.mediaStatsChart.chartInstance) {
