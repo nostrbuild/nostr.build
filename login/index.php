@@ -226,7 +226,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         </div>
     </main>
     <?php include $_SERVER['DOCUMENT_ROOT'] . '/components/footer.php'; ?>
-    <script src="/scripts/dist/login.js?v=1e8e80414aaee6e2edb3b0011739f005"></script>
+    <script src="/scripts/dist/login.js?v=c5911c3ac8e971933615be7ec1329802"></script>
     <script>
         document.addEventListener('DOMContentLoaded', (event) => {
             let closeButton = document.querySelector(".close");
