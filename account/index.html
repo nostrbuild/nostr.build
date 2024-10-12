@@ -16,10 +16,10 @@
 	<meta name="msapplication-TileColor" content="#9f00a7">
 	<meta name="theme-color" content="#ffffff">
 
-	<script defer src="/scripts/dist/account-v2.js?v=2d44a8674114136433f56d09d98bbf4d"></script>
+	<script defer src="/scripts/dist/account-v2.js?v=baa0e702f979ec33109f9f3423b5e65d"></script>
 	<link href="/scripts/dist/account-v2.css?v=5ecc26aa69603a0fc007bf24b7636047" rel="stylesheet">
 
-	<link href="/styles/twbuild.css?v=76b022502a2493dcaded1f88863ce5b2" rel="stylesheet">
+	<link href="/styles/twbuild.css?v=1dc10d310a85c43ef66bbdb0670eb1da" rel="stylesheet">
 
 	<!-- Pre-connect and DNS prefetch -->
 	<link rel="preconnect" href="https://i.nostr.build" crossorigin>
@@ -3437,9 +3437,11 @@ onDropCB(event) {
 															Share</option>
 														<option value="props" :selected="fileStore.mediaProperties.currentTab === $el.value">
 															Properties</option>
-														<option x-show="profileStore.profileInfo.isAnalyticsEligible" value="stats" :selected="fileStore.mediaProperties.currentTab === $el.value">
+														<option x-show="profileStore.profileInfo.isAnalyticsEligible" value="stats"
+															:selected="fileStore.mediaProperties.currentTab === $el.value">
 															Statistics</option>
-														<option x-show="profileStore.profileInfo.isAIToolsEligible" value="ai_tools" :selected="fileStore.mediaProperties.currentTab === $el.value">
+														<option x-show="profileStore.profileInfo.isAIToolsEligible" value="ai_tools"
+															:selected="fileStore.mediaProperties.currentTab === $el.value">
 															AI
 															Tools</option>
 													</select>
@@ -4078,11 +4080,41 @@ onDropCB(event) {
 									</div>
 									<!-- /Sharing -->
 									<!-- Stats -->
-									<div x-cloak x-show="fileStore.mediaProperties.currentTab === 'stats' && profileStore.profileInfo.isAnalyticsEligible" class="flex justify-center">
-										<p class="animate-pulse flex flex-col items-center justify-center text-nbpurple-200 text-center text-lg h-72"
+									<div x-cloak
+										x-show="fileStore.mediaProperties.currentTab === 'stats' && profileStore.profileInfo.isAnalyticsEligible && fileStore.mediaProperties?.targetFile?.id"
+										class="flex justify-center" x-data="{
+											renderChart() {
+												console.log('Rendering chart');
+												const mediaId = fileStore.mediaProperties.targetFile.id;
+												fileStore.stats.renderCharts(mediaId, $refs.mediaStatsChart);
+											},
+											destroyChart() {
+												if ($refs.mediaStatsChart.chartInstance) {
+													console.log('Destroying chart');
+													$refs.mediaStatsChart.chartInstance.destroy();
+													$refs.mediaStatsChart.chartInstance = null;
+												}
+											},
+											checkAndRenderChart() {
+												const shouldRender = fileStore.mediaProperties.currentTab === 'stats'
+													&& profileStore.profileInfo.isAnalyticsEligible
+													&& fileStore.mediaProperties.targetFile?.id;
+								
+												if (shouldRender) {
+													this.renderChart();
+												} else {
+													this.destroyChart();
+												}
+											}
+										}" x-init="checkAndRenderChart()" x-effect="checkAndRenderChart()">
+										<!-- Chart.js canvas -->
+										<canvas x-show="!fileStore.stats.isLoading" x-ref="mediaStatsChart"
+											:id="'mediaStatsChart_' + fileStore.mediaProperties?.targetFile?.id" class="w-full h-72"></canvas>
+										<p x-show="fileStore.stats.isLoading"
+											class="animate-pulse flex flex-col items-center justify-center text-nbpurple-200 text-center text-lg h-72"
 											x-transition:enter="transition-opacity duration-900" x-transition:enter-start="opacity-0"
 											x-transition:enter-end="opacity-100">
-											<span>Coming soon ...</span>
+											<span>Loading ...</span>
 											<br />
 											<!-- Rocket boom! -->
 											<svg class="w-full text-nbpurple-400" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
@@ -4094,7 +4126,9 @@ onDropCB(event) {
 									</div>
 									<!-- /Stats -->
 									<!-- AI Tools -->
-									<div x-show="fileStore.mediaProperties.currentTab === 'ai_tools' && profileStore.profileInfo.isAIToolsEligible" class="flex justify-center">
+									<div
+										x-show="fileStore.mediaProperties.currentTab === 'ai_tools' && profileStore.profileInfo.isAIToolsEligible"
+										class="flex justify-center">
 										<p class="animate-pulse flex flex-col items-center justify-center text-nbpurple-200 text-center text-lg h-72"
 											x-transition:enter="transition-opacity duration-900" x-transition:enter-start="opacity-0"
 											x-transition:enter-end="opacity-100">

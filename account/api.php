@@ -544,6 +544,49 @@ function getAccountData(): array
 	return $data;
 }
 
+function getMediaStats(string $mediaId, string $period, string $interval, string $groupBy): string
+{
+	global $link;
+	$userNpub = $_SESSION['usernpub'];
+	$mediaIdInt = intval($mediaId);
+	$sql = "SELECT * FROM users_images WHERE id = ? AND usernpub = ?";
+	$stmt = $link->prepare($sql);
+	$stmt->bind_param('is', $mediaIdInt, $userNpub);
+	$stmt->execute();
+	$result = $stmt->get_result();
+	if ($result->num_rows === 0) {
+		return json_encode(array("error" => "Media not found"));
+	}
+	$row = $result->fetch_assoc();
+	$type = getFileTypeFromName($row['image']);
+	if ($type === 'unknown') {
+		// Use mime type from database and get the first part of it
+		$type = explode('/', $row['mime_type'])[0];
+	}
+	$mediaURL = SiteConfig::getFullyQualifiedUrl("professional_account_{$type}") . $row['image'];
+	$statsURL = "{$mediaURL}/stats";
+	// Construct the request URL with query parameters
+	$statsURL .= "?period={$period}&interval={$interval}&group_by={$groupBy}";
+	error_log("\nGetting media stats: {$statsURL}\n");
+	$bearer = signApiRequest($_SERVER['NB_HMAC_SECRETS'], $statsURL, 'GET');
+	// Initialize cURL
+	$ch = curl_init($statsURL);
+	// Set cURL options
+	curl_setopt($ch, CURLOPT_HTTPHEADER, ["Authorization: Bearer {$bearer}"]);
+	curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+	// Execute the cURL request
+	$response = curl_exec($ch);
+	// Check for cURL errors
+	if ($response === false) {
+		$error = curl_error($ch);
+		curl_close($ch);
+		return json_encode(array("error" => "cURL request failed: {$error}"));
+	}
+	// Close the cURL handle
+	curl_close($ch);
+	// Return the response
+	return $response;
+}
 
 // Identify what action is being requested, and reply accordingly
 // Actions: GET - list_files, GET - list_folders
@@ -677,6 +720,32 @@ if (isset($_GET["action"])) {
 			error_log($e->getMessage());
 			http_response_code(500);
 			echo json_encode(array("error" => "Failed to get credits balance"));
+		}
+	} else if ($action == "get_media_stats") {
+		$mediaId = isset($_GET['media_id']) ? $_GET['media_id'] : null;
+		$period = isset($_GET['period']) ? $_GET['period'] : "day";
+		$interval = isset($_GET['interval']) ? $_GET['interval'] : "5m";
+		$groupBy = isset($_GET['group_by']) ? $_GET['group_by'] : "time";
+		if (empty($mediaId) || !is_numeric($mediaId) || intval($mediaId) <= 0) {
+			http_response_code(400);
+			echo json_encode(array("error" => "Missing media_id parameter"));
+			exit;
+		}
+		try {
+			$mediaStats = getMediaStats($mediaId, $period, $interval, $groupBy);
+			// Parse JSON and throw error if it's not valid
+			$json = json_decode($mediaStats, true, 512, JSON_THROW_ON_ERROR | JSON_INVALID_UTF8_IGNORE | JSON_INVALID_UTF8_SUBSTITUTE | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+			// Extract results from the JSON if success is true and status is 200
+			if ($json['success'] !== true || $json['status'] !== 200) {
+				throw new Exception("Failed to get media stats");
+			}
+			$resultString = json_encode($json['results'], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR);
+			http_response_code(200);
+			echo json_encode($resultString);
+		} catch (Exception $e) {
+			error_log($e->getMessage());
+			http_response_code(500);
+			echo json_encode(array("error" => "Failed to get media stats"));
 		}
 	} else {
 		http_response_code(400);

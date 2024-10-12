@@ -33,6 +33,10 @@ window.getIcon = getIcon;
 
 import { nip19 } from 'nostr-tools';
 
+// Chart.js
+import Chart from 'chart.js/auto';
+import 'chartjs-adapter-luxon';
+
 Alpine.plugin(focus);
 Alpine.plugin(intersect);
 Alpine.plugin(persist);
@@ -304,6 +308,30 @@ window.copyTextToClipboard = (text, callbackOn = null, callbackOff = null) => {
       console.error('Error copying text to clipboard:', error);
     });
 }
+// Format number in a human-readable format
+window.formatNumber = (num) => {
+  return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+}
+
+// Abbreviate number to a human-readable format (e.g. 1k, 1M, 1B)
+window.abbreviateNumber = (value) => {
+  const suffixes = ['', 'k', 'M', 'B', 'T'];
+  let suffixNum = 0;
+
+  // Ensure the value is a number
+  if (typeof value !== 'number' || isNaN(value)) return value;
+
+  while (Math.abs(value) >= 1000 && suffixNum < suffixes.length - 1) {
+    value /= 1000;
+    suffixNum++;
+  }
+
+  // If the value is a whole number, return it without decimals
+  const isWholeNumber = Number.isInteger(value);
+  const formattedValue = isWholeNumber ? value.toFixed(0) : value.toFixed(1);
+
+  return formattedValue + suffixes[suffixNum];
+};
 
 // Constants
 const aiImagesFolderName = 'AI: Generated Images';
@@ -1565,6 +1593,9 @@ Alpine.store('fileStore', {
       return this.filesByName;
     },
 
+    /**
+     * @param {any[]} files
+     */
     set files(files) {
       this.files = [...files];
       this.updateMaps();
@@ -2456,6 +2487,351 @@ Alpine.store('fileStore', {
 
     const nextFile = this.files[nextIndex];
     return nextFile || file;
+  },
+
+  // Stats and analytics
+  stats: {
+    isLoading: false,
+    isError: false,
+    errorMessage: '',
+    statsCache: {},
+
+    // Convert interval string to milliseconds
+    intervalToMilliseconds(interval) {
+      const units = {
+        'm': 60 * 1000,
+        'h': 60 * 60 * 1000,
+        'd': 24 * 60 * 60 * 1000,
+      };
+
+      const match = interval.match(/^(\d+)([mhd])$/);
+      if (!match) {
+        throw new Error('Invalid interval format');
+      }
+
+      const value = parseInt(match[1], 10);
+      const unit = match[2];
+
+      return value * units[unit];
+    },
+
+    // Round time to the start of the interval
+    toStartOfInterval(time, interval) {
+      const date = new Date(time);
+
+      const match = interval.match(/^(\d+)([mhd])$/);
+      if (!match) {
+        throw new Error('Invalid interval format');
+      }
+
+      const value = parseInt(match[1], 10);
+      const unit = match[2];
+
+      switch (unit) {
+        case 'm':
+          const minutes = date.getMinutes();
+          date.setMinutes(Math.floor(minutes / value) * value);
+          date.setSeconds(0, 0);
+          break;
+        case 'h':
+          const hours = date.getHours();
+          date.setHours(Math.floor(hours / value) * value);
+          date.setMinutes(0, 0, 0);
+          break;
+        case 'd':
+          date.setHours(0, 0, 0, 0);
+          break;
+        default:
+          date.setSeconds(0, 0);
+          break;
+      }
+
+      return date;
+    },
+
+    // Parse data and extract metric names from JSON
+    parseData(jsonData, interval) {
+      try {
+        if (!jsonData || !jsonData.data || !jsonData.meta) throw new Error('Invalid JSON data');
+
+        // Extract metric names from meta, excluding 'time'
+        const metrics = jsonData.meta
+          .map(item => item.name)
+          .filter(name => name !== 'time');
+
+        // Parse data
+        const data = jsonData.data.map(item => {
+          let time = new Date(item.time * 1000);
+          time = this.toStartOfInterval(time, interval);
+
+          // Build data object dynamically
+          const dataItem = { time };
+          metrics.forEach(metric => {
+            const value = item[metric];
+            if (value !== undefined) {
+              dataItem[metric] = parseFloat(value) || 0;
+            }
+          });
+
+          return dataItem;
+        });
+
+        return { data, metrics };
+      } catch (error) {
+        console.error('Error parsing data:', error);
+        return { data: [], metrics: [] };
+      }
+    },
+
+    // Generate time labels aligned with the data intervals
+    generateTimeLabels(startDate, endDate, interval) {
+      const labels = [];
+      const intervalMs = this.intervalToMilliseconds(interval);
+      const current = new Date(startDate);
+
+      while (current <= endDate) {
+        labels.push(new Date(current)); // Clone the date
+        current.setTime(current.getTime() + intervalMs);
+      }
+
+      return labels;
+    },
+
+    // Merge data with labels
+    mergeDataWithLabels(labels, data, metric) {
+      const dataMap = new Map();
+      data.forEach(item => {
+        const timeKey = item.time.getTime();
+        dataMap.set(timeKey, item[metric]);
+      });
+
+      const mergedData = labels.map(label => {
+        const timeKey = label.getTime();
+        return dataMap.get(timeKey) || 0; // Use 0 if data is missing
+      });
+
+      return mergedData;
+    },
+
+    // Prepare datasets for Chart.js
+    prepareDatasets(labels, data, metrics) {
+      const datasets = metrics.map((metric, index) => {
+        // Calculate the total sum of the data points for the current metric
+        const total = this.mergeDataWithLabels(labels, data, metric).reduce((sum, value) => sum + value, 0);
+
+        // Return the dataset with the total appended to the label
+        return {
+          label: metric
+            .replace(/_/g, ' ')
+            .toLowerCase()
+            .replace(/\b\w/g, char => char.toUpperCase()) + ` (${abbreviateNumber(total)})`,
+          data: this.mergeDataWithLabels(labels, data, metric),
+          borderColor: this.getColor(index),
+          backgroundColor: this.getColor(index, 0.8),
+          fill: true,
+          pointRadius: 1, // Hide data points for better performance
+        };
+      });
+
+      return datasets;
+    },
+
+    // Colorblind-friendly color palette
+    getColor(index, alpha = 1) {
+      const colors = [
+        'rgba(0, 114, 178, ALPHA)',   // Blue
+        'rgba(230, 159, 0, ALPHA)',   // Orange
+        'rgba(86, 180, 233, ALPHA)',  // Sky Blue
+        'rgba(0, 158, 115, ALPHA)',   // Bluish Green
+        'rgba(240, 228, 66, ALPHA)',  // Yellow
+        'rgba(204, 121, 167, ALPHA)', // Reddish Purple
+        'rgba(213, 94, 0, ALPHA)',    // Vermillion
+      ];
+      return colors[index % colors.length].replace('ALPHA', alpha);
+    },
+
+    // Fetch and cache stats
+    async getStats(mediaId, period = 'day', interval = '1h', groupBy = 'time') {
+      // Check if the stats are already loaded and cached
+      const stats = this.statsCache[mediaId];
+      const key = `${period}-${interval}-${groupBy}`;
+      if (!stats || !stats[key] || !stats[key].data || stats[key].expires < Date.now()) {
+        // Fetch the stats and cache them before returning
+        await this.fetchStats(mediaId, period, interval, groupBy);
+      }
+      return this.statsCache[mediaId][key].data;
+    },
+
+    async fetchStats(mediaId, period = 'day', interval = '5m', groupBy = 'time') {
+      this.isError = false;
+      this.errorMessage = '';
+
+      const api = getApiFetcher(apiUrl, 'application/json');
+      console.debug('Fetching stats:', mediaId, period, interval, groupBy);
+
+      try {
+        const response = await api.get('', {
+          params: {
+            action: 'get_media_stats',
+            media_id: mediaId,
+            period: period,
+            interval: interval,
+            group_by: groupBy,
+          }
+        });
+        const data = response.data;
+        const key = `${period}-${interval}-${groupBy}`;
+        const intervalMs = this.intervalToMilliseconds(interval);
+        const expires = Date.now() + intervalMs;
+
+        if (!this.statsCache[mediaId]) {
+          this.statsCache[mediaId] = {};
+        }
+        this.statsCache[mediaId][key] = {
+          expires,
+          data: JSON.parse(data)
+        };
+      } catch (error) {
+        console.error('Error fetching stats:', error);
+        this.isError = true;
+        this.errorMessage = 'Error fetching stats.';
+      }
+    },
+
+    // Render charts using Chart.js
+    async renderCharts(mediaId, element, period = 'day', interval = '1h', groupBy = 'time') {
+      try {
+        this.isLoading = true;
+        this.isError = false;
+        // Get the raw data
+        const rawData = await this.getStats(mediaId, period, interval, groupBy);
+
+        // Parse the data and extract metrics
+        const { data, metrics } = this.parseData(rawData, interval);
+
+        // Determine start and end dates
+        let endDate = new Date();
+        endDate = this.toStartOfInterval(endDate, interval);
+
+        let startDate = new Date(endDate);
+        switch (period) {
+          case 'day':
+            startDate.setDate(startDate.getDate() - 1);
+            break;
+          case 'week':
+            startDate.setDate(startDate.getDate() - 7);
+            break;
+          case 'month':
+            startDate.setMonth(startDate.getMonth() - 1);
+            break;
+          case '3months':
+            startDate.setMonth(startDate.getMonth() - 3);
+            break;
+          default:
+            startDate.setDate(startDate.getDate() - 1);
+        }
+        startDate = this.toStartOfInterval(startDate, interval);
+
+        // Generate labels
+        const labels = this.generateTimeLabels(startDate, endDate, interval);
+
+        // Prepare datasets
+        const datasets = this.prepareDatasets(labels, data, metrics);
+
+        // Prepare Chart.js data
+        const chartData = {
+          labels: labels, //.map(label => label.getTime()),
+          // Take only first two datasets for now
+          datasets: datasets.slice(0, 2),
+        };
+
+        // Chart.js configuration
+        const config = {
+          type: 'bar',
+          data: chartData,
+          options: {
+            parsing: true, // Enable parsing
+            responsive: true,
+            interaction: {
+              mode: 'nearest'
+            },
+            plugins: {
+              decimation: {
+                enabled: true,
+                algorithm: 'lttb',
+                samples: 100,
+              },
+              legend: {
+                display: true,
+                labels: {
+                  // Light grey color
+                  color: 'rgba(255, 255, 255, 0.8)',
+                }
+              },
+              tooltip: {
+                usePointStyle: true,
+                enabled: true,
+                callbacks: {
+                  labelPointStyle: function (context) {
+                    return {
+                      pointStyle: 'circle',
+                      rotation: 0
+                    };
+                  }
+                }
+              },
+            },
+            scales: {
+              x: {
+                type: 'timeseries', // Use time scale
+                color: 'rgba(255, 255, 255, 0.8)',
+                time: {
+                  unit: interval.endsWith('h') ? 'hour' : 'minute',
+                  displayFormats: {
+                    minute: 'HH:mm',
+                    hour: 'MMM d, HH:mm',
+                  },
+                  tooltipFormat: 'MMM d, yyyy HH:mm',
+                },
+                title: {
+                  display: true,
+                  text: 'Time',
+                  color: 'rgba(255, 255, 255, 0.8)',
+                },
+              },
+              y: {
+                beginAtZero: true,
+                color: 'rgba(255, 255, 255, 0.8)',
+                title: {
+                  display: true,
+                  text: 'Count',
+                  color: 'rgba(255, 255, 255, 0.8)',
+                },
+              },
+            },
+          },
+        };
+
+        // If a chart instance already exists on the element, destroy it
+        if (element.chartInstance) {
+          console.debug('Destroying existing chart instance.');
+          element.chartInstance.destroy();
+        }
+
+        // Get the context from the canvas element
+        const ctx = element.getContext('2d');
+
+        // Create a new Chart instance and store it on the element
+        element.chartInstance = new Chart(ctx, config);
+        this.isLoading = false;
+
+      } catch (error) {
+        console.error('Error rendering charts:', error);
+        this.isLoading = false;
+        this.isError = true;
+        this.errorMessage = 'Error rendering charts.';
+      }
+    },
   },
 });
 
