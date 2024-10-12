@@ -19,7 +19,7 @@
 	<script defer src="/scripts/dist/account-v2.js?v=15be2a1159c04bffe7c4e38e473ceac4"></script>
 	<link href="/scripts/dist/account-v2.css?v=5ecc26aa69603a0fc007bf24b7636047" rel="stylesheet">
 
-	<link href="/styles/twbuild.css?v=9b78197da723b3befe40385e078a0fdc" rel="stylesheet">
+	<link href="/styles/twbuild.css?v=3cd87ee63cd82ecd65a760155b7ff6ff" rel="stylesheet">
 
 	<!-- Pre-connect and DNS prefetch -->
 	<link rel="preconnect" href="https://i.nostr.build" crossorigin>
@@ -3212,7 +3212,7 @@ onDropCB(event) {
 			</div>
 		</div>
 
-		<!-- Media edit and detail panel -->
+		<!-- Media edit and details panel -->
 		<div x-cloak x-show="fileStore.mediaProperties.isOpen" class="relative z-50" role="dialog" aria-modal="true" x-data="{
 			touchStartX: 0,
 			touchEndX: 0,
@@ -3276,7 +3276,10 @@ onDropCB(event) {
 
 								<div class="space-y-6 pb-16">
 									<div class="sticky top-0 bg-black bg-opacity-10 backdrop-blur-md z-10 pb-4">
-										<div class="aspect-h-7 aspect-w-10 block w-full overflow-hidden rounded-lg">
+										<div :class="{
+											'aspect-h-7 aspect-w-10': fileStore.mediaProperties.currentTab !== 'stats',
+											'aspect-h-4 aspect-w-10': fileStore.mediaProperties.currentTab === 'stats',
+										}" class="block w-full overflow-hidden rounded-lg">
 											<!-- Loading placeholders -->
 											<div x-show="!fileStore.mediaProperties.contentLoaded"
 												:id="'placeholdersP_' + fileStore.mediaProperties.targetFile?.id">
