@@ -723,8 +723,8 @@ if (isset($_GET["action"])) {
 		}
 	} else if ($action == "get_media_stats") {
 		$mediaId = isset($_GET['media_id']) ? $_GET['media_id'] : null;
-		$period = isset($_GET['period']) ? $_GET['period'] : "day";
-		$interval = isset($_GET['interval']) ? $_GET['interval'] : "5m";
+		$period = isset($_GET['period']) ? $_GET['period'] : "1h";
+		$interval = isset($_GET['interval']) ? $_GET['interval'] : "1m";
 		$groupBy = isset($_GET['group_by']) ? $_GET['group_by'] : "time";
 		if (empty($mediaId) || !is_numeric($mediaId) || intval($mediaId) <= 0) {
 			http_response_code(400);

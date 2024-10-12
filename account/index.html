@@ -16,10 +16,10 @@
 	<meta name="msapplication-TileColor" content="#9f00a7">
 	<meta name="theme-color" content="#ffffff">
 
-	<script defer src="/scripts/dist/account-v2.js?v=15be2a1159c04bffe7c4e38e473ceac4"></script>
+	<script defer src="/scripts/dist/account-v2.js?v=83290c5b5faa66a0aceda285aacd62fe"></script>
 	<link href="/scripts/dist/account-v2.css?v=5ecc26aa69603a0fc007bf24b7636047" rel="stylesheet">
 
-	<link href="/styles/twbuild.css?v=3cd87ee63cd82ecd65a760155b7ff6ff" rel="stylesheet">
+	<link href="/styles/twbuild.css?v=001a7d5c41c8187527d7ed5148d877f7" rel="stylesheet">
 
 	<!-- Pre-connect and DNS prefetch -->
 	<link rel="preconnect" href="https://i.nostr.build" crossorigin>
@@ -4115,30 +4115,86 @@ onDropCB(event) {
 										}" x-init="checkAndRenderChart()" x-effect="checkAndRenderChart()">
 										<!-- Graph controls -->
 										<div class="flex items-center justify-center space-x-2 mb-4">
-											<button @click="chartPeriod = 'day'; chartInterval = '1h'; chartGroupBy = 'time'" :class="{
-												'bg-nbpurple-800': chartPeriod === 'day',
-												'bg-nbpurple-500': chartPeriod !== 'day'
-											}" class="px-2 py-1 text-xs font-medium text-nbpurple-50 rounded-md hover:bg-nbpurple-900 focus:outline-none focus:ring-2 focus:ring-nbpurple-500">
-												1 Day
-											</button>
-											<button @click="chartPeriod = 'week'; chartInterval = '6h'; chartGroupBy = 'time'" :class="{
-												'bg-nbpurple-800': chartPeriod === 'week',
-												'bg-nbpurple-500': chartPeriod !== 'week'
-											}" class="px-2 py-1 text-xs font-medium text-nbpurple-50 rounded-md hover:bg-nbpurple-900 focus:outline-none focus:ring-2 focus:ring-nbpurple-500">
-												1 Week
-											</button>
-											<button @click="chartPeriod = 'month'; chartInterval = '1d'; chartGroupBy = 'time'" :class="{
-												'bg-nbpurple-800': chartPeriod === 'month',
-												'bg-nbpurple-500': chartPeriod !== 'month'
-											}" class="px-2 py-1 text-xs font-medium text-nbpurple-50 rounded-md hover:bg-nbpurple-900 focus:outline-none focus:ring-2 focus:ring-nbpurple-500">
-												1 Month
-											</button>
-											<button @click="chartPeriod = '3months'; chartInterval = '1d'; chartGroupBy = 'time'" :class="{
-												'bg-nbpurple-800': chartPeriod === '3months',
-												'bg-nbpurple-500': chartPeriod !== '3months'
-											}" class="px-2 py-1 text-xs font-medium text-nbpurple-50 rounded-md hover:bg-nbpurple-900 focus:outline-none focus:ring-2 focus:ring-nbpurple-500">
-												3 Months
-											</button>
+											<div x-data="{ open: false, selectedOption: '1 Day' }"
+												class="inline-flex rounded-md shadow-sm w-full">
+												<!-- Dropdown Button -->
+												<div class="relative block w-full">
+													<button @click="open = !open" type="button"
+														class="relative inline-flex justify-between items-center w-full min-w-36 rounded-md bg-nbpurple-800 px-3 py-2 text-xs font-medium text-nbpurple-50 ring-1 ring-inset ring-nbpurple-500 hover:bg-nbpurple-700 focus:z-10"
+														id="option-menu-button" aria-expanded="true" aria-haspopup="true">
+														<span x-text="selectedOption"></span> <!-- Display selected option -->
+														<svg class="h-5 w-5 ml-2" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+															<path fill-rule="evenodd"
+																d="M5.22 8.22a.75.75 0 0 1 1.06 0L10 11.94l3.72-3.72a.75.75 0 1 1 1.06 1.06l-4.25 4.25a.75.75 0 0 1-1.06 0L5.22 9.28a.75.75 0 0 1 0-1.06Z"
+																clip-rule="evenodd" />
+														</svg>
+													</button>
+
+													<!-- Dropdown Menu -->
+													<div x-show="open" @click.away="open = false"
+														x-transition:enter="transition ease-out duration-100"
+														x-transition:enter-start="transform opacity-0 scale-95"
+														x-transition:enter-end="transform opacity-100 scale-100"
+														x-transition:leave="transition ease-in duration-75"
+														x-transition:leave-start="transform opacity-100 scale-100"
+														x-transition:leave-end="transform opacity-0 scale-95"
+														class="absolute right-0 z-10 mt-2 w-full origin-top-right rounded-md bg-nbpurple-500 shadow-lg ring-1 ring-nbpurple-950 ring-opacity-5 focus:outline-none"
+														role="menu" aria-orientation="vertical" aria-labelledby="option-menu-button" tabindex="-1">
+
+														<div class="py-1 w-full text-nbpurple-50" role="none">
+															<!-- Options -->
+															<button
+																@click="chartPeriod = '1h'; chartInterval = '1m'; chartGroupBy = 'time'; selectedOption = '1 Hour'; open = false"
+																:class="{ 'bg-nbpurple-800 text-nbpurple-50': selectedOption === '1 Hour' }"
+																class="block w-full text-left px-4 py-2 text-xs text-nbpurple-50 hover:bg-nbpurple-800 hover:text-nbpurple-100">
+																1 Hour
+															</button>
+															<button
+																@click="chartPeriod = '3h'; chartInterval = '5m'; chartGroupBy = 'time'; selectedOption = '3 Hours'; open = false"
+																:class="{ 'bg-nbpurple-800 text-nbpurple-50': selectedOption === '3 Hours' }"
+																class="block w-full text-left px-4 py-2 text-xs text-nbpurple-50 hover:bg-nbpurple-800 hover:text-nbpurple-100">
+																3 Hours
+															</button>
+															<button
+																@click="chartPeriod = '6h'; chartInterval = '15m'; chartGroupBy = 'time'; selectedOption = '6 Hours'; open = false"
+																:class="{ 'bg-nbpurple-800 text-nbpurple-50': selectedOption === '6 Hours' }"
+																class="block w-full text-left px-4 py-2 text-xs text-nbpurple-50 hover:bg-nbpurple-800 hover:text-nbpurple-100">
+																6 Hours
+															</button>
+															<button
+																@click="chartPeriod = '12h'; chartInterval = '30m'; chartGroupBy = 'time'; selectedOption = '12 hours'; open = false"
+																:class="{ 'bg-nbpurple-800 text-nbpurple-50': selectedOption === '12 hours' }"
+																class="block w-full text-left px-4 py-2 text-xs text-nbpurple-50 hover:bg-nbpurple-800 hover:text-nbpurple-100">
+																12 hours
+															</button>
+															<button
+																@click="chartPeriod = 'day'; chartInterval = '1h'; chartGroupBy = 'time'; selectedOption = '1 Day'; open = false"
+																:class="{ 'bg-nbpurple-800 text-nbpurple-50': selectedOption === '1 Day' }"
+																class="block w-full text-left px-4 py-2 text-xs text-nbpurple-50 hover:bg-nbpurple-800 hover:text-nbpurple-100">
+																1 Day
+															</button>
+															<button
+																@click="chartPeriod = 'week'; chartInterval = '6h'; chartGroupBy = 'time'; selectedOption = '1 Week'; open = false"
+																:class="{ 'bg-nbpurple-800 text-nbpurple-50': selectedOption === '1 Week' }"
+																class="block w-full text-left px-4 py-2 text-xs text-nbpurple-50 hover:bg-nbpurple-800 hover:text-nbpurple-100">
+																1 Week
+															</button>
+															<button
+																@click="chartPeriod = 'month'; chartInterval = '1d'; chartGroupBy = 'time'; selectedOption = '1 Month'; open = false"
+																:class="{ 'bg-nbpurple-800 text-nbpurple-50': selectedOption === '1 Month' }"
+																class="block w-full text-left px-4 py-2 text-xs text-nbpurple-50 hover:bg-nbpurple-800 hover:text-nbpurple-100">
+																1 Month
+															</button>
+															<button
+																@click="chartPeriod = '3months'; chartInterval = '1d'; chartGroupBy = 'time'; selectedOption = '3 Months'; open = false"
+																:class="{ 'bg-nbpurple-800 text-nbpurple-50': selectedOption === '3 Months' }"
+																class="block w-full text-left px-4 py-2 text-xs text-nbpurple-50 hover:bg-nbpurple-800 hover:text-nbpurple-100">
+																3 Months
+															</button>
+														</div>
+													</div>
+												</div>
+											</div>
 										</div>
 										<!-- Chart.js canvas -->
 										<canvas x-show="!fileStore.stats.isLoading" x-ref="mediaStatsChart"
