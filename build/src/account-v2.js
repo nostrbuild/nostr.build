@@ -2662,7 +2662,7 @@ Alpine.store('fileStore', {
       return this.statsCache[mediaId][key].data;
     },
 
-    async fetchStats(mediaId, period = 'day', interval = '5m', groupBy = 'time') {
+    async fetchStats(mediaId, period = 'day', interval = '1h', groupBy = 'time') {
       this.isError = false;
       this.errorMessage = '';
 
@@ -2715,6 +2715,18 @@ Alpine.store('fileStore', {
 
         let startDate = new Date(endDate);
         switch (period) {
+          case '1h':
+            startDate.setHours(startDate.getHours() - 1);
+            break;
+          case '3h':
+            startDate.setHours(startDate.getHours() - 3);
+            break;
+          case '6h':
+            startDate.setHours(startDate.getHours() - 6);
+            break;
+          case '12h':
+            startDate.setHours(startDate.getHours() - 12);
+            break;
           case 'day':
             startDate.setDate(startDate.getDate() - 1);
             break;
