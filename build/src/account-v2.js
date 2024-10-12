@@ -2788,7 +2788,7 @@ Alpine.store('fileStore', {
                 time: {
                   unit: interval.endsWith('h') ? 'hour' : 'minute',
                   displayFormats: {
-                    minute: 'HH:mm',
+                    minute: 'MMM d, HH:mm',
                     hour: 'MMM d, HH:mm',
                   },
                   tooltipFormat: 'MMM d, yyyy HH:mm',

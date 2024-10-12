@@ -16,7 +16,7 @@
 	<meta name="msapplication-TileColor" content="#9f00a7">
 	<meta name="theme-color" content="#ffffff">
 
-	<script defer src="/scripts/dist/account-v2.js?v=6482ea034aece228fe27d2e40a079d8c"></script>
+	<script defer src="/scripts/dist/account-v2.js?v=15be2a1159c04bffe7c4e38e473ceac4"></script>
 	<link href="/scripts/dist/account-v2.css?v=5ecc26aa69603a0fc007bf24b7636047" rel="stylesheet">
 
 	<link href="/styles/twbuild.css?v=c89fd423d580a9b8b6cba4ee04800107" rel="stylesheet">
@@ -4082,11 +4082,14 @@ onDropCB(event) {
 									<!-- Stats -->
 									<div x-cloak
 										x-show="fileStore.mediaProperties.currentTab === 'stats' && profileStore.profileInfo.isAnalyticsEligible && fileStore.mediaProperties?.targetFile?.id"
-										class="flex justify-center" x-data="{
+										class="flex flex-col items-center space-y-4" x-data="{
+											period: 'day',
+											interval: '1h',
+											groupBy: 'time',
 											renderChart() {
 												console.log('Rendering chart');
 												const mediaId = fileStore.mediaProperties.targetFile.id;
-												fileStore.stats.renderCharts(mediaId, $refs.mediaStatsChart);
+												fileStore.stats.renderCharts(mediaId, $refs.mediaStatsChart, this.period, this.interval, this.groupBy);
 											},
 											destroyChart() {
 												if ($refs.mediaStatsChart.chartInstance) {
@@ -4107,6 +4110,35 @@ onDropCB(event) {
 												}
 											}
 										}" x-init="checkAndRenderChart()" x-effect="checkAndRenderChart()">
+										<!-- Graph controls -->
+										<div class="flex items-center justify-center space-x-2 mb-4">
+											<button @click="period = 'day'; interval = '1h'; groupBy = 'time'; checkAndRenderChart()" :class="{
+												'bg-nbpurple-700': period === 'day',
+												'bg-nbpurple-500': period !== 'day'
+											}" class="px-2 py-1 text-xs font-medium text-nbpurple-50 rounded-md hover:bg-nbpurple-500 focus:outline-none focus:ring-2 focus:ring-nbpurple-500">
+												1 Day
+											</button>
+											<button @click="period = 'week'; interval = '1h'; groupBy = 'time'; checkAndRenderChart()" :class="{
+												'bg-nbpurple-700': period === 'week',
+												'bg-nbpurple-500': period !== 'week'
+											}" class="px-2 py-1 text-xs font-medium text-nbpurple-50 rounded-md hover:bg-nbpurple-500 focus:outline-none focus:ring-2 focus:ring-nbpurple-500">
+												1 Week
+											</button>
+											<button @click="period = 'month'; interval = '1d'; groupBy = 'time'; checkAndRenderChart()"
+												:class="{
+												'bg-nbpurple-700': period === 'month',
+												'bg-nbpurple-500': period !== 'month'
+											}" class="px-2 py-1 text-xs font-medium text-nbpurple-50 rounded-md hover:bg-nbpurple-500 focus:outline-none focus:ring-2 focus:ring-nbpurple-500">
+												1 Month
+											</button>
+											<button @click="period = '3months'; interval = '1d'; groupBy = 'time'; checkAndRenderChart()"
+												:class="{
+												'bg-nbpurple-700': period === '3months',
+												'bg-nbpurple-500': period !== '3months'
+											}" class="px-2 py-1 text-xs font-medium text-nbpurple-50 rounded-md hover:bg-nbpurple-500 focus:outline-none focus:ring-2 focus:ring-nbpurple-500">
+												3 Months
+											</button>
+										</div>
 										<!-- Chart.js canvas -->
 										<canvas x-show="!fileStore.stats.isLoading" x-ref="mediaStatsChart"
 											:id="'mediaStatsChart_' + fileStore.mediaProperties?.targetFile?.id" class="w-full h-72"></canvas>
