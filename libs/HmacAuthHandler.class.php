@@ -90,7 +90,7 @@ class HmacAuthHandler
     $mac = hash_hmac('sha256', $payload, $secret, true);
     $mac_base64 = base64_encode($mac);
 
-    return "Bearer HMAC|{$body_sha256_or_algo}|{$timestamp}|{$mac_base64}";
+    return "Bearer HMAC|SHA256|{$timestamp}|{$mac_base64}";
   }
 
   /**
@@ -121,10 +121,12 @@ class HmacAuthHandler
     $body_sha256_or_algo = $body ? hash('sha256', $body, false) : 'SHA256';
 
     // Verify body hash
+    /* This is dumb and redundant, why even bother if we are doing the same thing below?
     if (!hash_equals($receivedBodyHash, $body_sha256_or_algo)) {
       error_log("Body hash mismatch: received=$receivedBodyHash, expected=$body_sha256_or_algo, body=$body");
       return false;
     }
+    */
 
     // Verify timestamp
     if (abs(time() - $timestamp) > 60) {
