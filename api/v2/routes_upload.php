@@ -212,7 +212,8 @@ $app->group('/upload', function (RouteCollectorProxy $group) {
       }
     } else {
       error_log('Unauthenticated upload of files');
-      $upload = $factory->create();
+      // Return error
+      return jsonResponse($response, 'error', 'Unauthorized, please provide a valid nip-98 token', new stdClass(), 401);
     }
     error_log(PHP_EOL . "Request URL:" . $request->getUri() . PHP_EOL);
 
@@ -250,6 +251,10 @@ $app->group('/upload', function (RouteCollectorProxy $group) {
       error_log('npub: ' . $npub . ' uploading pfp');
       $upload = $factory->create(false, $npub);
     } else {
+      error_log('Unauthenticated upload of pfp');
+      // Return error
+      //return jsonResponse($response, 'error', 'Unauthorized, please provide a valid nip-98 token', new stdClass(), 401);
+      // Allow unauthenticated uploads for pfp for now (Mutinywallet support)
       error_log('Unauthenticated upload of pfp');
       $upload = $factory->create();
     }
@@ -294,7 +299,8 @@ $app->group('/upload', function (RouteCollectorProxy $group) {
       }
     } else {
       error_log('Unauthenticated upload from URL: ' . $data['url']);
-      $upload = $factory->create();
+      // Return error
+      return jsonResponse($response, 'error', 'Unauthorized, please provide a valid nip-98 token', new stdClass(), 401);
     }
 
     try {
