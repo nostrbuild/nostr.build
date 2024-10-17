@@ -289,7 +289,7 @@ $app->group('/account', function (RouteCollectorProxy $group) {
         $_SESSION['timed_dm_code']['expires'] = time() + 300 + 10; // 5 minutes + 10 seconds
         try {
           $nc = new NostrClient($_SERVER['NB_API_NOSTR_CLIENT_SECRET'], $_SERVER['NB_API_NOSTR_CLIENT_URL']);
-          if (!$nc->sendDm($npub, ['Your temporary login code is:', $dmCode])) {
+          if (!$nc->sendDm($npub, ['Your temporary login code is:', $dmCode], true)) {
             throw new Exception('Error sending DM');
           }
         } catch (\Exception $e) {
@@ -353,7 +353,7 @@ $app->group('/account', function (RouteCollectorProxy $group) {
         // Send a DM to the user
         try {
           $nc = new NostrClient($_SERVER['NB_API_NOSTR_CLIENT_SECRET'], $_SERVER['NB_API_NOSTR_CLIENT_URL']);
-          if (!$nc->sendDm($npub, ['Your verification code is:', (string)$dmCode])) {
+          if (!$nc->sendDm($npub, ['Your verification code is:', (string)$dmCode], true)) {
             throw new Exception('Error sending DM');
           }
         } catch (\Exception $e) {

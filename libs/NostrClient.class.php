@@ -69,7 +69,7 @@ class NostrClient
     throw new Exception("Request failed after $maxRetries retries.");
   }
 
-  public function sendDm(string $toNpubHex, string | array $message)
+  public function sendDm(string $toNpubHex, string | array $message, bool $otp = false)
   {
     try {
       $randomString = $this->generateRandomString();
@@ -82,6 +82,7 @@ class NostrClient
           'type' => 'dm',
           'to' => $toNpubHex,
           'message' => $message,
+          'otp' => $otp,
         ]
       ];
 
