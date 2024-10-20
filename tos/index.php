@@ -77,6 +77,14 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/config.php';
 			* Do not abuse this service in any way. We are offering a free service dedicated to improving the freedom of speech. </br>
 			If there are any questions or issues please reach out to us at <a href="mailto:admin@nostr.build">admin@nostr.build</a>
 		</p>
+		<h4>Using nostr.build's AI Studio, AI Image Generation and AI Editing Tools</h4>
+		<p>
+			Nostr.build uses an api provided by stability.ai for text-to-image media generation and editing. When creating new media or modifing existing media 
+			using nostr.build's AI Studio and/or related tools, you must adhere to stability.ai's <a "https://platform.stability.ai/legal/terms-of-service">Terms of Service (ToS).</a>, 
+			<a "https://stability.ai/use-policy">Acceptable Use Policy</a>, and <a "https://platform.stability.ai/legal/privacy-policy">Privacy Policy</a>.
+			If you create illegal media, media that exploits a child in any way, or don't follow stability.ai's policies, your account will be closed and the media will be reported.
+			
+		</p>
 		<h4>Details</h4>
 		<p>
 			By uploading a file or other content or by making a comment, you represent and
@@ -120,6 +128,7 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/config.php';
 			reserves the right to ignore DMCA notifications based on unregistered
 			works. Email: admin@nostr.build.
 		</p>
+		<h4>DMCA Takedown Requests</h4>
 		<p>
 			If we receive a DMCA takedown demand for material you posted that we believe constitutes fair use, we will attempt
 			to notify you if we have your contact info; otherwise we are under no obligation to notify you regarding the
@@ -210,9 +219,9 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/config.php';
 			please allow him or her to use it only under adult supervision. Parental control protections (such as computer
 			hardware, software, or filtering services) are commercially available that may assist you in limiting access to
 			material that is harmful to minors. See e.g.
-			<a href="https://www.toptenreviews.com/software/security/best-internet-filter-software" title="Filtering services"> https://www.toptenreviews.com/software/security/best-internet-filter-software</a>.</br>
+			<a href="https://www.toptenreviews.com/software/security/best-internet-filter-software" title="Filtering services"> Toptenreviews.com</a>.</br>
 		</p>
-		<a href="https://www.dmca.com/compliance/nostr.build" title="DMCA Compliance information for nostr.build"><img src="https://www.dmca.com/img/dmca-compliant-grayscale.png" alt="DMCA compliant image" /></a>
+		<a href="https://www.dmca.com/compliance/nostr.build" title="DMCA Compliance information for nostr.build"><img src="https://www.dmca.com/img/dmca-compliant-white-bg.png" alt="DMCA compliant image" /></a>
 	</main>
 	<?php include $_SERVER['DOCUMENT_ROOT'] . '/components/footer.php'; ?>
 </body>
