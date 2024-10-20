@@ -80,8 +80,8 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/config.php';
 		<h4>Using nostr.build's AI Studio, AI Image Generation and AI Editing Tools</h4>
 		<p>
 			Nostr.build uses an api provided by stability.ai for text-to-image media generation and editing. When creating new media or modifing existing media 
-			using nostr.build's AI Studio and/or related tools, you must adhere to stability.ai's <a "https://platform.stability.ai/legal/terms-of-service">Terms of Service (ToS).</a>, 
-			<a "https://stability.ai/use-policy">Acceptable Use Policy</a>, and <a "https://platform.stability.ai/legal/privacy-policy">Privacy Policy</a>.
+			using nostr.build's AI Studio and/or related tools, you must adhere to stability.ai's <a href="https://platform.stability.ai/legal/terms-of-service">Terms of Service (ToS)</a>, 
+			<a href="https://stability.ai/use-policy">Acceptable Use Policy</a>, and <a href="https://platform.stability.ai/legal/privacy-policy">Privacy Policy</a>.
 			If you create illegal media, media that exploits a child in any way, or don't follow stability.ai's policies, your account will be closed and the media will be reported.
 			
 		</p>
@@ -126,20 +126,10 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/config.php';
 			signature, or of someone authorized to act on your behalf. Instructions on how we may contact you: preferably
 			email, but also address and phone. Because a high percentage of DMCA takedown notices are not valid, nostr.build
 			reserves the right to ignore DMCA notifications based on unregistered
-			works. Email: admin@nostr.build.
+			works. Email: <a href="mailto:admin@nostr.build">admin@nostr.build</a>.
 		</p>
-		<h4>DMCA Takedown Requests</h4>
+		<h4>Agreement to Arbitrate and Class Action Waiver</h4>
 		<p>
-			If we receive a DMCA takedown demand for material you posted that we believe constitutes fair use, we will attempt
-			to notify you if we have your contact info; otherwise we are under no obligation to notify you regarding the
-			removal. We reserve the right to refuse to remove any material that
-			in our view constitutes fair use. If we identify you as a "repeat infringer," we will block or remove your media
-			and terminate any accounts you have with us. (If we notify you of a DMCA removal and you respond with a legitimate
-			counter-notice, that won't count toward being a repeat
-			infringer.) Keep in mind that we reserve the right to remove any content at any time whether or not it infringes
-			or violates any of our policies. Use of Trademark Any uses of our name, trademarks, and logos must follow our
-			Trademark Use Policy.</br>
-			Agreement to Arbitrate and Class Action Waiver
 			You and we agree to resolve any and all disputes with binding individual arbitration before a single arbitrator
 			appointed by the American Arbitration Association ("AAA") under the Federal Arbitration Act ("FAA") and not to sue
 			in court in front of a judge or jury. The neutral arbitrator will
@@ -220,6 +210,18 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/config.php';
 			hardware, software, or filtering services) are commercially available that may assist you in limiting access to
 			material that is harmful to minors. See e.g.
 			<a href="https://www.toptenreviews.com/software/security/best-internet-filter-software" title="Filtering services"> Toptenreviews.com</a>.</br>
+		</p>
+		<h4>DMCA Takedown Requests</h4>
+		<p>
+			If we receive a DMCA takedown demand for material you posted that we believe constitutes fair use, we will attempt
+			to notify you if we have your contact info; otherwise we are under no obligation to notify you regarding the
+			removal. We reserve the right to refuse to remove any material that
+			in our view constitutes fair use. If we identify you as a "repeat infringer," we will block or remove your media
+			and terminate any accounts you have with us. (If we notify you of a DMCA removal and you respond with a legitimate
+			counter-notice, that won't count toward being a repeat
+			infringer.) Keep in mind that we reserve the right to remove any content at any time whether or not it infringes
+			or violates any of our policies. Use of Trademark Any uses of our name, trademarks, and logos must follow our
+			Trademark Use Policy.</br>
 		</p>
 		<a href="https://www.dmca.com/compliance/nostr.build" title="DMCA Compliance information for nostr.build"><img src="https://www.dmca.com/img/dmca-compliant-white-bg.png" alt="DMCA compliant image" /></a>
 	</main>
