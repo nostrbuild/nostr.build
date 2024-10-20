@@ -37,7 +37,7 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/config.php';
 		<h3>Overview</h3>
 		<h4>Effective May 1, 2024</h4>
 		<p>
-			Using our website, api or any connected apps (YakiHonne, Damus, Amethyst, NoStrudel, Coracle, Snort, Iris, etc.) to do anything other than access the links to this "Terms" page or accessing any
+			Using our website, API or any connected apps (YakiHonne, Damus, Amethyst, NoStrudel, Coracle, Snort, Iris, etc.) to do anything other than access the links to this "Terms" page or accessing any
 			page of our website other than our home page and this "Terms" page constitutes your consent to these terms of use
 			and to our Privacy Policy. If you do not consent, do not use our
 			website. Your use of our website to do anything beyond simply accessing/viewing it (that is, uploading,
@@ -77,12 +77,12 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/config.php';
 			* Do not abuse this service in any way. We are offering a free service dedicated to improving the freedom of speech. </br>
 			If there are any questions or issues please reach out to us at <a href="mailto:admin@nostr.build">admin@nostr.build</a>
 		</p>
-		<h4>Using nostr.build's AI Studio, AI Image Generation and AI Editing Tools</h4>
+		<h4>Using nostr.build's AI Studio, AI Image Generation, and AI Editing Tools</h4>
 		<p>
-			Nostr.build uses an api provided by stability.ai for text-to-image media generation and editing. When creating new media or modifing existing media 
-			using nostr.build's AI Studio and/or related tools, you must adhere to stability.ai's <a href="https://platform.stability.ai/legal/terms-of-service">Terms of Service (ToS)</a>, 
+			Nostr.build uses an API provided by stability.ai for text-to-image media generation and editing. When creating new media or modifying existing media 
+			using nostr.build's AI Studio or related tools, you must adhere to stability.ai's <a href="https://platform.stability.ai/legal/terms-of-service">Terms of Service (ToS)</a>, 
 			<a href="https://stability.ai/use-policy">Acceptable Use Policy</a>, and <a href="https://platform.stability.ai/legal/privacy-policy">Privacy Policy</a>.
-			If you create illegal media, media that exploits a child in any way, or don't follow stability.ai's policies, your account will be closed and the media will be reported.
+			If you create illegal media, media that exploits a child in any way, or don't follow stability.ai's policies, your account will be closed, and the media will be reported.
 			
 		</p>
 		<h4>Details</h4>
