@@ -79,10 +79,13 @@ document.addEventListener('DOMContentLoaded', function () {
 		e.preventDefault();
 		file = e.dataTransfer.files[0];
 		fileType = file.type;
+		fileSize = file.size;
 		if (!validExtensions.includes(fileType)) {
 			alert("This is not an Image, Audio or Video File!");
 		} else if (e.dataTransfer.files.length > 1) {
 			alert("Please select only one file");
+		} else if (fileSize > 72_351_744) {
+			alert("File is too large, please select a file less than 69MB");
 		} else {
 			queryAllAndAct(".import_button", button => {
 				button.disabled = false;

@@ -175,7 +175,7 @@ SVG;
 	<link rel="stylesheet" href="/styles/index.css?v=290253d31f2fde0932483cb54581766b" />
 	<link rel="stylesheet" href="/styles/header.css?v=19cde718a50bd676387bbe7e9e24c639" />
 
-	<script defer src="/scripts/index.js?v=04d160e3f0cdd9cd006b26a57f0d727f"></script>
+	<script defer src="/scripts/index.js?v=d7279ebfd9a78bd6edccd201b98e19e2"></script>
 
 	<title>nostr.build media uploader</title>
 </head>
