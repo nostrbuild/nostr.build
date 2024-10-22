@@ -62,7 +62,7 @@ class S3Service
   }
 
   // Upload a file to S3
-  public function uploadToS3($sourcePath, $destinationPath, $sha256 = '', $s3backup = false, $npub = '', bool $paidAccount = false): bool
+  public function uploadToS3($sourcePath, $destinationPath, $sha256 = '', $npub = '', bool $paidAccount = false): bool
   {
     $maxRetries = 3;
     $mimeType = mime_content_type($sourcePath);

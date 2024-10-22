@@ -502,7 +502,7 @@ class MultimediaUpload
       }
 
       // Upload the file to S3
-      if (!$this->uploadToS3($newFilePrefix . $newFileName, $fileSha256, false /* no S3 backup for profile pictures */)) {
+      if (!$this->uploadToS3($newFilePrefix . $newFileName, $fileSha256)) {
         error_log('Failed to upload file to S3');
         return [false, 500, 'Server error, please try again later'];
       }
@@ -692,10 +692,8 @@ class MultimediaUpload
         }
         // By this time the image has been processed and saved to a temporary location
         // It is now ready to be uploaded to S3 and information about it stored in the database
-        // Determine if we will backup the upload to S3 based on account level
-        $s3Backup = $this->pro ? true : false;
         // Begin a database transaction, so that we can rollback if anything fails
-        $this->db->begin_transaction(MYSQLI_TRANS_START_WITH_CONSISTENT_SNAPSHOT);
+        $this->db->begin_transaction();
 
         if (!$this->pro) {
           // Handle free uploads
@@ -771,15 +769,10 @@ class MultimediaUpload
             $returnError[] = [false, 500, 'Failed to update database'];
             throw new Exception('Failed to update database');
           }
-          // Based on the account level, we will backup the upload to S3
-          $s3Backup = in_array(
-            $this->userAccount->getAccountLevel(),
-            [AccountLevel::Admin, AccountLevel::Advanced, AccountLevel::Creator]
-          );
         }
         // Generate transformed file hash
         $transformedFileSha256 = $this->generateFileName(0);
-        if (!$this->uploadToS3($newFilePrefix . $newFileName, $fileSha256, $s3Backup)) {
+        if (!$this->uploadToS3($newFilePrefix . $newFileName, $fileSha256)) {
           $returnError[] = [false, 500, 'Failed to upload to S3'];
           throw new Exception('Upload to S3 failed');
         }
@@ -1657,10 +1650,10 @@ class MultimediaUpload
    * @return bool
    * Method that will upload the file to S3
    */
-  protected function uploadToS3(string $objectName, $sha256 = '', $backup = false): bool
+  protected function uploadToS3(string $objectName, $sha256 = ''): bool
   {
     try {
-      $this->s3Service->uploadToS3($this->file['tmp_name'], $objectName, $sha256, $backup, $this->userNpub ?? '', $this->pro);
+      $this->s3Service->uploadToS3($this->file['tmp_name'], $objectName, $sha256, $this->userNpub ?? '', $this->pro);
     } catch (Exception $e) {
       error_log($e->getMessage());
       return false;
