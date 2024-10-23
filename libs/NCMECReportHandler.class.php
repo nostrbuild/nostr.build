@@ -1,79 +1,4 @@
 <?php
-/*
-SPECS:
-This operation reports the content violations to NCMEC
-
-The header should contain the parameters x-usr and x-pwd for the authentication to the NCMEC cybertip API. These values are obtained from NCMEC. Please contact them if you do not have your credentials yet.
-{
-    "OrgName": "TestOrg",
-    "ReporterName": "Reporter1",
-    "ReporterEmail": "test@example.org",
-    "IncidentTime": "9/10/2014 9:08:14 PM",
-    "ReporteeName": "Reportee1",
-    "ReporteeIPAddress": "127.0.0.1",
-    "ViolationContentCollection": [{
-        "Name": "test.jpg",
-        "Value": "Base 64 image string",
-        "Location": {
-            "Latitude": "",
-            "Longitude": "",
-            "Altitude": ""
-        },
-        "UploadIpAddress": "<IP Address of the Image Upload Source - when UploadIpAddress & UploadDateTime is provided, this information would be sent to NCMEC as filedetails for this file.>",
-        "UploadDateTime": "<Timestamp for upload - when UploadIpAddress & UploadDateTime is provided, this information would be sent to NCMEC as filedetails for this file.>",
-        "AdditionalMetadata": [{
-            "Key": "viewedByEsp", // Whether the reporting company viewed the entire contents of the file being reported to NCMEC.
-            "Value": "true"
-        }, {
-            "Key": "publiclyAvailable", // Whether the entire contents of the file were publicly accessible to online users.
-            "Value": "true"
-        }, {
-            "Key": "additionalInfo", // Additional information about this file not covered by any other section.
-            "Value": "<some additional text content>"
-        }]
-    }],
-
-
-    "AdditionalMetadata": [{
-        "Key": "IsTest",
-        "Value": "<Optional KeyValue pair to route the request to NCMEC's Test Endpoint. Set the value to true to point to NCMEC's Test Endpoint.>"
-    }]
-}
-
-+---------------------------+------------------------------------------------------------+-----------+
-| Name                      | Description                                                | Optional  |
-+---------------------------+------------------------------------------------------------+-----------+
-| OrgName                   | This is the name of your organization                      | No        |
-| ReporterName              | Name of the Reporter                                       | No        |
-| ReporterEmail             | Email address of reporter                                  | No        |
-| IncidentTime              | The time the incident occurred and the IP address was      | No        |
-|                           | recorded.                                                  |           |
-| ReporteeName              | Name of the person/organization who is being reported      | No        |
-| ReporteeIPAddress         | The IP address from which the incident occurred            | No        |
-| ViolationContentCollection| The actual information of the content being reported       | No        |
-|                           | It is a collection of the following data for each file:    |           |
-|                           | Name: The filename of the image that is being reported     |           |
-|                           | Value: The base-64 encoded value of the content being      |           |
-|                           | reported                                                   |           |
-|                           | Location (optional): The GPS location, the content is      |           |
-|                           | marked with                                                |           |
-|                           | UploadIpAddress (optional): This represents the upload IP  |           |
-|                           | address of the file and when it occurred.                  |           |
-|                           | UploadDateTime (optional): The time the upload occurred    |           |
-|                           | and when the IP address was recorded.                      |           |
-|                           | AdditionalMetadata (optional): This is collection of       |           |
-|                           | KeyValue pairs to specify additional options. Currently    |           |
-|                           | available options:                                         |           |
-|                           | viewedByEsp                                                |           |
-|                           | publiclyAvailable                                          |           |
-|                           | additionalInfo                                             |           |
-| AdditionalMetadata        | This is collection of KeyValue pairs to specify            | Yes       |
-|                           | additional options. Currently available options:           |           |
-|                           | IsTest - passing a value of 'true' will force the          |           |
-|                           | transaction to hit the NCMEC test end point.               |           |
-+---------------------------+------------------------------------------------------------+-----------+
-
-*/
 
 /**
  * NCMECReport Class
@@ -84,28 +9,6 @@ The header should contain the parameters x-usr and x-pwd for the authentication 
  * - Instantiate the class with the incident ID.
  * - Call `processAndReportViolation()` to process and report the incident.
  * - Call `getEvidenceImgTag($maxWidth, $maxHeight)` to get the image tag for verification.
- * - Call `getSanitizedReportData()` to get the sanitized report data.
- * 
- * Example:
-   try {
-        $incidentId = 123; // Replace with the actual incident ID
-        $ncmecReport = new NCMECReport($incidentId);
-
-        // Get the evidence image tag for verification
-        $imgTag = $ncmecReport->getEvidenceImgTag(300, 300);
-        echo $imgTag; // Display the image for verification
-
-        // If the content is confirmed and not a false positive, proceed to report
-        $result = $ncmecReport->processAndReportViolation();
-
-        if ($result['httpCode'] === 200) {
-            echo "Report submitted successfully.";
-        } else {
-            echo "Error submitting report: " . ($result['error'] ?? json_encode($result['response']));
-        }
-    } catch (Exception $e) {
-        echo 'Error: ' . $e->getMessage();
-    } 
  */
 
 require_once $_SERVER['DOCUMENT_ROOT'] . '/config.php';
@@ -119,21 +22,24 @@ class NCMECReportHandler
   private $incidentId;
   private $csamReportingConfig;
   private $orgName;
-  private $reporterName;
+  private $reporterFirstName;
+  private $reporterLastName;
   private $reporterEmail;
   private $incidentTime;
+  private $incidentType;
   private $reporteeName;
   private $reporteeIPAddress;
   private $violationContentCollection;
-  private $additionalMetadata;
   private $incidentDetails;
   private $testReport;
-  private $retryCounter = 0;
+  private $ncmecReport; // Instance of the NcmecReport class
+  private $apiRequests = [];  // To store API requests (XML)
+  private $apiResponses = []; // To store API responses
 
   /**
    * Constructor for the NCMECReportHandler class.
    *
-   * @param int $incidentId The ID of the incident to be handled.
+   * @param int  $incidentId The ID of the incident to be handled.
    * @param bool $testReport Whether this is a test report.
    * @throws Exception If the logs data is empty.
    */
@@ -145,41 +51,125 @@ class NCMECReportHandler
     $this->csamReportingConfig = $csamReportingConfig;
     $this->incidentId = $incidentId;
     $this->testReport = $testReport;
+
+    // Initialize the NcmecReport instance
+    $this->ncmecReport = new NcmecReport(
+      $_SERVER['NCMEC_USERNAME'],
+      $_SERVER['NCMEC_PASSWORD'],
+      $testReport ? 'test' : 'production'
+    );
+
     // Populate the incident details
     $this->incidentDetails = $this->getIncidentDetails();
+
     // Process the logs column
     $logs = $this->incidentDetails['logs'] ?? '';
     if (empty($logs)) {
       throw new Exception('Logs data is empty.');
     }
-    $this->processLogColumn($logs, $testReport);
+    $this->processLogColumn($logs);
   }
 
   /**
-   * Fetches incident details and processes the logs, then reports the violation.
+   * Processes the incident data and reports the violation to NCMEC.
    *
    * @return array The response from the NCMEC API.
    */
   public function processAndReportViolation(): array
   {
     try {
-      // Report the violation
-      $result = $this->reportViolation();
-      if ($result['httpCode'] === 200) {
-        // Update the incident report ID and submitted report in the database if successful
-        $reportId = $result['response'] ?? '';
-        // Get the sanitized report data (without Base64 media)
-        $sanitizedReportData = $this->getSanitizedReportData();
-        $this->updateIncidentReportId($reportId, json_encode($sanitizedReportData));
-      } else {
-        return [
-          'httpCode' => 0,
-          'error' => 'Error submitting report: ' . ($result['error'] ?? json_encode($result['response']))
+      // Set up the report with the collected data
+      $this->prepareReport();
+
+      // Preview the report before submission (optional)
+      $reportXml = $this->ncmecReport->getReportXml();
+      $this->apiRequests['submitReport'] = $reportXml;
+
+      // Submit the report
+      $submitReportResponse = $this->ncmecReport->submitReport();
+      $this->apiResponses['submitReport'] = $submitReportResponse;
+
+      // For each violation content, upload the file and submit file details
+      foreach ($this->violationContentCollection as $violation) {
+        $fileId = $violation['Name'];
+        $binaryData = base64_decode($violation['Value']);
+        $fileName = $violation['Name'];
+
+        // Use the MIME type from the Content-Type header when fetching the file
+        $presignedUrl = $this->getPresignedUrl($this->incidentDetails['file_sha256_hash']);
+        if ($presignedUrl === '') {
+          throw new Exception('Unable to get presigned URL for file hash.');
+        }
+
+        // Fetch the file and get the Content-Type header
+        $fileData = $this->fetchFileData($presignedUrl);
+        $mimeType = $fileData['mimeType'];
+        $binaryData = $fileData['binaryData'];
+
+        // Upload the file
+        $uploadFileResponse = $this->ncmecReport->uploadFile($fileId, $binaryData, $fileName, $mimeType);
+        $this->apiResponses['uploadFile'][$fileId] = $uploadFileResponse;
+
+        // Prepare file details
+        $fileDetails = [
+          'fileId' => $fileId,
+          'originalFileName' => $fileName,
+          'locationOfFile' => $violation['LocationOfFile'] ?? '',
+          'fileViewedByEsp' => 'true',
+          'publiclyAvailable' => 'true',
+          'ipCaptureEvent' => [
+            'ipAddress' => $violation['UploadIpAddress'],
+            'eventName' => 'Upload',
+            'dateTime' => $violation['UploadDateTime'],
+            'possibleProxy' => 'false'
+          ],
+          'additionalInfo' => $violation['AdditionalInfo'] ?? '',
         ];
+
+        // Build the file details XML
+        $fileDetailsXml = $this->ncmecReport->buildFileDetailsXml($fileDetails);
+        $this->apiRequests['submitFileDetails'][$fileId] = $fileDetailsXml;
+
+        // Submit file details
+        $submitFileDetailsResponse = $this->ncmecReport->submitFileDetails($fileDetailsXml);
+        $this->apiResponses['submitFileDetails'][$fileId] = $submitFileDetailsResponse;
       }
-      return $result;
+
+      // Finish the report
+      $finishReportResponse = $this->ncmecReport->finishReport();
+      $this->apiResponses['finishReport'] = $finishReportResponse;
+      // Store all requests and responses in the database
+      $this->apiResponses['allRequests'] = $this->ncmecReport->getAllResponses();
+      $this->apiRequests = $this->ncmecReport->getAllRequests();
+
+      // Store all requests and responses in the database
+      $reportId = $finishReportResponse['reportId'];
+      $this->updateIncidentReport(
+        $reportId,
+        json_encode($this->apiRequests),
+        json_encode($this->apiResponses)
+      );
+
+      return [
+        'httpCode' => 200,
+        'response' => $finishReportResponse
+      ];
     } catch (Exception $e) {
-      // Handle exceptions and return an error response
+      // Handle exceptions and attempt to cancel the report if possible
+      if ($this->ncmecReport->reportId) {
+        try {
+          $cancelReportResponse = $this->ncmecReport->cancelReport();
+          $this->apiResponses['cancelReport'] = $cancelReportResponse;
+        } catch (Exception $cancelException) {
+          error_log('Error during report cancellation: ' . $cancelException->getMessage());
+        }
+      }
+      // Store the error response in the database
+      $this->updateIncidentReport(
+        'ERROR',
+        json_encode($this->apiRequests),
+        json_encode(['error' => $e->getMessage(), 'apiResponses' => $this->apiResponses])
+      );
       return [
         'httpCode' => 0,
         'error' => $e->getMessage()
@@ -188,13 +178,53 @@ class NCMECReportHandler
   }
 
   /**
-   * Process and preview the actual report that will be submitted to NCMEC.
-   * 
-   * @return array The sanitized report data.
+   * Prepares the NCMEC report with the collected data.
    */
-  public function previewReport(): array
+  private function prepareReport()
   {
-    return $this->getSanitizedReportData();
+    // Set the incident summary
+    $this->ncmecReport->setIncidentSummary($this->incidentType, $this->incidentTime);
+
+    // Set reporter details
+    $this->ncmecReport->setReporter([
+      'firstName' => $this->reporterFirstName,
+      'lastName' => $this->reporterLastName,
+      'email' => $this->reporterEmail
+    ]);
+
+    // Set internet details if applicable
+    if (isset($this->incidentDetails['url'])) {
+      $this->ncmecReport->setInternetDetails([
+        'webPageIncident' => [
+          'url' => $this->incidentDetails['url'],
+          'additionalInfo' => ''
+        ]
+      ]);
+    }
+
+    // Add person or user reported
+    $this->ncmecReport->addPersonOrUserReported([
+      'espIdentifier' => $this->reporteeName,
+      'profileUrl' => 'https://njump.me/' . $this->reporteeName,
+      'ipCaptureEvent' => [
+        'ipAddress' => $this->reporteeIPAddress,
+        'eventName' => 'Upload',
+        'dateTime' => $this->incidentTime,
+        'possibleProxy' => 'false'
+      ]
+    ]);
+  }
+
+  /**
+   * Previews the XML report that will be submitted to NCMEC.
+   *
+   * @return string The XML representation of the report.
+   */
+  public function previewReport(): string
+  {
+    // Prepare the report if not already prepared
+    $this->prepareReport();
+    return $this->ncmecReport->getReportXml();
   }
 
   /**
@@ -249,56 +279,28 @@ class NCMECReportHandler
   }
 
   /**
-   * Updates the incident report ID and submitted report in the database.
+   * Updates the incident report in the database.
    *
-   * @param string $reportId The report ID received from NCMEC.
-   * @param string $report   The sanitized report data (without Base64 media).
+   * @param string $reportId       The report ID received from NCMEC.
+   * @param string $sentReport     The XML report that was sent.
+   * @param string $reportResponse The responses from NCMEC API calls.
    */
-  private function updateIncidentReportId(string $reportId, string $report)
+  private function updateIncidentReport(string $reportId, string $sentReport, string $reportResponse)
   {
     $reportId = $this->testReport ? 'TEST_' . $reportId : $reportId;
+
+    // Prepare the data to be stored in the JSON column
+    $reportData = [
+      'sentReport' => json_decode($sentReport, true),
+      'apiResponses' => json_decode($reportResponse, true)
+    ];
+
     $sql = 'UPDATE identified_csam_cases SET ncmec_report_id = ?, ncmec_submitted_report = ? WHERE id = ?';
     $stmt = $this->db->prepare($sql);
-    $stmt->bind_param('ssi', $reportId, $report, $this->incidentId);
+    $reportDataJson = json_encode($reportData);
+    $stmt->bind_param('ssi', $reportId, $reportDataJson, $this->incidentId);
     $stmt->execute();
     $stmt->close();
-  }
-
-  /**
-   * Returns the sanitized report data (without Base64 media) that was submitted to NCMEC.
-   *
-   * @return array The sanitized report data.
-   */
-  public function getSanitizedReportData(?bool $keepB64 = false): array
-  {
-    // Create a deep copy of the data
-    $sanitizedData = [
-      'OrgName' => $this->orgName,
-      'ReporterName' => $this->reporterName,
-      'ReporterEmail' => $this->reporterEmail,
-      'IncidentTime' => $this->incidentTime,
-      'ReporteeName' => $this->reporteeName,
-      'ReporteeIPAddress' => $this->reporteeIPAddress,
-      'ViolationContentCollection' => [],
-      //'AdditionalMetadata' => $this->additionalMetadata
-    ];
-    if ($this->testReport) {
-      $sanitizedData['AdditionalMetadata'][] = ['Key' => 'IsTest', 'Value' => 'true'];
-    }
-
-    if ($keepB64) {
-      $sanitizedData['ViolationContentCollection'] = $this->violationContentCollection;
-      return $sanitizedData;
-    }
-
-    // Loop through ViolationContentCollection and remove the Base64 media
-    foreach ($this->violationContentCollection as $violation) {
-      $sanitizedViolation = $violation;
-      unset($sanitizedViolation['Value']); // Remove the Base64 media
-      $sanitizedData['ViolationContentCollection'][] = $sanitizedViolation;
-    }
-
-    return $sanitizedData;
   }
 
   /**
@@ -317,10 +319,10 @@ class NCMECReportHandler
 
     // Check if 'evidenceData' exists
     if (isset($data['evidenceData'])) {
-      $this->processEvidenceData($data['evidenceData'], $this->testReport);
+      $this->processEvidenceData($data['evidenceData']);
     } else {
       // Assume Type 1 format
-      $this->processType1Log($data, $this->testReport);
+      $this->processType1Log($data);
     }
   }
 
@@ -345,31 +347,14 @@ class NCMECReportHandler
       $incidentTime = date('Y-m-d\TH:i:s\Z', $uploadTime);
 
       // Prepare ViolationContentCollection
-      $violationContentCollection = [
+      $this->violationContentCollection = [
         [
           'Name' => (empty($fileData['fileName']) ? 'Unknown' : $fileData['fileName']),
-          'Value' => $this->getBase64MediaByHash($fileHash),
-          'Location' => [
-            "Latitude" => "",
-            "Longitude" => "",
-            "Altitude" => ""
-          ],
+          'Value' => '', // Will be fetched later
+          'LocationOfFile' => $fileUrl ?? '',
           'UploadIpAddress' => $uploadIpAddress,
           'UploadDateTime' => $incidentTime,
-          'AdditionalMetadata' => [
-            [
-              'Key' => 'additionalInfo',
-              'Value' => json_encode($uploadIpInfo)
-            ],
-            [
-              'Key' => 'publiclyAvailable',
-              'Value' => 'true' // Assuming the content is publicly available
-            ],
-            [
-              'Key' => 'viewedByEsp',
-              'Value' => 'true' // Assuming the content was viewed by the reporting company
-            ]
-          ]
+          'AdditionalInfo' => htmlspecialchars(json_encode($uploadIpInfo), ENT_QUOTES | ENT_XML1, 'UTF-8')
         ]
       ];
 
@@ -378,7 +363,7 @@ class NCMECReportHandler
         incidentTime: $incidentTime,
         reporteeName: (empty($uploadNpub) ? 'Unknown' : $uploadNpub),
         reporteeIPAddress: $uploadIpAddress,
-        violationContentCollection: $violationContentCollection,
+        incidentType: 'Child Pornography (possession, manufacture, and distribution)'
       );
 
       // For Type 1 logs, we can assume only one entry per log, so break after processing
@@ -401,37 +386,15 @@ class NCMECReportHandler
       $violationContent = [$violationContent];
     }
 
-    $violationContentCollection = [];
+    $this->violationContentCollection = [];
     foreach ($violationContent as $violation) {
-      $additionalMetadata = [];
-
-      if (isset($violation['AdditionalMetadata'])) {
-        // Since AdditionalMetadata might be an associative array, we need to convert it into the expected array of Key-Value pairs
-        foreach ($violation['AdditionalMetadata'] as $key => $value) {
-          if (is_array($value)) {
-            // If the value is an array (e.g., 'additionalInfo'), we can JSON encode it
-            $value = json_encode($value);
-          } elseif (is_bool($value)) {
-            $value = $value ? 'true' : 'false';
-          }
-
-          $additionalMetadata[] = [
-            'Key' => $key,
-            'Value' => $value
-          ];
-        }
-        // Add viewedByEsp
-        $additionalMetadata[] = ['Key' => 'viewedByEsp', 'Value' => 'true'];
-      }
-
-      $fileHash = $this->incidentDetails['file_sha256_hash'] ?? '';
-      $violationContentCollection[] = [
+      $this->violationContentCollection[] = [
         'Name' => empty($violation['Name']) ? 'Unknown' : $violation['Name'],
-        'Value' => $this->getBase64Media($fileHash),
-        'Location' => $violation['Location'] ?? ["Latitude" => "", "Longitude" => "", "Altitude" => ""],
+        'Value' => '', // Will be fetched later
+        'LocationOfFile' => $violation['LocationOfFile'] ?? '',
         'UploadIpAddress' => $violation['UploadIpAddress'] ?? '',
         'UploadDateTime' => $violation['UploadDateTime'] ?? '',
-        'AdditionalMetadata' => $additionalMetadata
+        'AdditionalInfo' => htmlspecialchars(json_encode($violation['AdditionalInfo']), ENT_QUOTES | ENT_XML1, 'UTF-8') ?? ''
       ];
     }
 
@@ -439,176 +402,86 @@ class NCMECReportHandler
       incidentTime: $evidenceData['IncidentTime'],
       reporteeName: (empty($evidenceData['ReporteeName']) ? 'Unknown' : $evidenceData['ReporteeName']),
       reporteeIPAddress: $evidenceData['ReporteeIPAddress'],
-      violationContentCollection: $violationContentCollection,
+      incidentType: $evidenceData['IncidentType'] ?? 'Child Pornography (possession, manufacture, and distribution)'
     );
   }
 
   /**
    * Sets the report parameters.
    *
-   * @param string      $incidentTime               The time the incident occurred.
-   * @param string      $reporteeName               The name of the reportee.
-   * @param string      $reporteeIPAddress          The IP address of the reportee.
-   * @param array       $violationContentCollection The violation content collection.
-   * @param string|null $orgName                    The organization name.
-   * @param string|null $reporterName               The reporter's name.
-   * @param string|null $reporterEmail              The reporter's email.
+   * @param string      $incidentTime      The time the incident occurred.
+   * @param string      $reporteeName      The name of the reportee.
+   * @param string      $reporteeIPAddress The IP address of the reportee.
+   * @param string|null $incidentType      The type of incident.
    */
   private function setReportParameters(
     string $incidentTime,
     string $reporteeName,
     string $reporteeIPAddress,
-    array $violationContentCollection,
-    ?string $orgName = null,
-    ?string $reporterName = null,
-    ?string $reporterEmail = null,
+    /* Possible Values: sextortion, csamSolicitation, minorToMinorInteraction */
+    ?string $reportAnnotations = null,
+    /* Possible Values:
+    Child Pornography (possession, manufacture, and distribution)
+    Child Sex Trafficking
+    Child Sex Tourism
+    Child Sexual Molestation
+    Misleading Domain Name
+    Misleading Words or Digital Images on the Internet
+    Online Enticement of Children for Sexual Acts
+    Unsolicited Obscene Material Sent to a Child
+    */
+    ?string $incidentType = 'Child Pornography (possession, manufacture, and distribution)'
   ) {
-    $this->orgName = $orgName ?? $_SERVER['NCMEC_REPORT_ORG_NAME'];
-    $this->reporterName = $reporterName ?? $_SERVER['NCMEC_REPORTER_NAME'];
-    $this->reporterEmail = $reporterEmail ?? $_SERVER['NCMEC_REPORTER_EMAIL'];
+    // Split NCMEC_REPORTER_NAME into first and last name
+    $reporterNameParts = explode(' ', $_SERVER['NCMEC_REPORTER_NAME']);
+    $this->orgName = $_SERVER['NCMEC_REPORT_ORG_NAME'];
+    $this->reporterFirstName = $reporterNameParts[0];
+    $this->reporterLastName = $reporterNameParts[1];
+    $this->reporterEmail = $_SERVER['NCMEC_REPORTER_EMAIL'];
     $this->incidentTime = $incidentTime;
+    $this->incidentType = $incidentType;
     $this->reporteeName = $reporteeName;
     $this->reporteeIPAddress = $reporteeIPAddress;
-    $this->violationContentCollection = $violationContentCollection;
-    $this->additionalMetadata = $this->testReport ? [['Key' => 'IsTest', 'Value' => 'true']] : [];
   }
 
   /**
-   * Reports the violation to NCMEC.
+   * Fetches the file data and MIME type using the Content-Type header.
    *
-   * @return array The response from the NCMEC API.
-   * @throws Exception If required data is missing.
+   * @param string $url The presigned URL of the file.
+   * @return array An array containing 'binaryData' and 'mimeType'.
    */
-  private function reportViolation(): array
+  private function fetchFileData(string $url): array
   {
-    // Validate ViolationContentCollection
-    if (empty($this->violationContentCollection)) {
-      throw new Exception('ViolationContentCollection is empty.');
-    }
-
-    foreach ($this->violationContentCollection as &$violation) {
-      // Ensure required keys are present
-      $requiredKeys = ['Name', 'Value'];
-      foreach ($requiredKeys as $key) {
-        if (!isset($violation[$key]) || empty($violation[$key])) {
-          throw new Exception("ViolationContentCollection item is missing required key: $key");
-        }
-      }
-    }
-
-    $url = $_SERVER['NCMEC_PHOTODNA_API_REPORT_URL'];
-    $headers = [
-      'Content-Type: application/json',
-      'Cache-Control: no-cache',
-      'Ocp-Apim-Subscription-Key: ' . $_SERVER['PHOTODNA_API_KEY'],
-      'x-usr: ' . $_SERVER['NCMEC_USERNAME'],
-      'x-pwd: ' . $_SERVER['NCMEC_PASSWORD']
-    ];
-
-    // Prepare the data to be sent
-    $data = [
-      'OrgName' => $this->orgName,
-      'ReporterName' => $this->reporterName,
-      'ReporterEmail' => $this->reporterEmail,
-      'IncidentTime' => $this->incidentTime,
-      'ReporteeName' => $this->reporteeName,
-      'ReporteeIPAddress' => $this->reporteeIPAddress,
-      'ViolationContentCollection' => $this->violationContentCollection,
-      //'AdditionalMetadata' => $this->additionalMetadata
-    ];
-    // Add AdditionalMetadata for test reports
-    if ($this->testReport) {
-      $data['AdditionalMetadata'][] = ['Key' => 'IsTest', 'Value' => 'true'];
-    }
-
-    $data_string = json_encode($data);
-    // Throw exception if JSON is invalid
-    if ($data_string === false) {
-      throw new Exception('JSON encoding error: ' . json_last_error_msg());
-    }
-
-    $ch = curl_init($url);
-    curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'POST');
-    curl_setopt($ch, CURLOPT_POSTFIELDS, $data_string);
+    // Use CURL to get the media data and headers
+    $ch = curl_init();
+    curl_setopt($ch, CURLOPT_URL, $url);
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-    curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+    curl_setopt($ch, CURLOPT_HEADER, true); // Include headers in the output
+    $data = curl_exec($ch);
 
-    // Execute the request
-    $result = curl_exec($ch);
-    // DEBUG: Log response from NCMEC
-    error_log('NCMEC API Response: ' . print_r($result, true));
-    // Print submission data
-    // error_log("\n" . 'NCMEC API Submission Data: ' . $data_string . "\n");
-
-
-    // Error handling
-    if ($result === false) {
-      error_log('NCMEC API Error: ' . curl_error($ch) . ' - ' . print_r($result, true));
+    if ($data === false) {
       $error_msg = curl_error($ch);
       curl_close($ch);
-      return [
-        'httpCode' => 0,
-        'error' => $error_msg
-      ];
+      throw new Exception('CURL error: ' . $error_msg);
     }
-    error_log('NCMEC API Result: ' . $result);
 
-    // Get HTTP status code
-    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    // Separate headers and body
+    $header_size = curl_getinfo($ch, CURLINFO_HEADER_SIZE);
+    $headers = substr($data, 0, $header_size);
+    $body = substr($data, $header_size);
+
+    // Get MIME type from headers
+    $mimeType = 'application/octet-stream'; // Default MIME type
+    if (preg_match('/Content-Type:\s*(.+)/i', $headers, $matches)) {
+      $mimeType = trim($matches[1]);
+    }
+
     curl_close($ch);
 
-    // Parse the response
-    $response = json_decode($result, true);
-
     return [
-      'httpCode' => $httpCode,
-      'response' => $response
+      'binaryData' => $body,
+      'mimeType' => $mimeType
     ];
-  }
-
-  /**
-   * Retrieves Base64-encoded media data from a URL or file hash.
-   *
-   * @param string $identifier The URL or file hash of the media.
-   * @return string The Base64-encoded media data.
-   */
-  private function getBase64Media(string $identifier): string
-  {
-    if (empty($identifier)) {
-      return '';
-    }
-
-    // Determine if the identifier is a URL or a file hash
-    if (filter_var($identifier, FILTER_VALIDATE_URL)) {
-      // It's a URL
-      return $this->getBase64FromUrl($identifier);
-    } else {
-      // Assume it's a file hash
-      return $this->getBase64MediaByHash($identifier);
-    }
-  }
-
-  /**
-   * Retrieves Base64-encoded media data using a file hash.
-   *
-   * @param string $fileHash The file hash.
-   * @return string The Base64-encoded media data.
-   */
-  private function getBase64MediaByHash(string $fileHash): string
-  {
-    // Get the presigned URL using the file hash
-    $presignedUrl = $this->getPresignedUrl($fileHash);
-    if ($presignedUrl === '') {
-      return '';
-    }
-
-    // Get the media data
-    $mediaData = $this->getBase64FromUrl($presignedUrl);
-    if ($mediaData === '') {
-      return '';
-    }
-
-    return $mediaData;
   }
 
   /**
@@ -698,38 +571,6 @@ class NCMECReportHandler
   }
 
   /**
-   * Retrieves Base64-encoded data from a URL.
-   *
-   * @param string $url    The URL of the media.
-   * @param bool   $imgTag Whether to return data in img tag format.
-   * @return string The Base64-encoded data.
-   */
-  private function getBase64FromUrl(string $url, bool $imgTag = false): string
-  {
-    // Use CURL to get the image data
-    $ch = curl_init();
-    curl_setopt($ch, CURLOPT_URL, $url);
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-    $data = curl_exec($ch);
-
-    if ($data === false) {
-      $error_msg = curl_error($ch);
-      curl_close($ch);
-      error_log('CURL error: ' . $error_msg);
-      return '';
-    }
-
-    $returnedMimeType = curl_getinfo($ch, CURLINFO_CONTENT_TYPE);
-    curl_close($ch);
-
-    if ($imgTag) {
-      return 'data:' . $returnedMimeType . ';base64,' . base64_encode($data);
-    } else {
-      return base64_encode($data);
-    }
-  }
-
-  /**
    * Generates an img tag with Base64-encoded media data.
    *
    * @param string $fileHash  The file hash.
@@ -745,20 +586,24 @@ class NCMECReportHandler
       return '';
     }
 
-    // Get the media data
-    $mediaData = $this->getBase64FromUrl($presignedUrl, true);
-    if ($mediaData === '') {
+    // Fetch the file data
+    try {
+      $fileData = $this->fetchFileData($presignedUrl);
+      $mimeType = $fileData['mimeType'];
+      $binaryData = $fileData['binaryData'];
+    } catch (Exception $e) {
+      error_log('Error fetching file data: ' . $e->getMessage());
       return '';
     }
 
     // Return the img tag with style attributes to limit max width and height
-    return '<img src="' . $mediaData . '" style="max-width: ' . $maxWidth . 'px; max-height: ' . $maxHeight . 'px;" />';
+    return '<img src="data:' . $mimeType . ';base64,' . base64_encode($binaryData) . '" style="max-width: ' . $maxWidth . 'px; max-height: ' . $maxHeight . 'px;" />';
   }
 
   /**
    * Un-blacklists a user from the blacklist table based on npub and incident time.
    *
-   * @param string $reason The reason for un-blacklisting.
+   * @param string|null $reason The reason for un-blacklisting.
    * @return bool True if the user was un-blacklisted, false otherwise.
    */
   public function unBlacklistUser(?string $reason = "PhotoDNA CSAM Match API Match"): bool
@@ -775,14 +620,669 @@ class NCMECReportHandler
     $stmt->execute();
     $affectedRows = $stmt->affected_rows;
     $stmt->close();
-    error_log('Unblacklist user affected rows: ' . $affectedRows);
-    error_log('Unblacklist user timestamp: ' . $timestamp);
-    error_log('Unblacklist user timestampStart: ' . $timestampStart);
-    error_log('Unblacklist user timestampEnd: ' . $timestampEnd);
-    error_log('Unblacklist user npub: ' . $npub);
 
     // Update the report ID as FALSE_MATCH, even if npub is not found in the blacklist
-    $this->updateIncidentReportId('FALSE_MATCH', '{}');
+    $this->updateIncidentReport('FALSE_MATCH', '{}', '{}');
     return $affectedRows > 0;
+  }
+}
+
+/**
+ * Use https://njump.me/<user npub> to construct profile URL if npub is known
+ * Use industry classification if file is known to be CSAM and matched by PhotoDNA
+ * Allow submitter to provide additional information in the report (free text)
+ * Allow submitter to specify reportAnnotations, incidentType, and fileAnnotations
+ * /fileDetails/fileAnnotations/animeDrawingVirtualHentai
+ * /fileDetails/fileAnnotations/potentialMeme
+ * /fileDetails/fileAnnotations/viral
+ * /fileDetails/fileAnnotations/possibleSelfProduction
+ * /fileDetails/fileAnnotations/physicalHarm
+ * /fileDetails/fileAnnotations/violenceGore
+ * /fileDetails/fileAnnotations/bestiality
+ * /fileDetails/fileAnnotations/liveStreaming
+ * /fileDetails/fileAnnotations/infant
+ * /fileDetails/fileAnnotations/generativeAi
+ * Other fields:
+ * /fileDetails/originalFileName
+ * /fileDetails/locationOfFile
+ * /fileDetails/originalFileHash
+ * /fileDetails/ipCaptureEvent
+ * /fileDetails/deviceId
+ * /fileDetails/details
+ * /fileDetails/additionalInfo
+ * ipCaptureEvent - IP address of the device that captured the image
+ * /ipCaptureEvent/ipAddress
+ * /ipCaptureEvent/eventName - Login, Registration, Purchase, Upload, Other, Unknown
+ * /ipCaptureEvent/dateTime
+ * /ipCaptureEvent/possibleProxy - Whether the reporter has reason to believe this IP address is a proxy.
+ * reportAnnotations - Tags to describe the report.
+ * /reportAnnotations/sextortion
+ * /reportAnnotations/csamSolicitation
+ * /reportAnnotations/minorToMinorInteraction
+ * internetDetails - Details of an incident being reported. Each supplied <internetDetails> element must have exactly one of the following:
+ * /internetDetails/webPageIncident
+ * /internetDetails/emailIncident
+ * /internetDetails/newsgroupIncident
+ * /internetDetails/chatImIncident
+ * /internetDetails/onlineGamingIncident
+ * /internetDetails/cellPhoneIncident
+ * /internetDetails/nonInternetIncident
+ * /internetDetails/peer2peerIncident
+ * webPageIncident - Details for an incident that occurred on a web page.
+ * /webPageIncident/url
+ * /webPageIncident/additionalInfo
+ * /webPageIncident/thirdPartyHostedContent
+ * reporter - Information related to the person or company reporting the incident.
+ * /reporter/reportingPerson
+ * /reporter/companyTemplate
+ * personOrUserReported - A reported user or person involved in the incident. This person will be displayed as the suspect.
+ * /personOrUserReported/personOrUserReportedPerson - Information about the reported person or user involved in the incident.
+ * /personOrUserReported/espIdentifier - The unique ID of the reported person or user in the reporter’s system.
+ * /personOrUserReported/espService - The name of the reporter’s product or service that was used by the reported person or user during the incident.
+ * /personOrUserReported/screenName
+ * /personOrUserReported/displayName
+ * /personOrUserReported/profileUrl
+ * /personOrUserReported/ipCaptureEvent
+ * 
+ * <incidentType> 1 The type of incident being reported. Values include:
+ *  - Child Pornography (possession, manufacture, and distribution)
+ *  - Child Sex Trafficking
+ *  - Child Sex Tourism
+ *  - Child Sexual Molestation
+ *  - Misleading Domain Name
+ *  - Misleading Words or Digital Images on the Internet
+ *  - Online Enticement of Children for Sexual Acts
+ *  - Unsolicited Obscene Material Sent to a Child
+ * 
+ * <fileDetails> - Details about a file.
+ *  <reportId> 1 The report ID to which the details are related.
+ *  type long
+ *  validation must be a valid CyberTipline report ID
+ *  validation reporter must have permission to update the supplied CyberTipline Report
+
+ *  <fileId> 1 The file ID to which the details are related.
+
+ *  type string
+ *  validation must not be blank
+ *  validation must be a valid file ID for the supplied report ID
+
+ *  <originalFileName> 0|1 The original filename associated with the file when it was uploaded to the company’s servers by the reported user or person.
+
+ *  type string
+ *  validation max length is 2056 characters
+
+ *  <locationOfFile> 0|1 The URL where file was originally located.
+
+ *  type string
+ *  validation must be a valid URL
+ *  validation max length is 2083 characters
+
+ *  <fileViewedByEsp> 0|1 Whether the reporting company viewed the entire contents of the file being reported to NCMEC.
+
+ *  type boolean
+ *  validation must be "true" when the value of <exifViewedByEsp> is "true"
+
+ *  <exifViewedByEsp> 0|1 Whether the reporting company viewed the EXIF for the file being reported to NCMEC.
+
+ *  type boolean
+
+ *  <publiclyAvailable> 0|1 Whether the entire contents of the file were publicly accessible to online users.
+
+ *  type boolean
+
+ *  <fileRelevance> 0|1 The relevance or relation of the file to the report. Unless specified otherwise, a file is "Reported" by default. One of the following values:
+
+ *  Reported
+ *  Content that is the motivation for making the CyberTipline report, according to the chosen incident type. Only "Reported" files may be identified as potential meme or be given an industry classification.
+
+ *  Supplemental Reported
+ *  Supplementary content that provides contextual value to the report. A part of the communication containing apparent child pornography, including any data or information regarding the transmission of the communication or any images, data, or other digital files contained in, or attached to, the communication (18 U.S. Code § 2258A (b)(5)).
+
+ *  type string
+ *  validation may not be "Supplemental Reported" if a potential meme annotation is supplied
+ *  validation may not be "Supplemental Reported" if an <industryClassification> is supplied
+
+ *  <fileAnnotations> 0|1 Tags to describe the file.
+
+ *  type <fileAnnotations>
+ *  <industryClassification>
+ *  0|1
+ *  A categorization from the ESP-designated categorization scale. One of:
+ *  A1
+ *  A2
+ *  B1
+ *  B2
+
+ *  type string
+
+ *  <originalFileHash> 0+ The original binary hash value of the file at the time it was uploaded by the reported user or person (prior to any potential modification by the reporter).
+
+ *  type <originalFileHash>
+
+ *  <ipCaptureEvent> 0|1 An IP address associated with the file.
+
+ *  type <ipCaptureEvent>
+
+ *  <deviceId> 0+ An ID for a device associated with the file.
+
+ *  type <deviceId>
+
+ *  <details> 0+ Metadata associated with the file.
+
+ *  type <details>
+
+ *  <additionalInfo> 0+ Additional information about this file not covered by any other section.
+
+ *  type string
+   
+
+ *  <originalFileHash> An original file hash value.
+
+ *    type string hashType 1 attribute
+ *    The type of hash (e.g. MD5, SHA1).
+
+ *    type string validation max length is 64 characters
+ *  <details> Metadata associated with a file.
+
+ *    <nameValuePair>
+ *    1+
+ *    A metadata entry.
+ *    <name> 1 The name of the metadata entry.
+
+ *    type string
+ *    validation max length is 64 characters
+ *    <value>
+ *    1
+ *    The value of the metadata entry.
+
+ *    type string
+ *    type
+ *    0|1
+ *    attribute
+ *    The type of the metadata entry. One of:
+
+ *    EXIF
+
+ *    HASH
+
+ *    type string
+ */
+
+class NcmecReport
+{
+  private string $baseUri;
+  private string $username;
+  private string $password;
+  private bool $validateXml;
+
+  private ?string $xsdSchema = null;  // To hold the XSD schema
+  public ?string $reportId = null;   // Store the report ID after submission
+  public ?string $fileId = null;     // Store the file ID after submission
+  private array $reportResponses = [];  // Store the responses from the API calls
+  private array $apiRequests = [];      // Store the requests sent to the API 
+
+  public DOMDocument $reportDoc;     // The DOMDocument for the report
+  private DOMElement $report;         // The root element of the report
+
+  public function __construct(string $username, string $password, string $env = 'test')
+  {
+    $this->username = $username;
+    $this->password = $password;
+    $this->baseUri = ($env === 'production') ? 'https://report.cybertip.org/ispws' : 'https://exttest.cybertip.org/ispws';
+
+    // Decide whether to validate XML based on environment
+    $this->validateXml = ($env === 'test');
+
+    // Initialize the report DOMDocument
+    $this->reportDoc = new DOMDocument('1.0', 'UTF-8');
+    $this->reportDoc->formatOutput = true;
+
+    // Create the root <report> element
+    $this->report = $this->reportDoc->createElement('report');
+    //$this->report->setAttribute('xmlns:xsi', 'http://www.w3.org/2001/XMLSchema-instance');
+    //$this->report->setAttribute('xsi:noNamespaceSchemaLocation', 'https://exttest.cybertip.org/ispws/xsd');
+    $this->reportDoc->appendChild($this->report);
+
+    // Populate the report
+
+    // Fetch the XSD schema if validation is needed
+    if ($this->validateXml) {
+      $this->xsdSchema = $this->fetchXsdSchema();
+    }
+  }
+
+  // Fetch the latest XSD schema from the /xsd endpoint
+  private function fetchXsdSchema(): string
+  {
+    $response = $this->sendCurlRequest('/xsd', null, false, true);
+    if (!$response) {
+      throw new Exception("Failed to fetch XSD schema");
+    }
+    return $response;  // Store the XSD schema for later use
+  }
+
+  // Helper function to send cURL request
+  // Helper function to send cURL request
+  private function sendCurlRequest(string $endpoint, $data = null, bool $isFile = false, bool $isXsd = false): string
+  {
+    $url = $this->baseUri . $endpoint;
+
+    $ch = curl_init();
+    curl_setopt_array($ch, [
+      CURLOPT_URL => $url,
+      CURLOPT_USERPWD => $this->username . ':' . $this->password,
+      CURLOPT_RETURNTRANSFER => true,
+    ]);
+
+    if ($isXsd) {
+      // Handle GET request for XSD
+      curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'GET');
+    } else {
+      // Prepare the POST request
+      curl_setopt($ch, CURLOPT_POST, true);
+
+      if ($isFile) {
+        error_log('Sending file, lenght: ' . strlen($data['content']) . ' bytes, name: ' . $data['filename'] . ', type: ' . $data['filetype']);
+        // Create a temporary file for the binary data
+        $tempFile = tmpfile();
+        $tempFilePath = stream_get_meta_data($tempFile)['uri'];
+        fwrite($tempFile, $data['content']);
+
+        $evidenceFile = new CURLFile($tempFilePath, $data['filetype'], $data['filename']);
+        $submitForm = [
+          'id' => $data['id'],
+          'file' => $evidenceFile,
+        ];
+
+        curl_setopt($ch, CURLOPT_POSTFIELDS, $submitForm);
+      } else {
+        // Store the API request for debugging
+        $this->apiRequests[] = $data->saveXML();
+        // Handle XML data
+        curl_setopt($ch, CURLOPT_POSTFIELDS, $data->saveXML());
+        curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: text/xml; charset=utf-8']);
+      }
+    }
+
+    $response = curl_exec($ch);
+    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    $curlError = curl_error($ch);
+
+    // Always close the cURL handle
+    curl_close($ch);
+
+    // Clean up temporary file if it was created
+    if (isset($tempFile)) {
+      fclose($tempFile);
+    }
+
+    // Handle cURL errors
+    if ($curlError) {
+      throw new Exception("cURL Error: {$curlError}");
+    }
+
+    // Handle HTTP errors
+    if ($httpCode !== 200) {
+      throw new Exception("HTTP Error: {$httpCode} while requesting {$endpoint}. Response: {$response}");
+    }
+
+    return $response;
+  }
+
+
+  // Parse response to handle errors and extract IDs using DOMDocument
+  private function parseResponse(string $response): DOMDocument
+  {
+    $doc = new DOMDocument();
+    $doc->loadXML($response);
+
+    // Check for responseCode and throw exceptions for non-zero codes
+    $responseCode = $doc->getElementsByTagName('responseCode')->item(0)->nodeValue;
+    if ((int)$responseCode !== 0) {
+      $responseDescription = $doc->getElementsByTagName('responseDescription')->item(0)->nodeValue;
+      throw new Exception("API Error: {$responseDescription}");
+    }
+    // Store the report response
+    $this->reportResponses[] = $doc->saveXML();
+
+    return $doc;
+  }
+
+  // Helper function to remove all child nodes of an element
+  private function removeChildNodes(DOMElement $element)
+  {
+    while ($element->hasChildNodes()) {
+      $element->removeChild($element->firstChild);
+    }
+  }
+
+  // Method to set the incident summary
+  public function setIncidentSummary(string $incidentType, string $incidentDateTime)
+  {
+    // Create or find the <incidentSummary> element
+    $incidentSummary = $this->reportDoc->getElementsByTagName('incidentSummary')->item(0);
+    if (!$incidentSummary) {
+      $incidentSummary = $this->reportDoc->createElement('incidentSummary');
+      $this->report->appendChild($incidentSummary);
+    }
+
+    // Set the incidentType and incidentDateTime
+    $incidentTypeEl = $this->reportDoc->createElement('incidentType', $incidentType);
+    $incidentDateTimeISO = date('c', strtotime($incidentDateTime));  // ISO 8601 format
+    $incidentDateTimeEl = $this->reportDoc->createElement('incidentDateTime', $incidentDateTimeISO);
+
+    // Remove existing elements if any
+    $this->removeChildNodes($incidentSummary);
+
+    $incidentSummary->appendChild($incidentTypeEl);
+    $incidentSummary->appendChild($incidentDateTimeEl);
+  }
+
+  // Method to set internet details
+  public function setInternetDetails(array $details)
+  {
+    // Create or find the <internetDetails> element
+    $internetDetails = $this->reportDoc->getElementsByTagName('internetDetails')->item(0);
+    if (!$internetDetails) {
+      $internetDetails = $this->reportDoc->createElement('internetDetails');
+      $this->report->appendChild($internetDetails);
+    }
+
+    // Remove existing child nodes
+    $this->removeChildNodes($internetDetails);
+
+    // Depending on the type of incident, create the appropriate incident element
+    if (isset($details['webPageIncident'])) {
+      $webPageIncident = $this->reportDoc->createElement('webPageIncident');
+      $internetDetails->appendChild($webPageIncident);
+
+      if (isset($details['webPageIncident']['url'])) {
+        $urlEl = $this->reportDoc->createElement('url', $details['webPageIncident']['url']);
+        $webPageIncident->appendChild($urlEl);
+      }
+      if (isset($details['webPageIncident']['additionalInfo'])) {
+        $additionalInfoEl = $this->reportDoc->createElement('additionalInfo', $details['webPageIncident']['additionalInfo']);
+        $webPageIncident->appendChild($additionalInfoEl);
+      }
+      // Add other elements as needed
+    }
+
+    // Similarly handle other types of incidents
+  }
+
+  // Method to set reporter details
+  public function setReporter(array $reporterDetails)
+  {
+    // Create or find the <reporter> element
+    $reporter = $this->reportDoc->getElementsByTagName('reporter')->item(0);
+    if (!$reporter) {
+      $reporter = $this->reportDoc->createElement('reporter');
+      $this->report->appendChild($reporter);
+    }
+
+    // Create or find the <reportingPerson> element
+    $reportingPerson = null;
+    if ($reporter instanceof DOMElement) {
+      $reportingPerson = $reporter->getElementsByTagName('reportingPerson')->item(0);
+    }
+    if (!$reportingPerson) {
+      $reportingPerson = $this->reportDoc->createElement('reportingPerson');
+      $reporter->appendChild($reportingPerson);
+    }
+
+    // Remove existing child nodes
+    $this->removeChildNodes($reportingPerson);
+
+    // Add the reporter details
+    if (isset($reporterDetails['firstName'])) {
+      $firstNameEl = $this->reportDoc->createElement('firstName', $reporterDetails['firstName']);
+      $reportingPerson->appendChild($firstNameEl);
+    }
+    if (isset($reporterDetails['lastName'])) {
+      $lastNameEl = $this->reportDoc->createElement('lastName', $reporterDetails['lastName']);
+      $reportingPerson->appendChild($lastNameEl);
+    }
+    if (isset($reporterDetails['email'])) {
+      $emailEl = $this->reportDoc->createElement('email', $reporterDetails['email']);
+      $reportingPerson->appendChild($emailEl);
+    }
+    // Add other elements as needed
+  }
+
+  // Method to add person or user reported
+  public function addPersonOrUserReported(array $personDetails)
+  {
+    // Create the <personOrUserReported> element
+    $personOrUserReported = $this->reportDoc->createElement('personOrUserReported');
+    $this->report->appendChild($personOrUserReported);
+
+    // Add the elements
+    if (isset($personDetails['personOrUserReportedPerson'])) {
+      $personEl = $this->reportDoc->createElement('personOrUserReportedPerson');
+
+      // Add person details
+      foreach ($personDetails['personOrUserReportedPerson'] as $key => $value) {
+        $el = $this->reportDoc->createElement($key, $value);
+        $personEl->appendChild($el);
+      }
+
+      $personOrUserReported->appendChild($personEl);
+    }
+
+    foreach (['espIdentifier', 'espService', 'screenName', 'displayName', 'profileUrl'] as $key) {
+      if (isset($personDetails[$key])) {
+        $el = $this->reportDoc->createElement($key, $personDetails[$key]);
+        $personOrUserReported->appendChild($el);
+      }
+    }
+
+    if (isset($personDetails['ipCaptureEvent'])) {
+      $ipCaptureEventEl = $this->reportDoc->createElement('ipCaptureEvent');
+
+      foreach ($personDetails['ipCaptureEvent'] as $key => $value) {
+        $el = $this->reportDoc->createElement($key, $value);
+        $ipCaptureEventEl->appendChild($el);
+      }
+
+      $personOrUserReported->appendChild($ipCaptureEventEl);
+    }
+  }
+
+  // Method to get the report XML as a string (for previewing)
+  public function getReportXml(): string
+  {
+    return $this->reportDoc->saveXML();
+  }
+
+  // Method to validate the XML (if validation is enabled)
+  private function validateXml()
+  {
+    if ($this->validateXml) {
+      if (!$this->xsdSchema) {
+        throw new Exception("XSD schema is not available for validation");
+      }
+      libxml_use_internal_errors(true);
+      if (!$this->reportDoc->schemaValidateSource($this->xsdSchema)) {
+        $errors = libxml_get_errors();
+        libxml_clear_errors();
+        $errorMessages = '';
+        foreach ($errors as $error) {
+          $errorMessages .= $error->message . "\n";
+        }
+        throw new Exception("XML validation failed: " . $errorMessages);
+      }
+    }
+  }
+
+  // Method to submit the report
+  public function submitReport()
+  {
+    // Validate the XML before submission
+    $this->validateXml();
+
+    // Send the request
+    //error_log($this->reportDoc->saveXML());
+    $response = $this->sendCurlRequest('/submit', $this->reportDoc);
+    //error_log($response);
+    $parsedResponse = $this->parseResponse($response);
+
+    // Extract the report ID
+    $this->reportId = $parsedResponse->getElementsByTagName('reportId')->item(0)->nodeValue;
+
+    return ['reportId' => $this->reportId];
+  }
+
+  // Upload a file to the report
+  public function uploadFile(string $fileId, string $binaryData, string $fileName, string $mimeType): array
+  {
+    if (!$this->reportId) {
+      throw new Exception("Report ID is not set. Submit the report first.");
+    }
+
+    $fields = [
+      'id' => $this->reportId,
+      'fileid' => $fileId,
+      'filetype' => $mimeType,
+      'filename' => $fileName,
+      'content' => $binaryData
+    ];
+    error_log("Uploading file with ID: " . $fileId);
+
+    $response = $this->sendCurlRequest('/upload', $fields, true);
+    $parsedResponse = $this->parseResponse($response);
+    $this->fileId = $parsedResponse->getElementsByTagName('fileId')->item(0)->nodeValue;
+    error_log("File ID: " . $this->fileId);
+
+    return ['fileId' => $fileId];
+  }
+
+  // Build the file details XML (updated to include all necessary fields)
+  public function buildFileDetailsXml(array $fileDetails): DOMDocument
+  {
+    $doc = new DOMDocument('1.0', 'UTF-8');
+    $doc->formatOutput = true;
+
+    // Create <fileDetails> root element
+    $fileDetailsEl = $doc->createElement('fileDetails');
+    $fileDetailsEl->setAttribute('xmlns:xsi', 'http://www.w3.org/2001/XMLSchema-instance');
+    $fileDetailsEl->setAttribute('xsi:noNamespaceSchemaLocation', 'https://exttest.cybertip.org/ispws/xsd');
+    $doc->appendChild($fileDetailsEl);
+
+    // Add the necessary elements
+    $fileDetailsEl->appendChild($doc->createElement('reportId', $this->reportId));
+    $fileDetailsEl->appendChild($doc->createElement('fileId', $this->fileId));
+
+    // Add all relevant fields including 'fileViewedByEsp' and 'publiclyAvailable'
+    $fieldsToAdd = [
+      'originalFileName',
+      'locationOfFile',
+      'fileRelevance',
+      'fileViewedByEsp',
+      'publiclyAvailable',
+    ];
+
+    foreach ($fieldsToAdd as $key) {
+      if (isset($fileDetails[$key])) {
+        $el = $doc->createElement($key, $fileDetails[$key]);
+        $fileDetailsEl->appendChild($el);
+      }
+    }
+
+    if (isset($fileDetails['ipCaptureEvent'])) {
+      $ipCaptureEventEl = $doc->createElement('ipCaptureEvent');
+      foreach ($fileDetails['ipCaptureEvent'] as $key => $value) {
+        $el = $doc->createElement($key, $value);
+        $ipCaptureEventEl->appendChild($el);
+      }
+      $fileDetailsEl->appendChild($ipCaptureEventEl);
+    }
+
+    // add additionalInfo
+    if (isset($fileDetails['additionalInfo'])) {
+      $additionalInfoEl = $doc->createElement('additionalInfo', $fileDetails['additionalInfo']);
+      $fileDetailsEl->appendChild($additionalInfoEl);
+    }
+
+    if (isset($fileDetails['fileAnnotations'])) {
+      $fileAnnotationsEl = $doc->createElement('fileAnnotations');
+      foreach ($fileDetails['fileAnnotations'] as $annotation => $value) {
+        $annotationEl = $doc->createElement($annotation);
+        $fileAnnotationsEl->appendChild($annotationEl);
+      }
+      $fileDetailsEl->appendChild($fileAnnotationsEl);
+    }
+
+    return $doc;
+  }
+
+  // Submit additional file details
+  public function submitFileDetails(DOMDocument $fileDetailsDoc)
+  {
+    // Send the request and ensure it's successful
+    $response = $this->sendCurlRequest('/fileinfo', $fileDetailsDoc);
+    $parsedResponse = $this->parseResponse($response);
+    error_log($parsedResponse->saveXML());
+
+    return ['status' => 'success'];
+  }
+
+  // Finish the report submission
+  public function finishReport(): array
+  {
+    if (!$this->reportId) {
+      throw new Exception("Report ID is not set. Submit the report first.");
+    }
+
+    // Prepare the data
+    $data = ['id' => $this->reportId];
+
+    // Send the request
+    $response = $this->sendCurlRequest('/finish', $data);
+    $parsedResponse = $this->parseResponse($response);
+
+    // Return the report ID and associated file IDs
+    $fileIds = [];
+    foreach ($parsedResponse->getElementsByTagName('fileId') as $fileIdNode) {
+      $fileIds[] = $fileIdNode->nodeValue;
+    }
+
+    return [
+      'reportId' => $parsedResponse->getElementsByTagName('reportId')->item(0)->nodeValue,
+      'files' => $fileIds
+    ];
+  }
+
+  public function getAllResponses(): array
+  {
+    return $this->reportResponses;
+  }
+
+  public function getAllRequests(): array
+  {
+    return $this->apiRequests;
+  }
+
+  // Cancel the report before finishing
+  public function cancelReport(): array
+  {
+    if (!$this->reportId) {
+      throw new Exception("Report ID is not set. Cannot cancel.");
+    }
+
+    // Prepare the data
+    $data = ['id' => $this->reportId];
+    error_log(PHP_EOL . "Cancelling report with ID: " . $this->reportId . PHP_EOL);
+
+    // Send the request
+    $response = $this->sendCurlRequest('/retract', $data);
+    $this->parseResponse($response);
+
+    // Reset the report ID
+    $this->reportId = null;
+
+    // Log all responses
+    error_log("All responses: " . json_encode($this->reportResponses));
+
+    return ['status' => 'cancelled'];
   }
 }
