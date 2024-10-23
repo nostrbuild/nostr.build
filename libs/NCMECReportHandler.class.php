@@ -139,8 +139,8 @@ class NCMECReportHandler
       $finishReportResponse = $this->ncmecReport->finishReport();
       $this->apiResponses['finishReport'] = $finishReportResponse;
       // Store all requests and responses in the database
-      $this->apiResponses['allRequests'] = $this->ncmecReport->getAllResponses();
-      $this->apiRequests = $this->ncmecReport->getAllRequests();
+      $this->apiResponses['allResponses'] = $this->ncmecReport->getAllResponses();
+      $this->apiRequests['allRequests'] = $this->ncmecReport->getAllRequests();
 
       // Store all requests and responses in the database
       $reportId = $finishReportResponse['reportId'];
