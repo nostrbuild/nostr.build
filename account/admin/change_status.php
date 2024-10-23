@@ -63,6 +63,59 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             $stmt->bind_param("i", $id);
             $stmt->execute();
             $stmt->close();
+        } elseif ($status === 'ban' && $filename !== null) {
+            // Get the hash from filename
+            $file_sha256_hash = pathinfo($filename, PATHINFO_FILENAME);
+
+            // Get the upload logs from R2
+            $logsJSON = fetchJsonFromR2Bucket(
+                prefix: "{$file_sha256_hash}",
+                endPoint: $csamReportingConfig['r2EndPoint'],
+                accessKey: $csamReportingConfig['r2AccessKey'],
+                secretKey: $csamReportingConfig['r2SecretKey'],
+                bucket: $csamReportingConfig['r2LogsBucket']
+            );
+            // Parse JSON logs to find IPs, UA and NPUBs
+            if (!empty($logsJSON)) {
+                $stmt = $link->prepare("INSERT INTO blacklist (npub, ip, user_agent, reason) VALUES (?, ?, ?, ?)");
+                foreach ($logsJSON as $key => $log) {
+                    $logData = json_decode($log['uploadedFileInfo'], true);
+                    $ip = $logData['realIp'];
+                    $ua = $logData['userAgent'];
+                    $npub = $log['uploadNpub'] ?? "anonymous";
+                    $blockReason = 'BANNED';
+                    // Insert the row into the 'blacklist' table
+                    $stmt->bind_param("ssss", $npub, $ip, $ua, $blockReason);
+                    $stmt->execute();
+                }
+                $stmt->close();
+            }
+
+            $objectName = ($type === 'picture') ? 'i/' . $filename : 'av/' . $filename;
+
+            // Delete requests are free, so we don't bother checking if the object exists
+            try {
+                $s3->deleteFromS3(objectKey: $objectName, paidAccount: false);
+                $purger = new CloudflarePurger($_SERVER['NB_API_SECRET'], $_SERVER['NB_API_PURGE_URL']);
+                $result = $purger->purgeFiles([$filename]);
+                if ($result !== false) {
+                    error_log(json_encode($result));
+                }
+            } catch (Exception $e) {
+                error_log("PURGE error occurred: " . $e->getMessage() . "\n");
+            }
+
+            // Insert the rejected file into the 'rejected_files' table
+            $stmt = $link->prepare("INSERT INTO rejected_files (filename, type) VALUES (?, ?)");
+            $stmt->bind_param("ss", $filename, $type);
+            $stmt->execute();
+            $stmt->close();
+
+            // Delete the row from the 'uploads_data' table
+            $stmt = $link->prepare("DELETE FROM uploads_data WHERE id = ?");
+            $stmt->bind_param("i", $id);
+            $stmt->execute();
+            $stmt->close();
         } elseif ($status === 'csam' && $perm->isAdmin() && $filename !== null) {
             // We will need to collect evidence and report the user to the authorities
             // First we will copy an offending image to the evidence bucket and then delete it while marking it rejected

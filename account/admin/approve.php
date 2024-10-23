@@ -89,6 +89,7 @@ if (isset($_POST['searchFile'])) {
             (status === 'rejected') ?
             'Are you sure you want to set this media as Rejected and premanently delete it with no ability to re-upload?' :
             (status === 'approved') ? 'Are you sure you want to approve this media?' :
+            (status === 'ban') ? 'Are you sure you want to ban this user and delete this file?' :
             'Are you sure you want to set this media as CSAM and premanently delete it with no ability to re-upload?';
 
           // Show the confirmation dialog
@@ -121,6 +122,11 @@ if (isset($_POST['searchFile'])) {
                     badge.textContent = 'CSAM';
                     badge.className = 'badge bg-danger position-absolute top-0 end-0 p-1 fs-6 status-badge';
                     badge.closest('.image-div').setAttribute('data-status', 'csam');
+                    imgDiv.remove(); // remove the card since it's irreversibly deleted
+                  } else if (status === 'ban') {
+                    badge.textContent = 'BANNED';
+                    badge.className = 'badge bg-danger position-absolute top-0 end-0 p-1 fs-6 status-badge';
+                    badge.closest('.image-div').setAttribute('data-status', 'ban');
                     imgDiv.remove(); // remove the card since it's irreversibly deleted
                   }
                 } else {
@@ -334,6 +340,7 @@ if (isset($_POST['searchFile'])) {
       echo '          <button type="button" name="status" value="rejected" class="btn btn-danger mb-1 btn-xsm status-btn">Flag</button>';
       if ($perm->isAdmin()) : // Only show CSAM button to admins
         echo '          <button type="button" name="status" value="csam" class="btn btn-warning mb-1 btn-xsm status-btn">CSAM</button>';
+        echo '          <button type="button" name="status" value="ban" class="btn btn-danger mb-1 btn-xsm status-btn">Ban User</button>';
       endif;
       echo '        </div>';
       echo '        </div>';
