@@ -1326,7 +1326,7 @@ class MultimediaUpload
       $img->convertHeicToJpeg()
         ->convertToJpeg() // Convert to JPEG for images that are not visually affected by the conversion
         ->fixImageOrientation()
-        ->resizeImage(1920, 1920) // Resize to 1920x1920 (HD)
+        ->resizeImage(3840, 3840) // Resize to 1920x1920 (HD)
         ->reduceQuality(75) // 75 should be a good balance between quality and size
         ->stripImageMetadata()
         ->save();
