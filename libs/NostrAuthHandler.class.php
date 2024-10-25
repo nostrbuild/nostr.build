@@ -87,7 +87,7 @@ class NostrAuthHandler
 
     // 2. The created_at MUST be within a reasonable time window (suggestion 60 seconds).
     if (abs(time() - $this->event->created_at) > (60 * 10)) { // Make it 5 minutes to allow for the longer upload times
-      error_log("Timestamp out of range: " . $this->event->created_at . " != " . time() . "\n");
+      error_log("Timestamp out of range[{abs(time() - $this->event->created_at)} > {(60 * 10)}]: " . $this->event->created_at . " != " . time() . "\n");
       throw new Exception("Timestamp out of range");
     }
 
