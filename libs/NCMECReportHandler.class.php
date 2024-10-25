@@ -897,10 +897,18 @@ class NcmecReport
         curl_setopt($ch, CURLOPT_POSTFIELDS, $submitForm);
       } else {
         // Store the API request for debugging
-        $this->apiRequests[] = $data->saveXML();
-        // Handle XML data
-        curl_setopt($ch, CURLOPT_POSTFIELDS, $data->saveXML());
-        curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: text/xml; charset=utf-8']);
+        // Identify the type of data and handle accordingly
+        if (is_string($data) || is_array($data)) {
+          $this->apiRequests[] = $data;
+          // Handle JSON data
+          curl_setopt($ch, CURLOPT_POSTFIELDS, $data);
+          curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: multipart/form-data']);
+        } else if ($data instanceof DOMDocument) {
+          $this->apiRequests[] = $data->saveXML();
+          // Handle XML data
+          curl_setopt($ch, CURLOPT_POSTFIELDS, $data->saveXML());
+          curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: text/xml; charset=utf-8']);
+        } 
       }
     }
 
