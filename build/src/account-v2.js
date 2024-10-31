@@ -1057,6 +1057,7 @@ Alpine.store('menuStore', {
   alpineInitiated: false,
   mobileMenuOpen: false,
   menuStoreInitiated: false,
+  noTransform: false,
   init() {
     if (this.menuStoreInitiated) {
       return;
@@ -3191,6 +3192,7 @@ Alpine.store('uppyStore', {
         meta: {
           folderName: '', // Initialize folderName metadata
           folderHierarchy: [], // Initialize folderHierarchy metadata
+          noTransform: false, // Disable image transformations by the server
         },
       })
       .use(DropTarget, {
@@ -3275,6 +3277,7 @@ Alpine.store('uppyStore', {
         const activeFolder = menuStore.activeFolder;
         const activeFolderId = menuStore.folders.find(folder => folder.name === activeFolder).id;
         const defaultFolder = activeFolderId === 0 ? '' : activeFolder;
+        const noTransform = menuStore.noTransform ?? false;
         console.debug('Active folder (Uppy):', activeFolder, activeFolderId, defaultFolder);
         //console.debug('Added file', file);
         const path = file.data.relativePath ?? file.data.webkitRelativePath;
@@ -3310,6 +3313,7 @@ Alpine.store('uppyStore', {
         this.instance.setFileMeta(file.id, {
           folderName: JSON.stringify(folderName),
           folderHierarchy: JSON.stringify(folderHierarchy),
+          noTransform: noTransform,
         });
         console.debug('File added:', file);
         const currentFile = {

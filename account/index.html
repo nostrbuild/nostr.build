@@ -16,10 +16,10 @@
 	<meta name="msapplication-TileColor" content="#9f00a7">
 	<meta name="theme-color" content="#ffffff">
 
-	<script defer src="/scripts/dist/account-v2.js?v=0f7284c61bceba17cb5d3fa7240dff12"></script>
+	<script defer src="/scripts/dist/account-v2.js?v=c89c9ce64d37a113420cce7624f5bb9b"></script>
 	<link href="/scripts/dist/account-v2.css?v=5ecc26aa69603a0fc007bf24b7636047" rel="stylesheet">
 
-	<link href="/styles/twbuild.css?v=001a7d5c41c8187527d7ed5148d877f7" rel="stylesheet">
+	<link href="/styles/twbuild.css?v=9f0845883eaec29de17cc31198f9eff3" rel="stylesheet">
 
 	<!-- Pre-connect and DNS prefetch -->
 	<link rel="preconnect" href="https://i.nostr.build" crossorigin>
@@ -1751,6 +1751,17 @@ onDropCB(event) {
 								</button>
 							</div>
 						</div>
+						<!-- /URL Import -->
+						<!-- noTransform switch -->
+						<div class="mt-2 flex items-center justify-between">
+							<p class="text-sm text-nbpurple-200">Optimization:</p>
+							<div class="flex items-center">
+								<input x-model="menuStore.noTransform" type="checkbox" id="no-transform"
+									class="w-4 h-4 text-nbpurple-600 border border-nbpurple-600 rounded-sm focus:ring-2 focus:ring-nbpurple-600 focus:ring-offset-2 focus:ring-offset-nbpurple-100 focus:ring-offset-white">
+								<label for="no-transform" class="ml-2 text-sm text-nbpurple-200">Disable media optimization</label>
+							</div>
+						</div>
+						<!-- /noTransform switch -->
 						<!-- File upload (Uppy) -->
 						<div x-init="uppyStore.instantiateUppy($el, '#drop-target', onDropCB, dragOverCB, dragLeaveCB)"
 							class="mt-2 rounded-lg border border-dashed border-nbpurple-50/25 py-1 w-full h-full max-h-[40svh] overflow-y-scroll overflow-visible">

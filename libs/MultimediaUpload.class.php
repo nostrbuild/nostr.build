@@ -580,7 +580,10 @@ class MultimediaUpload
    */
   public function uploadFiles(bool $no_transform = false): array
   {
-    $this->no_transform = $no_transform;
+    // Set no_transform flag, but check if it is already set nad truthy
+    if ($this->no_transform !== true) {
+      $this->no_transform = $no_transform;
+    }
     // Check if $this->filesArray is empty, and throw an exception if it is
     if (!is_array($this->filesArray) || empty($this->filesArray)) {
       return [false, 400, 'No files to upload'];
@@ -1315,11 +1318,22 @@ class MultimediaUpload
     ) {
       // Process animated image or video with GifConverter class
       $tmp_gif = $this->gifConverter->downsizeGif($this->file['tmp_name']);
-      // Unlink old file.
-      if (file_exists($this->file['tmp_name'])) {
-        unlink($this->file['tmp_name']);
+      // Check if the optimized version atleast 5% smaller, otherwise keep the original
+      if (filesize($tmp_gif) < 0.95 * filesize($this->file['tmp_name'])) {
+        // Unlink old file.
+        if (file_exists($this->file['tmp_name'])) {
+          unlink($this->file['tmp_name']);
+        }
+        $this->file['tmp_name'] = $tmp_gif;
+      } else {
+        error_log('Optimized GIF is not smaller, keeping original: ' . filesize($tmp_gif) . ' vs ' . filesize($this->file['tmp_name']));
+        // Disable further transformations
+        $this->no_transform = true;
+        // Unlink the optimized file
+        if (file_exists($tmp_gif)) {
+          unlink($tmp_gif);
+        }
       }
-      $this->file['tmp_name'] = $tmp_gif;
     }
     $img = new ImageProcessor($this->file['tmp_name']);
     if (!$this->no_transform) {
@@ -1331,6 +1345,8 @@ class MultimediaUpload
         ->stripImageMetadata()
         ->save();
       $img->optimiseImage(); // Optimise the image, can take upto 60 seconds
+    } else {
+      error_log('Skipping image transformations for Free upload, no_transform is set: ' . ($this->no_transform ? 'true' : 'false') . PHP_EOL);
     }
     return [
       'metadata' => $img->getImageMetadata(),
@@ -1354,11 +1370,22 @@ class MultimediaUpload
     ) {
       // Process animated image or video with GifConverter class
       $tmp_gif = $this->gifConverter->downsizeGif($this->file['tmp_name']);
-      // Unlink old file.
-      if (file_exists($this->file['tmp_name'])) {
-        unlink($this->file['tmp_name']);
+      // Check if the optimized version atleast 5% smaller, otherwise keep the original
+      if (filesize($tmp_gif) < 0.95 * filesize($this->file['tmp_name'])) {
+        // Unlink old file.
+        if (file_exists($this->file['tmp_name'])) {
+          unlink($this->file['tmp_name']);
+        }
+        $this->file['tmp_name'] = $tmp_gif;
+      } else {
+        error_log('Optimized GIF is not smaller, keeping original: ' . filesize($tmp_gif) . ' vs ' . filesize($this->file['tmp_name']));
+        // Disable further transformations
+        $this->no_transform = true;
+        // Unlink the optimized file
+        if (file_exists($tmp_gif)) {
+          unlink($tmp_gif);
+        }
       }
-      $this->file['tmp_name'] = $tmp_gif;
     }
     $img = new ImageProcessor($this->file['tmp_name']);
     if (!$this->no_transform) {
@@ -1368,6 +1395,8 @@ class MultimediaUpload
         ->stripImageMetadata()
         ->save();
       $img->optimiseImage(); // Optimise the image, can take upto 60 seconds
+    } else {
+      error_log('Skipping image transformations for Pro upload, no_transform is set: ' . ($this->no_transform ? 'true' : 'false') . PHP_EOL);
     }
     return [
       'metadata' => $img->getImageMetadata(),
@@ -1700,6 +1729,8 @@ class MultimediaUpload
     if (!empty($uppyMetadata['folderHierarchy']) && is_string($uppyMetadata['folderHierarchy'])) {
       $uppyMetadata['folderHierarchy'] = json_decode($uppyMetadata['folderHierarchy'], true);
     }
+    // Check for noTransform metadata flag and set it
+    $this->no_transform = $uppyMetadata['noTransform'] === 'true' ? true : false;
     $this->uppyMetadata = $uppyMetadata;
     return $this;
   }
