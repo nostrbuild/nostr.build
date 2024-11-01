@@ -2491,6 +2491,50 @@ Alpine.store('fileStore', {
     return nextFile || file;
   },
 
+  // Embeddable links and iframe creation code
+  embed: {
+    getEmbedURL(file) {
+      if (!file || !file?.url) {
+        return '';
+      }
+      const { hostname, pathname } = new URL(file.url);
+      const prefix = hostname.split('.').shift();
+      const filename = pathname.slice(1).split('.').slice(0, -1).join('.');
+      const extension = pathname.split('.').pop();
+      const url = new URL(`https://e.nostr.build/${prefix}_${filename}_${extension}`);
+      // Add parameters using URLSearchParams
+      url.searchParams.append('t', file?.title || file?.name);
+      // Add user nym as a by parameter
+      url.searchParams.append('by', Alpine.store('profileStore').profileInfo.name || 'Anon');
+      if (file?.width && file?.height) {
+        url.searchParams.append('w', `${file.width}px`);
+        url.searchParams.append('h', `${file.height}px`);
+      }
+      return url.toString();
+    },
+    generateImgCode(file) {
+      const embedCode = `<img src="${file.url}" alt="${file?.title || file?.name}" width="${file?.width}" height="${file?.height}" loading="lazy">`;
+      return embedCode;
+    },
+    generateResponsiveImgCode(file) {
+      const embedCode = `<img src="${file.url}" srcset="${file.srcset}" sizes="${file.sizes}" alt="${file?.title || file?.name}" width="${file?.width}" height="${file?.height}" loading="lazy">`;
+      return embedCode;
+    },
+    copyImgCode(file) {
+      const embedCode = this.generateImgCode(file);
+      copyToClipboard(embedCode);
+    },
+    generateIframeCode(file) {
+      const iframeUrl = this.getEmbedURL(file);
+      const iframeCode = `<iframe src="${iframeUrl}" style="border: 0; width: ${file?.width || '100%'}; height: ${file?.height || '100%'}; min-height: 560px; display: block; aspect-ratio: ${file?.width || '1'}/${file?.height || '1'}" allow="fullscreen; encrypted-media; picture-in-picture" loading="lazy" title="${file?.title || file?.name}"></iframe>`;
+      return iframeCode;
+    },
+    copyIframeCode(file) {
+      const iframeCode = this.generateIframeCode(file);
+      copyToClipboard(iframeCode);
+    },
+  },
+
   // Stats and analytics
   stats: {
     isLoading: false,
