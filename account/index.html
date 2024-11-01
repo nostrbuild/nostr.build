@@ -16,10 +16,10 @@
 	<meta name="msapplication-TileColor" content="#9f00a7">
 	<meta name="theme-color" content="#ffffff">
 
-	<script defer src="/scripts/dist/account-v2.js?v=6d11bc2b131303726e03987985ee143d"></script>
+	<script defer src="/scripts/dist/account-v2.js?v=2e231d27edccb7036596bb81d0b663ce"></script>
 	<link href="/scripts/dist/account-v2.css?v=5ecc26aa69603a0fc007bf24b7636047" rel="stylesheet">
 
-	<link href="/styles/twbuild.css?v=9f0845883eaec29de17cc31198f9eff3" rel="stylesheet">
+	<link href="/styles/twbuild.css?v=862cd82a4cc356fba0f8ffd7687c9916" rel="stylesheet">
 
 	<!-- Pre-connect and DNS prefetch -->
 	<link rel="preconnect" href="https://i.nostr.build" crossorigin>
@@ -1757,7 +1757,7 @@ onDropCB(event) {
 							<p class="text-sm text-nbpurple-200">Optimization:</p>
 							<div class="flex items-center">
 								<input x-model="menuStore.noTransform" type="checkbox" id="no-transform"
-									class="w-4 h-4 text-nbpurple-600 border border-nbpurple-600 rounded-sm focus:ring-2 focus:ring-nbpurple-600 focus:ring-offset-2 focus:ring-offset-nbpurple-100 focus:ring-offset-white">
+									class="w-4 h-4 text-nbpurple-600 border border-nbpurple-600 rounded-sm focus:ring-2 focus:ring-nbpurple-600 focus:ring-offset-2 focus:ring-offset-nbpurple-100">
 								<label for="no-transform" class="ml-2 text-sm text-nbpurple-200">Disable media optimization</label>
 							</div>
 						</div>
@@ -3372,6 +3372,26 @@ onDropCB(event) {
 												</div>
 											</template>
 										</div>
+										<!-- Video poster grab button -->
+										<div class="mt-4 flex items-start justify-center">
+											<div x-show="fileStore.mediaProperties.targetFile?.media_type === 'video'"
+												x-data="{ isGrabbing: false }" class="flex items-center space-x-2">
+												<button type="button"
+													@click="uploadVideoPoster('mediaP_' + fileStore.mediaProperties.targetFile?.id, fileStore.mediaProperties.targetFile?.id, 1, null, (data) => { isGrabbing = false; fileStore.mediaProperties.targetFile.width = data.dimensions.width; fileStore.mediaProperties.targetFile.height = data.dimensions.height}, () => {isGrabbing = false}); isGrabbing = true"
+													:disabled="isGrabbing"
+													class="relative flex items-center p-2 justify-between rounded-md bg-black text-nbpurple-100 hover:bg-nbpurple-500 hover:text-nbpurple-200 focus:outline-none focus:ring-2 focus:ring-nbpurple-500">
+													<span class="text-sm font-medium text-nbpurple-50"
+														x-text="isGrabbing ? 'Uploading' : 'Make current frame a poster'"></span>
+													<svg class="size-5 ml-2" :class="{ 'animate-bounce': isGrabbing }" fill="none"
+														viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true"
+														data-slot="icon">
+														<path stroke-linecap="round" stroke-linejoin="round"
+															d="m2.25 15.75 5.159-5.159a2.25 2.25 0 0 1 3.182 0l5.159 5.159m-1.5-1.5 1.409-1.409a2.25 2.25 0 0 1 3.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 0 0 1.5-1.5V6a1.5 1.5 0 0 0-1.5-1.5H3.75A1.5 1.5 0 0 0 2.25 6v12a1.5 1.5 0 0 0 1.5 1.5Zm10.5-11.25h.008v.008h-.008V8.25Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z" />
+													</svg>
+												</button>
+											</div>
+										</div>
+										<!-- /Video poster grab button -->
 										<div class="mt-4 flex items-start justify-between">
 											<div x-show="!fileStore.mediaProperties.editTitle"
 												class="w-[90%] overflow-hidden whitespace-nowrap text-ellipsis">
@@ -3383,7 +3403,7 @@ onDropCB(event) {
 														x-text="fileStore.mediaProperties.targetFile?.title?.length > 0 ? fileStore.mediaProperties.targetFile?.title : fileStore.mediaProperties.targetFile?.name"></span>
 												</h2>
 												<p class="text-sm font-medium text-nbpurple-500"
-													x-text="formatBytes(fileStore.mediaProperties.targetFile?.size)">3.9 MB</p>
+													x-text="formatBytes(fileStore.mediaProperties.targetFile?.size)"></p>
 											</div>
 											<input x-show="fileStore.mediaProperties.editTitle" type="text" name="title"
 												:id="'title' + fileStore.mediaProperties.targetFile?.id"

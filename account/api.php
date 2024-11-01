@@ -9,6 +9,7 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/Account.class.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/MultimediaUpload.class.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/S3Service.class.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/ImageCatalogManager.class.php';
+require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/imageproc.class.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/NostrClient.class.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/Credits.class.php';
 
@@ -1153,6 +1154,84 @@ if (isset($_GET["action"])) {
 		} else {
 			http_response_code(400);
 			echo json_encode(array("error" => "Failed to update password"));
+		}
+	} elseif ($_POST['action'] === 'upload_video_poster') {
+		// Verify posted parameters
+		$fileId = $_POST['fileId'] ?? 0;
+		if (!$fileId) {
+			http_response_code(400);
+			echo json_encode(array("error" => "File ID is missing"));
+			exit;
+		}
+		if (!isset($_FILES['file'])) {
+			http_response_code(400);
+			echo json_encode(array("error" => "No file uploaded"));
+			exit;
+		}
+		$uploadedFile = $_FILES['file'];
+		// Check if the file is an image
+		if (!in_array($uploadedFile['type'], ['image/jpeg'])) {
+			http_response_code(400);
+			echo json_encode(array("error" => "Invalid file type"));
+			exit;
+		}
+		// Get the info about the video file from the database
+		// DEBUG logs
+		error_log("File ID: " . $fileId);
+		error_log("Uploaded file: " . json_encode($uploadedFile));
+
+		try {
+			global $link;
+			global $awsConfig;
+			$images = new UsersImages($link);
+			$videoInfo = $images->getFile(npub: $_SESSION['usernpub'], fileId: $fileId);
+			$videoURL = SiteConfig::getFullyQualifiedUrl("professional_account_video") . $videoInfo['image'];
+			if (!$videoInfo) {
+				http_response_code(404);
+				echo json_encode(array("error" => "Video not found"));
+				exit;
+			}
+			// Optimize the image
+			$imageProcessor = new ImageProcessor($uploadedFile['tmp_name']);
+			$imageProcessor->save();
+			$posterDimensions = $imageProcessor->getImageDimensions();
+			$imageProcessor->optimiseImage();
+			// Update the video file dimensions in the database
+			$images->update($fileId, ['media_width' => $posterDimensions['width'], 'media_height' => $posterDimensions['height']]);
+			$sha256 = hash_file('sha256', $uploadedFile['tmp_name']);
+			// Upload the image to the object storage
+			$objectKey = "{$videoInfo['image']}/poster.jpg";
+			$objectBucketSuffix = SiteConfig::getBucketSuffix("professional_account_video");
+			$objectBucket = $awsConfig['r2']['bucket'] . $objectBucketSuffix;
+			// DEBUG logs
+			error_log("Object key: " . $objectKey . " | Object bucket: " . $objectBucket . " | SHA256: " . $sha256 . " | NPUB: " . $_SESSION['usernpub'] . " | Video URL: " . $videoURL . PHP_EOL);
+			// Upload the image to the object storage
+			$res = storeToR2Bucket(
+				$uploadedFile['tmp_name'],
+				$objectKey,
+				$objectBucket,
+				$awsConfig['r2']['endpoint'],
+				$awsConfig['r2']['credentials']['key'],
+				$awsConfig['r2']['credentials']['secret'],
+				[
+					'sha256' => $sha256,
+					'npub' => $_SESSION['usernpub'],
+					'videoUrl' => $videoURL,
+				],
+			);
+			if (!$res) {
+				error_log("Failed to upload video poster for: " . $videoURL);
+				throw new Exception("Failed to upload video poster");
+			}
+			// Return the URL of the uploaded image
+			$posterURL = $videoURL . "/poster.jpg";
+			http_response_code(200);
+			echo json_encode(array("posterURL" => $posterURL, "dimensions" => $posterDimensions));
+		} catch (Exception $e) {
+			error_log($e->getMessage());
+			http_response_code(500);
+			echo json_encode(array("error" => "Failed to upload video poster"));
+			exit;
 		}
 	} else {
 		http_response_code(400);

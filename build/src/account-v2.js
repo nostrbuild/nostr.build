@@ -235,6 +235,61 @@ window.abbreviateBech32 = (bech32Address) => {
   return typeof bech32Address === 'string' ? `${bech32Address.substring(0, 15)}...${bech32Address.substring(bech32Address.length - 10)}` : '';
 };
 
+const captureVideoFrame = (video, scaleFactor, time) => {
+  if (scaleFactor == null) {
+    scaleFactor = 1;
+  }
+  if (time) {
+    video.currentTime = time;
+  }
+  const w = video.videoWidth * scaleFactor;
+  const h = video.videoHeight * scaleFactor;
+  const canvas = document.createElement('canvas');
+  canvas.width = w;
+  canvas.height = h;
+  const ctx = canvas.getContext('2d');
+  ctx.drawImage(video, 0, 0, w, h);
+  return canvas.toDataURL('image/jpeg');
+}
+
+function dataUrlToFile(dataUrl, filename) {
+  const arr = dataUrl.split(',');
+  const mime = arr[0].match(/:(.*?);/)[1];
+  const bstr = atob(arr[1]);
+  let n = bstr.length;
+  const u8arr = new Uint8Array(n);
+  while (n--) {
+    u8arr[n] = bstr.charCodeAt(n);
+  }
+  return new File([u8arr], filename, { type: mime });
+}
+
+window.uploadVideoPoster = (videoId, fileId, scaleFactor, time, callback, errorCB) => {
+  const video = document.getElementById(videoId);
+  const dataUrl = captureVideoFrame(video, scaleFactor, time);
+  const file = dataUrlToFile(dataUrl, 'poster.jpg');
+  const api = getApiFetcher(apiUrl, 'multipart/form-data');
+  const formData = new FormData();
+  formData.append('action', 'upload_video_poster');
+  formData.append('fileId', fileId);
+  formData.append('file', file);
+  api.post('', formData)
+    .then(response => response.data)
+    .then(data => {
+      if (data.error) {
+        console.error('Error uploading video poster:', data.error);
+        if (typeof errorCB === 'function') errorCB(data);
+        return;
+      }
+      console.debug('Video poster uploaded:', data);
+      if (typeof callback === 'function') callback(data);
+    })
+    .catch(error => {
+      if (typeof errorCB === 'function') errorCB(data);
+      console.error('Error uploading video poster:', error);
+    });
+}
+
 // AlpineJS components and stores
 document.addEventListener('alpine:init', () => {
   console.debug('Alpine started');

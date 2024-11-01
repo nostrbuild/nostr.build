@@ -144,4 +144,38 @@ class UsersImages extends DatabaseTable
       throw $e;
     }
   }
+
+  public function getFile(string $npub, int $fileId): array
+  {
+    $sql = "
+    SELECT 
+        ui.*,
+        (SELECT GROUP_CONCAT(CONCAT(uni.note_id, ':', UNIX_TIMESTAMP(unn.created_at)))
+         FROM users_nostr_images uni
+         LEFT JOIN users_nostr_notes unn ON uni.note_id = unn.note_id
+         WHERE uni.image_id = ui.id) AS associated_notes
+    FROM {$this->tableName} ui
+    WHERE ui.id = ?
+      AND usernpub = ?
+    ";
+
+    try {
+      $stmt = $this->db->prepare($sql);
+      $stmt->bind_param('is', $fileId, $npub);
+      $stmt->execute();
+      $result = $stmt->get_result();
+
+      if ($result === false) {
+        throw new Exception("Error: " . $this->db->error);
+      }
+
+      $file = $result->fetch_assoc();
+      $stmt->close();
+
+      return $file;
+    } catch (Exception $e) {
+      error_log("Exception: " . $e->getMessage());
+      throw $e;
+    }
+  }
 }
