@@ -1223,6 +1223,9 @@ if (isset($_GET["action"])) {
 				error_log("Failed to upload video poster for: " . $videoURL);
 				throw new Exception("Failed to upload video poster");
 			}
+			// Purge cache
+			$purger = new CloudflarePurger($_SERVER['NB_API_SECRET'], $_SERVER['NB_API_PURGE_URL']);
+			$purger->purgeFiles($objectKey, true);
 			// Return the URL of the uploaded image
 			$posterURL = $videoURL . "/poster.jpg";
 			http_response_code(200);
