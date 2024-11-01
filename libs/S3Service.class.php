@@ -438,6 +438,7 @@ function storeToR2Bucket(
   string $endPoint,
   string $accessKey,
   string $secretKey,
+  array $metadata = []
 ): bool {
   $r2Config = [
     'region'  => 'auto',
@@ -462,6 +463,7 @@ function storeToR2Bucket(
     'StorageClass' => 'STANDARD',
     'CacheControl' => 'max-age=2592000',
     'ContentType' => mime_content_type($sourceFilePath),
+    'Metadata' => $metadata,
   ];
 
   try {

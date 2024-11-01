@@ -30,7 +30,7 @@ class CloudflarePurger
     return hash_hmac('sha256', "/$randomString/$expiry", $this->apiSecret, true);
   }
 
-  public function purgeFiles($files)
+  public function purgeFiles($files, $cacheInvalidation = false)
   {
     try {
       $randomString = $this->generateRandomString();
@@ -38,12 +38,24 @@ class CloudflarePurger
       $token = base64_encode($this->generateHMACToken($randomString, $expiry));
 
       $url = $this->apiEndpoint . "/$randomString/$expiry";
+      $targetFiles = $files;
+      if ($cacheInvalidation) {
+        /* Cache invalidation */
+        /*
+        	invalidationType: 'url' | 'wildcard';
+          invalidationValue: string | string[];
+        */
+        $targetFiles = [
+          'invalidationType' => 'url',
+          'invalidationValue' => $files,
+        ];
+      }
 
       $options = [
         'http' => [
           'method' => 'POST',
           'header' => "Authorization: Bearer " . $token,
-          'content' => json_encode($files),
+          'content' => json_encode($targetFiles),
         ],
       ];
 
