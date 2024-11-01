@@ -217,7 +217,7 @@ SVG;
   <meta charSet="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Nostr.build account signup</title>
-  <link rel="stylesheet" href="/styles/twbuild.css?v=862cd82a4cc356fba0f8ffd7687c9916" />
+  <link rel="stylesheet" href="/styles/twbuild.css?v=72e8d1466a323bd871d07f0033060419" />
   <link rel="stylesheet" href="/styles/index.css?v=290253d31f2fde0932483cb54581766b" />
   <link rel="stylesheet" href="/styles/signup.css?v=8878cbf7163f77b3a4fb9b30804c73ca" />
   <link rel="icon" href="https://cdn.nostr.build/assets/primo_nostr.png" />
