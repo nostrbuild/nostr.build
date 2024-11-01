@@ -3126,7 +3126,7 @@ Alpine.store('uppyStore', {
       'audio/ogg': 'ogg',
       'audio/wav': 'wav',
       'audio/aac': 'aac',
-      'audio/webm': 'webm',
+      'audio/webm': 'weba',
       'audio/flac': 'flac',
       'audio/x-aiff': 'aif',
       'audio/x-ms-wma': 'wma',

@@ -16,7 +16,7 @@
 	<meta name="msapplication-TileColor" content="#9f00a7">
 	<meta name="theme-color" content="#ffffff">
 
-	<script defer src="/scripts/dist/account-v2.js?v=2e231d27edccb7036596bb81d0b663ce"></script>
+	<script defer src="/scripts/dist/account-v2.js?v=0d08559348c804f8a5b91c554ce29c60"></script>
 	<link href="/scripts/dist/account-v2.css?v=5ecc26aa69603a0fc007bf24b7636047" rel="stylesheet">
 
 	<link href="/styles/twbuild.css?v=72e8d1466a323bd871d07f0033060419" rel="stylesheet">
@@ -3374,7 +3374,7 @@ onDropCB(event) {
 										</div>
 										<!-- Video poster grab button -->
 										<div class="mt-4 flex items-start justify-center">
-											<div x-show="fileStore.mediaProperties.targetFile?.media_type === 'video'"
+											<div x-show="fileStore.mediaProperties.targetFile?.mime.startsWith('video/')"
 												x-data="{ isGrabbing: false }" class="flex items-center space-x-2">
 												<button type="button"
 													@click="uploadVideoPoster('mediaP_' + fileStore.mediaProperties.targetFile?.id, fileStore.mediaProperties.targetFile?.id, 1, null, (data) => { isGrabbing = false; fileStore.mediaProperties.targetFile.width = data.dimensions.width; fileStore.mediaProperties.targetFile.height = data.dimensions.height}, () => {isGrabbing = false}); isGrabbing = true"
