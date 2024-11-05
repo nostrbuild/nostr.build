@@ -2974,6 +2974,22 @@ Alpine.store('fileStore', {
       }
     },
   },
+  // Video Poster
+  async checkAndSetPoster(file, el) {
+    if (file.posterChecked) return;
+
+    const posterUrl = file.url + '/poster.jpg';
+    try {
+      const validUrl = await checkURL(posterUrl);
+      if (validUrl) {
+        el.poster = validUrl;
+      }
+    } catch (error) {
+      console.log('Failed to set poster:', error);
+    } finally {
+      file.posterChecked = true;
+    }
+  },
 });
 
 // URL Import Store

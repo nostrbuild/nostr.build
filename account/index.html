@@ -16,7 +16,7 @@
 	<meta name="msapplication-TileColor" content="#9f00a7">
 	<meta name="theme-color" content="#ffffff">
 
-	<script defer src="/scripts/dist/account-v2.js?v=ce20bd6f3b17674274de4678896d594b"></script>
+	<script defer src="/scripts/dist/account-v2.js?v=2cd59226b321eeecef97ee5b86e5781b"></script>
 	<link href="/scripts/dist/account-v2.css?v=5ecc26aa69603a0fc007bf24b7636047" rel="stylesheet">
 
 	<link href="/styles/twbuild.css?v=72e8d1466a323bd871d07f0033060419" rel="stylesheet">
@@ -1991,28 +1991,9 @@ onDropCB(event) {
 
 										<!-- Video -->
 										<template x-if="file.media_type === 'video'">
-											<video :id="'media_' + file.id" crossorigin="use-credentials" x-data="{
-												checkInProgress: false,
-												async checkAndSetPoster() {
-														if (file.posterChecked || this.checkInProgress) return;
-														
-														this.checkInProgress = true;
-														const posterUrl = file.url + '/poster.jpg';
-														try {
-																const validUrl = await checkURL(posterUrl);
-																if (validUrl) {
-																		$el.poster = validUrl;
-																		file.posterChecked = true;
-																}
-														} catch (error) {
-																console.log('Failed to set poster:', error);
-														} finally {
-																this.checkInProgress = false;
-														}
-												}
-										}" x-intersect.once.margin.512px="
+											<video :id="'media_' + file.id" crossorigin="use-credentials" x-intersect.once.margin.512px="
 												if (!$el.src) {
-													checkAndSetPoster();
+													fileStore.checkAndSetPoster(file, $el);
 													$el.src = file.url;
 													$el.load();
 												}
@@ -2020,12 +2001,12 @@ onDropCB(event) {
 												if (file.loadMore && !fileStore.loading && !fileStore.loadingMoreFiles) {
 													fileStore.loadMoreFiles();
 												}
-										" x-effect="file.posterChecked === false && !checkInProgress ? checkAndSetPoster() : null"
+										" x-effect="file.posterChecked === false ? fileStore.checkAndSetPoster(file, $el) : null"
 												@loadedmetadata="file.loaded = true" @error="
 												if (!checkInProgress) {
 														setTimeout(() => {
 																$el.load();
-																checkAndSetPoster();
+																fileStore.checkAndSetPoster(file, $el);
 														}, 5000);
 												}
 										" playsinline preload="none" class="pointer-events-none object-cover">
@@ -3348,10 +3329,19 @@ onDropCB(event) {
 											<template x-if="fileStore.mediaProperties.targetFile?.media_type === 'video'">
 												<video :id="'mediaP_' + fileStore.mediaProperties.targetFile?.id" crossorigin="use-credentials"
 													controls playsinline preload="auto"
-													x-effect="fileStore.mediaProperties.isOpen ? $el.load() : $el.pause()"
-													x-init="fileStore.mediaProperties.isOpen ? $el.load() : $el.pause()"
+													x-effect="
+															if (fileStore.mediaProperties.isOpen) {
+																	$el.load();
+																	if (fileStore.mediaProperties.targetFile && fileStore.mediaProperties.targetFile?.posterChecked === false) {
+																			fileStore.checkAndSetPoster(fileStore.mediaProperties.targetFile, $el);
+																	}
+															} else {
+																	$el.pause();
+															}
+													"
+													x-init="fileStore.mediaProperties.isOpen ? ($el.load(), fileStore.mediaProperties.targetFile.posterChecked = false) : $el.pause()"
 													@loadedmetadata="fileStore.mediaProperties.contentLoaded = true;"
-													@error="setTimeout(()=>{$el.load()}, 5000)" class="pointer-events-auto object-cover">
+													@error="setTimeout(()=>{$el.load();fileStore.checkAndSetPoster(fileStore.mediaProperties.targetFile, $el)}, 5000)" class="pointer-events-auto object-fit">
 													<source :src="fileStore.mediaProperties.targetFile?.url" type="video/mp4">
 													<p>
 														Your browser does not support the video tag.
