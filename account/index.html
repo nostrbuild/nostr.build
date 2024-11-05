@@ -1993,9 +1993,10 @@ onDropCB(event) {
 										<template x-if="file.media_type === 'video'">
 											<video :id="'media_' + file.id" crossorigin="use-credentials" x-intersect.once.margin.512px="
 												if (!$el.src) {
-													const validPoster = fileStore.checkAndSetPoster(file, $el);
-													$el.src = file.url;
-													validPoster && $el.load();
+													fileStore.checkAndSetPoster(file, $el).then(validPoster => {
+														$el.src = file.url;
+														if(!validPoster) $el.load();
+													});	
 												}
 												
 												if (file.loadMore && !fileStore.loading && !fileStore.loadingMoreFiles) {
@@ -2005,8 +2006,9 @@ onDropCB(event) {
 												@loadedmetadata="file.loaded = true" @error="
 												if (!checkInProgress) {
 														setTimeout(() => {
-																const validPoster = fileStore.checkAndSetPoster(file, $el);
-																validPoster && $el.load();
+																fileStore.checkAndSetPoster(file, $el).then(validPoster => {
+																	if(!validPoster) $el.load();
+																});
 														}, 5000);
 												}
 										" playsinline preload="none" class="pointer-events-none object-cover">
@@ -3328,8 +3330,7 @@ onDropCB(event) {
 											<!-- Video -->
 											<template x-if="fileStore.mediaProperties.targetFile?.media_type === 'video'">
 												<video :id="'mediaP_' + fileStore.mediaProperties.targetFile?.id" crossorigin="use-credentials"
-													controls playsinline preload="auto"
-													x-effect="
+													controls playsinline preload="auto" x-effect="
 															if (fileStore.mediaProperties.isOpen) {
 																	if (fileStore.mediaProperties.targetFile && fileStore.mediaProperties.targetFile?.posterChecked === false) {
 																			fileStore.checkAndSetPoster(fileStore.mediaProperties.targetFile, $el);
@@ -3338,10 +3339,10 @@ onDropCB(event) {
 															} else {
 																	$el.pause();
 															}
-													"
-													x-init="fileStore.mediaProperties.isOpen ? (fileStore.mediaProperties.targetFile.posterChecked = false) : $el.pause()"
+													" x-init="fileStore.mediaProperties.isOpen ? (fileStore.mediaProperties.targetFile.posterChecked = false) : $el.pause()"
 													@loadedmetadata="fileStore.mediaProperties.contentLoaded = true;"
-													@error="setTimeout(()=>{$el.load();fileStore.checkAndSetPoster(fileStore.mediaProperties.targetFile, $el)}, 5000)" class="pointer-events-auto object-fit">
+													@error="setTimeout(()=>{$el.load();fileStore.checkAndSetPoster(fileStore.mediaProperties.targetFile, $el)}, 5000)"
+													class="pointer-events-auto object-fit">
 													<source :src="fileStore.mediaProperties.targetFile?.url" type="video/mp4">
 													<p>
 														Your browser does not support the video tag.
