@@ -2975,44 +2975,63 @@ Alpine.store('fileStore', {
     },
   },
   // Video Poster
-  async checkAndSetPoster(file, el, cb = 600000 /* 10 minutes */) {
+  async checkAndSetPoster(file, el, cb = 600000 /* 10 minutes */, bypassCache = false) {
     if (file.posterChecked) return;
-    
+
     const cacheBust = Math.ceil(Date.now() / cb) * cb;
     const posterUrl = `${file.url}/poster.jpg?_=${cacheBust}`;
-    
+
     try {
-      // Single request that both validates and gets the data
-      const response = await fetch(posterUrl, {
-        method: 'GET',
-        mode: 'cors',
-        credentials: 'include',
-        redirect: 'manual', // Fail on redirects
-        cache: 'reload', // Bypass cache
-        referrerPolicy: 'no-referrer',
+      // Create one-off configured axios instance for this request
+      const headers = {
+        'Accept': 'image/*',
+        // Set x-nb-no-redirect to prevent default poster redirect
+        'x-nb-no-redirect': '1',
+      };
+      if (bypassCache) {
+        headers['x-nb-bypass-cache'] = '1';
+      }
+      const posterFetcher = axios.create({
+        timeout: 10000,
+        withCredentials: true,
+        headers: headers,
+        responseType: 'blob',
+        maxRedirects: 0, // Disable redirects
         keepalive: true,
-        headers: {
-          'Accept': 'image/*',
+      });
+
+      // Configure retries inline
+      axiosRetry(posterFetcher, {
+        retries: 3,
+        retryDelay: (retryNumber = 0) => {
+          const delayFactor = 300;
+          const delay = 2 ** retryNumber * delayFactor;
+          const randomSum = delay * 0.2 * Math.random();
+          return delay + randomSum;
+        },
+        retryCondition: (error) => {
+          return axiosRetry.isNetworkOrIdempotentRequestError(error) ||
+            axiosRetry.isSafeRequestError(error) ||
+            axiosRetry.isRetryableError(error);
         }
       });
-      console.log('Poster response:', response);
-      
-      // Validate status without needing a separate HEAD request
-      if (response.status !== 200) {
+
+      const response = await posterFetcher.get(posterUrl);
+
+      if (response.status !== 200 || response.request?.responseURL !== posterUrl) {
         throw new Error('Invalid response status or redirect');
       }
-      
-      const blob = await response.blob();
+
       const dataUrl = await new Promise((resolve) => {
         const reader = new FileReader();
         reader.onloadend = () => resolve(reader.result);
-        reader.readAsDataURL(blob);
+        reader.readAsDataURL(response.data);
       });
-      
+
       el.poster = dataUrl;
       file.posterChecked = true;
       return true;
-      
+
     } catch (error) {
       file.posterChecked = true;
       return false;
