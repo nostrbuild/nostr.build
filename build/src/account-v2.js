@@ -2988,7 +2988,7 @@ Alpine.store('fileStore', {
         mode: 'cors',
         credentials: 'include',
         redirect: 'manual', // Fail on redirects
-        cache: 'no-cache', // Bypass cache
+        cache: 'reload', // Bypass cache
         referrerPolicy: 'no-referrer',
         keepalive: true,
         headers: {
