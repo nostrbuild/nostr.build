@@ -16,7 +16,7 @@
 	<meta name="msapplication-TileColor" content="#9f00a7">
 	<meta name="theme-color" content="#ffffff">
 
-	<script defer src="/scripts/dist/account-v2.js?v=bf143800ec29abeef37988358738f81b"></script>
+	<script defer src="/scripts/dist/account-v2.js?v=ce20bd6f3b17674274de4678896d594b"></script>
 	<link href="/scripts/dist/account-v2.css?v=5ecc26aa69603a0fc007bf24b7636047" rel="stylesheet">
 
 	<link href="/styles/twbuild.css?v=72e8d1466a323bd871d07f0033060419" rel="stylesheet">
@@ -1991,7 +1991,10 @@ onDropCB(event) {
 
 										<!-- Video -->
 										<template x-if="file.media_type === 'video'">
-											<video :id="'media_' + file.id" crossorigin="use-credentials" x-init="
+											<video :id="'media_' + file.id" crossorigin="use-credentials" x-intersect.once.margin.1024px="
+															$el.src = file.url;
+															$el.load();
+															
 															const baseUrl = file.url.endsWith('/') ? file.url.slice(0, -1) : file.url;
 															const posterUrl = baseUrl + '/poster.jpg';
 															checkURL(posterUrl)
@@ -2003,9 +2006,7 @@ onDropCB(event) {
 																	.catch(error => {
 																			console.log('Failed to set poster:', error);
 																	});
-													" x-intersect.once.margin.1024px="
-															$el.src = file.url;
-															$el.load();
+															
 															if (file.loadMore && !fileStore.loading && !fileStore.loadingMoreFiles) {
 																	fileStore.loadMoreFiles();
 															}

@@ -297,10 +297,10 @@ window.checkURL = async (url) => {
   return fetch(url,
     {
       method: 'HEAD',
-      cache: 'no-store',
       redirect: 'manual',
       credentials: 'include',
       mode: 'cors',
+      referrerPolicy: 'no-referrer',
       onerror: (error) => {
         console.error('Error checking URL:', error);
         return null;
