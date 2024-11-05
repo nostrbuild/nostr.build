@@ -2977,22 +2977,46 @@ Alpine.store('fileStore', {
   // Video Poster
   async checkAndSetPoster(file, el, cb = 600000 /* 10 minutes */) {
     if (file.posterChecked) return;
-
-    // Bust cache every 10 minutes
+    
     const cacheBust = Math.ceil(Date.now() / cb) * cb;
-    const posterUrl = `${file.url}/poster.jpg?cb=${cacheBust}`;
+    const posterUrl = `${file.url}/poster.jpg?_=${cacheBust}`;
+    
     try {
-      const validUrl = await checkURL(posterUrl);
-      if (validUrl) {
-        el.poster = validUrl;
-        return true;
+      // Single request that both validates and gets the data
+      const response = await fetch(posterUrl, {
+        method: 'GET',
+        mode: 'cors',
+        credentials: 'include',
+        redirect: 'manual', // Fail on redirects
+        cache: 'no-cache', // Bypass cache
+        referrerPolicy: 'no-referrer',
+        keepalive: true,
+        headers: {
+          'Accept': 'image/*',
+        }
+      });
+      console.log('Poster response:', response);
+      
+      // Validate status without needing a separate HEAD request
+      if (response.status !== 200) {
+        throw new Error('Invalid response status or redirect');
       }
-    } catch (error) {
-      console.log('Failed to set poster:', error);
-    } finally {
+      
+      const blob = await response.blob();
+      const dataUrl = await new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result);
+        reader.readAsDataURL(blob);
+      });
+      
+      el.poster = dataUrl;
       file.posterChecked = true;
+      return true;
+      
+    } catch (error) {
+      file.posterChecked = true;
+      return false;
     }
-    return false;
   },
 });
 
