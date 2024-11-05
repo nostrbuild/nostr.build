@@ -16,7 +16,7 @@
 	<meta name="msapplication-TileColor" content="#9f00a7">
 	<meta name="theme-color" content="#ffffff">
 
-	<script defer src="/scripts/dist/account-v2.js?v=2cd59226b321eeecef97ee5b86e5781b"></script>
+	<script defer src="/scripts/dist/account-v2.js?v=0fc9b350325d159c66abe16d20981bf3"></script>
 	<link href="/scripts/dist/account-v2.css?v=5ecc26aa69603a0fc007bf24b7636047" rel="stylesheet">
 
 	<link href="/styles/twbuild.css?v=72e8d1466a323bd871d07f0033060419" rel="stylesheet">
@@ -1993,9 +1993,9 @@ onDropCB(event) {
 										<template x-if="file.media_type === 'video'">
 											<video :id="'media_' + file.id" crossorigin="use-credentials" x-intersect.once.margin.512px="
 												if (!$el.src) {
-													fileStore.checkAndSetPoster(file, $el);
+													const validPoster = fileStore.checkAndSetPoster(file, $el);
 													$el.src = file.url;
-													$el.load();
+													validPoster && $el.load();
 												}
 												
 												if (file.loadMore && !fileStore.loading && !fileStore.loadingMoreFiles) {
@@ -2005,8 +2005,8 @@ onDropCB(event) {
 												@loadedmetadata="file.loaded = true" @error="
 												if (!checkInProgress) {
 														setTimeout(() => {
-																$el.load();
-																fileStore.checkAndSetPoster(file, $el);
+																const validPoster = fileStore.checkAndSetPoster(file, $el);
+																validPoster && $el.load();
 														}, 5000);
 												}
 										" playsinline preload="none" class="pointer-events-none object-cover">
@@ -3331,15 +3331,15 @@ onDropCB(event) {
 													controls playsinline preload="auto"
 													x-effect="
 															if (fileStore.mediaProperties.isOpen) {
-																	$el.load();
 																	if (fileStore.mediaProperties.targetFile && fileStore.mediaProperties.targetFile?.posterChecked === false) {
 																			fileStore.checkAndSetPoster(fileStore.mediaProperties.targetFile, $el);
 																	}
+																	$el.load();
 															} else {
 																	$el.pause();
 															}
 													"
-													x-init="fileStore.mediaProperties.isOpen ? ($el.load(), fileStore.mediaProperties.targetFile.posterChecked = false) : $el.pause()"
+													x-init="fileStore.mediaProperties.isOpen ? (fileStore.mediaProperties.targetFile.posterChecked = false) : $el.pause()"
 													@loadedmetadata="fileStore.mediaProperties.contentLoaded = true;"
 													@error="setTimeout(()=>{$el.load();fileStore.checkAndSetPoster(fileStore.mediaProperties.targetFile, $el)}, 5000)" class="pointer-events-auto object-fit">
 													<source :src="fileStore.mediaProperties.targetFile?.url" type="video/mp4">

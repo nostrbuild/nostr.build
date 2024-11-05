@@ -2983,12 +2983,14 @@ Alpine.store('fileStore', {
       const validUrl = await checkURL(posterUrl);
       if (validUrl) {
         el.poster = validUrl;
+        return true;
       }
     } catch (error) {
       console.log('Failed to set poster:', error);
     } finally {
       file.posterChecked = true;
     }
+    return false;
   },
 });
 
