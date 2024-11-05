@@ -2004,13 +2004,11 @@ onDropCB(event) {
 												}
 										" x-effect="file.posterChecked === false ? fileStore.checkAndSetPoster(file, $el) : null"
 												@loadedmetadata="file.loaded = true" @error="
-												if (!checkInProgress) {
-														setTimeout(() => {
-																fileStore.checkAndSetPoster(file, $el).then(validPoster => {
-																	if(!validPoster) $el.load();
-																});
-														}, 5000);
-												}
+													setTimeout(() => {
+															fileStore.checkAndSetPoster(file, $el).then(validPoster => {
+																if(!validPoster) $el.load();
+															});
+													}, 5000);
 										" playsinline preload="none" class="pointer-events-none object-cover">
 												<source :data-src="file.url" type="video/mp4">
 												<p>
