@@ -8,10 +8,10 @@ but can easily run elsewhere and host media for any other service or platform.
 ## How to use nostr.build
 
 nostr.build is a free to use media hosting platform that allows users to upload images, gifs, videos and audio to nostr.build servers,
-returing a link to share the uploaded media.
+returning a link to share the uploaded media.
 
 Simply go to https://nostr.build using your favorite browser, select the media you want to upload by either drag-and-dropping it on the website, or the 'Select Media' button,
-and nostr.build returns a link that to add to nostr notes or share the image anywhere.
+and nostr.build returns a link to add to nostr notes or share the image anywhere.
 
 <img src="https://nostr.build/i/6154824466ae933fd71ef422d5316bc6bed7a6d8bc8667ae2e4492f1a063346f.jpg"  height="400">        <img src="https://nostr.build/i/4d2dccdeadc168d277b755d863a53f43b52e59cae65ec3896baab42df433ecb8.jpg"  height="400">
 
@@ -21,8 +21,8 @@ Other free services include:
 - EXIF (metadata) stripping from images
 - Curated list of nostr related memes and content from over 40 nostr Creators
 
-For the free, public version of nostr.build all use and media uploaded has to be legal and align to the [nostr.build Terms of Service](https://nostr.build/tos).
-If used on another server using a different name, media and content guidelines can align to that hosting platform and owner.
+For the free, public version of nostr.build all media uploaded has to be legal and align to the [nostr.build Terms of Service](https://nostr.build/tos).
+If used on another server, media and content guidelines can align to that hosting platform and owner.
 
 nostr.build provides an account system for users that want to have fewer limits to the media they are uploading and a place to store their media.
 Currently https://nostr.build charges a small fee for these accounts to cover server costs, but someone using the code for their own project can use the account system however they want.
