@@ -290,6 +290,34 @@ window.uploadVideoPoster = (videoId, fileId, scaleFactor, time, callback, errorC
     });
 }
 
+
+// Function to check if URL returns http-200 using HEAD request, and return that url back,
+// or null if any other status
+window.checkURL = async (url) => {
+  return fetch(url,
+    {
+      method: 'HEAD',
+      cache: 'no-store',
+      redirect: 'manual',
+      credentials: 'include',
+      mode: 'cors',
+      onerror: (error) => {
+        console.error('Error checking URL:', error);
+        return null;
+      }
+    })
+    .then(response => {
+      if (response.ok && response.status === 200) {
+        return url;
+      }
+      return null;
+    })
+    .catch((error) => {
+      console.error('Error checking URL:', error);
+      return null;
+    });
+}
+
 // AlpineJS components and stores
 document.addEventListener('alpine:init', () => {
   console.debug('Alpine started');
