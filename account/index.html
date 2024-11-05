@@ -16,7 +16,7 @@
 	<meta name="msapplication-TileColor" content="#9f00a7">
 	<meta name="theme-color" content="#ffffff">
 
-	<script defer src="/scripts/dist/account-v2.js?v=4ae0cd7b7e20ba65e459e1788b278546"></script>
+	<script defer src="/scripts/dist/account-v2.js?v=3034f1ef2addecd77ba981a8c071fe6c"></script>
 	<link href="/scripts/dist/account-v2.css?v=5ecc26aa69603a0fc007bf24b7636047" rel="stylesheet">
 
 	<link href="/styles/twbuild.css?v=72e8d1466a323bd871d07f0033060419" rel="stylesheet">
@@ -3333,7 +3333,7 @@ onDropCB(event) {
 													controls playsinline preload="auto" x-effect="
 															if (fileStore.mediaProperties.isOpen) {
 																	if (fileStore.mediaProperties.targetFile && fileStore.mediaProperties.targetFile?.posterChecked === false) {
-																			fileStore.checkAndSetPoster(fileStore.mediaProperties.targetFile, $el);
+																			fileStore.checkAndSetPoster(fileStore.mediaProperties.targetFile, $el, 1);
 																	}
 																	$el.load();
 															} else {
@@ -3341,7 +3341,7 @@ onDropCB(event) {
 															}
 													" x-init="fileStore.mediaProperties.isOpen ? (fileStore.mediaProperties.targetFile.posterChecked = false) : $el.pause()"
 													@loadedmetadata="fileStore.mediaProperties.contentLoaded = true;"
-													@error="setTimeout(()=>{$el.load();fileStore.checkAndSetPoster(fileStore.mediaProperties.targetFile, $el)}, 5000)"
+													@error="setTimeout(()=>{$el.load();fileStore.checkAndSetPoster(fileStore.mediaProperties.targetFile, $el, 1)}, 5000)"
 													class="pointer-events-auto object-fit">
 													<source :src="fileStore.mediaProperties.targetFile?.url" type="video/mp4">
 													<p>

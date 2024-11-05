@@ -2975,10 +2975,12 @@ Alpine.store('fileStore', {
     },
   },
   // Video Poster
-  async checkAndSetPoster(file, el) {
+  async checkAndSetPoster(file, el, cb = 600000 /* 10 minutes */) {
     if (file.posterChecked) return;
 
-    const posterUrl = file.url + '/poster.jpg';
+    // Bust cache every 10 minutes
+    const cacheBust = Math.ceil(Date.now() / cb) * cb;
+    const posterUrl = `${file.url}/poster.jpg?cb=${cacheBust}`;
     try {
       const validUrl = await checkURL(posterUrl);
       if (validUrl) {
