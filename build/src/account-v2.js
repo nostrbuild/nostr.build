@@ -2492,46 +2492,72 @@ Alpine.store('fileStore', {
   modalImageTitle: '',
   modalImageDescription: '',
   modalImagePrompt: '',
+  modalCloseTimeout: null,
   openModal(file) {
-    // Lock body scroll
+    // Clear any pending timeout
+    if (this.modalCloseTimeout) {
+      clearTimeout(this.modalCloseTimeout);
+      this.modalCloseTimeout = null;  // Reset timeout reference
+    }
+
+    // Set modal content before opening to prevent flashing
+    this.updateModal(file);
+
+    // Lock body scroll and open modal
     lock();
-    this.modalFile = file;
-    this.modalImageUrl = file.url;
-    this.modalImageSrcset = file.srcset;
-    this.modalImageSizes = file.sizes;
-    this.modalImageAlt = file.title || file.name;
-    this.modalImageDimensions = `${file.width}x${file.height}`;
-    this.modalImageFilesize = file.size;
-    this.modalImageTitle = file.title || '';
-    this.modalImageDescription = file.description || '';
-    this.modalImagePrompt = file.ai_prompt || '';
     this.modalOpen = true;
   },
   updateModal(file) {
-    this.modalFile = file;
-    this.modalImageUrl = file.url;
-    this.modalImageSrcset = file.srcset;
-    this.modalImageSizes = file.sizes;
-    this.modalImageAlt = file.title || file.name;
-    this.modalImageDimensions = `${file.width}x${file.height}`;
-    this.modalImageFilesize = file.size;
-    this.modalImageTitle = file.title || '';
-    this.modalImageDescription = file.description || '';
-    this.modalImagePrompt = file.ai_prompt || '';
+    if (!file) return;  // Guard clause
+
+    const {
+      url, srcset, sizes, title, name, width, height,
+      size, description, ai_prompt
+    } = file;
+
+    Object.assign(this, {
+      modalFile: file,
+      modalImageUrl: url,
+      modalImageSrcset: srcset,
+      modalImageSizes: sizes,
+      modalImageAlt: title || name,
+      modalImageDimensions: width && height ? `${width}x${height}` : '',
+      modalImageFilesize: size,
+      modalImageTitle: title || '',
+      modalImageDescription: description || '',
+      modalImagePrompt: ai_prompt || ''
+    });
   },
+
   closeModal() {
-    clearBodyLocks();
+    // Clear any existing timeout first
+    if (this.modalCloseTimeout) {
+      clearTimeout(this.modalCloseTimeout);
+      this.modalCloseTimeout = null;
+    }
+
+    // Close modal first
     this.modalOpen = false;
-    this.modalFile = {};
-    this.modalImageUrl = '';
-    this.modalImageSrcset = '';
-    this.modalImageSizes = '';
-    this.modalImageAlt = '';
-    this.modalImageDimensions = '';
-    this.modalImageFilesize = '';
-    this.modalImageTitle = '';
-    this.modalImageDescription = '';
-    this.modalImagePrompt = '';
+    clearBodyLocks();
+
+    // Then schedule the cleanup
+    this.modalCloseTimeout = setTimeout(() => {
+      if (!this.modalOpen) {  // Only clear if still closed
+        Object.assign(this, {
+          modalFile: {},
+          modalImageUrl: '',
+          modalImageSrcset: '',
+          modalImageSizes: '',
+          modalImageAlt: '',
+          modalImageDimensions: '',
+          modalImageFilesize: '',
+          modalImageTitle: '',
+          modalImageDescription: '',
+          modalImagePrompt: ''
+        });
+      }
+      this.modalCloseTimeout = null;  // Clear timeout reference
+    }, 350);
   },
   async modalNext() {
     if (this.modalFile.loadMore) {

@@ -16,10 +16,10 @@
 	<meta name="msapplication-TileColor" content="#9f00a7">
 	<meta name="theme-color" content="#ffffff">
 
-	<script defer src="/scripts/dist/account-v2.js?v=18658d007bff61ab860ae8fc41ec375a"></script>
+	<script defer src="/scripts/dist/account-v2.js?v=39f1e3d9abd2d96a50b0f9afe270bd01"></script>
 	<link href="/scripts/dist/account-v2.css?v=5ecc26aa69603a0fc007bf24b7636047" rel="stylesheet">
 
-	<link href="/styles/twbuild.css?v=72e8d1466a323bd871d07f0033060419" rel="stylesheet">
+	<link href="/styles/twbuild.css?v=e483fd9aa6a41b7e4282649a40f1de04" rel="stylesheet">
 
 	<!-- Pre-connect and DNS prefetch -->
 	<link rel="preconnect" href="https://i.nostr.build" crossorigin>
@@ -2680,13 +2680,18 @@ onDropCB(event) {
 							const diffY = this.startY - currentY;
 
 							if (Math.abs(diffX) > 125 || Math.abs(diffY) > 125) {
+								const horizontal = Math.abs(diffX) > Math.abs(diffY);
 								const diff = Math.abs(diffX) > Math.abs(diffY) ? diffX : diffY;
 								const fast = timeTaken < 200;
 								if (fast) {
 									if (diff > 0) {
 										await fileStore.modalNext();
 									} else {
-										await fileStore.modalPrevious();
+										if (horizontal) {
+											await fileStore.modalPrevious();
+										} else {
+											await fileStore.closeModal();
+										}
 									}
 								} else {
 									this.showControls = !this.showControls;
@@ -2720,10 +2725,10 @@ onDropCB(event) {
 								
 								this.scrollTimeout = setTimeout(async () => {
 									if (event.deltaY < 0) {
-										// Up
-										await fileStore.modalPrevious();
-									} else if (event.deltaY > 0) {
 										// Down
+										await fileStore.closeModal();
+									} else if (event.deltaY > 0) {
+										// Up
 										await fileStore.modalNext();
 									}
 								}, 150);
@@ -2771,33 +2776,34 @@ onDropCB(event) {
 							:alt="fileStore.modalImageAlt"
 							class="w-dvh h-full max-w-full max-h-[80svh] landscape:max-h-svh xl:landscape:max-h-[80svh] object-contain mx-auto">
 					</template>
+					<!-- Video -->
 					<template x-if="fileStore.modalFile.media_type === 'video'">
 						<div class="relative w-full h-full flex items-center justify-center" @mouseenter="handleMouseEnter"
 							@mouseleave="handleMouseLeave">
-							<video crossorigin="use-credentials"
-								x-effect="fileStore.modalFile.mime?.startsWith('video/') ? ($el.load() && $el.play()) : true"
-								x-init="fileStore.modalOpen ? $el.load() : $el.pause()" loop :controls="showControls" playsinline
-								preload="auto" @loadedmetadata="fileStore.modalOpen && $nextTick(() => {$el.play()})"
-								class="w-dvh h-full max-w-full max-h-[80svh] landscape:max-h-svh xl:landscape:max-h-[80svh] object-contain mx-auto">
-								<source :src="fileStore.modalFile.url" type="video/mp4">
-								Your browser does not support the video tag.
-							</video>
+							<media-theme-sutro
+								x-effect="fileStore.modalFile.mime?.startsWith('video/') && $refs?.fsVideo ? $refs.fsVideo.load() : $refs?.fsVideo?.pause()"
+								x-init="fileStore.modalOpen && $refs?.fsVideo ? $refs.fsVideo.load() : $refs?.fsVideo?.pause()"
+								class="w-dvh h-full max-w-full max-h-[80svh] landscape:max-h-svh xl:landscape:max-h-[80svh] pt-20 mx-auto">
+								<video slot="media" x-ref="fsVideo" class="w-full h-full max-w-full max-h-full m-auto"
+									:src="fileStore.modalFile.url" :type="fileStore.modalFile.mime"
+									:poster="`${fileStore.modalFile.url}/poster.jpg?_=${Date.now()}`" playsinline loop preload="metadata"
+									crossorigin="use-credentials">
+								</video>
+							</media-theme-sutro>
 						</div>
 					</template>
 					<!-- Audio -->
 					<template x-if="fileStore.modalFile.media_type === 'audio'">
-						<!-- Use video player to play audio files -->
-						<!--
-						<img src="https://cdn.nostr.build/assets/audio/jpg/audio-wave@0.5x.jpg" :alt="fileStore.modalFile.name" class="w-full h-full object-cover">
-						-->
-						<video crossorigin="use-credentials"
-							x-effect="fileStore.modalFile.mime?.startsWith('audio/') ? ($el.load() && $el.play()) : true"
-							x-init="fileStore.modalOpen ? $el.load() : $el.pause()"
-							poster="https://cdn.nostr.build/assets/audio/jpg/audio-wave@0.5x.jpg" controls playsinline preload="auto"
-							@loadedmetadata="fileStore.modalOpen && $nextTick(() => {$el.play()})"
-							class="w-dvh h-full max-w-full max-h-[80svh] landscape:max-h-svh xl:landscape:max-h-[80svh] object-contain mx-auto">
-							<source :src="fileStore.modalFile.url" :type="fileStore.modalFile.mime">
-						</video>
+						<media-theme-sutro-audio :mediatitle="fileStore.modalFile?.title || fileStore.modalFile?.name"
+							x-effect="fileStore.modalFile.mime?.startsWith('audio/') && $refs?.fsAudio ? $refs.fsAudio.load() : $refs?.fsAudio?.pause()"
+							x-init="fileStore.modalOpen && $refs?.fsAudio ? $refs.fsAudio.load() : $refs?.fsAudio?.pause()"
+							class="w-dvh h-fit max-w-full mx-auto pt-20 px-0 sm:px-4">
+							<audio slot="media" x-ref="fsAudio" :src="fileStore.modalFile.url" :type="fileStore.modalFile.mime"
+								playsinline loop preload="metadata" crossorigin="use-credentials">
+							</audio>
+							<img slot="poster" src="https://cdn.nostr.build/assets/audio/jpg/audio-wave@0.5x.jpg"
+								alt="Audio waveform visualization" loading="lazy">
+						</media-theme-sutro-audio>
 					</template>
 					<!-- PDF -->
 					<template
@@ -4802,6 +4808,8 @@ onDropCB(event) {
 
 	</main>
 
+	<script type="module" src="https://cdn.jsdelivr.net/npm/player.style/sutro/+esm"></script>
+	<script type="module" src="https://cdn.jsdelivr.net/npm/player.style/sutro-audio/+esm"></script>
 </body>
 
 </html>
