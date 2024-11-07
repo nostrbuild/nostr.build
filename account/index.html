@@ -2653,6 +2653,68 @@ onDropCB(event) {
 			</div>
 		</div>
 
+		<style>
+			/* Slide in animations (you already have these) */
+			@keyframes slideLeft {
+				from {
+					transform: translateX(100%);
+				}
+
+				to {
+					transform: translateX(0);
+				}
+			}
+
+			@keyframes slideRight {
+				from {
+					transform: translateX(-100%);
+				}
+
+				to {
+					transform: translateX(0);
+				}
+			}
+
+			/* Add these slide out animations */
+			@keyframes slideLeftOut {
+				from {
+					transform: translateX(0);
+				}
+
+				to {
+					transform: translateX(-100%);
+				}
+			}
+
+			@keyframes slideRightOut {
+				from {
+					transform: translateX(0);
+				}
+
+				to {
+					transform: translateX(100%);
+				}
+			}
+
+			/* You already have these classes */
+			.animate-slide-left {
+				animation: slideLeft 0.3s ease-out;
+			}
+
+			.animate-slide-right {
+				animation: slideRight 0.3s ease-out;
+			}
+
+			/* Add these classes */
+			.animate-slide-left-out {
+				animation: slideLeftOut 0.3s ease-out;
+			}
+
+			.animate-slide-right-out {
+				animation: slideRightOut 0.3s ease-out;
+			}
+		</style>
+
 		<!-- Full-screen image Modal -->
 		<div x-cloak x-show="fileStore.modalOpen" x-trap="fileStore.modalOpen"
 			x-transition:enter="transition-opacity ease-linear duration-300" x-transition:enter-start="opacity-0"
@@ -2660,86 +2722,119 @@ onDropCB(event) {
 			x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0"
 			class="fixed z-50 inset-0 overflow-y-auto bg-black" aria-labelledby="modal-title" role="dialog" aria-modal="true">
 			<div x-data="{ 
-      startX: null,
-      startY: null,
-      showControls: false,
-      controlsTimeout: null,
+			startX: null,
+			startY: null,
+			showControls: false,
+			controlsTimeout: null,
 			timeOfTouch: null,
-      handleTouchStart: function(event) {
-				timeOfTouch = new Date().getTime();
-        this.startX = event.touches[0].clientX;
-        this.startY = event.touches[0].clientY;
-      },
-      handleTouchMove: async function(event) {
-        if (!this.startX || !this.startY) return;
+			isLoading: true,
+			currentTransition: 'slide-left',
+			transitionDuration: 300, // Duration in ms matching CSS animation
+			isTransitioning: false,
+			handleMediaStartLoad() {
+				// Only keep loading state for media files
+				this.isLoading = ['image', 'video', 'audio'].includes(fileStore.modalFile.media_type);
+			},
+			handleMediaLoad() {
+				// Small delay to ensure transition is visible even for cached images
+				setTimeout(() => {
+						this.isLoading = false;
+				}, 50);
+			},
+			async handleNext() {
+        if (this.isTransitioning) return;  // Block if transitioning
+        this.isTransitioning = true;
+        this.currentTransition = 'slide-right-out';
+        await new Promise(r => setTimeout(r, 300)).then(async () => {
+					await fileStore.modalNext();
+					this.handleMediaStartLoad();
+					this.currentTransition = 'slide-left';
+				});
+        this.isTransitioning = false;  // Release lock
+			},
+			async handlePrevious() {
+				if (this.isTransitioning) return;  // Block if transitioning
+				this.isTransitioning = true;
+				this.currentTransition = 'slide-left-out';
+				await new Promise(r => setTimeout(r, 300)).then(async () => {
+					await fileStore.modalPrevious();
+					this.handleMediaStartLoad();
+					this.currentTransition = 'slide-right';
+				});
+				this.isTransitioning = false;  // Release lock
+			},
+			handleTouchStart(event) {
+					timeOfTouch = new Date().getTime();
+					this.startX = event.touches[0].clientX;
+					this.startY = event.touches[0].clientY;
+			},
+			handleTouchMove: async function(event) {
+					if (!this.startX || !this.startY || this.isTransitioning) return;
 
-							const timeTaken = new Date().getTime() - timeOfTouch;
-							const currentX = event.touches[0].clientX;
-							const currentY = event.touches[0].clientY;
-							const diffX = this.startX - currentX;
-							const diffY = this.startY - currentY;
+					const timeTaken = new Date().getTime() - timeOfTouch;
+					const currentX = event.touches[0].clientX;
+					const currentY = event.touches[0].clientY;
+					const diffX = this.startX - currentX;
+					const diffY = this.startY - currentY;
 
-							if (Math.abs(diffX) > 125 || Math.abs(diffY) > 125) {
-								const horizontal = Math.abs(diffX) > Math.abs(diffY);
-								const diff = Math.abs(diffX) > Math.abs(diffY) ? diffX : diffY;
-								const fast = timeTaken < 200;
-								if (fast) {
+					if (Math.abs(diffX) > 125 || Math.abs(diffY) > 125) {
+							const horizontal = Math.abs(diffX) > Math.abs(diffY);
+							const diff = Math.abs(diffX) > Math.abs(diffY) ? diffX : diffY;
+							const fast = timeTaken < 200;
+							if (fast) {
 									if (diff > 0) {
-										await fileStore.modalNext();
+											await this.handleNext();
 									} else {
-										if (horizontal) {
-											await fileStore.modalPrevious();
-										} else {
-											await fileStore.closeModal();
-										}
+											if (horizontal) {
+													await this.handlePrevious();
+											} else {
+													await fileStore.closeModal();
+											}
 									}
-								} else {
+							} else {
 									this.showControls = !this.showControls;
 									clearTimeout(this.controlsTimeout);
 									this.controlsTimeout = setTimeout(() => {
-										this.showControls = false;
+											this.showControls = false;
 									}, 1500);
-								}
-
-								this.startX = null;
-								this.startY = null;
 							}
-						},
-						handleTouchEnd: function(event) {
+
 							this.startX = null;
 							this.startY = null;
-						},
-						handleMouseEnter: function() {
-							this.showControls = true;
-						},
-						handleMouseLeave: function() {
-							this.showControls = false;
-						},
-						scrollThreshold: 10,
-						scrollTimeout: null,
-						handleScroll: async function(event) {
-							if (Math.abs(event.deltaY) >= this.scrollThreshold) {
-								if (this.scrollTimeout) {
+					}
+			},
+			handleTouchEnd(event) {
+					this.startX = null;
+					this.startY = null;
+			},
+			handleMouseEnter() {
+					this.showControls = true;
+			},
+			handleMouseLeave() {
+					this.showControls = false;
+			},
+			scrollThreshold: 10,
+			scrollTimeout: null,
+			handleScroll: async function(event) {
+					if (Math.abs(event.deltaY) >= this.scrollThreshold) {
+							if (this.scrollTimeout) {
 									clearTimeout(this.scrollTimeout);
-								}
-								
-								this.scrollTimeout = setTimeout(async () => {
-									if (event.deltaY < 0) {
-										// Down
-										await fileStore.closeModal();
-									} else if (event.deltaY > 0) {
-										// Up
-										await fileStore.modalNext();
-									}
-								}, 150);
 							}
-						}
-					}" @wheel.passive="handleScroll($event)" @keydown.escape="fileStore.closeModal()"
-				@keydown.down="await fileStore.modalNext()" @keydown.right="await fileStore.modalNext()"
-				@keydown.up="await fileStore.modalPrevious()" @keydown.left="await fileStore.modalPrevious()"
-				@touchstart.passive="handleTouchStart(event)" @touchmove.passive="await handleTouchMove(event)"
-				@touchend.passive="handleTouchEnd(event)" class="flex flex-col h-svh">
-				<div class="flex-grow flex items-center justify-center">
+							
+							this.scrollTimeout = setTimeout(async () => {
+									if (event.deltaY < 0) {
+											await fileStore.closeModal();
+									} else if (event.deltaY > 0) {
+											await this.handleNext();
+									}
+							}, 150);
+					}
+			}
+	}" @wheel.passive="handleScroll($event)" @keydown.escape="fileStore.closeModal()" @keydown.down="await handleNext()"
+				@keydown.right="await handleNext()" @keydown.up="await handlePrevious()" @keydown.left="await handlePrevious()"
+				@touchstart.passive="handleTouchStart($event)" @touchmove.passive="await handleTouchMove($event)"
+				@touchend.passive="handleTouchEnd($event)" class="flex flex-col h-svh">
+				<div class="flex-grow flex items-center justify-center relative">
 					<button type="button"
 						class="z-10 absolute top-3 right-3 inline-flex items-center justify-center p-1 bg-black bg-opacity-50 rounded-full text-nbpurple-50 hover:text-nbpurple-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-nbpurple-500"
 						@click="fileStore.closeModal()">
@@ -2749,80 +2844,137 @@ onDropCB(event) {
 								clip-rule="evenodd" />
 						</svg>
 					</button>
-					<!-- Left arrow -->
+
+					<!-- Media Container -->
+					<div :class="{
+							'animate-slide-left': currentTransition === 'slide-left',
+							'animate-slide-right': currentTransition === 'slide-right',
+							'animate-slide-left-out': currentTransition === 'slide-right-out',
+							'animate-slide-right-out': currentTransition === 'slide-left-out'
+						}" class="size-full flex items-center justify-center">
+						<!-- Loading Placeholder with Container -->
+						<div x-show="isLoading" class="relative inset-0 z-10 overflow-hidden">
+							<div class="size-full flex items-center justify-center bg-black/50">
+								<svg class="animate-spin size-12 text-nbpurple-500" xmlns="http://www.w3.org/2000/svg" fill="none"
+									viewBox="0 0 24 24">
+									<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+									<path class="opacity-75" fill="currentColor"
+										d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
+									</path>
+								</svg>
+							</div>
+						</div>
+						<!-- Image -->
+						<template x-if="fileStore.modalFile.media_type === 'image'">
+							<img x-show="!isLoading" :src="fileStore.modalImageUrl" :srcset="fileStore.modalImageSrcset"
+								x-init="handleMediaStartLoad()" :sizes="fileStore.modalImageSizes" :alt="fileStore.modalImageAlt"
+								@load="handleMediaLoad" @error="handleMediaLoad"
+								class="w-dvh h-full max-w-full max-h-[80svh] landscape:max-h-svh xl:landscape:max-h-[80svh] object-contain mx-auto">
+						</template>
+
+						<!-- Video -->
+						<template x-if="fileStore.modalFile.media_type === 'video'">
+							<div x-show="!isLoading" class="relative w-full h-full flex items-center justify-center"
+								@mouseenter="handleMouseEnter" @mouseleave="handleMouseLeave">
+								<media-theme-sutro x-effect="if (fileStore.modalFile.mime?.startsWith('video/') && $refs?.fsVideo) {
+													handleMediaStartLoad();
+													$refs.fsVideo.load();
+													// Listen for events on the video element
+													$refs.fsVideo.addEventListener('loadedmetadata', () => handleMediaLoad());
+													$refs.fsVideo.addEventListener('error', () => handleMediaLoad());
+											} else {
+													$refs?.fsVideo?.pause();
+											}" x-init="if (fileStore.modalOpen && $refs?.fsVideo) {
+													handleMediaStartLoad();
+													$refs.fsVideo.load();
+													// Listen for events on the video element
+													$refs.fsVideo.addEventListener('loadedmetadata', () => handleMediaLoad());
+													$refs.fsVideo.addEventListener('error', () => handleMediaLoad());
+											} else {
+													$refs?.fsVideo?.pause();
+											}" class="w-dvh h-full max-w-full max-h-[80svh] landscape:max-h-svh xl:landscape:max-h-[80svh] pt-20 mx-auto">
+									<video slot="media" x-ref="fsVideo" class="w-full h-full max-w-full max-h-full m-auto"
+										:src="fileStore.modalFile.url" :type="fileStore.modalFile.mime"
+										:poster="`${fileStore.modalFile.url}/poster.jpg?_=${Date.now()}`" playsinline loop
+										preload="metadata" crossorigin="use-credentials">
+									</video>
+								</media-theme-sutro>
+							</div>
+						</template>
+
+						<!-- Audio -->
+						<template x-if="fileStore.modalFile.media_type === 'audio'">
+							<media-theme-sutro-audio x-show="!isLoading"
+								:mediatitle="fileStore.modalFile?.title || fileStore.modalFile?.name" x-effect="if (fileStore.modalFile.mime?.startsWith('audio/') && $refs?.fsAudio) {
+											handleMediaStartLoad();
+											$refs.fsAudio.load();
+											// Listen for events on the audio element
+											$refs.fsAudioPoster.addEventListener('load', () => handleMediaLoad());
+											$refs.fsAudio.addEventListener('loadedmetadata', () => handleMediaLoad());
+											$refs.fsAudio.addEventListener('error', () => handleMediaLoad());
+									} else {
+											$refs?.fsAudio?.pause();
+									}" x-init="if (fileStore.modalOpen && $refs?.fsAudio) {
+											handleMediaStartLoad();
+											$refs.fsAudio.load();
+											// Listen for events on the audio element
+											$refs.fsAudioPoster.addEventListener('load', () => handleMediaLoad());
+											$refs.fsAudio.addEventListener('loadedmetadata', () => handleMediaLoad());
+											$refs.fsAudio.addEventListener('error', () => handleMediaLoad());
+									} else {
+											$refs?.fsAudio?.pause();
+									}" class="w-dvh h-fit max-w-full mx-auto pt-20 px-0 sm:px-4">
+								<audio slot="media" x-ref="fsAudio" :src="fileStore.modalFile.url" :type="fileStore.modalFile.mime"
+									playsinline loop preload="metadata" crossorigin="use-credentials">
+								</audio>
+								<img slot="poster" x-ref="fsAudioPoster"
+									src="https://cdn.nostr.build/assets/audio/jpg/audio-wave@0.5x.jpg" alt="Audio waveform visualization"
+									loading="lazy">
+							</media-theme-sutro-audio>
+						</template>
+
+						<!-- PDF -->
+						<template
+							x-if="fileStore.modalFile.media_type === 'document' && fileStore.modalFile.mime === 'application/pdf'">
+							<iframe x-show="!isLoading" :src="fileStore.modalFile.url" x-init="handleMediaLoad()"
+								class="w-full h-full max-w-full max-h-[80svh] landscape:max-h-svh xl:landscape:max-h-[80svh] object-fill mx-auto">
+							</iframe>
+						</template>
+
+						<!-- SVG -->
+						<template x-if="fileStore.modalFile.media_type === 'other' && fileStore.modalFile.mime === 'image/svg+xml'">
+							<img x-show="!isLoading" :src="fileStore.modalFile.url" x-init="handleMediaLoad()"
+								class="w-dvh h-full max-w-full max-h-[80svh] landscape:max-h-svh xl:landscape:max-h-[80svh] object-contain mx-auto">
+						</template>
+
+						<!-- All other types -->
+						<template
+							x-if="fileStore.modalFile && !['image', 'video', 'audio'].includes(fileStore.modalFile?.media_type) && !fileStore.modalFile?.mime?.startsWith('application/pdf') && !fileStore.modalFile?.mime?.startsWith('image/svg+xml')">
+							<div x-show="!isLoading" class="flex items-center justify-center h-full" x-init="handleMediaLoad()">
+								x-html="getIconByMime(fileStore.modalFile.mime, 'size-1/2 text-nbpurple-300', 2, true)">
+							</div>
+						</template>
+					</div>
+
+					<!-- Navigation Buttons -->
 					<button type="button"
 						class="z-10 absolute left-3 top-1/2 transform -translate-y-1/2 md:inline-flex items-center justify-center p-1 bg-black bg-opacity-50 rounded-full text-nbpurple-50 hover:text-nbpurple-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-nbpurple-500 hidden xl:block"
-						@click="await fileStore.modalPrevious()">
+						@click="await handlePrevious()">
 						<svg class="h-8 w-8" viewBox="0 0 20 20" fill="currentColor">
 							<path fill-rule="evenodd"
 								d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z"
 								clip-rule="evenodd" />
 						</svg>
 					</button>
-					<!-- Right arrow -->
 					<button type="button"
 						class="z-10 absolute right-3 top-1/2 transform -translate-y-1/2 md:inline-flex items-center justify-center p-1 bg-black bg-opacity-50 rounded-full text-nbpurple-50 hover:text-nbpurple-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-nbpurple-500 hidden xl:block"
-						@click="await fileStore.modalNext()">
+						@click="await handleNext()">
 						<svg class="h-8 w-8" viewBox="0 0 20 20" fill="currentColor">
 							<path fill-rule="evenodd"
 								d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z"
 								clip-rule="evenodd" />
 						</svg>
 					</button>
-					<!-- Image -->
-					<!-- Progressive load of media is handled by the next/prev functions -->
-					<template x-if="fileStore.modalFile.media_type === 'image'">
-						<img :src="fileStore.modalImageUrl" :srcset="fileStore.modalImageSrcset" :sizes="fileStore.modalImageSizes"
-							:alt="fileStore.modalImageAlt"
-							class="w-dvh h-full max-w-full max-h-[80svh] landscape:max-h-svh xl:landscape:max-h-[80svh] object-contain mx-auto">
-					</template>
-					<!-- Video -->
-					<template x-if="fileStore.modalFile.media_type === 'video'">
-						<div class="relative w-full h-full flex items-center justify-center" @mouseenter="handleMouseEnter"
-							@mouseleave="handleMouseLeave">
-							<media-theme-sutro
-								x-effect="fileStore.modalFile.mime?.startsWith('video/') && $refs?.fsVideo ? $refs.fsVideo.load() : $refs?.fsVideo?.pause()"
-								x-init="fileStore.modalOpen && $refs?.fsVideo ? $refs.fsVideo.load() : $refs?.fsVideo?.pause()"
-								class="w-dvh h-full max-w-full max-h-[80svh] landscape:max-h-svh xl:landscape:max-h-[80svh] pt-20 mx-auto">
-								<video slot="media" x-ref="fsVideo" class="w-full h-full max-w-full max-h-full m-auto"
-									:src="fileStore.modalFile.url" :type="fileStore.modalFile.mime"
-									:poster="`${fileStore.modalFile.url}/poster.jpg?_=${Date.now()}`" playsinline loop preload="metadata"
-									crossorigin="use-credentials">
-								</video>
-							</media-theme-sutro>
-						</div>
-					</template>
-					<!-- Audio -->
-					<template x-if="fileStore.modalFile.media_type === 'audio'">
-						<media-theme-sutro-audio :mediatitle="fileStore.modalFile?.title || fileStore.modalFile?.name"
-							x-effect="fileStore.modalFile.mime?.startsWith('audio/') && $refs?.fsAudio ? $refs.fsAudio.load() : $refs?.fsAudio?.pause()"
-							x-init="fileStore.modalOpen && $refs?.fsAudio ? $refs.fsAudio.load() : $refs?.fsAudio?.pause()"
-							class="w-dvh h-fit max-w-full mx-auto pt-20 px-0 sm:px-4">
-							<audio slot="media" x-ref="fsAudio" :src="fileStore.modalFile.url" :type="fileStore.modalFile.mime"
-								playsinline loop preload="metadata" crossorigin="use-credentials">
-							</audio>
-							<img slot="poster" src="https://cdn.nostr.build/assets/audio/jpg/audio-wave@0.5x.jpg"
-								alt="Audio waveform visualization" loading="lazy">
-						</media-theme-sutro-audio>
-					</template>
-					<!-- PDF -->
-					<template
-						x-if="fileStore.modalFile.media_type === 'document' && fileStore.modalFile.mime === 'application/pdf'">
-						<iframe :src="fileStore.modalFile.url"
-							class="w-full h-full max-w-full max-h-[80svh] landscape:max-h-svh xl:landscape:max-h-[80svh] object-fill mx-auto"></iframe>
-					</template>
-					<!-- SVG -->
-					<template x-if="fileStore.modalFile.media_type === 'other' && fileStore.modalFile.mime === 'image/svg+xml'">
-						<img :src="fileStore.modalFile.url"
-							class="w-dvh h-full max-w-full max-h-[80svh] landscape:max-h-svh xl:landscape:max-h-[80svh] object-contain mx-auto">
-					</template>
-					<!-- All other types -->
-					<template
-						x-if="fileStore.modalFile && !['image', 'video', 'audio'].includes(fileStore.modalFile?.media_type) && !fileStore.modalFile?.mime?.startsWith('application/pdf') && !fileStore.modalFile?.mime?.startsWith('image/svg+xml')">
-						<div class="flex items-center justify-center h-full"
-							x-html="getIconByMime(fileStore.modalFile.mime, 'size-1/2 text-nbpurple-300', 2, true)">
-						</div>
-					</template>
 				</div>
 				<div class="bg-black/50 px-4 py-3 sm:px-6 overflow-y-auto landscape:hidden xl:landscape:block">
 					<div class="flex justify-between items-center">
@@ -2881,7 +3033,7 @@ onDropCB(event) {
 									this.currentFile = fileStore.modalFile;
 							}
 					}
-			}" x-init="updateCurrentFile(); $watch('fileStore.modalFile', () => updateCurrentFile())"
+				}" x-init="updateCurrentFile(); $watch('fileStore.modalFile', () => updateCurrentFile())"
 					class="absolute inset-0 top-0 h-[10%] object-contain bg-black/80 z-[8] flex flex-col">
 					<div class="m-auto w-[80%] grid gap-1 grid-cols-5 place-items-center">
 						<!-- Buttons -->
