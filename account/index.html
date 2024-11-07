@@ -2731,9 +2731,14 @@ onDropCB(event) {
 			currentTransition: 'slide-left',
 			transitionDuration: 300, // Duration in ms matching CSS animation
 			isTransitioning: false,
+			currentMediaId: null,
 			handleMediaStartLoad() {
-				// Only keep loading state for media files
-				this.isLoading = ['image', 'video', 'audio'].includes(fileStore.modalFile.media_type);
+				// Check if the current media id has changed
+				if (this.currentMediaId !== fileStore.modalFile.id) {
+					this.currentMediaId = fileStore.modalFile.id;
+					// Only keep loading state for media files
+					this.isLoading = ['image', 'video', 'audio'].includes(fileStore.modalFile.media_type);
+				}
 			},
 			handleMediaLoad() {
 				// Small delay to ensure transition is visible even for cached images
