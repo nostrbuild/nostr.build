@@ -16,7 +16,7 @@
 	<meta name="msapplication-TileColor" content="#9f00a7">
 	<meta name="theme-color" content="#ffffff">
 
-	<script defer src="/scripts/dist/account-v2.js?v=39f1e3d9abd2d96a50b0f9afe270bd01"></script>
+	<script defer src="/scripts/dist/account-v2.js?v=6c12a887bc55c4fc0a0c98c43b0d8221"></script>
 	<link href="/scripts/dist/account-v2.css?v=5ecc26aa69603a0fc007bf24b7636047" rel="stylesheet">
 
 	<link href="/styles/twbuild.css?v=e483fd9aa6a41b7e4282649a40f1de04" rel="stylesheet">
@@ -2679,20 +2679,24 @@ onDropCB(event) {
 			@keyframes slideLeftOut {
 				from {
 					transform: translateX(0);
+					opacity: 1;
 				}
 
 				to {
 					transform: translateX(-100%);
+					opacity: 0;
 				}
 			}
 
 			@keyframes slideRightOut {
 				from {
 					transform: translateX(0);
+					opacity: 1;
 				}
 
 				to {
 					transform: translateX(100%);
+					opacity: 0;
 				}
 			}
 
@@ -2732,12 +2736,13 @@ onDropCB(event) {
 			transitionDuration: 300, // Duration in ms matching CSS animation
 			isTransitioning: false,
 			currentMediaId: null,
-			handleMediaStartLoad() {
+			handleMediaStartLoad(target=null) {
 				// Check if the current media id has changed
 				if (this.currentMediaId !== fileStore.modalFile.id) {
 					this.currentMediaId = fileStore.modalFile.id;
 					// Only keep loading state for media files
-					this.isLoading = ['image', 'video', 'audio'].includes(fileStore.modalFile.media_type);
+					const targetFile = target || fileStore.modalFile;
+					this.isLoading = ['image', 'video', 'audio'].includes(targetFile.media_type);
 				}
 			},
 			handleMediaLoad() {
@@ -2747,25 +2752,23 @@ onDropCB(event) {
 				}, 50);
 			},
 			async handleNext() {
-        if (this.isTransitioning) return;  // Block if transitioning
-        this.isTransitioning = true;
-        this.currentTransition = 'slide-right-out';
-        await new Promise(r => setTimeout(r, 300)).then(async () => {
-					await fileStore.modalNext();
-					this.handleMediaStartLoad();
-					this.currentTransition = 'slide-left';
-				});
-        this.isTransitioning = false;  // Release lock
+				if (this.isTransitioning) return;  // Block if transitioning
+				this.isTransitioning = true;
+				this.currentTransition = 'slide-right-out';
+				await new Promise(r => setTimeout(r, 250));
+				this.handleMediaStartLoad(fileStore.modalFileNext);
+				await fileStore.modalNext();
+				this.currentTransition = 'slide-left';
+				this.isTransitioning = false;  // Release lock
 			},
 			async handlePrevious() {
 				if (this.isTransitioning) return;  // Block if transitioning
 				this.isTransitioning = true;
 				this.currentTransition = 'slide-left-out';
-				await new Promise(r => setTimeout(r, 300)).then(async () => {
-					await fileStore.modalPrevious();
-					this.handleMediaStartLoad();
-					this.currentTransition = 'slide-right';
-				});
+				await new Promise(r => setTimeout(r, 250));
+				this.handleMediaStartLoad(fileStore.modalFilePrevious);
+				await fileStore.modalPrevious();
+				this.currentTransition = 'slide-right';
 				this.isTransitioning = false;  // Release lock
 			},
 			handleTouchStart(event) {
@@ -2871,9 +2874,17 @@ onDropCB(event) {
 						</div>
 						<!-- Image -->
 						<template x-if="fileStore.modalFile.media_type === 'image'">
-							<img x-show="!isLoading" :src="fileStore.modalImageUrl" :srcset="fileStore.modalImageSrcset"
-								x-init="handleMediaStartLoad()" :sizes="fileStore.modalImageSizes" :alt="fileStore.modalImageAlt"
-								@load="handleMediaLoad" @error="handleMediaLoad"
+							<img x-show="!isLoading" x-init="
+									$el.srcset = fileStore.modalImageSrcset;
+									$el.sizes = fileStore.modalImageSizes;
+									$el.src = fileStore.modalImageUrl;
+								" x-effect="
+									if (fileStore.modalFile.id) {
+										$el.srcset = fileStore.modalImageSrcset;
+										$el.sizes = fileStore.modalImageSizes;
+										$el.src = fileStore.modalImageUrl;
+									}
+								" @load="$nextTick(()=>handleMediaLoad())" @error="handleMediaLoad"
 								class="w-dvh h-full max-w-full max-h-[80svh] landscape:max-h-svh xl:landscape:max-h-[80svh] object-contain mx-auto">
 						</template>
 
@@ -2882,7 +2893,6 @@ onDropCB(event) {
 							<div x-show="!isLoading" class="relative w-full h-full flex items-center justify-center"
 								@mouseenter="handleMouseEnter" @mouseleave="handleMouseLeave">
 								<media-theme-sutro x-effect="if (fileStore.modalFile.mime?.startsWith('video/') && $refs?.fsVideo) {
-													handleMediaStartLoad();
 													$refs.fsVideo.load();
 													// Listen for events on the video element
 													$refs.fsVideo.addEventListener('loadedmetadata', () => handleMediaLoad());
@@ -2890,7 +2900,6 @@ onDropCB(event) {
 											} else {
 													$refs?.fsVideo?.pause();
 											}" x-init="if (fileStore.modalOpen && $refs?.fsVideo) {
-													handleMediaStartLoad();
 													$refs.fsVideo.load();
 													// Listen for events on the video element
 													$refs.fsVideo.addEventListener('loadedmetadata', () => handleMediaLoad());
@@ -2911,7 +2920,6 @@ onDropCB(event) {
 						<template x-if="fileStore.modalFile.media_type === 'audio'">
 							<media-theme-sutro-audio x-show="!isLoading"
 								:mediatitle="fileStore.modalFile?.title || fileStore.modalFile?.name" x-effect="if (fileStore.modalFile.mime?.startsWith('audio/') && $refs?.fsAudio) {
-											handleMediaStartLoad();
 											$refs.fsAudio.load();
 											// Listen for events on the audio element
 											$refs.fsAudioPoster.addEventListener('load', () => handleMediaLoad());
@@ -2920,7 +2928,6 @@ onDropCB(event) {
 									} else {
 											$refs?.fsAudio?.pause();
 									}" x-init="if (fileStore.modalOpen && $refs?.fsAudio) {
-											handleMediaStartLoad();
 											$refs.fsAudio.load();
 											// Listen for events on the audio element
 											$refs.fsAudioPoster.addEventListener('load', () => handleMediaLoad());

@@ -2482,6 +2482,8 @@ Alpine.store('fileStore', {
     this.files.unshift(file);
   },
   modalFile: {},
+  modalFileNext: {},
+  modalFilePrevious: {},
   modalOpen: false,
   modalImageUrl: '',
   modalImageSrcset: '',
@@ -2493,23 +2495,24 @@ Alpine.store('fileStore', {
   modalImageDescription: '',
   modalImagePrompt: '',
   modalCloseTimeout: null,
+
   openModal(file) {
     // Clear any pending timeout
     if (this.modalCloseTimeout) {
       clearTimeout(this.modalCloseTimeout);
       this.modalCloseTimeout = null;  // Reset timeout reference
     }
-
     // Set modal content before opening to prevent flashing
-    this.updateModal(file);
-
+    this.updateModalWithAdjacent(file);
     // Lock body scroll and open modal
     lock();
     this.modalOpen = true;
   },
-  updateModal(file) {
+
+  async updateModalWithAdjacent(file) {
     if (!file) return;  // Guard clause
 
+    // First update the current file's content
     const {
       url, srcset, sizes, title, name, width, height,
       size, description, ai_prompt
@@ -2527,6 +2530,22 @@ Alpine.store('fileStore', {
       modalImageDescription: description || '',
       modalImagePrompt: ai_prompt || ''
     });
+
+    // Then handle adjacent files with loadMore consideration
+    const nextFile = await this.getNextFileWithLoading(file, false);
+    const prevFile = await this.getNextFileWithLoading(file, true);
+
+    this.modalFileNext = nextFile;
+    this.modalFilePrevious = prevFile;
+  },
+
+  async getNextFileWithLoading(file, reverse) {
+    let nextFile = this.getNextFile(file, reverse);
+    if (nextFile.loadMore) {
+      await this.loadMoreFiles();
+      nextFile = this.getNextFile(file, reverse);
+    }
+    return nextFile;
   },
 
   closeModal() {
@@ -2535,16 +2554,16 @@ Alpine.store('fileStore', {
       clearTimeout(this.modalCloseTimeout);
       this.modalCloseTimeout = null;
     }
-
     // Close modal first
     this.modalOpen = false;
     clearBodyLocks();
-
     // Then schedule the cleanup
     this.modalCloseTimeout = setTimeout(() => {
       if (!this.modalOpen) {  // Only clear if still closed
         Object.assign(this, {
           modalFile: {},
+          modalFileNext: {},
+          modalFilePrevious: {},
           modalImageUrl: '',
           modalImageSrcset: '',
           modalImageSizes: '',
@@ -2559,26 +2578,20 @@ Alpine.store('fileStore', {
       this.modalCloseTimeout = null;  // Clear timeout reference
     }, 350);
   },
+
   async modalNext() {
-    if (this.modalFile.loadMore) {
-      // Try fetching more files
-      await this.loadMoreFiles();
-    }
-    const nextFile = this.getNextFile(this.modalFile);
-    this.updateModal(nextFile);
+    const nextFile = await this.getNextFileWithLoading(this.modalFile, false);
+    this.updateModalWithAdjacent(nextFile);
   },
+
   async modalPrevious() {
-    if (this.modalFile.loadMore) {
-      // Try fetching more files
-      await this.loadMoreFiles();
-    }
-    const previousFile = this.getNextFile(this.modalFile, true);
-    this.updateModal(previousFile);
+    const previousFile = await this.getNextFileWithLoading(this.modalFile, true);
+    this.updateModalWithAdjacent(previousFile);
   },
+
   getNextFile(file, reverse) {
     // Return a file object based on the current file and direction
     const currentIndex = this.files.findIndex(f => f.id === file.id);
-
     let nextIndex;
     if (reverse) {
       // If going in reverse direction
@@ -2595,7 +2608,6 @@ Alpine.store('fileStore', {
         nextIndex = 0;
       }
     }
-
     const nextFile = this.files[nextIndex];
     return nextFile || file;
   },
