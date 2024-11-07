@@ -2875,6 +2875,7 @@ onDropCB(event) {
 						<!-- Image -->
 						<template x-if="fileStore.modalFile.media_type === 'image'">
 							<img x-show="!isLoading" x-init="
+									handleMediaStartLoad();
 									$el.srcset = fileStore.modalImageSrcset;
 									$el.sizes = fileStore.modalImageSizes;
 									$el.src = fileStore.modalImageUrl;
