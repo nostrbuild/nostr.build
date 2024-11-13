@@ -4,6 +4,13 @@ require_once($_SERVER['DOCUMENT_ROOT'] . '/config.php');
 require_once($_SERVER['DOCUMENT_ROOT'] . '/libs/S3Service.class.php');
 require_once($_SERVER['DOCUMENT_ROOT'] . '/libs/MultimediaUpload.class.php');
 
+// Check User Agent and only allow iOS legacy Damus app to upload files
+if (!isset($_SERVER['HTTP_USER_AGENT']) || strpos($_SERVER['HTTP_USER_AGENT'], 'damus/8') === false) {
+  http_response_code(403);
+  echo json_encode("Forbidden");
+  exit();
+}
+
 // TODO: Migrate to a new APIv2 (still in development)
 global $awsConfig;
 // Instantiates S3Service class
