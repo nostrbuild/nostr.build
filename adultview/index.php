@@ -12,9 +12,9 @@ global $link;
 // Create new Permission object
 $perm = new Permission();
 
-// Check if the user is not logged in, if not then redirect him to login page
-if (!$perm->validatePermissionsLevelAny(1, 2, 3, 4, 10) && !$perm->hasPrivilege('canModerate') && !$perm->isAdmin()) {
-	header("location: /login");
+// Check if the user is not logged in, if not then redirect them to viewall page
+if (!$perm->isAdmin()) {
+	header("location: /viewall/");
 	// PERSIST: $link->close();
 	exit;
 }
