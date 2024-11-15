@@ -284,12 +284,13 @@ $app->group('/account', function (RouteCollectorProxy $group) {
       } else {
         // If the user did not submit a DM code, send a DM to the user
         // Generate random secure string and send it in a DM to the user
-        $dmCode = base64_encode(random_bytes(32));
+        $dmCode = base64_encode(random_bytes(16)); // 16 bytes is sufficient for this use case
+        $dmCodeUrl = 'https://' . $_SERVER['HTTP_HOST'] . '/login?n=' . urlencode($npub) . '&c=' . urlencode($dmCode);
         $_SESSION['timed_dm_code']['code'] = $dmCode;
         $_SESSION['timed_dm_code']['expires'] = time() + 300 + 10; // 5 minutes + 10 seconds
         try {
           $nc = new NostrClient($_SERVER['NB_API_NOSTR_CLIENT_SECRET'], $_SERVER['NB_API_NOSTR_CLIENT_URL']);
-          if (!$nc->sendDm($npub, ['Your temporary login code is:', $dmCode], true)) {
+          if (!$nc->sendDm($npub, ['Your temporary login code and URL is:', $dmCode, $dmCodeUrl], true)) {
             throw new Exception('Error sending DM');
           }
         } catch (\Exception $e) {

@@ -226,9 +226,17 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         </div>
     </main>
     <?php include $_SERVER['DOCUMENT_ROOT'] . '/components/footer.php'; ?>
-    <script src="/scripts/dist/login.js?v=c5911c3ac8e971933615be7ec1329802"></script>
+    <script src="/scripts/dist/login.js?v=d106bdee707afc089ef021d9735254e1"></script>
     <script>
         document.addEventListener('DOMContentLoaded', (event) => {
+            // Check for the existance of n and c URL parameters and execute loginWithDMLink function if they exist
+            const urlParams = new URLSearchParams(window.location.search);
+            const n = urlParams.get('n');
+            const c = urlParams.get('c');
+            if (n?.length && c?.length) {
+                loginWithDMLink(window.location.origin + "/api/v2/account/login");
+            }
+
             let closeButton = document.querySelector(".close");
             if (closeButton) {
                 closeButton.addEventListener("click", () => {

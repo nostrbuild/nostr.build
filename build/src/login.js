@@ -41,6 +41,37 @@ import { nip98 } from 'nostr-tools'
     }
   }
 
+  async function loginWithDMLink(verifyApiURL) {
+    // Get the npub and dmCode from the URL
+    const url = new URL(window.location.href);
+    const npub = url.searchParams.get('n');
+    const dmCode = url.searchParams.get('c');
+    if (!npub || !dmCode) {
+      alert('Invalid URL');
+      return;
+    }
+    // Submit the POST request to the verfy url with dmCode as a form data field "dmCode"
+    await fetch(verifyApiURL, {
+      method: 'POST', // Specifies the request method
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: new URLSearchParams({
+        'npub': npub,
+        'dm_code': dmCode,
+      }),
+    }).then((response) => {
+      if (response.ok) {
+        const redirectUrl = `${window.location.origin}/account/`;
+        window.location.href = redirectUrl;
+      } else {
+        alert('Error verifying npub');
+      }
+    }).catch((e) => {
+      console.log(e);
+    })
+  }
+
   async function loginWithDM(verifyApiURL, triggerButton, dmCodeInput, npubInput, passwordInput, enableNostrLoginCheckbox, loginButton) {
     if (!global.triggerButtonValue) {
       global.triggerButtonValue = triggerButton.value;
@@ -198,4 +229,5 @@ import { nip98 } from 'nostr-tools'
   // Expose to global scope
   global.loginWithNip07 = loginWithNip07;
   global.loginWithDM = loginWithDM;
+  global.loginWithDMLink = loginWithDMLink;
 })(window);
