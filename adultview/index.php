@@ -69,7 +69,7 @@ $morePages = $result->num_rows > $perpage ? true : false;
 	<link rel="stylesheet" href="/styles/index.css?v=290253d31f2fde0932483cb54581766b" />
 	<link rel="stylesheet" href="/styles/profile.css?v=ded26f9ac31e7492f67e6da9c95a14e2" />
 	<link rel="stylesheet" href="/styles/header.css?v=19cde718a50bd676387bbe7e9e24c639" />
-	<link rel="stylesheet" href="/styles/twbuild.css?v=e483fd9aa6a41b7e4282649a40f1de04" />
+	<link rel="stylesheet" href="/styles/twbuild.css?v=a679f67e7cbdd5fad018e7b3c4928394" />
 
 	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/lightgallery/2.7.2/css/lightgallery-bundle.min.css" integrity="sha512-nUqPe0+ak577sKSMThGcKJauRI7ENhKC2FQAOOmdyCYSrUh0GnwLsZNYqwilpMmplN+3nO3zso8CWUgu33BDag==" crossorigin="anonymous" referrerpolicy="no-referrer" />
 
@@ -88,6 +88,7 @@ $morePages = $result->num_rows > $perpage ? true : false;
 	<script>
 		document.addEventListener("DOMContentLoaded", function() {
 			lightGallery(document.getElementById('lightgallery'), {
+				selector: '[data-src]:not(.button-container *)',
 				plugins: [lgZoom, lgThumbnail, lgAutoplay, lgFullscreen, lgHash, /*lgPager, lgShare,*/ lgVideo /*, lgMediumZoom*/ ],
 				speed: 500,
 				thumbnail: true,
@@ -182,6 +183,7 @@ $morePages = $result->num_rows > $perpage ? true : false;
 		<div id="lightgallery" class="gap-2 columns-2 md:columns-3 lg:columns-4 xl:columns-6 w-screen px-2 md:px-4">
 			<?php while ($row = $result->fetch_assoc()) : ?>
 				<?php
+				$fileId = $row['id'];
 				$filename = $row['filename'];
 				$ext = pathinfo($filename, PATHINFO_EXTENSION);
 				$thumbnail_path = htmlspecialchars(SiteConfig::getThumbnailUrl($view_type === 'vid' ? 'video' : 'image') . $filename);
@@ -273,7 +275,7 @@ $morePages = $result->num_rows > $perpage ? true : false;
 					default => 'data-responsive="' . $srcset . '" data-src="' . $full_path . '"',
 				};
 				?>
-				<div class="relative group break-inside-avoid" <?= $lgSrc ?>>
+				<div class="relative group break-inside-avoid image-container" <?= $lgSrc ?>>
 					<a href="<?= $full_path ?>" target="_blank" rel="noopener noreferrer">
 						<?php if ($view_type === 'vid') : ?>
 							<!-- A video poster is required for lightgallery to work -->
@@ -291,6 +293,53 @@ $morePages = $result->num_rows > $perpage ? true : false;
 							</div>
 						<?php endif; ?>
 					</a>
+					<?php if ($perm->isAdmin()): ?>
+						<div class="text-white rounded-sm py-2 px-1 button-container">
+							<form action="/account/admin/change_status.php" method="post">
+								<input type="hidden" name="id" value="<?= $fileId ?>">
+								<div class="flex justify-center">
+									<div class="inline-flex rounded-md shadow-sm" role="group">
+										<button
+											type="button"
+											name="status"
+											value="approved"
+											class="px-1 py-0.5 text-xs font-medium text-white bg-green-600 border border-green-600 rounded-l-lg hover:bg-green-700 focus:ring-2 focus:ring-green-500 focus:ring-offset-2">
+											F/P
+										</button>
+										<button
+											type="button"
+											name="status"
+											value="adult"
+											class="px-1 py-0.5 text-xs font-medium text-white bg-yellow-500 border-t border-b border-yellow-500 hover:bg-yellow-600 focus:ring-2 focus:ring-yellow-500 focus:ring-offset-2">
+											Adult
+										</button>
+										<button
+											type="button"
+											name="status"
+											value="rejected"
+											class="px-1 py-0.5 text-xs font-medium text-white bg-red-600 border border-red-600 hover:bg-red-700 focus:ring-2 focus:ring-red-500 focus:ring-offset-2">
+											Flag
+										</button>
+										<!-- Admin only buttons -->
+										<button
+											type="button"
+											name="status"
+											value="csam"
+											class="px-1 py-0.5 text-xs font-medium text-white bg-yellow-500 border border-yellow-500 hover:bg-yellow-600 focus:ring-2 focus:ring-yellow-500 focus:ring-offset-2">
+											CSAM
+										</button>
+										<button
+											type="button"
+											name="status"
+											value="ban"
+											class="px-1 py-0.5 text-xs font-medium text-white bg-red-600 border border-red-600 rounded-r-lg hover:bg-red-700 focus:ring-2 focus:ring-red-500 focus:ring-offset-2">
+											Ban
+										</button>
+									</div>
+								</div>
+							</form>
+						</div>
+					<?php endif; ?>
 				</div>
 			<?php endwhile; ?>
 		</div>
@@ -300,6 +349,58 @@ $morePages = $result->num_rows > $perpage ? true : false;
 	</main>
 	<?= handle_pagination($morePages, (int)$page, $perpage, '?k=' . $view_type . '&p=') ?>
 	<?php include $_SERVER['DOCUMENT_ROOT'] . '/components/footer.php'; ?>
+	<?php if ($perm->isAdmin()): ?>
+		<script>
+			document.addEventListener('DOMContentLoaded', function() {
+				// Handle status button clicks
+				document.querySelectorAll('button[name="status"]').forEach(function(button) {
+					button.addEventListener('click', function(e) {
+						e.preventDefault();
+						e.stopPropagation();
+						const form = button.closest('form');
+						const id = form.querySelector('input[name="id"]').value;
+						const status = button.value;
+
+						// Confirmation messages based on action
+						const confirmMessages = {
+							adult: 'Are you sure you want to set this media as Adult?',
+							rejected: 'Are you sure you want to set this media as Rejected and premanently delete it with no ability to re-upload?',
+							approved: 'Are you sure you want to approve this media?',
+							ban: 'Are you sure you want to ban this user and delete this file?',
+							csam: 'Are you sure you want to set this media as CSAM and premanently delete it with no ability to re-upload?'
+						};
+
+						// Show confirmation dialog
+						if (window.confirm(confirmMessages[status] || 'Are you sure?')) {
+							const reportForm = new FormData();
+							reportForm.append('id', id);
+							reportForm.append('status', status);
+							// Submit the request
+							fetch('/account/admin/change_status.php', {
+									method: 'POST',
+									body: reportForm
+								})
+								.then(response => response.json())
+								.then(data => {
+									console.log(data);
+									if (data.success) {
+										// Handle successful status change
+										// Remove the entire form/container if it's a deletion action
+										form.closest('.image-container')?.remove();
+									} else {
+										alert('Error: ' + (data.error || 'Something went wrong'));
+									}
+								})
+								.catch(error => {
+									alert('Error processing request');
+									console.error('Error:', error);
+								});
+						}
+					});
+				});
+			});
+		</script>
+	<?php endif; ?>
 </body>
 
 </html>
