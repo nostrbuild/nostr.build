@@ -354,12 +354,14 @@ class Plans
         $plan->priceInt3y = $plan->priceInt3y * (1 - $globalPromotionDiscount['promotion_percentage'] / 100);
         $plan->price3y = number_format($plan->priceInt3y, 0, '.', ',');
         // Update fullPrice as well
+        /* BROKEN
         $plan->fullPriceInt = $plan->fullPriceInt * (1 - $globalPromotionDiscount['promotion_percentage'] / 100);
         $plan->fullPrice = number_format($plan->fullPriceInt, 0, '.', ',');
         $plan->full2yPriceInt = $plan->full2yPriceInt * (1 - $globalPromotionDiscount['promotion_percentage'] / 100);
         $plan->full2yPrice = number_format($plan->full2yPriceInt, 0, '.', ',');
         $plan->full3yPriceInt = $plan->full3yPriceInt * (1 - $globalPromotionDiscount['promotion_percentage'] / 100);
         $plan->full3yPrice = number_format($plan->full3yPriceInt, 0, '.', ',');
+        */
         // Prepend the promotion to the features with the end date
         array_unshift($plan->features, "<span class=\"promotion_text\">Save {$globalPromotionDiscount['promotion_percentage']}% with {$globalPromotionDiscount['promotion_name']}!</span>");
         // Indicate that there is a promotion
