@@ -495,7 +495,7 @@ Alpine.store('profileStore', {
       return this.accountExpired ? 'Expired' : 'Active';
     },
     get accountEligibleForRenewal() {
-      return this.remainingDays <= 30;
+      return this.remainingDays <= 180;
     },
     get accountEligibleForUpgrade() {
       return this.accountLevel < 10 || this.accountLevel === 89;

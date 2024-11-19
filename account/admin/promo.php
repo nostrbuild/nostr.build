@@ -29,6 +29,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['add_promotion'])) {
     'promotion_end_time' => $_POST['promotion_end_time'],
     'promotion_percentage' => $_POST['promotion_percentage'],
     'promotion_applicable_plans' => implode(",", $_POST['promotion_applicable_plans']),
+    'promotion_type' => $_POST['promotion_type'],
   ];
 
   $promotions->addPromotion($promotionData);
@@ -45,6 +46,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['update_promotion'])) {
     'promotion_end_time' => $_POST['promotion_end_time'],
     'promotion_percentage' => $_POST['promotion_percentage'],
     'promotion_applicable_plans' => implode(",", $_POST['promotion_applicable_plans']),
+    'promotion_type' => $_POST['promotion_type'],
   ];
 
   $promotions->updatePromotion($_POST['id'], $promotionData);
@@ -72,7 +74,7 @@ $past_promotions = $promotions->getPastPromotions();
 
 <head>
   <title>Manage Promotions</title>
-  <link rel="stylesheet" href="/styles/twbuild.css?v=a679f67e7cbdd5fad018e7b3c4928394" />
+  <link rel="stylesheet" href="/styles/twbuild.css?v=cdb27fd965d4b88c14c59d7a36682b8e" />
 </head>
 
 <body class="bg-gray-100">
@@ -85,10 +87,16 @@ $past_promotions = $promotions->getPastPromotions();
       Name will be applied to the text "Save XX% with {name}" <br />
       Percentage is the discount percentage. <br />
       Applicable Plans is a list of plan IDs that the promotion applies to. <br />
+      Promotion type dictates if it only to the per plan signups or global finall price discount for any type, e.g., renew, signup, upgrade, etc. <br /> 
+      When using Global promotion, applicable account types are ignored. <br />
       Start Time is the time when the promotion starts. <br />
       End Time is the time when the promotion ends. <br />
       Promotion with the highest discount will be applied to the plan if times overlap. <br />
       View only shows current and future promotions. <br />
+    </p>
+    <!-- Display current UTC time -->
+    <p class="text-sm md:text-lg text-gray-600 mb-4">
+      Current UTC Time: <?= gmdate('Y-m-d H:i:s'); ?>
     </p>
 
     <!-- Promotions Display -->
@@ -129,6 +137,14 @@ $past_promotions = $promotions->getPastPromotions();
                   <?= htmlspecialchars($plan->name); ?>
                 </option>
               <?php endforeach; ?>
+            </select>
+          </div>
+
+          <div class="mb-4">
+            <label class="block text-gray-700 text-sm font-bold mb-2">Promotion Type:</label>
+            <select name="promotion_type" class="form-select w-full">
+              <option value="perPlan" <?= $promo['promotion_type'] == 'perPlan' ? 'selected' : ''; ?>>Per Plan</option>
+              <option value="global" <?= $promo['promotion_type'] == 'global' ? 'selected' : ''; ?>>Global</option>
             </select>
           </div>
 
@@ -179,6 +195,14 @@ $past_promotions = $promotions->getPastPromotions();
           </select>
         </div>
 
+        <div class="mb-4">
+          <label for="promotion_type" class="block text-gray-700 text-sm font-bold mb-2">Promotion type:</label>
+          <select id="promotion_type" name="promotion_type" required class="form-select mt-1 block w-full">
+            <option value="perPlan" selected>Per Plan</option>
+            <option value="global">Global</option>
+          </select>
+        </div>
+
         <input type="submit" name="add_promotion" value="Add Promotion" class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded">
       </form>
     </div>
@@ -192,6 +216,7 @@ $past_promotions = $promotions->getPastPromotions();
           <th class="px-4 py-2">End Time</th>
           <th class="px-4 py-2">Percentage</th>
           <th class="px-4 py-2">Applicable Plans</th>
+          <th class="px-4 py-2">Promotion Type</th>
         </tr>
       </thead>
       <tbody>
@@ -207,6 +232,7 @@ $past_promotions = $promotions->getPastPromotions();
                 <?= in_array($plan->id, $promo['promotion_applicable_plans']) ? htmlspecialchars($plan->name) : ''; ?>
               <?php endforeach; ?>
             </td>
+            <td class="border px-4 py-2"><?= htmlspecialchars($promo['promotion_type']); ?></td>
           </tr>
         <?php endforeach; ?>
       </tbody>

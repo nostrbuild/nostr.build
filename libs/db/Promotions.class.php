@@ -16,6 +16,7 @@ CREATE TABLE `promotions` (
   `promotion_applicable_plans` varchar(255) NOT NULL,
   `promotion_created_at` datetime NOT NULL,
   `promotion_updated_at` datetime NOT NULL,
+  `promotion_type` varchar(255) DEFAULT 'perPlan',
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
@@ -45,18 +46,18 @@ class Promotions extends DatabaseTable
 
   public function addPromotion(array $promotionData): int
   {
-    $promotionData['promotion_start_time'] = date('Y-m-d H:i:s', strtotime($promotionData['promotion_start_time']));
-    $promotionData['promotion_end_time'] = date('Y-m-d H:i:s', strtotime($promotionData['promotion_end_time']));
-    $promotionData['promotion_created_at'] = date('Y-m-d H:i:s');
-    $promotionData['promotion_updated_at'] = date('Y-m-d H:i:s');
+    $promotionData['promotion_start_time'] = gmdate('Y-m-d H:i:s', strtotime($promotionData['promotion_start_time']));
+    $promotionData['promotion_end_time'] = gmdate('Y-m-d H:i:s', strtotime($promotionData['promotion_end_time']));
+    $promotionData['promotion_created_at'] = gmdate('Y-m-d H:i:s');
+    $promotionData['promotion_updated_at'] = gmdate('Y-m-d H:i:s');
     return $this->insert($promotionData);
   }
 
   public function updatePromotion(int $id, array $promotionData): void
   {
-    $promotionData['promotion_start_time'] = date('Y-m-d H:i:s', strtotime($promotionData['promotion_start_time']));
-    $promotionData['promotion_end_time'] = date('Y-m-d H:i:s', strtotime($promotionData['promotion_end_time']));
-    $promotionData['promotion_updated_at'] = date('Y-m-d H:i:s');
+    $promotionData['promotion_start_time'] = gmdate('Y-m-d H:i:s', strtotime($promotionData['promotion_start_time']));
+    $promotionData['promotion_end_time'] = gmdate('Y-m-d H:i:s', strtotime($promotionData['promotion_end_time']));
+    $promotionData['promotion_updated_at'] = gmdate('Y-m-d H:i:s');
     $this->update($id, $promotionData);
   }
 
@@ -72,47 +73,100 @@ class Promotions extends DatabaseTable
     return $promotion;
   }
 
-  public function getPromotionsByTime(string $date): array
+  public function getPromotionsByTime(string $date, string $promotion_type = 'perPlan'): array
   {
-    $date = date('Y-m-d H:i:s', strtotime($date));
-    $query = "SELECT * FROM {$this->tableName} WHERE promotion_start_time <= '{$date}' AND promotion_end_time >= '{$date}' ORDER BY promotion_end_time desc";
-    $result = $this->db->query($query);
+    $date = gmdate('Y-m-d H:i:s', strtotime($date));
+    $query = "SELECT * FROM {$this->tableName} WHERE promotion_start_time <= ? AND promotion_end_time >= ? AND promotion_type = ? ORDER BY promotion_end_time desc";
+    // Prepare the query
+    $stmt = $this->db->prepare($query);
+    $stmt->bind_param('sss', $date, $date, $promotion_type);
+    $stmt->execute();
+    $result = $stmt->get_result();
     $promotions = [];
     while ($row = $result->fetch_assoc()) {
       $row['promotion_applicable_plans'] = explode(',', $row['promotion_applicable_plans']);
       $promotions[] = $row;
     }
+    // Close the statement
+    $stmt->close();
     return $promotions;
   }
 
   public function getCurrentAndFuturePromotions(): array
   {
-    $date = date('Y-m-d H:i:s');
-    $query = "SELECT * FROM {$this->tableName} WHERE promotion_end_time >= '{$date}' ORDER BY promotion_end_time desc";
-    $result = $this->db->query($query);
+    $date = gmdate('Y-m-d H:i:s');
+    $query = "SELECT * FROM {$this->tableName} WHERE promotion_end_time >= ? ORDER BY promotion_end_time desc";
+    // Prepare the query
+    $stmt = $this->db->prepare($query);
+    $stmt->bind_param('s', $date);
+    $stmt->execute();
+    $result = $stmt->get_result();
     $promotions = [];
     while ($row = $result->fetch_assoc()) {
       $row['promotion_applicable_plans'] = explode(',', $row['promotion_applicable_plans']);
       $promotions[] = $row;
     }
+    // Close the statement
+    $stmt->close();
     return $promotions;
   }
 
   public function getPastPromotions(): array
   {
-    $date = date('Y-m-d H:i:s');
-    $query = "SELECT * FROM {$this->tableName} WHERE promotion_end_time <= '{$date}' ORDER BY promotion_end_time desc";
-    $result = $this->db->query($query);
+    $date = gmdate('Y-m-d H:i:s');
+    $query = "SELECT * FROM {$this->tableName} WHERE promotion_end_time <= ? ORDER BY promotion_end_time desc";
+    // Prepare the query
+    $stmt = $this->db->prepare($query);
+    $stmt->bind_param('s', $date);
+    $stmt->execute();
+    $result = $stmt->get_result();
     $promotions = [];
     while ($row = $result->fetch_assoc()) {
       $row['promotion_applicable_plans'] = explode(',', $row['promotion_applicable_plans']);
       $promotions[] = $row;
     }
+    // Close the statement
+    $stmt->close();
     return $promotions;
   }
 
   public function getCurrentPromotions(): array
   {
-    return $this->getPromotionsByTime(date('Y-m-d H:i:s'));
+    return $this->getPromotionsByTime(gmdate('Y-m-d H:i:s'));
+  }
+
+  // Special promotion that applies to all plans for all types of transactions, e.g., new, renew, upgrade
+  public function getGlobalPromotionDiscount(): array
+  {
+    return $this->getPromotionsByTime(gmdate('Y-m-d H:i:s'), 'global');
+  }
+
+  // Get the predominant promotion, prioritizing global promotions over perPlan promotions
+  public function getAllCurrentPromotions(): array
+  {
+    $date = gmdate('Y-m-d H:i:s');
+    $query = "SELECT * FROM {$this->tableName} WHERE promotion_start_time <= ? AND promotion_end_time >= ? ORDER BY promotion_type desc, promotion_end_time desc";
+    // Prepare the query
+    $stmt = $this->db->prepare($query);
+    $stmt->bind_param('ss', $date, $date);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $globalPromotions = [];
+    $perPlanPromotions = [];
+    while ($row = $result->fetch_assoc()) {
+      $row['promotion_applicable_plans'] = explode(',', $row['promotion_applicable_plans']);
+      if ($row['promotion_type'] === 'global') {
+        $globalPromotions[] = $row;
+      } else {
+        $perPlanPromotions[] = $row;
+      }
+    }
+    // DEBUG
+    error_log('Global promotions: ' . json_encode($globalPromotions));
+    error_log('Per plan promotions: ' . json_encode($perPlanPromotions));
+    return [
+      'global' => $globalPromotions,
+      'perPlan' => $perPlanPromotions,
+    ];
   }
 }

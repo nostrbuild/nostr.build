@@ -73,7 +73,7 @@ class Plan
 
     // If the current plan is the same as the plan we are creating, set isCurrentPlan to true
     $this->isCurrentPlan = $fromPlanLevel === $id;
-    $this->isRenewable = $remainingDays <= 30;
+    $this->isRenewable = $remainingDays <= 180; // 6 months or less remaining
 
     // Ensure the prorated price is not negative
     $this->fullPriceInt = $price;
@@ -179,7 +179,7 @@ class Plans
     return self::getMultiyearFullPrice($planPrice, $period);
   }
 
-  private static function init(?int $remainingDays = null, ?int $currentPlanLevel = null, ?array $promotions = null, ?string $currentPeriod = '1y'): void
+  private static function init(?int $remainingDays = null, ?int $currentPlanLevel = null, ?array $promotions = null, ?array $globalPromotionDiscount = [], ?string $currentPeriod = '1y'): void
   {
     // Calculate the price based on the level and days remaining
     // Take into account special cases like NEW, MODERATOR, ADMIN
@@ -306,7 +306,8 @@ class Plans
     if (
       is_array($promotions) &&
       !empty($promotions) &&
-      ($remainingDays === null || $remainingDays === 0 || $currentPlanLevel === null)
+      ($remainingDays === null || $remainingDays === 0 || $currentPlanLevel === null) &&
+      empty($globalPromotionDiscount)
     ) {
       // Loop over all plans and check if there is a promotion for them
       // Apply the promotion if there is one
@@ -341,6 +342,32 @@ class Plans
         }
       }
     }
+
+    // Apply global promotion if there is one that is more than 0 to all plans and 
+    if(!empty($globalPromotionDiscount) && $globalPromotionDiscount['promotion_percentage'] > 0) {
+      foreach (self::$PLANS as $plan) {
+        $plan->priceInt = $plan->priceInt * (1 - $globalPromotionDiscount['promotion_percentage'] / 100);
+        $plan->price = number_format($plan->priceInt, 0, '.', ',');
+        // Apply the promotion to the multi-year plans as well
+        $plan->priceInt2y = $plan->priceInt2y * (1 - $globalPromotionDiscount['promotion_percentage'] / 100);
+        $plan->price2y = number_format($plan->priceInt2y, 0, '.', ',');
+        $plan->priceInt3y = $plan->priceInt3y * (1 - $globalPromotionDiscount['promotion_percentage'] / 100);
+        $plan->price3y = number_format($plan->priceInt3y, 0, '.', ',');
+        // Update fullPrice as well
+        $plan->fullPriceInt = $plan->fullPriceInt * (1 - $globalPromotionDiscount['promotion_percentage'] / 100);
+        $plan->fullPrice = number_format($plan->fullPriceInt, 0, '.', ',');
+        $plan->full2yPriceInt = $plan->full2yPriceInt * (1 - $globalPromotionDiscount['promotion_percentage'] / 100);
+        $plan->full2yPrice = number_format($plan->full2yPriceInt, 0, '.', ',');
+        $plan->full3yPriceInt = $plan->full3yPriceInt * (1 - $globalPromotionDiscount['promotion_percentage'] / 100);
+        $plan->full3yPrice = number_format($plan->full3yPriceInt, 0, '.', ',');
+        // Prepend the promotion to the features with the end date
+        array_unshift($plan->features, "<span class=\"promotion_text\">Save {$globalPromotionDiscount['promotion_percentage']}% with {$globalPromotionDiscount['promotion_name']}!</span>");
+        // Indicate that there is a promotion
+        $plan->promo = true;
+        $plan->discountPercentage = $globalPromotionDiscount['promotion_percentage'];
+        self::$PLANS[$plan->id] = $plan;
+      }
+    }
   }
 
   public static function isValidPlan(int $plan): bool
@@ -348,11 +375,11 @@ class Plans
     return array_key_exists($plan, self::$PLANS);
   }
 
-  public static function getInstance(?int $remainingDays = null, ?int $currentPlanLevel = null, ?array $promotions = null, ?string $period = '1y', ?string $currentPeriod = '1y'): Plans
+  public static function getInstance(?int $remainingDays = null, ?int $currentPlanLevel = null, ?array $promotions = null, ?array $globalPromotionDiscount = [], ?string $period = '1y', ?string $currentPeriod = '1y'): Plans
   {
     if (self::$instance === null) {
       self::$instance = new Plans();
-      self::$instance::init($remainingDays, $currentPlanLevel, $promotions, $currentPeriod);
+      self::$instance::init($remainingDays, $currentPlanLevel, $promotions, $globalPromotionDiscount, $currentPeriod);
     }
     return self::$instance;
   }

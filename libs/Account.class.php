@@ -864,41 +864,42 @@ class Account
    */
   public function setPlan(int $planLevel, string $period = '1y', bool $new = true): void
   {
-    // DEBUG: Dump $planLevel, $period, $new into error log
+    $safeRenewDays = 181; // 180 days + 1 day buffer
     error_log("Setting plan level: $planLevel, period: $period, new: " . ($new ? 'true' : 'false') . PHP_EOL);
-    // Check if $new is false and plan_until_date is more than 31 days in the future, and return without updating
-    if ($new === false && $this->getRemainingSubscriptionDays() > 30) {
-      error_log("Cannot renew plan when remaining subscription days is more than 30 days, current remaining days: " . $this->getRemainingSubscriptionDays() . " days for npub: " . $this->npub);
+
+    // Validate period
+    if (!in_array($period, ['1y', '2y', '3y'])) {
+      $period = '1y';
+    }
+
+    // Check renewal restriction
+    if ($new === false && $this->getRemainingSubscriptionDays() > $safeRenewDays) {
+      error_log("Cannot renew plan when remaining subscription days is more than {$safeRenewDays} days, current remaining days: " .
+        $this->getRemainingSubscriptionDays() . " days for npub: " . $this->npub);
       return;
     }
 
-    // Avoid race condition with the webhook by checking if the account has already been updated
     if ($new) {
       $sql = "UPDATE users SET acctlevel = ?, plan_start_date = ?, plan_until_date = ?, subscription_period = ? WHERE usernpub = ?";
     } else {
-      $sql = "UPDATE users SET acctlevel = ?, plan_start_date = ?, plan_until_date = ?, subscription_period = ? WHERE usernpub = ? AND plan_until_date < DATE_ADD(CURDATE(), INTERVAL 30 DAY)";
+      $sql = "UPDATE users SET acctlevel = ?, plan_start_date = ?, plan_until_date = ?, subscription_period = ? " .
+        "WHERE usernpub = ? AND plan_until_date < DATE_ADD(CURDATE(), INTERVAL {$safeRenewDays} DAY)";
     }
-    $stmt = $this->db->prepare($sql);
 
+    $stmt = $this->db->prepare($sql);
     if (!$stmt) {
       throw new Exception("Error preparing statement: " . $this->db->error);
     }
 
     try {
-      // When user is upgrading, set plan start date to current date
-      // When user is renewing, keep the existing plan start date
-      // When user is new, set plan start date to current date
-      // When user account plan has expired, set plan start date to current date
       if ($new || $this->isExpired()) {
-        // New or Upgrade
         $planStartDate = date('Y-m-d');
         error_log("Setting plan start date to current date: $planStartDate" . PHP_EOL);
       } else {
-        // Renewal
-        $planStartDate = $this->account['plan_start_date']; // Preserve existing plan start date
-        error_log("Setting plan start date to existing plan end date: $planStartDate" . PHP_EOL);
+        $planStartDate = $this->account['plan_start_date'];
+        error_log("Setting plan start date to existing plan start date: $planStartDate" . PHP_EOL);
       }
-      // DEBUG: Dump $this->account into error log
+
       error_log("Account data: " . print_r($this->account, true));
 
       $periodDuration = match ($period) {
@@ -908,11 +909,15 @@ class Account
         default => '+1 year',
       };
 
-      // End date should ne calculate from either now for the $new === true, or from the existing plan end date
       $_planStartDate = $new ? date('Y-m-d') : $this->account['plan_until_date'];
-      $planEndDate = date('Y-m-d', strtotime($_planStartDate . ' ' . $periodDuration)); // Plan end date is based on start date and period
+      $planEndDate = date('Y-m-d', strtotime($_planStartDate . ' ' . $periodDuration));
 
-      error_log("Plan start date: $planStartDate, Plan end date: $planEndDate");
+      error_log("Plan start date: $planStartDate, Plan end date: $planEndDate" . PHP_EOL);
+
+      if ($planEndDate === false) {
+        error_log("Warning: Invalid date calculation for npub: " . $this->npub);
+        $planEndDate = date('Y-m-d', strtotime(date('Y-m-d') . ' ' . $periodDuration));
+      }
 
       if (!$stmt->bind_param('issss', $planLevel, $planStartDate, $planEndDate, $period, $this->npub)) {
         throw new Exception("Error binding parameters: " . $stmt->error);
@@ -921,10 +926,17 @@ class Account
       if (!$stmt->execute()) {
         throw new Exception("Error executing statement: " . $stmt->error);
       }
+
+      if ($stmt->affected_rows === 0) {
+        error_log("Notice: No rows updated for npub: " . $this->npub .
+          ", new: " . ($new ? 'true' : 'false') .
+          ", remaining days: " . $this->getRemainingSubscriptionDays());
+      }
     } finally {
       $stmt->close();
     }
   }
+
 
   /**
    * Summary of isValidUpgrade

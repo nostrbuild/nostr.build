@@ -89,9 +89,12 @@ global $link; // MySQL connection
 global $btcpayConfig; // BTCPay configuration
 // Get all applicable promotions
 $promotionsTable = new Promotions($link); // Applicable to upgrades and new signups
-$promotions = [];
+$perPlanPromotions = [];
+$globalPromotions = [];
 try {
-  $promotions = $promotionsTable->getCurrentPromotions();
+  $promotions = $promotionsTable->getAllCurrentPromotions();
+  $perPlanPromotions = $promotions['perPlan'];
+  $globalPromotions = !empty($promotions['global']) ? $promotions['global'][0] : [];
 } catch (Exception $e) {
   error_log($e->getMessage());
   // Do nothing
@@ -105,7 +108,8 @@ $purchase = new Purchase(
     $btcpayConfig['storeId'],
   ),
   Plans::getInstance(
-    promotions: $promotions,
+    promotions: $perPlanPromotions,
+    globalPromotionDiscount: $globalPromotions,
     remainingDays: $remainingDays,
     currentPlanLevel: $currentAccountLevel,
     period: $_SESSION['purchase_period'],
@@ -217,7 +221,7 @@ SVG;
   <meta charSet="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Nostr.build account signup</title>
-  <link rel="stylesheet" href="/styles/twbuild.css?v=a679f67e7cbdd5fad018e7b3c4928394" />
+  <link rel="stylesheet" href="/styles/twbuild.css?v=cdb27fd965d4b88c14c59d7a36682b8e" />
   <link rel="stylesheet" href="/styles/index.css?v=290253d31f2fde0932483cb54581766b" />
   <link rel="stylesheet" href="/styles/signup.css?v=8878cbf7163f77b3a4fb9b30804c73ca" />
   <link rel="icon" href="https://cdn.nostr.build/assets/primo_nostr.png" />
@@ -240,8 +244,9 @@ SVG;
     <div class="information pb-5">
       <ul>
         <li>
-          <span class="whitespace-pre-line">YakiHonne/Damus/Amethyst/Snort/Coracle/noStrudel Integration
-            Bitcoin Only | Never Ads | Billed Annually | Sustainable
+          <span class="whitespace-pre-line text-pretty text-base sm:text-lg">YakiHonne/Damus/Amethyst/Snort/Coracle/noStrudel Integration
+            Bitcoin Only | Never Ads | Billed Annually
+            We will maintain your account media online for an additional year after the expiration date.
           </span>
         </li>
       </ul>
@@ -604,6 +609,15 @@ SVG;
               '3y' => $plan->priceInt3y,
               default => $plan->priceInt,
             };
+            // Handle renewals
+            if ($orderType === 'renewal') {
+              $price = match ($period) {
+                '1y' => $plan->fullPriceInt,
+                '2y' => $plan->full2yPriceInt,
+                '3y' => $plan->full3yPriceInt,
+                default => $plan->fullPriceInt,
+              };
+            }
             // Check if price is set to -1, which means the plan is not available for the selected period
             if ($price !== -1) {
               // Store the final price to ensure consistency across invoice validations
