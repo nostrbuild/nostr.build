@@ -22,7 +22,7 @@
 		<link rel="stylesheet" href="/styles/index.css?v=290253d31f2fde0932483cb54581766b" />
 		<link rel="stylesheet" href="/styles/header.css?v=19cde718a50bd676387bbe7e9e24c639" />
 
-		<link href="/styles/twbuild.css?v=a679f67e7cbdd5fad018e7b3c4928394" rel="stylesheet">
+		<link href="/styles/twbuild.css?v=cdb27fd965d4b88c14c59d7a36682b8e" rel="stylesheet">
 
 		<title>nostr.build Delete Media</title>
 	</head>
