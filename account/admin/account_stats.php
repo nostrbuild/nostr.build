@@ -9,7 +9,7 @@ global $link;
 
 if (!$perm->isAdmin()) {
   header("location: /login");
-  // PERSIST: $link->close();
+  $link->close(); // CLOSE MYSQL LINK
   exit;
 }
 ?>
@@ -120,7 +120,7 @@ if (!$perm->isAdmin()) {
 
     echo '</tbody></table>';
 
-    // PERSIST: $link->close();
+    $link->close(); // CLOSE MYSQL LINK
     ?>
   </main>
 </body>

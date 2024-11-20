@@ -10,7 +10,7 @@ $perm = new Permission();
 
 if (!$perm->isAdmin()) {
   header("location: /login");
-  // PERSIST: $link->close();
+  $link->close(); // CLOSE MYSQL LINK
   exit;
 }
 
@@ -34,7 +34,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['add_promotion'])) {
 
   $promotions->addPromotion($promotionData);
   header("location: /account/admin/promo.php");
-  // PERSIST: $link->close();
+  $link->close(); // CLOSE MYSQL LINK
   exit;
 }
 
@@ -51,14 +51,14 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['update_promotion'])) {
 
   $promotions->updatePromotion($_POST['id'], $promotionData);
   header("location: /account/admin/promo.php");
-  // PERSIST: $link->close();
+  $link->close(); // CLOSE MYSQL LINK
   exit;
 }
 
 if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['delete_promotion'])) {
   $promotions->deletePromotion($_POST['id']);
   header("location: /account/admin/promo.php");
-  // PERSIST: $link->close();
+  $link->close(); // CLOSE MYSQL LINK
   exit;
 }
 

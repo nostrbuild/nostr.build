@@ -71,7 +71,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         }
     }
     // Close connection
-    // PERSIST: $link->close();
+    $link->close(); // CLOSE MYSQL LINK
 }
 ?>
 

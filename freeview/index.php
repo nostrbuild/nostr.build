@@ -256,7 +256,8 @@ $sql = match ($view_type) {
 			<?php endwhile; ?>
 		</div>
 		<?php
-		// PERSIST: $link->close();
+		$stmt->close();
+		$link->close(); // CLOSE MYSQL LINK
 		?>
 	</main>
 	<a class="ref_link pb-4" style="font-size: x-large;" href="https://nostr.build/plans/"> Get access to all 500k+ Videos, Gifs and images HERE!</a>

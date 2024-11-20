@@ -25,14 +25,14 @@ if (!$perm->validateLoggedin()  || !isset($_SESSION["usernpub"])) {
 	// Return error message
 	http_response_code(401);
 	echo json_encode(array("error" => "You are not logged in"));
-	// PERSIST: $link->close();
+	$link->close(); // CLOSE MYSQL LINK
 	exit;
 }
 
 // If account is not verified, redirect to signup page
 if ($perm->validatePermissionsLevelEqual(0)) {
 	echo json_encode(array("error" => "Please verify your account"));
-	// PERSIST: $link->close();
+	$link->close(); // CLOSE MYSQL LINK
 	exit;
 }
 
@@ -50,7 +50,7 @@ try {
 /*
 if ($daysRemaining <= 0) {
 	echo json_encode(array("error" => "Please subscribe to a plan"));
-	// PERSIST: $link->close();
+	$link->close(); // CLOSE MYSQL LINK
 	exit;
 }
 */
@@ -727,7 +727,7 @@ if (isset($_GET["action"])) {
 		if ($daysRemaining <= 0) {
 			http_response_code(403);
 			echo json_encode(array("error" => "Your account has expired"));
-			// PERSIST: $link->close();
+			$link->close(); // CLOSE MYSQL LINK
 			exit;
 		}
 		// Check user level and only allow 1, 10, 99
@@ -772,7 +772,7 @@ if (isset($_GET["action"])) {
 		if ($daysRemaining <= 0 || $account->getRemainingStorageSpace() <= 0) {
 			http_response_code(403);
 			echo json_encode(array("error" => "Your account has expired"));
-			// PERSIST: $link->close();
+			$link->close(); // CLOSE MYSQL LINK
 			exit;
 		}
 		// Check if the user has permission to generate AI images
@@ -780,7 +780,7 @@ if (isset($_GET["action"])) {
 		if (!$perm->validatePermissionsLevelAny(2, 1, 10, 99)) {
 			http_response_code(403);
 			echo json_encode(array("error" => "You do not have permission to generate AI images"));
-			// PERSIST: $link->close();
+			$link->close(); // CLOSE MYSQL LINK
 			exit;
 		}
 		// Check for Creators Account Models access
@@ -789,7 +789,7 @@ if (isset($_GET["action"])) {
 			if (!$perm->validatePermissionsLevelAny(1, 10, 99)) {
 				http_response_code(403);
 				echo json_encode(array("error" => "You do not have permission to generate AI images using the {$_POST['model']} model"));
-				// PERSIST: $link->close();
+				$link->close(); // CLOSE MYSQL LINK
 				exit;
 			}
 		}
@@ -799,7 +799,7 @@ if (isset($_GET["action"])) {
 			if (!$perm->validatePermissionsLevelAny(1, 10, 99)) {
 				http_response_code(403);
 				echo json_encode(array("error" => "You do not have permission to generate AI images using the {$_POST['model']} model"));
-				// PERSIST: $link->close();
+				$link->close(); // CLOSE MYSQL LINK
 				exit;
 			}
 		}
@@ -808,7 +808,7 @@ if (isset($_GET["action"])) {
 		if (!isset($_POST['model']) || !isset($_POST['prompt']) || !isset($_POST['title'])) {
 			http_response_code(400);
 			echo json_encode(array("error" => "Missing required parameters"));
-			// PERSIST: $link->close();
+			$link->close(); // CLOSE MYSQL LINK
 			exit;
 		}
 		error_log(('POST: ' . json_encode($_POST)));
@@ -844,7 +844,7 @@ if (isset($_GET["action"])) {
 		if ($daysRemaining <= 0 || $account->getRemainingStorageSpace() <= 0) {
 			http_response_code(403);
 			echo json_encode(array("error" => "Your account has expired"));
-			// PERSIST: $link->close();
+			$link->close(); // CLOSE MYSQL LINK
 			exit;
 		}
 		// Check if we got the required parameters
@@ -891,7 +891,7 @@ if (isset($_GET["action"])) {
 		if ($daysRemaining <= 0) {
 			http_response_code(403);
 			echo json_encode(array("error" => "Your account has expired"));
-			// PERSIST: $link->close();
+			$link->close(); // CLOSE MYSQL LINK
 			exit;
 		}
 		// Check permissions
@@ -990,14 +990,14 @@ if (isset($_GET["action"])) {
 		if ($daysRemaining <= 0) {
 			http_response_code(403);
 			echo json_encode(array("error" => "Your account has expired"));
-			// PERSIST: $link->close();
+			$link->close(); // CLOSE MYSQL LINK
 			exit;
 		}
 		// Check if account level is eligible to publish Nostr events
 		if (!$perm->validatePermissionsLevelAny(1, 2, 10, 99)) {
 			http_response_code(403);
 			echo json_encode(array("error" => "You do not have permission to publish Nostr events"));
-			// PERSIST: $link->close();
+			$link->close(); // CLOSE MYSQL LINK
 			exit;
 		}
 		error_log("Publishing Nostr event");

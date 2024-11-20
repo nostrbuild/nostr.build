@@ -8,7 +8,7 @@ $perm = new Permission();
 
 if (!$perm->isAdmin()) {
     header("location: /login");
-    // PERSIST: $link->close();
+    $link->close(); // CLOSE MYSQL LINK
     exit;
 }
 
@@ -81,7 +81,7 @@ if (array_key_exists('nym', $_POST)) {
         echo "<a>Updated nym!</a>";
     } else echo "ERROR: Hush! Sorry $sql. " . mysqli_error($link);
 
-    // PERSIST: $link->close();
+    $link->close(); // CLOSE MYSQL LINK
 }
 
 //update pic in DB
@@ -100,7 +100,7 @@ if (array_key_exists('ppic', $_POST)) {
         echo "<a>Updated profile pic!</a>";
     } else echo "ERROR: Hush! Sorry $sql. " . mysqli_error($link);
 
-    // PERSIST: $link->close();
+    $link->close(); // CLOSE MYSQL LINK
 }
 
 //update acctlevel in DB
@@ -119,8 +119,8 @@ if (array_key_exists('acctlevel', $_POST)) {
         echo "<a>, updated!</a>";
     } else echo "ERROR: Hush! Sorry $sql. " . mysqli_error($link);
 
-    // PERSIST: $link->close();
+    $link->close(); // CLOSE MYSQL LINK
 }
 
-// PERSIST: $link->close();
+$link->close(); // CLOSE MYSQL LINK
 ?>

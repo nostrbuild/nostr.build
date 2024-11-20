@@ -97,6 +97,7 @@ global $link;
 			<?php
 			endwhile;
 			$stmt->close();
+			$link->close(); // CLOSE MYSQL LINK
 			?>
 		</div>
 	</main>

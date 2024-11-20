@@ -38,7 +38,7 @@ if (empty($availableCategories[$selectedCategory])) {
 			$type = urlencode($type);
 			// Redirect to the first non-empty category
 			header("Location: /creators/creator/?user={$uid}&display={$type}");
-			// PERSIST: $link->close();
+			$link->close(); // CLOSE MYSQL LINK
 			exit;
 		}
 	}
@@ -62,7 +62,7 @@ $result = $stmt->get_result();
 $rows = $result->fetch_all(MYSQLI_ASSOC);
 
 $stmt->close();
-// PERSIST: $link->close();
+$link->close(); // CLOSE MYSQL LINK
 
 if (!empty($rows)) {
 	$nym = $rows[0]['nym'];

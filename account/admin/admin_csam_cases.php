@@ -346,6 +346,8 @@ Table: identified_csam_cases
     }
     echo '  </ul>';
     echo '</nav>';
+    $stmt->close();
+    $link->close(); // CLOSE MYSQL LINK
     ?>
   </main>
 

@@ -9,7 +9,7 @@ $perm = new Permission();
 
 if (!$perm->isAdmin() && !$perm->hasPrivilege('canModerate')) {
   header("location: /login");
-  // PERSIST: $link->close();
+  $link->close(); // CLOSE MYSQL LINK
   exit;
 }
 
@@ -371,7 +371,7 @@ if (isset($_POST['searchFile'])) {
     echo '</nav>';
 
 
-    // PERSIST: $link->close();
+    $link->close(); // CLOSE MYSQL LINK
     ?>
     <form method="post" class="text-center">
       <!--

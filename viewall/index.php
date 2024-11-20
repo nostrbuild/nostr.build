@@ -15,7 +15,7 @@ $perm = new Permission();
 // Check if the user is not logged in, if not then redirect him to login page
 if (!$perm->validatePermissionsLevelAny(1, 2, 3, 4, 10) && !$perm->hasPrivilege('canModerate') && !$perm->isAdmin()) {
 	header("location: /login");
-	// PERSIST: $link->close();
+	$link->close(); // CLOSE MYSQL LINK
 	exit;
 }
 
@@ -376,7 +376,8 @@ $morePages = $result->num_rows > $perpage ? true : false;
 			<?php endwhile; ?>
 		</div>
 		<?php
-		// PERSIST: $link->close();
+		$stmt->close(); // CLOSE MYSQL STMT
+		$link->close(); // CLOSE MYSQL LINK
 		?>
 	</main>
 	<?= handle_pagination($morePages, (int)$page, $perpage, '?k=' . $view_type . '&p=') ?>

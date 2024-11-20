@@ -18,7 +18,7 @@ $perm = new Permission();
 // Check if the user is logged in, if not then redirect him to login page
 if (!$perm->isAdmin()) {
     echo json_encode(['success' => false, 'error' => 'User not logged in or has no permissions']);
-    // PERSIST: $link->close();
+    $link->close(); // CLOSE MYSQL LINK
     exit;
 }
 
@@ -167,5 +167,5 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     }
 
     // Close connection
-    // PERSIST: $link->close();
+    $link->close(); // CLOSE MYSQL LINK
 }

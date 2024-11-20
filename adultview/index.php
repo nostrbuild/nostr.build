@@ -15,7 +15,7 @@ $perm = new Permission();
 // Check if the user is not logged in, if not then redirect them to viewall page
 if (!$perm->isAdmin()) {
 	header("location: /viewall/");
-	// PERSIST: $link->close();
+	$link->close(); // CLOSE MYSQL LINK
 	exit;
 }
 
@@ -46,6 +46,7 @@ $stmt = $link->prepare($sql);
 $stmt->bind_param('ii', $start, $end);
 $stmt->execute();
 $result = $stmt->get_result();
+$stmt->close();
 $morePages = $result->num_rows > $perpage ? true : false;
 ?>
 
@@ -344,7 +345,7 @@ $morePages = $result->num_rows > $perpage ? true : false;
 			<?php endwhile; ?>
 		</div>
 		<?php
-		// PERSIST: $link->close();
+		$link->close(); // CLOSE MYSQL LINK
 		?>
 	</main>
 	<?= handle_pagination($morePages, (int)$page, $perpage, '?k=' . $view_type . '&p=') ?>
