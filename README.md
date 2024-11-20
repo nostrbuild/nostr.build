@@ -15,7 +15,7 @@ It is easy to use, simply go to https://nostr.build using your favorise browser 
 Other free services include:
 - Media uploads to 5MB
 - User profile pics cropped to the correct size for nostr and other social media platforms
-- EXIF (metadata) striping from images
+- EXIF (metadata) stripping from images
 - Curated list of nostr related memes and content from over 40 nostr Creators
 For the free, public version of nostr.build all use and media uploaded has to be legal and align to the nostr.build Terms of Service (https://nostr.build/tos). If used on another server using a different name, media and content guidelines can align to that hosting platform and owner
 
