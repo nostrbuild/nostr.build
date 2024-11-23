@@ -508,11 +508,12 @@ class MultimediaUpload
       }
 
       // Populate the uploadedFiles array with the file data
+      $currentSha256 = $this->generateFileName(0);
       $this->addFileToUploadedFilesArray([
         'input_name' => $this->file['input_name'],
         'name' => $newFileName,
         'url' => $this->generateMediaURL($newFileName, 'profile'), // Construct URL
-        'sha256' => $this->generateFileName(0), // Post-processing sha256 hash
+        'sha256' => $currentSha256, // Post-processing sha256 hash
         'original_sha256' => $fileSha256, // Store the original file hash - NIP-96
         'type' => $newFileType,
         'mime' => $fileType['mime'],
@@ -556,6 +557,7 @@ class MultimediaUpload
         uploadNpub: $this->userNpub ?? null,
         fileOriginalUrl: null,
         orginalSha256Hash: $fileSha256, // NIP-96
+        currentSha256Hash: $currentSha256, // NIP-96
         doVirusScan: false,
       );
       $this->uploadWebhook->sendPayload();
@@ -830,6 +832,7 @@ class MultimediaUpload
           uploadNpub: $this->userNpub ?? null,
           fileOriginalUrl: null,
           orginalSha256Hash: $fileSha256, // NIP-96
+          currentSha256Hash: $transformedFileSha256, // NIP-96
           doVirusScan: $doVirusScan,
         );
         $this->uploadWebhook->sendPayload();

@@ -46,6 +46,7 @@ class CloudflareUploadWebhook
     string $uploadNpub = null,
     string $uploadedFileInfo = null,
     string $orginalSha256Hash = null, // NIP-96
+    string $currentSha256Hash = null, // Blossom
     bool $doVirusScan = false
   ): void {
     $uploadTime = $uploadTime ?? time();  // Set default value if null
@@ -61,6 +62,7 @@ class CloudflareUploadWebhook
       'uploadAccountType' => $uploadAccountType,
       'uploadTime' => $uploadTime,
       'orginalSha256Hash' => $orginalSha256Hash ?? '', // NIP96
+      'currentSha256Hash' => $currentSha256Hash ?? '', // Blossom
       'doVirusScan' => $doVirusScan,
     ];
 
