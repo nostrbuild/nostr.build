@@ -121,16 +121,19 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             error_log("Found " . count($fileTypeMap) . " files in uploads_data");
 
             // Delete from S3
+            $purgeBatch = [];
             foreach ($fileTypeMap as $filename => $type) {
                 $objectName = ($type === 'video') ? 'av/' . $filename : (($type === 'profile') ? 'i/p/' . $filename : 'i/' . $filename);
+                $currentSha256 = $s3->getS3ObjectHash(objectKey: $objectName, paidAccount: false);
+                $purgeBatch[] = !empty($currentSha256) ? "{$filename}|{$currentSha256}" : $filename; 
                 $s3->deleteFromS3(objectKey: $objectName, paidAccount: false);
             }
 
-            error_log("Processing batch of " . count($batch) . " files");
+            error_log("Processing batch of " . count($purgeBatch) . " files");
             $purger = new CloudflarePurger($_SERVER['NB_API_SECRET'], $_SERVER['NB_API_PURGE_URL']);
             try {
                 // Convert $batch into an array
-                $result = $purger->purgeFiles($batch);
+                $result = $purger->purgeFiles($purgeBatch);
                 if ($result !== false) {
                     error_log(json_encode($result));
                 }

@@ -123,8 +123,11 @@ class DeleteMedia
 
     $objectKey = $this->getObjectKey($mediaData['filename'], $mediaType);
 
+    $currentSha256 = $this->s3->getS3ObjectHash(objectKey: $objectKey, paidAccount: false, mimeType: $mediaMimeType);
     $this->s3->deleteFromS3(objectKey: $objectKey, paidAccount: false, mimeType: $mediaMimeType);
-    $this->CFClient->purgeFiles([$mediaData['filename']]);
+    $purgeFilename = !empty($currentSha256) ? "{$mediaData['filename']}|{$currentSha256}" : $mediaData['filename'];
+    error_log('Purging: ' . $purgeFilename);
+    $this->CFClient->purgeFiles([$purgeFilename]);
 
     $this->deleteFromUploadsData($uploadId);
   }

@@ -237,6 +237,72 @@ class S3Service
     }
   }
 
+  /**
+   * Calculate SHA256 hash of an S3 object's content by streaming
+   * @return string SHA256 hash of the content, or empty string if object not found
+   */
+  public function getS3ObjectHash(string $objectKey, bool $paidAccount = false, string | null $mimeType = null): string
+  {
+    $r2BucketAndObjectNames = $this->getR2BucketAndObjectNames(objectKey: $objectKey, paidAccount: $paidAccount, mimeType: $mimeType);
+    $e2BucketAndObjectNames = $this->getE2BucketAndObjectNames(objectKey: $objectKey, paidAccount: $paidAccount, mimeType: $mimeType);
+
+    // Define all possible bucket combinations to try
+    $bucketConfigs = [
+      // R2 buckets
+      [
+        'client' => $this->r2,
+        'bucket' => $r2BucketAndObjectNames['bucket'],
+        'key' => $r2BucketAndObjectNames['objectName'],
+      ],
+      // E2 buckets
+      [
+        'client' => $this->e2,
+        'bucket' => $e2BucketAndObjectNames['bucket'],
+        'key' => $e2BucketAndObjectNames['objectName'],
+      ]
+    ];
+
+    // Add pro-av buckets if applicable
+    if (substr($r2BucketAndObjectNames['bucket'], -4) === '-pro') {
+      $bucketConfigs[] = [
+        'client' => $this->r2,
+        'bucket' => $r2BucketAndObjectNames['bucket'] . '-av',
+        'key' => $r2BucketAndObjectNames['objectName'],
+      ];
+    }
+    if (substr($e2BucketAndObjectNames['bucket'], -4) === '-pro') {
+      $bucketConfigs[] = [
+        'client' => $this->e2,
+        'bucket' => $e2BucketAndObjectNames['bucket'] . '-av',
+        'key' => $e2BucketAndObjectNames['objectName'],
+      ];
+    }
+
+    // Try each bucket configuration until we find the object
+    foreach ($bucketConfigs as $config) {
+      try {
+        $result = $config['client']->getObject([
+          'Bucket' => $config['bucket'],
+          'Key'    => $config['key']
+        ]);
+
+        // Calculate hash from stream
+        $hashContext = hash_init('sha256');
+        $stream = $result['Body'];
+        while (!$stream->eof()) {
+          hash_update($hashContext, $stream->read(8192));
+        }
+        return hash_final($hashContext);
+      } catch (AwsException $e) {
+        error_log("{$config['name']} bucket get object error: " . $e->getMessage());
+        continue; // Try next bucket
+      }
+    }
+
+    // If we get here, we couldn't find the object in any bucket
+    return '';
+  }
+
 
   public function getObjectMetadataFromR2(string $objectKey, ?string $mime = null, ?bool $paidAccount = false): bool | Aws\Result
   {

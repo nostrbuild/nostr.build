@@ -118,8 +118,9 @@ class ImageCatalogManager
           error_log("Deleting file from S3: " . $s3_file_path . PHP_EOL);
 
           try {
+            $currentSha256 = $this->s3->getS3ObjectHash(objectKey: $s3_file_path, paidAccount: true, mimeType: $row['mime_type']);
             $this->s3->deleteFromS3(objectKey: $s3_file_path, paidAccount: true, mimeType: $row['mime_type']);
-            $filesToPurge[] = $row['image'];
+            $filesToPurge[] = !empty($currentSha256) ? "{$row['image']}|{$currentSha256}" : $row['image'];
           } catch (Aws\S3\Exception\S3Exception $e) {
             if ($e->getAwsErrorCode() !== 'NoSuchKey') {
               throw new Exception("File deletion failed for: " . $s3_file_path, 0, $e);
@@ -172,6 +173,7 @@ class ImageCatalogManager
   private function purgeCloudflareCache(array $files): bool
   {
     try {
+      error_log("Purging files from Cloudflare: " . json_encode($files) . PHP_EOL);
       $result = $this->cloudflarePurger->purgeFiles($files);
       if ($result !== false) {
         error_log(json_encode($result));

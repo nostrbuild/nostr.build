@@ -42,9 +42,11 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
             // Delete requests are free, so we don't bother checking if the object exists
             try {
+                $currentSha256 = $s3->getS3ObjectHash(objectKey: $objectName, paidAccount: false);
                 $s3->deleteFromS3(objectKey: $objectName, paidAccount: false);
                 $purger = new CloudflarePurger($_SERVER['NB_API_SECRET'], $_SERVER['NB_API_PURGE_URL']);
-                $result = $purger->purgeFiles([$filename]);
+                $purgeFilename = !empty($currentSha256) ? "{$filename}|{$currentSha256}" : $filename;
+                $result = $purger->purgeFiles([$purgeFilename]);
                 if ($result !== false) {
                     error_log(json_encode($result));
                 }
@@ -95,9 +97,11 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
             // Delete requests are free, so we don't bother checking if the object exists
             try {
+                $currentSha256 = $s3->getS3ObjectHash(objectKey: $objectName, paidAccount: false);
                 $s3->deleteFromS3(objectKey: $objectName, paidAccount: false);
                 $purger = new CloudflarePurger($_SERVER['NB_API_SECRET'], $_SERVER['NB_API_PURGE_URL']);
-                $result = $purger->purgeFiles([$filename]);
+                $purgeFilename = !empty($currentSha256) ? "{$filename}|{$currentSha256}" : $filename;
+                $result = $purger->purgeFiles([$purgeFilename]);
                 if ($result !== false) {
                     error_log(json_encode($result));
                 }
@@ -262,9 +266,11 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
             // Delete requests are free, so we don't bother checking if the object exists
             try {
+                $currentSha256 = $s3->getS3ObjectHash(objectKey: $objectName, paidAccount: false);
                 $s3->deleteFromS3(objectKey: $objectName, paidAccount: false);
                 $purger = new CloudflarePurger($_SERVER['NB_API_SECRET'], $_SERVER['NB_API_PURGE_URL']);
-                $result = $purger->purgeFiles([$filename]);
+                $purgeFilename = !empty($currentSha256) ? "{$filename}|{$currentSha256}" : $filename;
+                $result = $purger->purgeFiles([$purgeFilename]);
                 if ($result !== false) {
                     error_log(json_encode($result));
                 }
