@@ -14,6 +14,8 @@ require_once $_SERVER['DOCUMENT_ROOT'] . "/libs/VideoTranscoding.class.php";
 require_once $_SERVER['DOCUMENT_ROOT'] . "/libs/VideoRepackager.class.php";
 require_once $_SERVER['DOCUMENT_ROOT'] . "/libs/PhotoDNA.class.php";
 
+use Psr\Http\Message\StreamInterface;
+
 // Vendor autoload
 require_once $_SERVER['DOCUMENT_ROOT'] . "/vendor/autoload.php";
 
@@ -411,6 +413,64 @@ class MultimediaUpload
       'size' => $file->getSize(),
       'metadata' => $metadata, // Include the metadata for the file
     ];
+  }
+
+  /**
+   * Handle PUT request file upload
+   * @param StreamInterface $stream
+   * @param array $metadata
+   * @param string|null $tempDirectory
+   * @return void
+   */
+  public function setPutFile(StreamInterface $stream, array $metadata = [], ?string $tempDirectory = null): void
+  {
+    if ($tempDirectory === null) {
+      $tempDirectory = sys_get_temp_dir();
+    }
+    $this->filesArray = $this->handlePutStream('APIv2', $stream, $tempDirectory, $metadata);
+  }
+
+  /**
+   * Handle PUT request stream
+   * @param string $fileInputName
+   * @param StreamInterface $stream
+   * @param string $tempDirectory
+   * @param array $metadata
+   * @return array
+   */
+  private function handlePutStream(
+    string $fileInputName,
+    StreamInterface $stream,
+    string $tempDirectory,
+    array $metadata
+  ): array {
+    $tempFilePath = generateUniqueFilename('file_upload_', $tempDirectory);
+
+    // Write stream to temporary file
+    $handle = fopen($tempFilePath, 'wb');
+    $contentLength = $metadata['content_length'];
+    $size = 0;
+
+    while (!$stream->eof() && $size < $contentLength) {
+      $chunk = $stream->read(8192);
+      $size += strlen($chunk);
+      fwrite($handle, $chunk);
+    }
+
+    fclose($handle);
+
+    // Get filename from metadata or generate one
+    $filename = $metadata['filename'] ?? basename($tempFilePath);
+
+    return [[
+      'input_name' => $fileInputName,
+      'name' => $filename,
+      'type' => $metadata['content_type'] ?? 'application/octet-stream',
+      'tmp_name' => $tempFilePath,
+      'error' => 0,
+      'size' => $size,
+      'metadata' => $metadata,
+    ]];
   }
 
   /**

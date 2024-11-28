@@ -359,3 +359,35 @@ function createNip96ErrorResponse(string $message): array
     'message' => $message
   ];
 }
+
+/**
+ * Blossom API Helper Functions
+ */
+
+// function to generate a cryptographically secure random string in base 64 format and URL safe, 3 characters long
+function generateRandomString(): string
+{
+    return substr(rtrim(strtr(base64_encode(random_bytes(2)), '+/', '-_'), '='), 0, 3);
+}
+
+// function to convert all x-<header name> to assoc array of <header name> (without x-) and first value
+function metadataFromHeaders(array $headers): array
+{
+    $metadata = [];
+    foreach ($headers as $key => $values) {
+        // Extract Content-Type to content_type and first value
+        if (strtolower($key) === 'content_type') {
+            $metadata['content_type'] = $values[0];
+        }
+        // Extract Content-Length to content_length and first value
+        if (strtolower($key) === 'content_length') {
+            $metadata['content_length'] = $values[0];
+        }
+        // Extract x-<header name> to <header name> and first value
+        if (stripos($key, 'X_') === 0) {
+            $headerName = strtolower(substr($key, 2));
+            $metadata[$headerName] = $values[0];
+        }
+    }
+    return $metadata;
+}
