@@ -460,6 +460,7 @@ class MultimediaUpload
         return $validationResult;
       }
       // Perform PhotoDNA check
+      /* disabled for now untill we make it off-band
       try {
         $pdnaNpub = empty($this->userNpub) ? 'Unknown' : $this->userNpub;
         $photoDNA = new PhotoDNA($pdnaNpub, $fileSha256, $this->file['tmp_name']);
@@ -471,6 +472,7 @@ class MultimediaUpload
         // Manual check will be done later
         error_log('PhotoDNA check failed: ' . $e->getMessage());
       }
+        */
       // Perform image manipulations
       $fileData = $this->processProfileImage($fileType);
       // Rediscover filedata after conversion
@@ -652,6 +654,7 @@ class MultimediaUpload
         $fileType = detectFileExt($this->file['tmp_name'], $accountLevelInt);
 
         // Perform PhotoDNA check
+        /* disable for now untill we make it off-band
         if (!$this->pro && $fileType['type'] === 'image') {
           try {
             $pdnaNpub = empty($this->userNpub) ? 'Unknown' : $this->userNpub;
@@ -665,6 +668,7 @@ class MultimediaUpload
             error_log('PhotoDNA check failed: ' . $e->getMessage());
           }
         }
+          */
 
         if ($fileType['type'] === 'image') {
           if ($this->pro) {
