@@ -163,4 +163,5 @@ SVG;
       </a>
     <?php endif; ?>
   </div>
+      <a class="ref_link" style="font-size: large" href="https://nostr.build/plans/"><img src="https://i.nostr.build/7VBe.png" style="width:220px;" alt="Premium Accounts"></a>
 </nav>
