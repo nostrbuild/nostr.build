@@ -346,6 +346,10 @@ class Plans
     // Apply global promotion if there is one that is more than 0 to all plans and 
     if(!empty($globalPromotionDiscount) && $globalPromotionDiscount['promotion_percentage'] > 0) {
       foreach (self::$PLANS as $plan) {
+        // Skip promotion for the current plan
+        if ($plan->isCurrentPlan) {
+          continue;
+        }
         $plan->priceInt = $plan->priceInt * (1 - $globalPromotionDiscount['promotion_percentage'] / 100);
         $plan->price = number_format($plan->priceInt, 0, '.', ',');
         // Apply the promotion to the multi-year plans as well
