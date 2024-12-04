@@ -786,7 +786,7 @@ if (isset($_GET["action"])) {
 		// Check for Creators Account Models access
 		$creatorsModels = ["@cf/bytedance/stable-diffusion-xl-lightning", "@cf/stabilityai/stable-diffusion-xl-base-1.0"];
 		if (isset($_POST['model']) && in_array($_POST['model'], $creatorsModels)) {
-			if (!$perm->validatePermissionsLevelAny(1, 10, 99)) {
+			if (!$perm->validatePermissionsLevelAny(2, 1, 10, 99)) { // All current plans
 				http_response_code(403);
 				echo json_encode(array("error" => "You do not have permission to generate AI images using the {$_POST['model']} model"));
 				$link->close(); // CLOSE MYSQL LINK

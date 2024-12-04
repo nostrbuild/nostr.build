@@ -526,12 +526,12 @@ Alpine.store('profileStore', {
     },
     // SDXL-Lightning
     get isAISDXLLightningEligible() {
-      return [1, 10, 99].includes(this.accountLevel) && this.isAIStudioEligible &&
+      return [2, 1, 10, 99].includes(this.accountLevel) && this.isAIStudioEligible &&
         !this.accountExpired && !this.storageOverLimit;
     },
     // Stable Diffusion
     get isAISDiffusionEligible() {
-      return [1, 10, 99].includes(this.accountLevel) && this.isAIStudioEligible &&
+      return [2, 1, 10, 99].includes(this.accountLevel) && this.isAIStudioEligible &&
         !this.accountExpired && !this.storageOverLimit;
     },
     // FLUX.1 [schnell]

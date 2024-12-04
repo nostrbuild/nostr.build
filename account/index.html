@@ -1324,7 +1324,6 @@ onDropCB(event) {
 																	selectedModelTitle: 'Stable AI Core (3 credits)',
 																	modelOptions: [
 																			{ value: '@sd/core', title: 'Stable AI Core <span class=\'text-sm capitalize text-blue-200\'>(3 credits)</span>', description: 'High-quality, fast results. No prompt engineering.', disabled: !profileStore.profileInfo.isSDCoreEligible || profileStore.profileInfo.availableCredits < 3 },
-																			{ value: '@cf/lykon/dreamshaper-8-lcm', title: 'Dream Shaper', description: 'Enhanced for photorealism with versatile range.', disabled: !profileStore.profileInfo.isAIDreamShaperEligible },
 																			{ value: '@cf/bytedance/stable-diffusion-xl-lightning', title: 'SDXL-Lightning', description: 'Fast model for generating 1024px images.', disabled: !profileStore.profileInfo.isAISDXLLightningEligible },
 																			{ value: '@cf/stabilityai/stable-diffusion-xl-base-1.0', title: 'Stable Diffusion', description: 'Generates images from text prompts.', disabled: !profileStore.profileInfo.isAISDiffusionEligible },
 																			{ value: '@cf/black-forest-labs/flux-1-schnell', title: 'FLUX.1 [schnell]', description: '12B parameter model for text-to-image generation.', disabled: !profileStore.profileInfo.isFluxSchnellEligible },
