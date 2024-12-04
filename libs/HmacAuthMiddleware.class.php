@@ -15,6 +15,12 @@ use Slim\Psr7\Response as Psr7Response;
  */
 class HmacAuthMiddleware implements MiddlewareInterface
 {
+  private $secrets;
+
+  public function __construct(?string $secrets = null)
+  {
+    $this->secrets = $secrets ?? $_SERVER['NB_HMAC_SECRETS'];
+  }
   /**
    * Summary of process
    * @param Psr\Http\Message\ServerRequestInterface $request
@@ -27,7 +33,7 @@ class HmacAuthMiddleware implements MiddlewareInterface
 
   public function process(Request $request, RequestHandler $handler): Response
   {
-    $secrets = explode(',', $_SERVER['NB_HMAC_SECRETS']);
+    $secrets = explode(',', $this->secrets);
 
     foreach ($secrets as $secret) {
       try {
