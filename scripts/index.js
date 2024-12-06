@@ -85,7 +85,7 @@ document.addEventListener('DOMContentLoaded', function () {
 		} else if (e.dataTransfer.files.length > 1) {
 			alert("Please select only one file");
 		} else if (fileSize > 22_020_096) {
-			alert("File is too large, please select a file less than 21MB");
+			alert("File is too large, please select a file less than 50MiB");
 		} else {
 			queryAllAndAct(".import_button", button => {
 				button.disabled = false;
