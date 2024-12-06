@@ -1,6 +1,6 @@
 <?php
 require_once $_SERVER['DOCUMENT_ROOT'] . '/config.php';
-require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/HmacAuthMiddleware.class.php';
+require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/HmacAuthMiddlewareBodyless.class.php';
 require_once __DIR__ . '/helper_functions.php';
 
 require $_SERVER['DOCUMENT_ROOT'] . '/vendor/autoload.php';
@@ -149,4 +149,4 @@ $app->group('/blossom', function (RouteCollectorProxy $group) {
       data: new stdClass(),
     );
   });
-})->add(new HmacAuthMiddleware());
+})->add(new HmacAuthMiddlewareBodyless($_SERVER['BLOSSOM_HMAC_SECRETS']));
