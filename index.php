@@ -177,6 +177,16 @@ SVG;
 
 	<script defer src="/scripts/index.js?v=88e0063bd869ec49a245480a6d08b99c"></script>
 
+	<script defer src="https://unpkg.com/magic-snowflakes/dist/snowflakes.min.js"></script>
+	<script>
+		// Initialize the snowflakes when the DOM is ready
+		document.addEventListener("DOMContentLoaded", function() {
+			const sf = new Snowflakes({
+				container: document.querySelector("body")
+			});
+		});
+	</script>
+
 	<title>nostr.build media uploader</title>
 </head>
 
