@@ -35,7 +35,7 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/config.php';
 	<main>
 		<h1>Terms of Service</h1>
 		<h3>Overview</h3>
-		<h4>Effective May 1, 2024</h4>
+		<h4>Effective December 12, 2024</h4>
 		<p>
 			Using our website, API or any connected apps (YakiHonne, Damus, Amethyst, NoStrudel, Coracle, Snort, Iris, etc.) to do anything other than access the links to this "Terms" page or accessing any
 			page of our website other than our home page and this "Terms" page constitutes your consent to these terms of use
@@ -51,7 +51,7 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/config.php';
 			for using nostr.build publicly.</br>
 			Stuff not to do If someone else might own the copyright to it, don't upload it. Don't upload gore, "hate speech" (i.e. demeaning race, gender,
 			age, religious or sexual orientation, etc.), or material that is threatening, harassing, defamatory, or that
-			encourages violence or crime. This includes any kind of human or animal abuse. Don't upload illegal content such as child
+			encourages violence or crime. This includes any kind of human or animal abuse. Don't upload illegal or pornographic content such as child
 			porn or nonconsensual ("revenge") porn. Don't hotlink to adult content or to file-sharing, gambling, torrent,
 			warez, or nostr.build rip-off sites. Don't impersonate someone else. Also, don't use nostr.build to host image
 			libraries you link to from elsewhere, content for your website,
@@ -76,6 +76,13 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/config.php';
 			* You can not upload images of someone without their permission or use others in a derogatory way </br>
 			* Do not abuse this service in any way. We are offering a free service dedicated to improving the freedom of speech. </br>
 			If there are any questions or issues please reach out to us at <a href="mailto:admin@nostr.build">admin@nostr.build</a>
+		</p>
+		<h4>Prohibition of Pornographic Content</h4>
+		<p>
+			The upload or distribution of pornographic media is strictly prohibited on nostr.build's free services. Any such content will be removed immediately upon detection. For the purposes of these Terms of Service, "pornographic content" is defined as any visual or audio material that explicitly depicts sexual acts, sexual intercourse, or masturbation, regardless of the participants' genders or number. 
+			The exploitation of minors in any form is strictly prohibited. This includes child sexual abuse material (CSAM), artificially generated content, illustrations, or any media that exploits children. Violators will be permanently blocked and reported, along with all available user information, to the National Center for Missing and Exploited Children (NCMEC) and relevant law enforcement authorities. 
+			Separately, any content featuring minors that could be interpreted as revealing or suggestive (such as beach or pool photos) will be removed upon detection, even if not intended to be inappropriate. This removal policy helps maintain platform safety and prevent potential misuse of such content. 
+			nostr.build moderators retain sole discretion in determining whether specific content qualifies as pornographic, CSAM, or exploiting a minor, and their decisions are final and binding. 
 		</p>
 		<h4>Using nostr.build's AI Studio, AI Image Generation, and AI Editing Tools</h4>
 		<p>
