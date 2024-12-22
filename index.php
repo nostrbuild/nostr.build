@@ -175,7 +175,7 @@ SVG;
 	<link rel="stylesheet" href="/styles/index.css?v=290253d31f2fde0932483cb54581766b" />
 	<link rel="stylesheet" href="/styles/header.css?v=19cde718a50bd676387bbe7e9e24c639" />
 
-	<script defer src="/scripts/index.js?v=88e0063bd869ec49a245480a6d08b99c"></script>
+	<script defer src="/scripts/index.js?v=d671642b314304fcb28d3d9cab34f78e"></script>
 
 	<script defer src="https://unpkg.com/magic-snowflakes/dist/snowflakes.min.js"></script>
 	<script>
@@ -205,74 +205,84 @@ SVG;
 			</div>
 		</div>
 
-		<div class="drag-area">
-
-			<div class="drag-area_loading hidden_element">
-				<?= $svg_drag_area_loading ?>
-				<div class="upload_title">
-					<h2>Uploading media</h2>
-					<p>Wait a little bit, your media will be ready soon.</p>
+		<?php if (!$perm->validateLoggedin()): ?>
+			<div class="drag-area">
+				<div class="drag-area_header">
+					<h2 class="drag-area_title text-white">Log in to upload media</h2>
+					<p class="drag-area_subtitle text-white">Log in to upload media. You can upload images, videos, and audio files.</p>
+					<a href="/login/" class="upload_button">Log in</a>
 				</div>
-				<div class="loading_bar">
-					<div class="loading_state"></div>
-				</div>
-				<p class="loading_info">Uploading <span></span>%</p>
-				<button class="cancel_upload">Cancel</button>
 			</div>
+		<?php else: ?>
+			<div class="drag-area">
 
-			<div class="drag-area_sharing hidden_element">
-				<div class="sharing_container">
-					<?= $svg_sharing_container ?>
-					<div class="sharing_info">
-						<p>Your <span>image</span> is ready for sharing</p>
-						<a href="">https://nostr.build/i/3856.png</a>
+				<div class="drag-area_loading hidden_element">
+					<?= $svg_drag_area_loading ?>
+					<div class="upload_title">
+						<h2>Uploading media</h2>
+						<p>Wait a little bit, your media will be ready soon.</p>
 					</div>
+					<div class="loading_bar">
+						<div class="loading_state"></div>
+					</div>
+					<p class="loading_info">Uploading <span></span>%</p>
+					<button class="cancel_upload">Cancel</button>
 				</div>
-				<button class="image_address">
-					<?= $svg_image_address ?>
-					Copy Image Address
-				</button>
-			</div>
 
-			<div class="drag-area_header">
-				<?= $svg_drag_area_header ?>
-				<div id="spinner-container">
-					<div class="spinner"></div>
-					<div class="spinner-text">Uploading...</div>
-				</div>
-				<form id="upload-media-form" class="form" action="upload.php" method="post" enctype="multipart/form-data" style="text-align: center">
-					<h2 class="drag-area_title">drag and drop your media here</h2>
-					<p class="drag-area_subtitle">OR</p>
-					<button type="button" class="upload_button">
-						<?= $svg_upload_button ?>
-						Choose Media
-					</button>
-					<p class="supported_file">supports: <span>jpg, png, webp, gif, mov, mp4 or mp3</span></p>
-					<input id="input_file" class="hidden_input" hidden type="file" accept=".jpeg, .jpg, .png, .gif, .mov, .mp4, .webp, .mp3" name="fileToUpload" id="fileToUpload" />
-					<!-- Submit button -->
-					<div class="upload_btn_group">
-						<input type="submit" value="Upload Media" name="submit" class="import_button media_upload_btn" disabled />
-						<input type="submit" value="Upload Profile Pic" name="submit_ppic" class="import_button pfp_upload_btn" disabled />
-					</div>
-					<!-- /Submit button -->
-					<div class="media_container">
-						<img src="" alt="" class="uploaded_img">
-						<video id="video-player" class="uploaded_video hidden_element" controls=""></video>
-						<audio id="audio-player" class="uploaded_audio hidden_element" controls=""></audio>
-					</div>
-					<div class="preview hidden_element" class="contact">(PREVIEW)</div>
-					<div class="import">
-						<div class="input_container">
-							<div class="import_icon">
-								<?= $svg_import_icon ?>
-							</div>
-							<input autocomplete="off" class="input_url" type="text" name="img_url" id="img_url" placeholder="OR paste image URL to import" /><br />
+				<div class="drag-area_sharing hidden_element">
+					<div class="sharing_container">
+						<?= $svg_sharing_container ?>
+						<div class="sharing_info">
+							<p>Your <span>image</span> is ready for sharing</p>
+							<a href="">https://nostr.build/i/3856.png</a>
 						</div>
 					</div>
-				</form>
-			</div>
+					<button class="image_address">
+						<?= $svg_image_address ?>
+						Copy Image Address
+					</button>
+				</div>
 
-		</div>
+				<div class="drag-area_header">
+					<?= $svg_drag_area_header ?>
+					<div id="spinner-container">
+						<div class="spinner"></div>
+						<div class="spinner-text">Uploading...</div>
+					</div>
+					<form id="upload-media-form" class="form" action="upload.php" method="post" enctype="multipart/form-data" style="text-align: center">
+						<h2 class="drag-area_title">drag and drop your media here</h2>
+						<p class="drag-area_subtitle">OR</p>
+						<button type="button" class="upload_button">
+							<?= $svg_upload_button ?>
+							Choose Media
+						</button>
+						<p class="supported_file">supports: <span>jpg, png, webp, gif, mov, mp4 or mp3</span></p>
+						<input id="input_file" class="hidden_input" hidden type="file" accept=".jpeg, .jpg, .png, .gif, .mov, .mp4, .webp, .mp3" name="fileToUpload" id="fileToUpload" />
+						<!-- Submit button -->
+						<div class="upload_btn_group">
+							<input type="submit" value="Upload Media" name="submit" class="import_button media_upload_btn" disabled />
+							<input type="submit" value="Upload Profile Pic" name="submit_ppic" class="import_button pfp_upload_btn" disabled />
+						</div>
+						<!-- /Submit button -->
+						<div class="media_container">
+							<img src="" alt="" class="uploaded_img">
+							<video id="video-player" class="uploaded_video hidden_element" controls=""></video>
+							<audio id="audio-player" class="uploaded_audio hidden_element" controls=""></audio>
+						</div>
+						<div class="preview hidden_element" class="contact">(PREVIEW)</div>
+						<div class="import">
+							<div class="input_container">
+								<div class="import_icon">
+									<?= $svg_import_icon ?>
+								</div>
+								<input autocomplete="off" class="input_url" type="text" name="img_url" id="img_url" placeholder="OR paste image URL to import" /><br />
+							</div>
+						</div>
+					</form>
+				</div>
+
+			</div>
+		<?php endif; ?>
 
 		<div class="terms">
 			By using nostr.build you agree to our <a href="/tos/"><span>Terms of Service</span></a>

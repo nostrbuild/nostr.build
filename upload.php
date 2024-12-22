@@ -50,39 +50,44 @@ $total_size_gb = round($stats['total_size'] / (1024 * 1024 * 1024), 2); // Conve
 		<?php include $_SERVER['DOCUMENT_ROOT'] . '/components/mainnav.php'; ?>
 	</header>
 	<?php
-	// TODO: Migrate to a new APIv2 (still in development)
-	global $awsConfig;
-	// Instantiates S3Service class
-	$s3 = new S3Service($awsConfig);
-	// Grab User npub if logged in
-	$usernpub = $perm->validateLoggedin() ? $_SESSION['usernpub'] : '';
-	// Instantiates MultimediaUpload class
-	$upload = new MultimediaUpload($link, $s3, false, $usernpub);
-	// Set the $_FILES array or initiate file download from the URL
-	$error = "Success";
-	try {
-		if (isset($_POST['img_url']) && !empty($_POST['img_url'])) {
-			[$s, $c, $m] = $upload->uploadFileFromUrl($_POST['img_url'], isset($_POST["submit_ppic"]));
-		} elseif (isset($_POST["submit_ppic"])) {
-			$upload->setFiles($_FILES);
-			[$s, $c, $m] = $upload->uploadProfilePicture();
-		} else {
-			$upload->setFiles($_FILES);
-			[$s, $c, $m] = $upload->uploadFiles();
+	if ($perm->validateLoggedin()) {
+		// TODO: Migrate to a new APIv2 (still in development)
+		global $awsConfig;
+		// Instantiates S3Service class
+		$s3 = new S3Service($awsConfig);
+		// Grab User npub if logged in
+		$usernpub = $perm->validateLoggedin() ? $_SESSION['usernpub'] : '';
+		// Instantiates MultimediaUpload class
+		$upload = new MultimediaUpload($link, $s3, false, $usernpub);
+		// Set the $_FILES array or initiate file download from the URL
+		$error = "Success";
+		try {
+			if (isset($_POST['img_url']) && !empty($_POST['img_url'])) {
+				[$s, $c, $m] = $upload->uploadFileFromUrl($_POST['img_url'], isset($_POST["submit_ppic"]));
+			} elseif (isset($_POST["submit_ppic"])) {
+				$upload->setFiles($_FILES);
+				[$s, $c, $m] = $upload->uploadProfilePicture();
+			} else {
+				$upload->setFiles($_FILES);
+				[$s, $c, $m] = $upload->uploadFiles();
+			}
+			$result = $s;
+		} catch (Exception $e) {
+			$erro = $e->getMessage();
+			$result = false;
 		}
-		$result = $s;
-	} catch (Exception $e) {
-		$erro = $e->getMessage();
-		$result = false;
-	}
-	// Even if result is true, it doesn't mean that the file was uploaded successfully
-	$uploadData = $upload->getUploadedFiles();
-	// Exemine the result to determine if the file was uploaded successfully
-	if (sizeof($uploadData) > 0 && $uploadData[0]['url'] != null) {
-		// We only allow single file upload for a free account
-		$uploadData = $uploadData[0];
+		// Even if result is true, it doesn't mean that the file was uploaded successfully
+		$uploadData = $upload->getUploadedFiles();
+		// Exemine the result to determine if the file was uploaded successfully
+		if (sizeof($uploadData) > 0 && $uploadData[0]['url'] != null) {
+			// We only allow single file upload for a free account
+			$uploadData = $uploadData[0];
+		} else {
+			$result = false;
+		}
 	} else {
 		$result = false;
+		$m = "You need to be logged in to upload files";
 	}
 
 	// Check if $uploadOk is set to 0 by an error
@@ -91,6 +96,9 @@ $total_size_gb = round($stats['total_size'] / (1024 * 1024 * 1024), 2); // Conve
 		&emsp;<span style="color:#F0F0F0">Sorry, your file was not uploaded! Make sure it is supported media or purchase an account for large files.</span>
 		&nbsp;<a style="color:#F0F0F0" href="https://nostr.build/plans/">Purchase a nostr.build account HERE</a>
 		<div style="color:#F0F0F0"><?= $m ?></div>
+		<?php if (!$perm->validateLoggedin()) : ?>
+			<div style="color:#F0F0F0">You need to be logged in to upload files</div>
+		<?php endif; ?>
 	<?php
 	// if everything is ok, try to upload file
 	else :
