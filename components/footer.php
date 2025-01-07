@@ -24,7 +24,7 @@
 			</ul>
 		</div>
 		<div class="footer_made_by">
-			&copy; nostr.build 2024
+			&copy; nostr.build 2025
 		</div>
 	</nav>
 </footer>
