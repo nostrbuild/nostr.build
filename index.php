@@ -176,7 +176,8 @@ SVG;
 	<link rel="stylesheet" href="/styles/header.css?v=19cde718a50bd676387bbe7e9e24c639" />
 
 	<script defer src="/scripts/index.js?v=d671642b314304fcb28d3d9cab34f78e"></script>
-
+	
+	<!--
 	<script defer src="https://unpkg.com/magic-snowflakes/dist/snowflakes.min.js"></script>
 	<script>
 		// Initialize the snowflakes when the DOM is ready
@@ -186,6 +187,7 @@ SVG;
 			});
 		});
 	</script>
+	-->
 
 	<title>nostr.build media uploader</title>
 </head>
