@@ -97,7 +97,7 @@ SVG;
       </span>
       Plans
     </a>
-    <a href="/Features" class="nav_button">
+    <a href="/features" class="nav_button">
       <span>
         <?= $svg_builder_icon ?>
       </span>
