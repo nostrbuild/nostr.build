@@ -100,7 +100,7 @@ $perm = new Permission();
       <p>
       <span style="color:white">Free Media Gallery:</span>  Curious what type of images, memes, gifs, and videos are being uploaded to Nostr? Check out the Free Media Gallery 
       to see the most recent uploades to nostr.build. This view only shares the free uploads, you would not be able to see any user account uploads 
-      which are kept private unless purposely shared by the account owner. <a class="ref_link" href="https://nostr.build/freeview">https://nostr.build/freeview </a>
+      which are kept private unless purposely shared by the account owner. <a class="ref_link" href="https://nostr.build/freeview" target="_blank">https://nostr.build/freeview </a>
       </p>
       <img src="https://cdn.nostr.build/assets/images/freeview01.gif" alt="Free Media Gallery">
     </section>
@@ -112,7 +112,7 @@ $perm = new Permission();
       <td>
       <p><span style="color:white">Delete Uploaded Media:</span>  If you upload free media to Nostr using a Nostr app, you can go back and delete it yourself with our delete tool. 
         This is most used when people dox themselves, accidentally uploading an image with their name or address. The image needs to be associated to 
-        your n-pub and you will need to authenticate before deleting. <a class="ref_link" href="https://nostr.build/delete/">https://nostr.build/delete/</a>
+        your n-pub and you will need to authenticate before deleting. <a class="ref_link" href="https://nostr.build/delete/" target="_blank">https://nostr.build/delete/</a>
         <img src="https://cdn.nostr.build/assets/images/delete_free01.png" alt="Delete Free Media Uploads" width="98%" style="max-width: 600px;" class="center"></p></td>
     </tr>
     </table></br>
@@ -123,7 +123,7 @@ $perm = new Permission();
         including AI and cartoons, children in inappropriate positions or clothing, we block the user and report their content and all related 
         information we have on the user to the authorities / NCMEC. We use multiple services when filtering and reporting CSAM including 
         Cloudflare's CSAM filter, Microsoft PhotoDNA, AI models and the NCMEC reporting portal. We do not filter or report anything else that is in 
-        compliance with our TOS, only CSAM. <a class="ref_link" href="https://www.missingkids.org/theissues/csam">https://www.missingkids.org/theissues/csam</a>
+        compliance with our TOS, only CSAM. <a class="ref_link" href="https://www.missingkids.org/theissues/csam" target="_blank">https://www.missingkids.org/theissues/csam</a>
         </p>
         <img src="https://cdn.nostr.build/assets/images/ncmec01.png" alt="CSAM NCMEC Reporting" style="width:70%">
         </section>
@@ -168,7 +168,7 @@ $perm = new Permission();
       <p><span style="color:white">AI Studio:</span>  Our latest and one of our coolest features is the all-new AI Studio. AI Studio provides text-to-image generation with multiple 
         popular models to choose from. While other platforms only offer a single text-to-image model (ex. ChatGPT/DallE, Discord/Midjourney, X/Grok2), 
         nostr.build offers multiple models on the same platform. We also offer a complete media management system for your AI creations mentioned above, 
-        the other platforms don’t have that. <a class="ref_link" href="https://cdn.nostr.build/assets/images/nb_aistudio_compete01.pdf">Check out our competitive comparison here!</a> For Pro accounts we offer SDXL-Lightning, and Stable Diffusion 1. </p></td>
+        the other platforms don’t have that. <a class="ref_link" href="https://cdn.nostr.build/assets/images/nb_aistudio_compete01.pdf" target="_blank">Check out our competitive comparison here!</a> For Pro accounts we offer SDXL-Lightning, and Stable Diffusion 1. </p></td>
         <td style="width:30%"><img src="https://cdn.nostr.build/assets/images/aistudio_02.png" alt="Metadata Locatrion 1" width="98%" style="max-width: 180px;" >
         <img src="https://cdn.nostr.build/assets/images/aiimage03.png" alt="Metadata Location 2" width="98%" style="max-width: 120px;">
         </td>
@@ -274,7 +274,7 @@ $perm = new Permission();
     <tr>
       <td>
       <p><span style="color:white">Host a Creators Page:</span> Creators have the option to share their media to their Creators page hosted on nostr.build. 
-      This makes it easier for people to see, donate, and share. <a class="ref_link" href="https://nostr.build/creators/">Check out all the Creators and their masterpieces here!</a>
+      This makes it easier for people to see, donate, and share. <a class="ref_link" href="https://nostr.build/creators/" target="_blank">Check out all the Creators and their masterpieces here!</a>
       <img src="https://cdn.nostr.build/assets/images/creators01.gif" alt="Creators Page" width="80%" style="max-width: 350px;" class="center"></p></td>
     </tr>
     </table></br>
@@ -326,8 +326,8 @@ $perm = new Permission();
 
     <p><span style="color:white">Traditional and AI Media Editors:</span>  Combining a powerful, standard media editor Pintura, with modern AI image editing features from stability.ai 
       would allow users to quickly and easily modify their media using multiple tools.
-      </br><a class="ref_link" href="https://pqina.nl/pintura/?ref=pqina ">https://pqina.nl/pintura/?ref=pqina </a>
-      </br><a class="ref_link" href="https://stability.ai/stable-image ">https://stability.ai/stable-image </a>
+      </br><a class="ref_link" href="https://pqina.nl/pintura/?ref=pqina" target="_blank">https://pqina.nl/pintura/?ref=pqina </a>
+      </br><a class="ref_link" href="https://stability.ai/stable-image" target="_blank">https://stability.ai/stable-image </a>
     </p></br>
 
     <p><span style="color:white">Video Transcoding and Player:</span> nostr.build has never modified video meaning all different formats and sizes are uploaded, 
