@@ -46,6 +46,10 @@ SVG;
       <?= $svg_plans_icon ?>
       Plans
     </a>
+    <a href="/features" class="nav_button">
+      <?= $svg_builder_icon ?>
+      Features
+    </a>
     <a href="/creators" class="nav_button">
       <?= $svg_creator_icon ?>
       Creators
@@ -64,10 +68,6 @@ SVG;
     <a href="https://shop.nostr.build" class="nav_button">
       <?= $svg_memestr_icon ?>
       Shop
-    </a>
-    <a href="/about" class="nav_button">
-      <?= $svg_about_icon ?>
-      About
     </a>
     <a href="/delete/" class="nav_button">
       <?= $svg_delete_icon ?>
@@ -97,11 +97,11 @@ SVG;
       </span>
       Plans
     </a>
-    <a href="/builders" class="nav_button">
+    <a href="/Features" class="nav_button">
       <span>
         <?= $svg_builder_icon ?>
       </span>
-      Builders
+      Features
     </a>
     <a href="/creators" class="nav_button">
       <span>
@@ -129,12 +129,6 @@ SVG;
         <?= $svg_memestr_icon ?>
       </span>
       Shop
-    </a>
-    <a href="/edu" class="nav_button">
-      <span>
-        <?= $svg_edu_icon ?>
-      </span>
-      Edu
     </a>
     <a href="/about" class="nav_button">
       <span>
