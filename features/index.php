@@ -42,10 +42,6 @@ $perm = new Permission();
       min-width: 20em; 
     }
 
-
-
-
-
   </style>
 
   <title>nostr.build - Features</title>
@@ -145,7 +141,6 @@ $perm = new Permission();
     </tr>
     </table></br></br>
 
-
     <h3>Pro Accounts</h3>
 
     <table style="width:100%">
@@ -173,7 +168,7 @@ $perm = new Permission();
       <p><span style="color:white">AI Studio:</span>  Our latest and one of our coolest features is the all-new AI Studio. AI Studio provides text-to-image generation with multiple 
         popular models to choose from. While other platforms only offer a single text-to-image model (ex. ChatGPT/DallE, Discord/Midjourney, X/Grok2), 
         nostr.build offers multiple models on the same platform. We also offer a complete media management system for your AI creations mentioned above, 
-        the other platforms don’t have that.  Check out our competitive comparison here!   For Pro accounts we offer SDXL-Lightning, and Stable Diffusion 1. </p></td>
+        the other platforms don’t have that. <a class="ref_link" href="https://cdn.nostr.build/assets/images/nb_aistudio_compete01.pdf">Check out our competitive comparison here!</a> For Pro accounts we offer SDXL-Lightning, and Stable Diffusion 1. </p></td>
         <td style="width:30%"><img src="https://cdn.nostr.build/assets/images/aistudio_02.png" alt="Metadata Locatrion 1" width="98%" style="max-width: 180px;" >
         <img src="https://cdn.nostr.build/assets/images/aiimage03.png" alt="Metadata Location 2" width="98%" style="max-width: 120px;">
         </td>
@@ -344,12 +339,10 @@ $perm = new Permission();
     </p></br>
 
     <p><span style="color:white">Blossom:</span> Blobs Stores Simplly On Metterveses is a nostr spec that uses nostr public/private keys to securely store user content on a selected Blossom server.
-    </p>
+    </p></br>
 
     <p><span style="color:white">Primal Support:</span> Integrated support for the nostr Primal app. No more copy/paste, just select nostr.build as your media provider and start uploading direct from Primal.
     </p>
-
-
 
   </main>
 
