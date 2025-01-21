@@ -346,6 +346,9 @@ $perm = new Permission();
     <p><span style="color:white">Blossom:</span> Blobs Stores Simplly On Metterveses is a nostr spec that uses nostr public/private keys to securely store user content on a selected Blossom server.
     </p>
 
+    <p><span style="color:white">Primal Support:</span> Integrated support for the nostr Primal app. No more copy/paste, just select nostr.build as your media provider and start uploading direct from Primal.
+    </p>
+
 
 
   </main>
