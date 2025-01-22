@@ -236,7 +236,7 @@ $perm = new Permission();
     </tr>
     </table></br></br>
 
-    <h3>- Creator Accounts</h3>
+    <h3>Creator Accounts</h3>
 
     <table style="width:100%">
     <tr>
