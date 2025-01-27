@@ -3570,9 +3570,9 @@ onDropCB(event) {
 												<button type="button"
 													@click="uploadVideoPoster('mediaP_' + fileStore.mediaProperties.targetFile?.id, fileStore.mediaProperties.targetFile?.id, 1, null, (data) => { isGrabbing = false; fileStore.mediaProperties.targetFile.width = data.dimensions.width; fileStore.mediaProperties.targetFile.height = data.dimensions.height; fileStore.mediaProperties.targetFile.posterChecked = false}, () => {isGrabbing = false}); isGrabbing = true"
 													:disabled="isGrabbing"
-													class="relative flex items-center p-2 justify-between rounded-md bg-black text-nbpurple-100 hover:bg-nbpurple-500 hover:text-nbpurple-200 focus:outline-none focus:ring-2 focus:ring-nbpurple-500">
+													class="relative flex items-center p-2 justify-between rounded-md bg-nbpurple-600 text-nbpurple-100 hover:bg-nbpurple-500 hover:text-nbpurple-200 focus:outline-none focus:ring-2 focus:ring-nbpurple-500">
 													<span class="text-sm font-medium text-nbpurple-50"
-														x-text="isGrabbing ? 'Uploading' : 'Make current frame a poster'"></span>
+														x-text="isGrabbing ? 'Uploading' : 'Make current frame the thumbnail'"></span>
 													<svg class="size-5 ml-2" :class="{ 'animate-bounce': isGrabbing }" fill="none"
 														viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true"
 														data-slot="icon">
@@ -4186,7 +4186,7 @@ onDropCB(event) {
 												<div class="flex items-center overflow-hidden whitespace-nowrap text-ellipsis">
 													<p
 														class="ml-4 text-xs font-medium text-nbpurple-100 overflow-hidden whitespace-nowrap text-ellipsis">
-														&lt;iframe&gt; code</p>
+														&lt;iframe&gt; html code</p>
 												</div>
 												<button type="button" x-data="{ linkCopied: false }"
 													@click="copyUrlToClipboard(fileStore.embed.generateIframeCode(fileStore.mediaProperties.targetFile)); linkCopied = true; setTimeout(() => linkCopied = false, 2000); showToast = true"
