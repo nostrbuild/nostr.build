@@ -119,7 +119,7 @@ $perm = new Permission();
     <hr width="90%" size="1" color="9d83a2" class="center"> </br>
   
     <section class="paragraph">
-    <p><span style="color:white">CSAM Scanning, Removal and Reporting:</span>  CSAM is not tolerated in any way. Not just CSAM, but any media that exploits a child in any way 
+    <p><span style="color:white">CSAM Scanning, Removal and Reporting:</span>  CSAM is not tolerated in any way. Not just CSAM, but any media that exploits a child 
         including AI and cartoons, children in inappropriate positions or clothing, we block the user and report their content and all related 
         information we have on the user to the authorities / NCMEC. We use multiple services when filtering and reporting CSAM including 
         Cloudflare's CSAM filter, Microsoft PhotoDNA, AI models and the NCMEC reporting portal. We do not filter or report anything else that is in 
