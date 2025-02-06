@@ -158,16 +158,76 @@ class S3Service
       }
     };
 
-    $uploadPromises = [];
-    $uploadPromises[] = $attemptUpload($this->r2, $r2Options, $maxRetries);
-    $uploadPromises[] = $attemptUpload($this->e2, $e2Options, $maxRetries);
+    $uploadPromises = [
+      $attemptUpload($this->r2, $r2Options, $maxRetries),
+      $attemptUpload($this->e2, $e2Options, $maxRetries)
+    ];
 
     try {
-      $results = Promise\Utils::unwrap($uploadPromises);
-      return true;
+      $results = Promise\Utils::settle($uploadPromises)->wait();
+      $allSuccess = true;
+
+      foreach ($results as $result) {
+        if ($result['state'] !== 'fulfilled') {
+          $allSuccess = false;
+          error_log("Upload failed: " . $result['reason']->getMessage());
+        }
+      }
+
+      return $allSuccess;
     } catch (\Throwable $e) {
-      error_log("Upload Error: " . $e->getMessage());
+      error_log("Unexpected error: " . $e->getMessage());
       return false;
+    }
+  }
+
+  public function testUserS3BackupConfig(string $endpoint, string $bucket, string $region, string $accessKey, string $secretKey): array
+  {
+    $s3Config = [
+      'region'  => $region,
+      'version' => 'latest',
+      'endpoint' => $endpoint,
+      'use_path_style_endpoint' => true,
+      'credentials' => [
+        'key'    => $accessKey,
+        'secret' => $secretKey,
+      ],
+      'bucket' => $bucket,
+      'use_aws_shared_config_files' => false,
+    ];
+
+    $s3 = new S3Client($s3Config);
+    // Create a test file with the current date and time as the content
+    $sourcePath = tempnam(sys_get_temp_dir(), 'nostr_build_test');
+    $sourceFile = fopen($sourcePath, 'w');
+    fwrite($sourceFile, date('Y-m-d H:i:s'));
+    fclose($sourceFile);
+
+    $s3Params = [
+      'Bucket'     => $bucket,
+      'Key'        => 'nostr_build_test.txt',
+      'SourceFile' => $sourcePath,
+      'ACL'        => 'private',
+      'retries'    => 6,
+      'StorageClass' => 'STANDARD',
+      'CacheControl' => 'max-age=2592000',
+      'ContentType' => 'text/plain',
+    ];
+
+    try {
+      $result = $s3->putObject($s3Params);
+      if ($result['@metadata']['statusCode'] !== 200) {
+        error_log("The object was not stored. Status Code: " . $result['@metadata']['statusCode'] . "\n");
+        return ['success' => false, 'message' => 'The object was not stored.', 'statusCode' => $result['@metadata']['statusCode'], 'bucket' => $bucket, 'error' => json_encode($result)];
+      }
+      // Clean up the test file
+      unlink($sourcePath);
+      return ['success' => true, 'message' => 'The object was stored.', 'statusCode' => $result['@metadata']['statusCode'], 'bucket' => $bucket];
+    } catch (AwsException $e) {
+      error_log("s3 Store Object Error: " . $e->getMessage());
+      // Clean up the test file
+      unlink($sourcePath);
+      return ['success' => false, 'message' => 'An error occurred while storing the object.', 'error' => $e->getMessage()];
     }
   }
 
