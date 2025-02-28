@@ -3662,7 +3662,7 @@ onDropCB(event) {
 															Share</option>
 														<option value="props" :selected="fileStore.mediaProperties.currentTab === $el.value">
 															Properties</option>
-														<option value="stats" :selected="fileStore.mediaProperties.currentTab === $el.value">
+														<option x-show="profileStore.profileInfo.isAnalyticsEligible" value="stats" :selected="fileStore.mediaProperties.currentTab === $el.value">
 															Statistics</option>
 														<option x-show="profileStore.profileInfo.isAIToolsEligible" value="ai_tools"
 															:selected="fileStore.mediaProperties.currentTab === $el.value">
