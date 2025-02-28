@@ -731,7 +731,7 @@ if (isset($_GET["action"])) {
 			exit;
 		}
 		// Check user level and only allow 1, 10, 99
-		if (!$perm->validatePermissionsLevelAny(1, 10, 99)) {
+		if (!$perm->validatePermissionsLevelAny(1, 2, 10, 99)) {
 			http_response_code(403);
 			echo json_encode(array("error" => "You do not have permission to get media stats"));
 			exit;
