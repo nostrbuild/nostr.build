@@ -588,7 +588,7 @@ Alpine.store('profileStore', {
     },
     // Analytics
     get isAnalyticsEligible() {
-      return [1, 10, 99].includes(this.accountLevel) &&
+      return [1, 2, 10, 99].includes(this.accountLevel) &&
         !this.accountExpired;
     },
     allowed(permission) {
