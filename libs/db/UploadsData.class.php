@@ -129,7 +129,7 @@ class UploadsData extends DatabaseTable
     return $rejected;
   }
 
-  public function checkBlacklisted(string $npub = null): bool
+  public function checkBlacklisted(?string $npub = null): bool
   {
     $sql = "SELECT id FROM blacklist WHERE npub = ? LIMIT 1";
     $blacklisted = false;
@@ -155,7 +155,7 @@ class UploadsData extends DatabaseTable
     return $blacklisted;
   }
 
-  public function getUploadData($filehash)
+  public function getUploadData(string $filehash): array|bool
   {
     $sql = "SELECT * FROM {$this->tableName} WHERE filename LIKE ?";
     try {

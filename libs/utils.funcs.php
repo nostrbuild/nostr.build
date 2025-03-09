@@ -272,6 +272,11 @@ function checkUrlSanity(string $url): bool
     throw new InvalidArgumentException('Access to the server\'s hostname is not allowed');
   }
 
+  // Checking for *.blossom.band or blossom.band domains
+  if (preg_match("/\.blossom\.band$/", $hostname) || $hostname === 'blossom.band') {
+    throw new InvalidArgumentException('Access to Blossom domains is not allowed');
+  }
+
   // Checking for server domain
   $serverDomain = substr($_SERVER['SERVER_NAME'], strpos($_SERVER['SERVER_NAME'], '.') + 1);
   if (strpos($hostname, $serverDomain) !== false) {
