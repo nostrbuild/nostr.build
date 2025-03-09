@@ -60,7 +60,6 @@ class HmacAuthHandlerBodyless
     $res = $this->verifyAuthorizationHeader([
       'method' => $this->request->getMethod(),
       'url' => $this->request->getUri(),
-      'body' => $this->body,
       'secret' => $this->secret,
       'authorizationHeader' => $auth
     ]);

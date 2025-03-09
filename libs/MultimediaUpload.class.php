@@ -237,7 +237,7 @@ class MultimediaUpload
    * @param string $tempDirectory
    * @return void
    */
-  public function setFiles(array $files, string $tempDirectory = null): void
+  public function setFiles(array $files, ?string $tempDirectory = null): void
   {
     // We make temp directory optional, and use the system's temp directory by default
     if ($tempDirectory === null) {
@@ -258,7 +258,7 @@ class MultimediaUpload
    * @param string $tempDirectory
    * @return void
    */
-  public function setPsrFiles(array $files, mixed $meta = [], string $tempDirectory = null): void
+  public function setPsrFiles(array $files, mixed $meta = [], ?string $tempDirectory = null): void
   {
     // We make temp directory optional, and use the system's temp directory by default
     if ($tempDirectory === null) {
@@ -642,7 +642,7 @@ class MultimediaUpload
    * @throws \Exception
    * @return array
    */
-  public function uploadFiles(bool $no_transform = false): array
+  public function uploadFiles(bool $no_transform = false, ?bool $blossom = false, ?string $sha256 = '', ?string $clientInfo = ''): array
   {
     // Set no_transform flag, but check if it is already set nad truthy
     if ($this->no_transform !== true) {
@@ -671,11 +671,16 @@ class MultimediaUpload
         // Calculate the sha256 hash of the file before any transformations
         $fileSha256 = $this->generateFileName(0);
         $this->file['sha256'] = $fileSha256;
+        // If Blossom upload and sha256 is provided, compare it with the file sha256
+        if ($blossom && $sha256 && $fileSha256 !== $sha256) {
+          error_log('File hash mismatch: ' . $fileSha256 . ' != ' . $sha256);
+          return [false, 400, 'File hash mismatch'];
+        }
 
         // Check uploads_data table for duplicates
         // If the file already exists, we will skip it
         // Populate the uploadedFiles array with the file data
-        if (!$this->pro && $this->checkForDuplicates($fileSha256)) {
+        if (!$this->pro && $this->checkForDuplicates($fileSha256, blossom: $blossom)) {
           error_log('Duplicate file:' . $fileSha256 . PHP_EOL);
           //error_log('Npub:' . $this->userNpub ?? 'anon' . PHP_EOL);
           //error_log('Client Info:' . $_SERVER['CLIENT_REQUEST_INFO'] ?? 'unknown' . PHP_EOL);
@@ -759,6 +764,8 @@ class MultimediaUpload
             error_log("Video repackaging failed: " . $e->getMessage());
           }
         }
+        // Generate transformed file hash
+        $transformedFileSha256 = $this->generateFileName(0);
         // By this time the image has been processed and saved to a temporary location
         // It is now ready to be uploaded to S3 and information about it stored in the database
         // Begin a database transaction, so that we can rollback if anything fails
@@ -789,6 +796,7 @@ class MultimediaUpload
             (int)($fileData['dimensions']['height'] ?? 0),
             $fileData['blurhash'] ?? null,
             $fileType['mime'] ?? null,
+            $blossom && $no_transform ? $sha256 : $transformedFileSha256,
           );
           if ($insert_id === false) {
             $returnError[] = [false, 500, 'Failed to insert into database'];
@@ -834,13 +842,13 @@ class MultimediaUpload
             $fileType['mime'],
             !empty($file['title']) ? $file['title'] : $originalFileName,
             !empty($file['ai_prompt']) ? $file['ai_prompt'] : '',
+            $blossom && $no_transform ? $sha256 : $transformedFileSha256,
           )) {
             $returnError[] = [false, 500, 'Failed to update database'];
             throw new Exception('Failed to update database');
           }
         }
-        // Generate transformed file hash
-        $transformedFileSha256 = $this->generateFileName(0);
+
         if (!$this->uploadToS3($newFilePrefix . $newFileName, $fileSha256)) {
           $returnError[] = [false, 500, 'Failed to upload to S3'];
           throw new Exception('Upload to S3 failed');
@@ -892,7 +900,7 @@ class MultimediaUpload
           shouldTranscode: false,
           uploadAccountType: $this->pro ? 'subscriber' : 'free',
           uploadTime: time(),
-          uploadedFileInfo: $_SERVER['CLIENT_REQUEST_INFO'] ?? null,
+          uploadedFileInfo: $blossom && !empty($clientInfo) ? $clientInfo : $_SERVER['CLIENT_REQUEST_INFO'] ?? null,
           uploadNpub: $this->userNpub ?? null,
           fileOriginalUrl: null,
           orginalSha256Hash: $fileSha256, // NIP-96
@@ -956,7 +964,7 @@ class MultimediaUpload
    * 4) Download the file to a temporary location
    * 5) Set the file property to the downloaded file
    */
-  public function uploadFileFromUrl(string $url, bool $pfp = false, ?string $title = '', ?string $ai_prompt = '', ?bool $no_transform = false): array
+  public function uploadFileFromUrl(string $url, bool $pfp = false, ?string $title = '', ?string $ai_prompt = '', ?bool $no_transform = false, ?bool $blossom = false, ?string $sha256 = '', ?string $clientInfo = ''): array
   {
     $sizeLimit = $this->pro ?
       $this->userAccount->getRemainingStorageSpace() :
@@ -1074,7 +1082,12 @@ class MultimediaUpload
     if ($pfp) {
       return $this->uploadProfilePicture();
     } else {
-      return $this->uploadFiles($no_transform); // URL uploads are always free
+      return $this->uploadFiles(
+        no_transform: $no_transform,
+        blossom: $blossom,
+        sha256: $sha256,
+        clientInfo: $clientInfo,
+      ); // URL uploads are always free
     }
   }
 
@@ -1223,8 +1236,12 @@ class MultimediaUpload
    * @param bool $profile
    * @return bool
    */
-  protected function checkForDuplicates(string $filehash, bool $profile = false): bool
+  protected function checkForDuplicates(string $filehash, ?bool $profile = false, ?bool $blossom = false): bool
   {
+    // Blossom is deduplicated at user facing API level
+    if ($blossom) {
+      return false;
+    }
     $data = $this->uploadsData->getUploadData($filehash);
 
     // This is so we can satisfy the NIP-96 requirements
@@ -1654,6 +1671,7 @@ class MultimediaUpload
     int $media_height = 0,
     ?string $blurhash = null,
     ?string $mimeType = null,
+    ?string $blossom_hash = null,
   ): int | bool {
     // Insert the file data into the database but don't commit yet
     try {
@@ -1670,6 +1688,7 @@ class MultimediaUpload
         // All new free uploads are pending approval by default
         // Rejected files are not stored in the database
         'approval_status' => 'pending', // 'approved', 'pending', 'rejected', 'adult'
+        'blossom_hash' => $blossom_hash,
       ], false); // false parameter to do not commit yet
 
       return $insert_id;
@@ -1700,6 +1719,7 @@ class MultimediaUpload
     string $fileMimeType,
     ?string $title = '',
     ?string $ai_prompt = '',
+    ?string $blossom_hash = null,
   ): bool {
     // Update the database with the new file name and size
     $folder_id = null;
@@ -1732,6 +1752,7 @@ class MultimediaUpload
         'mime_type' => $fileMimeType,
         'title' => $title,
         'ai_prompt' => $ai_prompt,
+        'blossom_hash' => $blossom_hash,
       ]);
     } catch (Exception $e) {
       error_log($e->getMessage());
