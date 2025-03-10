@@ -63,6 +63,8 @@ $app->group('/blossom', function (RouteCollectorProxy $group) {
         );
       }
       $data = $upload->getUploadedFiles();
+      // Signal upstream is uploafEligible
+      $data[0]['upload_eligible'] = $accountUploadEligible;
       // Add fallback if url is set for uploaded files
       if ($metadata['endpoint'] === 'mirror') {
         $data[0]['fallback'] = $metadata['mirror_url'];
