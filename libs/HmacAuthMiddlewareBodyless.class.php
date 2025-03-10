@@ -1,19 +1,18 @@
 <?php
 
 require_once __DIR__ . '/../config.php';
-require_once __DIR__ . '/HmacAuthHandler.class.php';
+require_once __DIR__ . '/HmacAuthHandlerBodyless.class.php';
 
 use Psr\Http\Server\MiddlewareInterface;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
 use Psr\Http\Server\RequestHandlerInterface as RequestHandler;
-use Psr\Http\Server\Response as ResponseClass;
 use Slim\Psr7\Response as Psr7Response;
 
 /**
  * Summary of HmacAuthMiddleware
  */
-class HmacAuthMiddleware implements MiddlewareInterface
+class HmacAuthMiddlewareBodyless implements MiddlewareInterface
 {
   private $secrets;
 
@@ -37,7 +36,7 @@ class HmacAuthMiddleware implements MiddlewareInterface
 
     foreach ($secrets as $secret) {
       try {
-        $hmacAuthHandler = new HmacAuthHandler($request, $secret);
+        $hmacAuthHandler = new HmacAuthHandlerBodyless($request, $secret);
         $hmacAuthHandler->authenticate();
         $response = $handler->handle($request);
         return $response;

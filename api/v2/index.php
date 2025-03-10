@@ -120,16 +120,19 @@ $container->set('multimediaUploadFactory', function () {
 });
 
 // Delete media factory
-class DeleteMediaFactory {
+class DeleteMediaFactory
+{
   private $link;
   private $awsConfig;
 
-  public function __construct($link, $awsConfig) {
+  public function __construct($link, $awsConfig)
+  {
     $this->link = $link;
     $this->awsConfig = $awsConfig;
   }
 
-  public function create($userNpub, $mediaName) {
+  public function create($userNpub, $mediaName)
+  {
     return new DeleteMedia($userNpub, $mediaName, $this->link, new S3Service($this->awsConfig));
   }
 }
@@ -194,6 +197,7 @@ require_once __DIR__ . '/routes_uppy.php'; // Include uppy upload routes
 require_once __DIR__ . '/routes_account.php'; // Include pro account routes
 require_once __DIR__ . '/routes_btcpay.php'; // Include btcpay routes
 require_once __DIR__ . '/routes_gifs.php'; // Include gif routes
+require_once __DIR__ . '/routes_blossom.php'; // Include blossom routes
 
 $contentLengthMiddleware = new ContentLengthMiddleware();
 $app->add($contentLengthMiddleware);
