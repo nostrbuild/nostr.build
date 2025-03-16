@@ -644,7 +644,7 @@ class MultimediaUpload
    */
   public function uploadFiles(bool $no_transform = false, ?bool $blossom = false, ?string $sha256 = '', ?string $clientInfo = ''): array
   {
-    // Set no_transform flag, but check if it is already set nad truthy
+    // Set no_transform flag, but check if it is already set and truthy
     if ($this->no_transform !== true) {
       $this->no_transform = $no_transform;
     }
@@ -680,7 +680,8 @@ class MultimediaUpload
         // Check uploads_data table for duplicates
         // If the file already exists, we will skip it
         // Populate the uploadedFiles array with the file data
-        if (!$this->pro && $this->checkForDuplicates($fileSha256, blossom: $blossom)) {
+        // This will only be used with non-Blossom uploads
+        if (!$this->pro && !$blossom && $this->checkForDuplicates($fileSha256)) {
           error_log('Duplicate file:' . $fileSha256 . PHP_EOL);
           //error_log('Npub:' . $this->userNpub ?? 'anon' . PHP_EOL);
           //error_log('Client Info:' . $_SERVER['CLIENT_REQUEST_INFO'] ?? 'unknown' . PHP_EOL);
@@ -766,6 +767,15 @@ class MultimediaUpload
         }
         // Generate transformed file hash
         $transformedFileSha256 = $this->generateFileName(0);
+        // Check dupes for blossom uploads
+        // THIS IS SO DUMB, I HATE IT! Given that Blossom had ZERO regard for backwards compatibility,
+        // we have to jump through hoops to make sure we don't upload duplicates or corrupt the database of existing files
+        // NOTE TO SELF: NEVER IMPLEMENT ANOTHER DUMB IDEA OR PROTOCOL LIKE THIS!
+        // Thanks to Blossom, we will be wasting CPU cycles on optimizing potential duplicate so we can just fucking check hash
+        if (!$this->pro && $blossom && $this->checkForDuplicates($transformedFileSha256, blossom: $blossom, clientInfo: $clientInfo, sha256: $sha256, no_transform: $this->no_transform, originalSha256: $fileSha256)) {
+          error_log('Duplicate file:' . $fileSha256 . PHP_EOL);
+          continue;
+        }
         // By this time the image has been processed and saved to a temporary location
         // It is now ready to be uploaded to S3 and information about it stored in the database
         // Begin a database transaction, so that we can rollback if anything fails
@@ -796,7 +806,7 @@ class MultimediaUpload
             (int)($fileData['dimensions']['height'] ?? 0),
             $fileData['blurhash'] ?? null,
             $fileType['mime'] ?? null,
-            $blossom && $no_transform ? $sha256 : $transformedFileSha256,
+            $blossom && $no_transform ? $sha256 : ($blossom ? $transformedFileSha256 : null),
           );
           if ($insert_id === false) {
             $returnError[] = [false, 500, 'Failed to insert into database'];
@@ -842,7 +852,7 @@ class MultimediaUpload
             $fileType['mime'],
             !empty($file['title']) ? $file['title'] : $originalFileName,
             !empty($file['ai_prompt']) ? $file['ai_prompt'] : '',
-            $blossom && $no_transform ? $sha256 : $transformedFileSha256,
+            $blossom && $no_transform ? $sha256 : ($blossom ? $transformedFileSha256 : null),
           )) {
             $returnError[] = [false, 500, 'Failed to update database'];
             throw new Exception('Failed to update database');
@@ -1171,7 +1181,7 @@ class MultimediaUpload
 
   /**
    * Summary of validateFile
-   * @return bool
+   * @return array
    */
   protected function validateFile(): array
   {
@@ -1236,17 +1246,24 @@ class MultimediaUpload
    * @param bool $profile
    * @return bool
    */
-  protected function checkForDuplicates(string $filehash, ?bool $profile = false, ?bool $blossom = false): bool
+  protected function checkForDuplicates(string $filehash, ?bool $profile = false, ?bool $blossom = false, ?string $sha256 = '', ?string $clientInfo = '', ?bool $no_transform = false, ?string $originalSha256 = ''): bool
   {
-    // Blossom is deduplicated at user facing API level
-    if ($blossom) {
-      return false;
-    }
-    $data = $this->uploadsData->getUploadData($filehash);
+    // Another LACK of thoughtfulnes in the design of Blossom
+    // We have to check for duplicates in the uploads_data table
+    // using the original sha256 and not transformed sha256
+    // Now we need to distinguish between no_transform and blossom vs. blossom with transform
+    // When /media endpoint is used file hash and original hash will differ, which is identical to nip-96
+    // When /upload endpoint is used file hash and original hash will be the same
+    $data = $this->uploadsData->getUploadData($blossom && !$no_transform ? $originalSha256 : $filehash);
 
     // This is so we can satisfy the NIP-96 requirements
     if (!empty($this->userNpub)) {
       try {
+        // For both blossom and non-blossom uploads, we need to record the upload attempt
+        // using the passed hash, so we can use that to delete properly later
+        // otherwise delete will not find the upload attempt based on blossom hash
+        // Blossom: records final sha256 hash after all transformations
+        // which allows us to delete the file or association by hash
         $this->uploadAttempts->recordUpload($filehash, $this->userNpub);
       } catch (Exception $e) {
         error_log("Failed to record upload attempt: " . $e->getMessage());
@@ -1260,6 +1277,7 @@ class MultimediaUpload
     $width = $data['media_width'] ?? 0;
     $height = $data['media_height'] ?? 0;
     $blurhash = $data['blurhash'] ?? "LEHV6nWB2yk8pyo0adR*.7kCMdnj"; // Default blurhash
+    $blossom_hash = $blossom ? $data['blossom_hash'] ?? '' : '';
 
     if (
       in_array($data['type'], ['picture']) &&
@@ -1290,21 +1308,48 @@ class MultimediaUpload
       $key = $this->determinePrefix($data['type']) . $data['filename'];
       // TODO: Needs update to handle non-prefixed paths based on media type
       $fileS3Metadata = $this->s3Service->getObjectMetadataFromR2(objectKey: $key, mime: $data['mime'], paidAccount: $this->pro);
-      $stored_object_sha256 = $fileS3Metadata['Metadata']['sha256'] ?? '';
 
       if ($fileS3Metadata === false) {
         throw new Exception('Failed to get S3 metadata');
       }
+
+      $stored_object_sha256 = $fileS3Metadata['Metadata']['sha256'] ?? '';
     } catch (Exception $e) {
       error_log("Failed to get S3 metadata: " . $e->getMessage());
       return false;
     }
 
+    if($blossom && empty($stored_object_sha256)) {
+      // If we are in blossom mode, and we do not have a stored sha256 hash, we should not proceed
+      return false;
+    }
+
+    if ($blossom && $no_transform && $stored_object_sha256 !== $sha256) {
+      return false;
+    }
+
+    // Record the blossom hash if it is not already recorded
+    if ($blossom && empty($blossom_hash)) {
+      $this->uploadsData->update(
+        $data['id'],
+        [
+          'blossom_hash' => $sha256
+        ]
+      );
+    }
+
+    // Handle OX data
+    // If checkDuplicate is non-blossom, we take $filehash
+    // If checkDuplicate is $blossom and $no_transform, we take $originalSha256
+    // If checkDuplicate is $blossom and !$no_transform, we take $filehash
+    // Thanks, Obama!
+    $fileDataOX = !$blossom ? $filehash : ($blossom && $no_transform ? $filehash : $originalSha256); 
+
     $fileData = [
       'input_name' => $this->file['input_name'],
       'name' => $data['filename'],
       'sha256' => $stored_object_sha256,
-      'original_sha256' => $filehash, // NIP-96
+      'original_sha256' => $fileDataOX, // NIP-96 & Blossom
       'type' => $data['type'],
       'mime' => $fileS3Metadata->get('ContentType'),
       'size' => $data['file_size'],
@@ -1373,11 +1418,12 @@ class MultimediaUpload
         shouldTranscode: false,
         uploadAccountType: $this->pro ? 'subscriber' : 'free', // Not likely to be used by subscribers ever
         uploadTime: time(),
-        uploadedFileInfo: $_SERVER['CLIENT_REQUEST_INFO'] ?? null,
+        //uploadedFileInfo: $_SERVER['CLIENT_REQUEST_INFO'] ?? null,
+        uploadedFileInfo: $blossom && !empty($clientInfo) ? $clientInfo : $_SERVER['CLIENT_REQUEST_INFO'] ?? null,
         uploadNpub: $this->userNpub ?? null,
         fileOriginalUrl: null,
         doVirusScan: false,
-        //orginalSha256Hash: $filehash, // NIP-96 not needed for duplicates
+        orginalSha256Hash: $fileDataOX,
       );
       $this->uploadWebhook->sendPayload();
       //error_log('Webhook payload sent for:' . $data['filename'] . PHP_EOL);

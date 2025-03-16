@@ -3,6 +3,7 @@
 require_once $_SERVER['DOCUMENT_ROOT'] . '/SiteConfig.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/utils.funcs.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/db/UploadsData.class.php';
+require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/BlossomFrontEndAPI.class.php';
 
 /*
 Main class to work with accounts
@@ -96,6 +97,9 @@ class Account
    */
   private UploadsData $uploadsData;
 
+  // Blossom frontend api
+  private BlossomFrontEndAPI $blossomFrontEndAPI;
+
   /**
    * Summary of __construct
    * @param string $npub
@@ -108,6 +112,7 @@ class Account
     $this->uploadsData = new UploadsData($db);
     // Populate account data
     $this->fetchAccountData();
+    $this->blossomFrontEndAPI = new BlossomFrontEndAPI($_SERVER['BLOSSOM_API_URL'], $_SERVER['BLOSSOM_API_KEY']);
   }
 
   /**
@@ -263,6 +268,8 @@ class Account
           ppic: $this->account['ppic']
         );
         $this->setSessionParameters();
+        $newData = $this->getAccountInfo();
+        $this->blossomFrontEndAPI->updateAccount($this->npub, $newData);
       }
     }
   }
@@ -423,6 +430,9 @@ class Account
 
     $this->fetchAccountData();
     $this->setSessionParameters();
+    // Send update to Blossom API
+    $newData = $this->getAccountInfo();
+    $this->blossomFrontEndAPI->updateAccount($this->npub, $newData);
   }
 
   /**
@@ -947,6 +957,9 @@ class Account
       }
     } finally {
       $stmt->close();
+      // Send update to Blossom API
+      $newData = $this->getAccountInfo();
+      $this->blossomFrontEndAPI->updateAccount($this->npub, $newData);
     }
   }
 
@@ -1035,6 +1048,9 @@ class Account
       $this->updateAccount(allow_npub_login: $allow);
       $this->account['allow_npub_login'] = $allow;
       $this->setSessionParameters();
+      // Send update to Blossom API
+      $newData = $this->getAccountInfo();
+      $this->blossomFrontEndAPI->updateAccount($this->npub, $newData);
     }
   }
 
@@ -1057,6 +1073,9 @@ class Account
     $this->updateAccount(npub_verified: $verified);
     $this->account['npub_verified'] = $verified;
     $this->setSessionParameters();
+    // Send update to Blossom API
+    $newData = $this->getAccountInfo();
+    $this->blossomFrontEndAPI->updateAccount($this->npub, $newData);
   }
 
   /**
@@ -1071,6 +1090,9 @@ class Account
     // Also update PBKDF2 password hash
     $pbkdf2_hashed_password = hashPasswordPBKDF2(trim($newPassword)); // Creates a PBKDF2 password hash
     $this->updateAccount(password: $hashed_password, pbkdf2_password: $pbkdf2_hashed_password);
+    // Send update to Blossom API
+    $newData = $this->getAccountInfo();
+    $this->blossomFrontEndAPI->updateAccount($this->npub, $newData);
   }
 
   /**

@@ -41,12 +41,12 @@ class CloudflareUploadWebhook
     string $fileType, // 'video' | 'audio' | 'image' | "archive" | "document" | "text" | 'other'
     string $uploadAccountType, // 'free' | 'subscriber' | 'other'
     bool $shouldTranscode = false,
-    int $uploadTime = null,
-    string $fileOriginalUrl = null,
-    string $uploadNpub = null,
-    string $uploadedFileInfo = null,
-    string $orginalSha256Hash = null, // NIP-96
-    string $currentSha256Hash = null, // Blossom
+    ?int $uploadTime = null,
+    ?string $fileOriginalUrl = null,
+    ?string $uploadNpub = null,
+    ?string $uploadedFileInfo = null,
+    ?string $orginalSha256Hash = null, // NIP-96
+    ?string $currentSha256Hash = null, // Blossom
     bool $doVirusScan = false
   ): void {
     $uploadTime = $uploadTime ?? time();  // Set default value if null

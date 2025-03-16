@@ -92,9 +92,13 @@ $app->group('/blossom', function (RouteCollectorProxy $group) {
   // Delete file route
   $group->delete('/delete[/{params:.*}]', function (Request $request, Response $response, array $args) {
     $fileId = $args['params'];
-    error_log('Route: /blossom/upload/{id} - DELETE: ' . "$fileId" . PHP_EOL);
-    $npub = $request->getAttribute('npub');
+    error_log('Route: /blossom/delete/{id} - DELETE: ' . "$fileId" . PHP_EOL);
+    $headers = $request->getHeaders(); // Authenticated path, we trust headers
+    $metadata = metadataFromHeaders($headers);
     $factory = $this->get('deleteMediaFactory');
+
+    $npub = $metadata['npub'] ?? null;
+    error_log('metadata: ' . json_encode($metadata));
 
     if (null !== $npub) {
       // Nip-98 authentication is required for our implementation of nip-96
@@ -102,7 +106,6 @@ $app->group('/blossom', function (RouteCollectorProxy $group) {
       try {
         $delete = $factory->create($npub, $fileId);
       } catch (\Exception $e) {
-        error_log('Delete failed: ' . $e->getMessage());
         return nip96Response(
           response: $response,
           status: 'error',
@@ -118,15 +121,16 @@ $app->group('/blossom', function (RouteCollectorProxy $group) {
         response: $response,
         status: 'error',
         statusCode: 401,
-        message: 'Unauthorized, please provide a valid nip-98 token',
+        message: 'Unauthorized',
         data: new stdClass(),
       );
     }
 
     try {
-      $res = $delete->deleteMedia();
+      $res = $delete->deleteBlossomMediaAPIMethod();
       if (!$res) {
-        throw new Exception('Failed to delete file');
+        error_log('Failed to delete file');
+        //throw new Exception('Failed to delete file');
       }
       return nip96Response(
         response: $response,
@@ -136,7 +140,7 @@ $app->group('/blossom', function (RouteCollectorProxy $group) {
         data: [],
       );
     } catch (\Exception $e) {
-      error_log('Delete failed: ' . $e->getMessage());
+      error_log('Delete failed (delete): ' . $e->getMessage());
       return nip96Response(
         response: $response,
         status: 'error',
