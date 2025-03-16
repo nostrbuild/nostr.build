@@ -14,6 +14,7 @@
 require_once $_SERVER['DOCUMENT_ROOT'] . '/config.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/S3Service.class.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/utils.funcs.php';
+require_once($_SERVER['DOCUMENT_ROOT'] . '/libs/BlossomFrontEndAPI.class.php');
 
 
 class NCMECReportHandler
@@ -35,6 +36,7 @@ class NCMECReportHandler
   private $ncmecReport; // Instance of the NcmecReport class
   private $apiRequests = [];  // To store API requests (XML)
   private $apiResponses = []; // To store API responses
+  private $blossomFrontEndAPI;
 
   /**
    * Constructor for the NCMECReportHandler class.
@@ -68,6 +70,7 @@ class NCMECReportHandler
       throw new Exception('Logs data is empty.');
     }
     $this->processLogColumn($logs);
+    $this->blossomFrontEndAPI = new BlossomFrontEndAPI($_SERVER['BLOSSOM_API_KEY'], $_SERVER['BLOSSOM_API_URL']);
   }
 
   /**
@@ -620,6 +623,9 @@ class NCMECReportHandler
     $stmt->execute();
     $affectedRows = $stmt->affected_rows;
     $stmt->close();
+
+    // Blossom
+    $this->blossomFrontEndAPI->unbanUser($npub);
 
     // Update the report ID as FALSE_MATCH, even if npub is not found in the blacklist
     $this->updateIncidentReport('FALSE_MATCH', '{}', '{}');

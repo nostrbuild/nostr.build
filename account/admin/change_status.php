@@ -24,6 +24,8 @@ if (!$perm->isAdmin() && !$perm->hasPrivilege('canModerate')) {
     exit;
 }
 
+$blossomFrontEndAPI = new BlossomFrontEndAPI($_SERVER['BLOSSOM_API_KEY'], $_SERVER['BLOSSOM_API_URL']);
+
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
     if (isset($_POST['id']) && isset($_POST['status'])) {
         $id = $_POST['id'];
@@ -53,6 +55,19 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 }
             } catch (Exception $e) {
                 error_log("PURGE error occurred: " . $e->getMessage() . "\n");
+            }
+
+            // Identify if the file has blossom hash
+            $blossomHash = null;
+            $stmt = $link->prepare("SELECT blossom_hash FROM uploads_data WHERE id = ?");
+            $stmt->bind_param("i", $id);
+            $stmt->execute();
+            $stmt->bind_result($blossomHash);
+            $stmt->fetch();
+            $stmt->close();
+            // Ban from blossom
+            if ($blossomHash !== null) {
+                $blossomFrontEndAPI->banMedia($blossomHash);
             }
 
             // Insert the rejected file into the 'rejected_files' table
@@ -90,6 +105,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                     // Insert the row into the 'blacklist' table
                     $stmt->bind_param("ssss", $npub, $ip, $ua, $blockReason);
                     $stmt->execute();
+                    // Blossom
+                    $blossomFrontEndAPI->banUser($npub, 'Repeated TOS Violation or legal reasons');
                 }
                 $stmt->close();
             }
@@ -108,6 +125,19 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 }
             } catch (Exception $e) {
                 error_log("PURGE error occurred: " . $e->getMessage() . "\n");
+            }
+
+            // Identify if the file has blossom hash
+            $blossomHash = null;
+            $stmt = $link->prepare("SELECT blossom_hash FROM uploads_data WHERE id = ?");
+            $stmt->bind_param("i", $id);
+            $stmt->execute();
+            $stmt->bind_result($blossomHash);
+            $stmt->fetch();
+            $stmt->close();
+            // Ban from blossom
+            if ($blossomHash !== null) {
+                $blossomFrontEndAPI->banMedia($blossomHash);
             }
 
             // Insert the rejected file into the 'rejected_files' table
@@ -258,6 +288,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                     // Insert the row into the 'blacklist' table
                     $stmt->bind_param("ssss", $npub, $ip, $ua, $blockReason);
                     $stmt->execute();
+                    // Blossom
+                    $blossomFrontEndAPI->banUser($npub, 'Confirmed CSAM report');
                 }
                 $stmt->close();
             }
@@ -277,6 +309,19 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 }
             } catch (Exception $e) {
                 error_log("PURGE error occurred: " . $e->getMessage() . "\n");
+            }
+
+            // Identify if the file has blossom hash
+            $blossomHash = null;
+            $stmt = $link->prepare("SELECT blossom_hash FROM uploads_data WHERE id = ?");
+            $stmt->bind_param("i", $id);
+            $stmt->execute();
+            $stmt->bind_result($blossomHash);
+            $stmt->fetch();
+            $stmt->close();
+            // Ban from blossom
+            if ($blossomHash !== null) {
+                $blossomFrontEndAPI->banMedia($blossomHash);
             }
 
             // Delete the row from the 'uploads_data' table
