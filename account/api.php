@@ -294,7 +294,7 @@ function getAndStoreSDCoreGeneratedImage(string $prompt, string $negativePrompt 
 	$responseSeed = $customHeaders['x-sd-seed'] ?? null;
 	$availableBalance = $customHeaders['x-sd-available-balance'] ?? null;
 	$responseDebited = $customHeaders['x-sd-debited'] ?? null;
-	$transactionId = $customHeaders['x-sd-transaction-id'] ?? null;
+	$transactionId = $customHeaders['x-sd-transaction-id'] ?? '';
 
 
 	// If we get image/png content type, store it in temporary file
@@ -1132,7 +1132,7 @@ if (isset($_GET["action"])) {
 				wallet: $profileData['wallet'] ?? null,
 				default_folder: $profileData['defaultFolder'],
 			);
-			$account->allowNpubLogin($profileData['allowNostrLogin']);
+			$account->allowNpubLogin($profileData['allowNostrLogin']); // This triggers Blossom API call
 			$data = getAccountData();
 			http_response_code(200);
 			echo json_encode($data);

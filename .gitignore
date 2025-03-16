@@ -7,3 +7,4 @@ node_modules/
 scripts/dist/
 styles/twbuild.css
 .DS_Store
+.scripts

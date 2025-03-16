@@ -2,6 +2,8 @@
 // Use centralized config
 require_once $_SERVER['DOCUMENT_ROOT'] . '/SiteConfig.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/utils.funcs.php';
+require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/db/UploadsData.class.php';
+require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/BlossomFrontEndAPI.class.php';
 
 /*
 Main class to work with accounts
@@ -89,6 +91,14 @@ class Account
    * @var mysqli
    */
   private mysqli $db;
+  /**
+   * UploadsData class instance
+   * @var UploadsData
+   */
+  private UploadsData $uploadsData;
+
+  // Blossom frontend api
+  private BlossomFrontEndAPI $blossomFrontEndAPI;
 
   /**
    * Summary of __construct
@@ -99,8 +109,10 @@ class Account
   {
     $this->npub = trim($npub);
     $this->db = $db;
+    $this->uploadsData = new UploadsData($db);
     // Populate account data
     $this->fetchAccountData();
+    $this->blossomFrontEndAPI = new BlossomFrontEndAPI($_SERVER['BLOSSOM_API_URL'], $_SERVER['BLOSSOM_API_KEY']);
   }
 
   /**
@@ -256,6 +268,8 @@ class Account
           ppic: $this->account['ppic']
         );
         $this->setSessionParameters();
+        $newData = $this->getAccountInfo();
+        $this->blossomFrontEndAPI->updateAccount($this->npub, $newData);
       }
     }
   }
@@ -416,6 +430,9 @@ class Account
 
     $this->fetchAccountData();
     $this->setSessionParameters();
+    // Send update to Blossom API
+    $newData = $this->getAccountInfo();
+    $this->blossomFrontEndAPI->updateAccount($this->npub, $newData);
   }
 
   /**
@@ -434,8 +451,12 @@ class Account
    */
   public function getRemainingSubscriptionDays(): int
   {
-    $planStartDate = $this->account['plan_start_date'];
-    $planEndDate = $this->account['plan_until_date'];
+    $planStartDate = array_key_exists('plan_start_date', $this->account)
+      ? $this->account['plan_start_date']
+      : null;
+    $planEndDate = array_key_exists('plan_until_date', $this->account)
+      ? $this->account['plan_until_date']
+      : null;
     if ($planStartDate === null || $planEndDate === null) {
       error_log("Plan start date is not set for this account");
       return 0;
@@ -831,7 +852,9 @@ class Account
 
   public function getStorageSpaceLimit(): int
   {
-    $accountLevel = $this->account['acctlevel'];
+    $accountLevel = array_key_exists('acctlevel', $this->account)
+      ? $this->account['acctlevel']
+      : 0;
     $accountAddonStorage = $this->getAccountAdditionStorage();
     return SiteConfig::getStorageLimit($accountLevel, $accountAddonStorage) ?? 0; // Default to 0 if level not found
   }
@@ -934,6 +957,9 @@ class Account
       }
     } finally {
       $stmt->close();
+      // Send update to Blossom API
+      $newData = $this->getAccountInfo();
+      $this->blossomFrontEndAPI->updateAccount($this->npub, $newData);
     }
   }
 
@@ -1022,6 +1048,9 @@ class Account
       $this->updateAccount(allow_npub_login: $allow);
       $this->account['allow_npub_login'] = $allow;
       $this->setSessionParameters();
+      // Send update to Blossom API
+      $newData = $this->getAccountInfo();
+      $this->blossomFrontEndAPI->updateAccount($this->npub, $newData);
     }
   }
 
@@ -1044,6 +1073,9 @@ class Account
     $this->updateAccount(npub_verified: $verified);
     $this->account['npub_verified'] = $verified;
     $this->setSessionParameters();
+    // Send update to Blossom API
+    $newData = $this->getAccountInfo();
+    $this->blossomFrontEndAPI->updateAccount($this->npub, $newData);
   }
 
   /**
@@ -1058,6 +1090,9 @@ class Account
     // Also update PBKDF2 password hash
     $pbkdf2_hashed_password = hashPasswordPBKDF2(trim($newPassword)); // Creates a PBKDF2 password hash
     $this->updateAccount(password: $hashed_password, pbkdf2_password: $pbkdf2_hashed_password);
+    // Send update to Blossom API
+    $newData = $this->getAccountInfo();
+    $this->blossomFrontEndAPI->updateAccount($this->npub, $newData);
   }
 
   /**
@@ -1076,6 +1111,39 @@ class Account
       return true;
     }
     return false;
+  }
+
+  /**
+   * Return full account information, without password hashes
+   * @return array
+   */
+  public function getAccountInfo(): array
+  {
+    $accountInfo = $this->account;
+    // Check if the user is banned
+    if ($this->uploadsData->checkBlacklisted($this->npub)) {
+      $accountInfo['banned'] = true;
+      // Add ban reason, which is "Repeated TOS violations or for legal reasons", which may include CSAM uploads
+      $accountInfo['ban_reason'] = 'Repeated TOS violations or for legal reasons';
+    } else {
+      $accountInfo['banned'] = false;
+      $accountInfo['ban_reason'] = '';
+    }
+    // Check if empty and return early
+    if (empty($accountInfo)) {
+      return [];
+    }
+    unset($accountInfo['password']);
+    unset($accountInfo['pbkdf2_password']);
+    // Add remaining storage space
+    $accountInfo['remaining_storage_space'] = $this->getRemainingStorageSpace();
+    // Add used storage space
+    $accountInfo['used_storage_space'] = $this->getUsedStorageSpace();
+    // Add storage space limit
+    $accountInfo['storage_space_limit'] = $this->getStorageSpaceLimit();
+    // Add remaining subscription days
+    $accountInfo['remaining_subscription_days'] = $this->getRemainingSubscriptionDays();
+    return $accountInfo;
   }
 }
 

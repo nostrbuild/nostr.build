@@ -303,6 +303,8 @@ class S3Service
    */
   public function getS3ObjectHash(string $objectKey, bool $paidAccount = false, string | null $mimeType = null): string
   {
+    // THIS SHIT HAS TO GO, WE DON'T USE IT FOR ANYTHING USEFUL AND IT JUST CAUSES SLOWDOWN
+    return '';
     $r2BucketAndObjectNames = $this->getR2BucketAndObjectNames(objectKey: $objectKey, paidAccount: $paidAccount, mimeType: $mimeType);
     $e2BucketAndObjectNames = $this->getE2BucketAndObjectNames(objectKey: $objectKey, paidAccount: $paidAccount, mimeType: $mimeType);
 

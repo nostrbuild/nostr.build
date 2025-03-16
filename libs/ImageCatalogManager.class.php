@@ -2,6 +2,7 @@
 require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/CloudflarePurge.class.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/utils.funcs.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/SiteConfig.php';
+require_once __DIR__ . '/BlossomFrontEndAPI.class.php';
 
 /**
  * Class ImageManager
@@ -13,6 +14,8 @@ class ImageCatalogManager
   private $s3;
   private $usernpub;
   private $cloudflarePurger;
+  private $blossomFrontEndAPI;
+  private $fromAPI;
 
   /**
    * ImageManager constructor.
@@ -20,12 +23,14 @@ class ImageCatalogManager
    * @param mixed $s3 S3 service instance
    * @param string $usernpub User identifier
    */
-  public function __construct(mysqli $link, mixed $s3, string $usernpub)
+  public function __construct(mysqli $link, mixed $s3, string $usernpub, ?bool $fromAPI = false)
   {
     $this->link = $link;
     $this->s3 = $s3;
     $this->usernpub = $usernpub;
     $this->cloudflarePurger = new CloudflarePurger($_SERVER['NB_API_SECRET'], $_SERVER['NB_API_PURGE_URL']);
+    $this->blossomFrontEndAPI = new BlossomFrontEndAPI($_SERVER['BLOSSOM_API_URL'], $_SERVER['BLOSSOM_API_KEY']);
+    $this->fromAPI = $fromAPI;
   }
 
   public function getImageByName(string $imageName): array | null
@@ -33,6 +38,17 @@ class ImageCatalogManager
     $stmt = $this->link->prepare("SELECT * FROM users_images WHERE usernpub = ? AND image LIKE ? ESCAPE '\\\\' LIMIT 1");
     $imageName = $imageName . '.%';
     $stmt->bind_param('ss', $this->usernpub, $imageName);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $row = $result ? $result->fetch_assoc() : null;
+    $stmt->close();
+    return $row;
+  }
+
+  public function getImageByBlossomHash(string $blossomHash): array | null
+  {
+    $stmt = $this->link->prepare("SELECT * FROM users_images WHERE usernpub = ? AND blossom_hash = ? LIMIT 1");
+    $stmt->bind_param('ss', $this->usernpub, $blossomHash);
     $stmt->execute();
     $result = $stmt->get_result();
     $row = $result ? $result->fetch_assoc() : null;
@@ -127,6 +143,10 @@ class ImageCatalogManager
             }
           }
         }
+        // Handle Blossom media deletion
+        if (!empty($row['blossom_hash']) && !$this->fromAPI) {
+          $this->blossomFrontEndAPI->deleteMedia($this->usernpub, $row['blossom_hash']);
+        }
       }
 
       $stmt = $this->link->prepare("DELETE FROM users_images WHERE usernpub = ? AND id IN ($placeholders)");
@@ -142,7 +162,7 @@ class ImageCatalogManager
   /**
    * Delete folder records from the database
    * @param array $folderIds Array of folder IDs to delete
-   * @return bool List of folders that were deleted successfully
+   * @return array List of folders that were deleted successfully
    */
   private function deleteFolderRecords(array $folderIds): array
   {

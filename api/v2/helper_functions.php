@@ -227,7 +227,7 @@ function createErrorResponse(string $message): array
  * @param int $statusCode
  * @return Psr\Http\Message\ResponseInterface
  */
-function nip96Response(Response $response, string $status, string $message, $data, string $processing_url = null, int $statusCode = 200): Response
+function nip96Response(Response $response, string $status, string $message, $data, ?string $processing_url = null, int $statusCode = 200): Response
 {
   $responseBody = ($status === 'success')
     ? createNip96SuccessResponse($data, $message, $processing_url)
@@ -245,7 +245,7 @@ function nip96Response(Response $response, string $status, string $message, $dat
  * @param string $processing_url
  * @return array
  */
-function createNip96SuccessResponse(array $data, string $message, string $processing_url = null): array
+function createNip96SuccessResponse(array $data, string $message, ?string $processing_url = null): array
 {
   if (!is_array($data)) {
     return [];
@@ -358,4 +358,41 @@ function createNip96ErrorResponse(string $message): array
     'status' => 'error',
     'message' => $message
   ];
+}
+
+/**
+ * Blossom API Helper Functions
+ */
+
+// function to generate a cryptographically secure random string in base 64 format and URL safe, 3 characters long
+function generateRandomString(): string
+{
+    return substr(rtrim(strtr(base64_encode(random_bytes(2)), '+/', '-_'), '='), 0, 3);
+}
+
+// function to convert all x-<header name> to assoc array of <header name> (without x-) and first value
+function metadataFromHeaders(array $headers): array
+{
+    $metadata = [];
+    foreach ($headers as $key => $values) {
+        // Normalize header name to lowercase
+        $normalizedKey = strtolower($key);
+
+        // Extract Content-Type to content_type and first value
+        if ($normalizedKey === 'content-type') {
+            $metadata['content_type'] = $values[0];
+        }
+        // Extract Content-Length to content_length and first value
+        elseif ($normalizedKey === 'content-length') {
+            $metadata['content_length'] = $values[0];
+        }
+        // Extract x-blossom-<header name> to <header name> and first value
+        elseif (strpos($normalizedKey, 'x-blossom-') === 0) {
+            $headerName = substr($normalizedKey, 10);
+            // Replace - with _ in header name
+            $headerName = str_replace('-', '_', $headerName);
+            $metadata[$headerName] = $values[0];
+        }
+    }
+    return $metadata;
 }

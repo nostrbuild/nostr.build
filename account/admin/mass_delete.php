@@ -4,6 +4,7 @@ require_once($_SERVER['DOCUMENT_ROOT'] . '/config.php');
 require_once($_SERVER['DOCUMENT_ROOT'] . '/libs/permissions.class.php');
 require_once($_SERVER['DOCUMENT_ROOT'] . '/libs/S3Service.class.php');
 require_once($_SERVER['DOCUMENT_ROOT'] . '/libs/CloudflarePurge.class.php');
+require_once($_SERVER['DOCUMENT_ROOT'] . '/libs/BlossomFrontEndAPI.class.php');
 
 global $link;
 global $awsConfig;
