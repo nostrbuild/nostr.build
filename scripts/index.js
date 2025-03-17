@@ -84,7 +84,7 @@ document.addEventListener('DOMContentLoaded', function () {
 			alert("This is not an Image, Audio or Video File!");
 		} else if (e.dataTransfer.files.length > 1) {
 			alert("Please select only one file");
-		} else if (fileSize > 52_428_800) {
+		} else if (fileSize > 104_857_600) {
 			alert("File is too large, please select a file less than 50MiB");
 		} else {
 			queryAllAndAct(".import_button", button => {

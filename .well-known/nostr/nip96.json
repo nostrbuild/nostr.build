@@ -9,7 +9,7 @@
       "name": "Free",
       "is_nip98_required": true,
       "url": "https://nostr.build",
-      "max_byte_size": 52428800,
+      "max_byte_size": 104857600,
       "file_expiration": [0, 0],
       "media_transformations": {
         "image": [
