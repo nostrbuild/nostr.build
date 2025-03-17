@@ -73,6 +73,10 @@ SVG;
       <?= $svg_delete_icon ?>
       Delete
     </a>
+    <a href="https://blossom.band" class="nav_button">
+      🌸
+      Blossom
+    </a>
   </div>
   <?php if ($perm->isGuest()) : ?>
     <a href="/login" class="nav_button login_button">
@@ -141,6 +145,12 @@ SVG;
         <?= $svg_delete_icon ?>
       </span>
       Delete
+    </a>
+    <a href="https://blossom.band" class="nav_button">
+      <span>
+        🌸
+      </span>
+      Blossom
     </a>
     <?php if ($perm->isGuest()) : ?>
       <a href="/login" class="nav_button login_button login_desktop">
