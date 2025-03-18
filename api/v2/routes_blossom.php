@@ -46,7 +46,7 @@ $app->group('/blossom', function (RouteCollectorProxy $group) {
     }
 
     try {
-      if ($contentLength > 0 && $metadata['endpoint'] === 'upload') {
+      if ($contentLength > 0 && ($metadata['endpoint'] === 'upload' || $metadata['endpoint'] === 'media')) {
         $upload->setPutFile($body, $metadata);
         [$status, $code, $message] = $upload->uploadFiles(no_transform: $no_transform, blossom: true, sha256: $sha256, clientInfo: $metadata['client_info']);
       } else {
