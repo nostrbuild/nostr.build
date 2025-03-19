@@ -1445,10 +1445,12 @@ class MultimediaUpload
     // Downsize GIFs to 500x500 to avoid memory issues
     // Anything bigger than that should be using MP4 video
     $isAnimated = $img->isAnimated();
+    $over2MB = $this->file['size'] > 2 * 1024 * 1024;
     if (
       $fileType['type'] === 'image' &&
       in_array($fileType['extension'], ['gif']) &&
       $isAnimated &&
+      $over2MB &&
       !$this->no_transform
     ) {
       // Process animated image or video with GifConverter class
@@ -1501,10 +1503,12 @@ class MultimediaUpload
     // Downsize GIFs to 500x500 to avoid memory issues
     // Anything bigger than that should be using MP4 video
     $isAnimated = $img->isAnimated();
+    $over2MB = $this->file['size'] > 2 * 1024 * 1024;
     if (
       $fileType['type'] === 'image' &&
       in_array($fileType['extension'], ['gif']) &&
       $isAnimated &&
+      $over2MB &&
       !$this->no_transform
     ) {
       // Process animated image or video with GifConverter class
