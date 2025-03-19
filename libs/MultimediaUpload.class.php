@@ -1441,10 +1441,15 @@ class MultimediaUpload
    */
   protected function processFreeUploadImage($fileType): array
   {
+    $img = new ImageProcessor($this->file['tmp_name']);
     // Downsize GIFs to 500x500 to avoid memory issues
     // Anything bigger than that should be using MP4 video
+    $isAnimated = $img->isAnimated();
     if (
-      $fileType['type'] === 'image' && in_array($fileType['extension'], ['gif']) && !$this->no_transform
+      $fileType['type'] === 'image' &&
+      in_array($fileType['extension'], ['gif']) &&
+      $isAnimated &&
+      !$this->no_transform
     ) {
       // Process animated image or video with GifConverter class
       $tmp_gif = $this->gifConverter->downsizeGif($this->file['tmp_name']);
@@ -1465,7 +1470,6 @@ class MultimediaUpload
         }
       }
     }
-    $img = new ImageProcessor($this->file['tmp_name']);
     if (!$this->no_transform) {
       $img->convertHeicToJpeg()
         ->convertToJpeg() // Convert to JPEG for images that are not visually affected by the conversion
@@ -1493,10 +1497,15 @@ class MultimediaUpload
    */
   protected function processProUploadImage($fileType): array
   {
+    $img = new ImageProcessor($this->file['tmp_name']);
     // Downsize GIFs to 500x500 to avoid memory issues
     // Anything bigger than that should be using MP4 video
+    $isAnimated = $img->isAnimated();
     if (
-      $fileType['type'] === 'image' && in_array($fileType['extension'], ['gif']) && !$this->no_transform
+      $fileType['type'] === 'image' &&
+      in_array($fileType['extension'], ['gif']) &&
+      $isAnimated &&
+      !$this->no_transform
     ) {
       // Process animated image or video with GifConverter class
       $tmp_gif = $this->gifConverter->downsizeGif($this->file['tmp_name']);
@@ -1517,7 +1526,6 @@ class MultimediaUpload
         }
       }
     }
-    $img = new ImageProcessor($this->file['tmp_name']);
     if (!$this->no_transform) {
       $img->convertHeicToJpeg()
         ->convertTiffToJpeg() // Convert TIFF to JPG even for paid accounts

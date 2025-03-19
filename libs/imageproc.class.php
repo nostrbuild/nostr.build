@@ -121,6 +121,11 @@ class ImageProcessor
     }
   }
 
+  public function isAnimated(): bool
+  {
+    return $this->imagick->getNumberImages() > 1;
+  }
+
   /**
    * Summary of isSupported
    * @param mixed $format
