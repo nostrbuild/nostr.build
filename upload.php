@@ -33,6 +33,7 @@ $total_size_gb = round($stats['total_size'] / (1024 * 1024 * 1024), 2); // Conve
 	<link rel="stylesheet" href="/styles/index.css?v=290253d31f2fde0932483cb54581766b" />
 	<link rel="stylesheet" href="/styles/header.css?v=19cde718a50bd676387bbe7e9e24c639" />
 
+	<!--
 	<script defer src="https://unpkg.com/magic-snowflakes/dist/snowflakes.min.js"></script>
 	<script>
 		document.addEventListener("DOMContentLoaded", function() {
@@ -41,6 +42,7 @@ $total_size_gb = round($stats['total_size'] / (1024 * 1024 * 1024), 2); // Conve
 			});
 		});
 	</script>
+-->
 
 	<title>nostr.build - Uploaded!</title>
 </head>
