@@ -146,7 +146,7 @@ $perm = new Permission();
     <table style="width:100%">
     <tr>
       <td>
-      <p><span style="color:white">10GB of Private Storage:</span> One of the most common problems with the free service is the file size is capped at 21MB per file. For long videos, 
+      <p><span style="color:white">25GB of Private Storage:</span> One of the most common problems with the free service is the file size is capped at 21MB per file. For long videos, 
         this becomes a challenge. With paid accounts, there is no file size limit to what you upload, only the size of the account. </p></td>
     </tr>
     </table></br>
@@ -241,7 +241,7 @@ $perm = new Permission();
     <table style="width:100%">
     <tr>
       <td>
-      <p><span style="color:white">30GB of Private Storage:</span>  3x more storage than the Pro account. Ideal for creators, podcasts, and videographers, 
+      <p><span style="color:white">50GB of Private Storage:</span>  2x more storage than the Pro account. Ideal for creators, podcasts, and videographers, 
         this gives you the added storage for those larger projects. </p></td>
     </tr>
     </table></br>
@@ -294,7 +294,7 @@ $perm = new Permission();
     <table style="width:100%">
     <tr>
       <td>
-      <p><span style="color:white">100GB of Private Storage:</span>The largest account size we offer, with more than 3x the storage of the Creator account. 
+      <p><span style="color:white">250GB of Private Storage:</span>The largest account size we offer, with more than 3x the storage of the Creator account. 
         This is plenty of storage for all of your Nostr needs and more.</p></td>
     </tr>
     </table></br>

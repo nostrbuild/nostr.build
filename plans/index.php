@@ -244,7 +244,7 @@ SVG;
     <div class="information pb-5">
       <ul>
         <li>
-          <span class="whitespace-pre-line text-pretty text-base sm:text-lg">YakiHonne/Damus/Amethyst/Snort/Coracle/noStrudel Integration
+          <span class="whitespace-pre-line text-pretty text-base sm:text-lg">YakiHonne/Damus/Amethyst/Snort/Coracle/noStrudel/Blossom protocol Integrations
             Bitcoin Only | Never Ads | Billed Annually
             We will maintain your account media online for an additional year after the expiration date.
           </span>

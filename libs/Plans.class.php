@@ -236,7 +236,7 @@ class Plans
         price: self::$originalPrices[self::PROFESSIONAL],
         bonusCredits: 250,
         features: [
-          '10GB of private storage',
+          '25GB of private storage',
           'Upload and share PDFs, SVGs',
           'Free Media Gallery, 1.5M+ items',
           'Add/Move/Delete your media',
@@ -261,7 +261,7 @@ class Plans
         price: self::$originalPrices[self::CREATOR],
         bonusCredits: 500,
         features: [
-          '30GB of private storage',
+          '50GB of private storage',
           'Upload and share ZIPs, PDFs, SVGs',
           'AI Studio (Text-to-Image)',
           '<a class="ref_link" target="_blank" href="https://nostr.build/creators/">Host a Creators page</a></b>',
@@ -287,7 +287,7 @@ class Plans
         price: self::$originalPrices[self::ADVANCED],
         bonusCredits: 1000,
         features: [
-          '100GB of private storage',
+          '250GB of private storage',
           'Upload and share ZIPs, PDFs, SVGs',
           'AI Studio Extended Access',
           'NIP-05 @nostr.build',
