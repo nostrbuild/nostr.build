@@ -24,7 +24,7 @@ if (!$perm->isAdmin() && !$perm->hasPrivilege('canModerate')) {
     exit;
 }
 
-$blossomFrontEndAPI = new BlossomFrontEndAPI($_SERVER['BLOSSOM_API_KEY'], $_SERVER['BLOSSOM_API_URL']);
+$blossomFrontEndAPI = new BlossomFrontEndAPI($_SERVER['BLOSSOM_API_URL'], $_SERVER['BLOSSOM_API_KEY']);
 
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
     if (isset($_POST['id']) && isset($_POST['status'])) {

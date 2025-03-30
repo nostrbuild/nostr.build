@@ -70,7 +70,7 @@ class NCMECReportHandler
       throw new Exception('Logs data is empty.');
     }
     $this->processLogColumn($logs);
-    $this->blossomFrontEndAPI = new BlossomFrontEndAPI($_SERVER['BLOSSOM_API_KEY'], $_SERVER['BLOSSOM_API_URL']);
+    $this->blossomFrontEndAPI = new BlossomFrontEndAPI($_SERVER['BLOSSOM_API_URL'], $_SERVER['BLOSSOM_API_KEY']);
   }
 
   /**
