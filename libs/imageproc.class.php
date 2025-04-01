@@ -487,7 +487,7 @@ class ImageProcessor
       'exif:GPSAltitudeRef',
       'exif:GPSTimeStamp',
       'exif:GPSDateStamp',
-      'exif:UserComment',
+      //'exif:UserComment',
       'exif:SubjectLocation',
       'exif:SerialNumber',
       'exif:OwnerName',
