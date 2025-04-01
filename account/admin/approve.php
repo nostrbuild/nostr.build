@@ -329,6 +329,7 @@ if (isset($_POST['searchFile'])) {
       echo $display_element;
       echo '      </a>';
       echo '      <span class="badge bg-primary position-absolute top-0 end-0 p-1 fs-6 status-badge">' . $file_type . '</span>';
+      echo '      <span class="badge bg-primary position-absolute bottom-0 end-0 p-1 fs-6 status-badge text-truncate" style="max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">' . $row['usernpub'] . '</span>';
       echo '    </div>';
       echo '    <div class="card-body">';
       echo '      <form action="change_status.php" method="post">';
