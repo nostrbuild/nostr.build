@@ -65,7 +65,7 @@ SVG;
         View All
       </a>
     <?php endif; ?>
-    <a href="https://shop.nostr.build" class="nav_button">
+    <a href="https://btcpay.nostr.build/apps/3uzdJNJRgk94uXkyEFTRjxKx5c4H/pos" class="nav_button">
       <?= $svg_memestr_icon ?>
       Shop
     </a>
@@ -128,7 +128,7 @@ SVG;
         View All
       </a>
     <?php endif; ?>
-    <a href="https://shop.nostr.build" class="nav_button">
+    <a href="https://btcpay.nostr.build/apps/3uzdJNJRgk94uXkyEFTRjxKx5c4H/pos" class="nav_button">
       <span>
         <?= $svg_memestr_icon ?>
       </span>
