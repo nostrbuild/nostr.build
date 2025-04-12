@@ -1043,7 +1043,7 @@ footer nav {
 @media (min-width: 768px) {
   .paragraph {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: 65% 30%;
     grid-gap: 20px;
   }
 
