@@ -60,7 +60,39 @@ $perm = new Permission();
     <table style="width:100%">
     <tr>
       <td>
-      <p><span style="color:white">Supported Media Files up to 21MB:</span> Anyone using Nostr can upload the media of their choice, up to 21MB per file.
+      <p><span style="color:white">No KYC:</span> Know Your Customer (KYC), is a common requirement for many products and services requiring the customer's name, 
+      address, and other personal information. This is automatic when purchasing anything with a Credit Card. Nostr.build only 
+      accepts Bitcoin and Sats, and the only requirement for identification is a nostr npub, which is also non KYC.</p></td>
+    </tr>
+    </table></br>
+   <hr width="90%" size="1" color="9d83a2" class="center"></br>
+
+   <table style="width:100%">
+    <tr>
+      <td>
+      <p><span style="color:white">Never Ads:</span> These days it seems like every service and social media platform has ads.. They even 
+      introduced it to paid teirs of Netflix, Prime, and Disney+. Ads arn't just insignifigant commercials you ignore, with your personal profile
+      built by these huge companies, they target you with focused ads, Tweets, and posts designed specifically to change your mind about something, 
+      not just buying a product! Ads are very dangerous and a threat to free thinking. Nostr.build will never use ads!</p></td>
+    </tr>
+    </table></br>
+   <hr width="90%" size="1" color="9d83a2" class="center"></br>
+
+   <section class="paragraph">
+    <p><span style="color:white">Blossom Support for Nostr:</span>  Blossom has become a standard protocol for hosting media on nostr. It makes it 
+	  very easy for any nostr app to connect to any Blossom server, <a class="ref_link" href="https://v.nostr.build/RL8J5JBA9vPE0cki.mp4" target="_blank">check out the video here!</a>
+	  This not only greatly helps with overall interoperability, it also makes it easier to have multiple servers, mirror servers, and for users 
+	  to host their own media server. Blossom is a free service, but it also works with nostr.build Accounts. Because Blossom is based on Blob technology, 
+	  it is limited to 100MB uploads. We recommend using native NIP96 nostr.build integration if your app supports it, ex. Damus, Amethyst, noStrudel, Snort, Iris, Coracle, and YakiHonne.</p>
+      <img src="https://cdn.nostr.build/assets/images/blossom01.png" alt="Media Management Portal" width="250" style="width:90%"></a>
+   </section>
+    </br>
+    <hr width="90%" size="1" color="9d83a2" class="center"> </br>
+
+    <table style="width:100%">
+    <tr>
+      <td>
+      <p><span style="color:white">Supported Media Files up to 100MB:</span> Anyone using Nostr can upload the media of their choice, up to 21MB per file.
       We support many different media types including .jpg, .png, .gif, .mov, .mp4, .mp3, and .wav. We compress JPEGs, PNGs and GIFs, 
       but currently perform only light processing of video to allow quick preview. If your video is playing weird, no audio or not playing at all, 
       it is likely your video format or how it was transcoded.</p></td>
@@ -91,7 +123,7 @@ $perm = new Permission();
       you would have to upload it to another site, copy the link it provides, and paste it to your Nostr note. With NIP96 and NIP98 
       nostr.build is now directly integrated into most Nostr apps making it just one click to add your media, like other popular and social media platforms. 
       Currently this is supported on Damus, Amethyst, Nostrudel, Snort, Iris, Coracle, Flycat, and Yakihonne, among others. </p></td>
-      <td style="width:80%"> <img src="https://cdn.nostr.build/assets/images/nb_upload01.gif" alt="Upload From Apps" width="120"></td>
+      <td style="width:80%"> <video src="https://cdn.nostr.build/assets/images/nostr_upload01.mp4" width="150" alt="Free Media Gallery" autoplay loop muted playsinline></video> </td>
     </tr>
     </table></br>
     <hr width="90%" size="1" color="9d83a2" class="center"> </br>
@@ -102,7 +134,7 @@ $perm = new Permission();
       to see the most recent uploades to nostr.build. This view only shares the free uploads, you would not be able to see any user account uploads 
       which are kept private unless purposely shared by the account owner. <a class="ref_link" href="https://nostr.build/freeview" target="_blank">https://nostr.build/freeview </a>
       </p>
-      <img src="https://cdn.nostr.build/assets/images/freeview01.gif" alt="Free Media Gallery">
+      <video src="https://cdn.nostr.build/assets/images/freeview01.mp4" style="width:90%" alt="Free Media Gallery" autoplay loop muted playsinline></video>
     </section>
       </br>
     <hr width="90%" size="1" color="9d83a2" class="center"> </br>
@@ -125,7 +157,7 @@ $perm = new Permission();
         Cloudflare's CSAM filter, Microsoft PhotoDNA, AI models and the NCMEC reporting portal. We do not filter or report anything else that is in 
         compliance with our TOS, only CSAM. <a class="ref_link" href="https://www.missingkids.org/theissues/csam" target="_blank">https://www.missingkids.org/theissues/csam</a>
         </p>
-        <img src="https://cdn.nostr.build/assets/images/ncmec01.png" alt="CSAM NCMEC Reporting" style="width:70%">
+        <img src="https://cdn.nostr.build/assets/images/ncmec01.png" alt="CSAM NCMEC Reporting" style="width:90%">
         </section>
   
   </br>
@@ -146,7 +178,7 @@ $perm = new Permission();
     <table style="width:100%">
     <tr>
       <td>
-      <p><span style="color:white">25GB of Private Storage:</span> One of the most common problems with the free service is the file size is capped at 21MB per file. For long videos, 
+      <p><span style="color:white">25GB of Private Storage:</span> One of the most common problems with the free service is the file size is capped at 100MB per file. For long videos, 
         this becomes a challenge. With paid accounts, there is no file size limit to what you upload, only the size of the account. </p></td>
     </tr>
     </table></br>
@@ -157,7 +189,7 @@ $perm = new Permission();
         separate from social media platforms, in your own private portal. You can drag and drop, add, create folders, move to a folder, delete, 
         and rename any of your media, and much more. Check out our nostr.build features overview video to get a better idea of media management 
         in your nostr.build account.</p>
-        <a href="https://cdn.nostr.build/assets/images/nostrbuild_video1.mp4" target="_blank"><img src="https://cdn.nostr.build/assets/images/nbvideo01.png" alt="Media Management Portal" style="width:100%"></a>
+		<iframe src="https://e.nostr.build/v_YgPOG_m4v?t=YgPOG.m4v&by=nostr.build" style="border: 0; width: 90%; aspect-ratio: 16/10" allow="fullscreen; encrypted-media; picture-in-picture" loading="lazy" title="YgPOG.m4v"></iframe>
     </section>
     </br>
     <hr width="90%" size="1" color="9d83a2" class="center"> </br>
@@ -189,7 +221,7 @@ $perm = new Permission();
     <table style="width:100%">
     <tr>
       <td>
-      <p><span style="color:white">View All Media Gallery:</span>  Curious what type of images, memes, gifs and videos are being uploaded to nostr's free service? Check out the Media Gallery 
+      <p><span style="color:white">View All Media Gallery:</span>  Curious what type of images, memes, gifs and videos are being uploaded to nostr.build's free service? Check out the Media Gallery 
         to see all 2Million+ uploads ever uploaded to nostr.build. This only shares the free uploads, you would not be able to see any user account uploads 
         which are kept private unless shared. </p></td>
     </tr>
@@ -201,8 +233,8 @@ $perm = new Permission();
       <td style="width:65%">
       <p><span style="color:white">Share Direct to Nostr:</span> Upload or create new media on nostr.build and share it with or without a note straight to Nostr, no other client needed! 
         This is a feature that more tightly integrates nostr.build with Nostr and takes it steps closer to becoming a true Nostr client. </p></td>
-      <td style="width:95%"><img src="https://cdn.nostr.build/assets/images/sharetonostr01.gif" alt="Sahre to Nostr Action" width="95%" style="max-width: 250px;">
-      <img src="https://cdn.nostr.build/assets/images/sharetonostr01.png" alt="Share to Nostr Button" width="95%" style="max-width: 250px;"></td>
+      <td style="width:95%"><video src="https://cdn.nostr.build/assets/images/share_to_nostr01.mp4" style="width:95%" alt="Share to Nostr Action" autoplay loop muted playsinline></video>
+      <img src="https://cdn.nostr.build/assets/images/sharetonostr01.png" alt="Share to Nostr Button" width="95%"></td>
     </tr>
     </table></br>
     <hr width="90%" size="1" color="9d83a2" class="center"> </br>
@@ -275,7 +307,7 @@ $perm = new Permission();
       <td>
       <p><span style="color:white">Host a Creators Page:</span> Creators have the option to share their media to their Creators page hosted on nostr.build. 
       This makes it easier for people to see, donate, and share. <a class="ref_link" href="https://nostr.build/creators/" target="_blank">Check out all the Creators and their masterpieces here!</a>
-      <img src="https://cdn.nostr.build/assets/images/creators01.gif" alt="Creators Page" width="80%" style="max-width: 350px;" class="center"></p></td>
+		<video src="https://cdn.nostr.build/assets/images/creators11.mp4" width="80%" class="center" alt="Creators Page" autoplay loop muted playsinline></video>
     </tr>
     </table></br>
     <hr width="90%" size="1" color="9d83a2" class="center"> </br>
@@ -294,7 +326,7 @@ $perm = new Permission();
     <table style="width:100%">
     <tr>
       <td>
-      <p><span style="color:white">250GB of Private Storage:</span>The largest account size we offer, with more than 3x the storage of the Creator account. 
+      <p><span style="color:white">250GB of Private Storage:</span>The largest account size we offer, with 5x the storage of the Creator account. 
         This is plenty of storage for all of your Nostr needs and more.</p></td>
     </tr>
     </table></br>
@@ -336,9 +368,6 @@ $perm = new Permission();
     </p></br>
 
     <p><span style="color:white">Expandable Storage:</span> The ability to purchsase additional chunks of storage and add it to your existing account.
-    </p></br>
-
-    <p><span style="color:white">Blossom:</span> Blobs Stores Simplly On Metterveses is a nostr spec that uses nostr public/private keys to securely store user content on a selected Blossom server.
     </p></br>
 
     <p><span style="color:white">Primal Support:</span> Integrated support for the nostr Primal app. No more copy/paste, just select nostr.build as your media provider and start uploading direct from Primal.
