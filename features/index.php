@@ -326,7 +326,7 @@ $perm = new Permission();
     <table style="width:100%">
     <tr>
       <td>
-      <p><span style="color:white">250GB of Private Storage:</span>The largest account size we offer, with 5x the storage of the Creator account. 
+      <p><span style="color:white">250GB of Private Storage:</span> The largest account size we offer, with 5x the storage of the Creator account. 
         This is plenty of storage for all of your Nostr needs and more.</p></td>
     </tr>
     </table></br>
