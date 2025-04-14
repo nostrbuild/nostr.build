@@ -160,8 +160,8 @@ SVG;
 <head>
 	<meta charset="UTF-8" />
 	<meta http-equiv="X-UA-Compatible" content="IE=edge" />
-	<meta name="keywords" content="nostr, damus, NoStrudel, Coracle.social, media uploader, bitcoin media uploader, nostr videos, image uploader, image link, snort.social, astril.ninja, image, uploader, media upload, damus pictures, video uploader,nostr repository ">
-	<meta name="description" content="Image, video and media uploader for nostr, damus, astral.ninja, snort.social, and most all nostr clients. Upload any kind of media and get a link to post, or use our iOS app to automatically uppload images straight from your keyboard.">
+	<meta name="keywords" content="Nostr, Damus, Primal, noStrudel, Coracle.social, YakiHonne, Amethyst, snort.social, Iris.to, astril.ninja, media uploader, bitcoin media uploader, nostr videos, image uploader, image link, image, uploader, media upload, damus pictures, video uploader, nostr repository, Bitcoin ">
+	<meta name="description" content="Image, video and media uploader for Nostr, Damus, Primal, YakiHonne, noStrudel, snort.social, Iris.to, astral.ninja, and most all nostr clients. Upload any kind of media and get a link to post, or automatically uppload images straight from your keyboard. Free and paid accounts, Bitcoin only.">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
 	<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
