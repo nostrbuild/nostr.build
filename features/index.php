@@ -189,7 +189,7 @@ $perm = new Permission();
         separate from social media platforms, in your own private portal. You can drag and drop, add, create folders, move to a folder, delete, 
         and rename any of your media, and much more. Check out our nostr.build features overview video to get a better idea of media management 
         in your nostr.build account.</p>
-		<iframe src="https://e.nostr.build/v_YgPOG_m4v?t=YgPOG.m4v&by=nostr.build" style="border: 0; width: 90%; aspect-ratio: 16/10" allow="fullscreen; encrypted-media; picture-in-picture" loading="lazy" title="YgPOG.m4v"></iframe>
+	<iframe src="https://e.nostr.build/v_o7Kcp0r1c0LgRR9G_mp4?t=nb_new_features.mp4&by=nostr.build" style="border: 0; width: 90%; aspect-ratio: 16/10" allow="fullscreen; encrypted-media; picture-in-picture" loading="lazy" title="nb_new_features.mp4"></iframe>
     </section>
     </br>
     <hr width="90%" size="1" color="9d83a2" class="center"> </br>
