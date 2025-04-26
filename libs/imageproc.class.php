@@ -2,6 +2,7 @@
 require $_SERVER['DOCUMENT_ROOT'] . '/vendor/autoload.php';
 
 use Spatie\ImageOptimizer\OptimizerChain;
+use Spatie\ImageOptimizer\Image;
 use Spatie\ImageOptimizer\Optimizers\Cwebp;
 use Spatie\ImageOptimizer\Optimizers\Gifsicle;
 use Spatie\ImageOptimizer\Optimizers\Jpegoptim;
@@ -10,6 +11,16 @@ use Spatie\ImageOptimizer\Optimizers\Pngquant;
 use Spatie\ImageOptimizer\Optimizers\Svgo;
 use kornrunner\Blurhash\Blurhash;
 use Respect\Validation\Rules\Length;
+
+class Oxipng extends Spatie\ImageOptimizer\Optimizers\BaseOptimizer
+{
+    public $binaryName = 'oxipng';
+
+    public function canHandle(Image $image): bool
+    {
+        return $image->mime() === 'image/png';
+    }
+}
 
 // Define array for image extensions
 $imageExtensions = [
@@ -598,20 +609,23 @@ class ImageProcessor
         '--all-progressive',
       ]))
 
-      ->addOptimizer(new Optipng([
+      ->addOptimizer(new Oxipng([
         '-i0',
-        '-o1',
-        '-nx',
-        '-fix',
-        '-quiet',
+        '-o2',
+        '--nx',
+        '--fix',
+        '--strip safe',
+        '-p',
+        '-q',
       ]))
 
+      /*
       ->addOptimizer(new Pngquant([
         $pngQuality,
         '--force',
         '--skip-if-larger',
-        '--speed 11',
       ]))
+        */
 
       ->addOptimizer(new Svgo([
         '--config=svgo.config.js',
@@ -632,6 +646,7 @@ class ImageProcessor
 
     // Protect agains timeout exception
     try {
+      error_log("Optimizing image: $this->imagePath" . PHP_EOL);
       $optimizerChain->setTimeout(60) // Set 60 seconds timeout
         ->optimize($this->imagePath);
     } catch (Exception $e) {
