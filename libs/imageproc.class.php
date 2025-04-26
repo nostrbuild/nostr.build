@@ -600,7 +600,7 @@ class ImageProcessor
 
       ->addOptimizer(new Optipng([
         '-i0',
-        '-o2',
+        '-o1',
         '-nx',
         '-fix',
         '-quiet',
@@ -610,6 +610,7 @@ class ImageProcessor
         $pngQuality,
         '--force',
         '--skip-if-larger',
+        '--speed 11',
       ]))
 
       ->addOptimizer(new Svgo([
