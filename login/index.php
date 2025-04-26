@@ -91,7 +91,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 	<meta name="msapplication-TileColor" content="#9f00a7">
 	<meta name="theme-color" content="#ffffff">
 
-    <link rel="stylesheet" href="/styles/index.css?v=290253d31f2fde0932483cb54581766b" />
+    <link rel="stylesheet" href="/styles/index.css?v=16013407201d48c976a65d9ea88a77a3" />
     <link rel="stylesheet" href="/styles/login.css?v=66155706970654722102873568b335a9" />
     <title>nostr.build login</title>
     <style>
@@ -226,7 +226,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         </div>
     </main>
     <?php include $_SERVER['DOCUMENT_ROOT'] . '/components/footer.php'; ?>
-    <script src="/scripts/dist/login.js?v=d106bdee707afc089ef021d9735254e1"></script>
+    <script src="/scripts/dist/login.js?v=288c90fc391110a898238aa231338a5d"></script>
     <script>
         document.addEventListener('DOMContentLoaded', (event) => {
             // Check for the existance of n and c URL parameters and execute loginWithDMLink function if they exist

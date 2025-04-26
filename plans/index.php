@@ -221,8 +221,8 @@ SVG;
   <meta charSet="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Nostr.build account signup</title>
-  <link rel="stylesheet" href="/styles/twbuild.css?v=cdb27fd965d4b88c14c59d7a36682b8e" />
-  <link rel="stylesheet" href="/styles/index.css?v=290253d31f2fde0932483cb54581766b" />
+  <link rel="stylesheet" href="/styles/twbuild.css?v=137dda21b57be6ed210799f5edd54c80" />
+  <link rel="stylesheet" href="/styles/index.css?v=16013407201d48c976a65d9ea88a77a3" />
   <link rel="stylesheet" href="/styles/signup.css?v=8878cbf7163f77b3a4fb9b30804c73ca" />
   <link rel="icon" href="https://cdn.nostr.build/assets/primo_nostr.png" />
   <script defer src="/scripts/fw/alpinejs.min.js?v=34fbe266eb872c1a396b8bf9022b7105"></script>
@@ -541,7 +541,7 @@ SVG;
               <?php endif; ?>
             </form>
           </div>
-          <script src="/scripts/dist/signup.js?v=ce537e64919b7f62aefabe664c413797"></script>
+          <script src="/scripts/dist/signup.js?v=8433da778c19e340f88f3947960c9775"></script>
           <script>
             document.addEventListener('DOMContentLoaded', (event) => {
               // Check if NIP-07 extension is installed and enable NIP-07 login
