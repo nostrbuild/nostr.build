@@ -9,6 +9,8 @@ use Slim\Routing\RouteCollectorProxy;
 $app->group('/gifs', function (RouteCollectorProxy $group) {
   // Route to get gifs
   $group->get('/get', function (Request $request, Response $response) {
+    // Disable
+    return $response->getBody()->write('Disabled');
     // Get query parameters
     $params = $request->getQueryParams();
     // Check each parameter and set default if not provided

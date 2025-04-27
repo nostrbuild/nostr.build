@@ -28,22 +28,22 @@ $view_type = isset($_GET['k']) && in_array($_GET['k'], $allowed_views) ? $_GET['
 
 switch ($view_type) {
 	case 'gif':
-		$perpage = 50;
-		$sql = "SELECT * FROM uploads_data WHERE approval_status = 'approved' AND file_extension = 'gif' AND type = 'picture' ORDER BY upload_date DESC LIMIT ?, ?";
+		$perpage = 0;
+		$sql = "SELECT * FROM uploads_data WHERE approval_status = 'approved' AND file_extension = 'gif' AND type = 'picture' ORDER BY upload_date DESC LIMIT ?";
 		break;
 	case 'vid':
-		$perpage = 12;
-		$sql = "SELECT * FROM uploads_data WHERE approval_status='approved' AND type='video' ORDER BY upload_date DESC LIMIT ?, ?";
+		$perpage = 0;
+		$sql = "SELECT * FROM uploads_data WHERE approval_status='approved' AND type='video' ORDER BY upload_date DESC LIMIT ?";
 		break;
 	default:
-		$perpage = 100;
-		$sql = "SELECT * FROM uploads_data WHERE approval_status = 'approved' AND file_extension IN ('jpg', 'jpeg', 'png', 'webp') AND type = 'picture' ORDER BY upload_date DESC LIMIT ?, ?";
+		$perpage = 0;
+		$sql = "SELECT * FROM uploads_data WHERE approval_status = 'approved' AND file_extension IN ('jpg', 'jpeg', 'png', 'webp') AND type = 'picture' ORDER BY upload_date DESC LIMIT ?";
 		break;
 }
 $start = $page * $perpage;
 $end = $perpage + 1; // Add one to see if there are more pages
 $stmt = $link->prepare($sql);
-$stmt->bind_param('ii', $start, $end);
+$stmt->bind_param('i', $end);
 $stmt->execute();
 $result = $stmt->get_result();
 $morePages = $result->num_rows > $perpage ? true : false;
