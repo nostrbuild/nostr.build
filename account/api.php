@@ -1034,9 +1034,6 @@ if (isset($_GET["action"])) {
 		}
 
 		try {
-			// Start the transaction
-			$link->begin_transaction(MYSQLI_TRANS_START_WITH_CONSISTENT_SNAPSHOT);
-
 			switch ($eventKind) {
 				case 5:
 					// Lopp through the event IDs to delete
@@ -1083,17 +1080,12 @@ if (isset($_GET["action"])) {
 					$stmt->close();
 					break;
 				default:
-					$link->rollback();
 					http_response_code(400);
 					echo json_encode(array("error" => "Invalid event kind"));
 					exit;
 			}
-			// Commit the transaction
-			$link->commit();
 		} catch (Exception $e) {
 			error_log($e->getMessage());
-			// Rollback the transaction
-			$link->rollback();
 			// Set http-500 status code
 			http_response_code(500); // This is a workaround until MySQL DB is gone, because
 			echo json_encode(array("error" => "Failed to store Nostr event in the database"));

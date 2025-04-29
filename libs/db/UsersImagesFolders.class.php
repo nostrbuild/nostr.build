@@ -180,13 +180,11 @@ class UsersImagesFolders extends DatabaseTable
     return $result->fetch_assoc();
   }
 
-  public function findFolderByNameOrCreate(string $usernpub, string $folder_name, int $parent_id = null): int
+  public function findFolderByNameOrCreate(string $usernpub, string $folder_name, ?int $parent_id = null): int
   {
     if (empty($folder_name)) {
       throw new Exception('Folder name cannot be empty');
     }
-    $this->db->begin_transaction();
-
     // First, try to select the folder
     if ($parent_id) {
       $sql = "SELECT id FROM {$this->tableName} WHERE folder = ? AND usernpub = ? AND parent_id = ?";
@@ -221,9 +219,6 @@ class UsersImagesFolders extends DatabaseTable
 
       $folderId = $this->db->insert_id;
     }
-
-    // Commit the transaction
-    $this->db->commit();
 
     // Return the ID
     return $folderId;

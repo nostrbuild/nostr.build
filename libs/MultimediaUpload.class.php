@@ -544,7 +544,6 @@ class MultimediaUpload
       $newFileSize = filesize($this->file['tmp_name']); // Capture the file size after transformations
       $newFileType = 'profile';
 
-      $this->db->begin_transaction();
       // Insert the file data into the database
       $insert_id = $this->storeInDatabaseFree(
         $newFileName,
@@ -586,10 +585,8 @@ class MultimediaUpload
       ]);
 
       // Commit
-      $this->db->commit();
     } catch (Exception $e) {
       error_log("Profile picture upload failed: " . $e->getMessage());
-      $this->db->rollback();
       return [false, 500, 'Server error, please try again later'];
     }
     // Remove temp file if exists
@@ -779,7 +776,6 @@ class MultimediaUpload
         // By this time the image has been processed and saved to a temporary location
         // It is now ready to be uploaded to S3 and information about it stored in the database
         // Begin a database transaction, so that we can rollback if anything fails
-        $this->db->begin_transaction();
 
         if (!$this->pro) {
           // Handle free uploads
@@ -882,13 +878,11 @@ class MultimediaUpload
           'dimensions' => $fileData['dimensions'] ?? [],
           'dimensionsString' => isset($fileData['dimensions']) ? sprintf('%dx%d', $fileData['dimensions']['width'] ?? 0, $fileData['dimensions']['height'] ?? 0) : '0x0',
         ]);
-        $this->db->commit();
         // Increment the counter of successful uploads
         $successfulUploads++;
       } catch (Exception $e) {
         $lastError = $e;
         error_log("File loop exception: " . $lastError->getMessage());
-        $this->db->rollback();
         // Since upload to S3 happenese last, we should be safe to do not delete the file from S3
         // unless something goes wrong with DB commit.
         // We want to loop over all files and not stop on the errors

@@ -57,7 +57,7 @@ class DatabaseTable
     */
   }
 
-  public function insert(array $data, $commit = true)
+  public function insert(array $data, ?bool $commit = true)
   {
     $this->validate($data);
     $placeholders = str_repeat('?,', count($data) - 1) . '?';
@@ -93,10 +93,6 @@ class DatabaseTable
 
     if (!$stmt->execute()) {
       throw new Exception("Execute failed: (" . $stmt->errno . ") " . $stmt->error);
-    }
-
-    if ($commit) {
-      $this->db->commit();
     }
 
     return $this->db->insert_id;
@@ -188,20 +184,5 @@ class DatabaseTable
     }
 
     return $data;
-  }
-
-  public function beginTransaction()
-  {
-    $this->db->begin_transaction();
-  }
-
-  public function commit()
-  {
-    $this->db->commit();
-  }
-
-  public function rollback()
-  {
-    $this->db->rollback();
   }
 }

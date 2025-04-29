@@ -63,8 +63,6 @@ class ImageCatalogManager
    */
   public function deleteImages(array $imageIds): array
   {
-    $this->link->begin_transaction(MYSQLI_TRANS_START_READ_WRITE);
-
     try {
       $res = $this->deleteImageRecords($imageIds);
       $filesToPurge = $res[0];
@@ -74,10 +72,8 @@ class ImageCatalogManager
         $this->purgeCloudflareCache($filesToPurge);
       }
 
-      $this->link->commit();
       return $imageIds;
     } catch (Exception $e) {
-      $this->link->rollback();
       error_log("Error occurred while deleting images: " . $e->getMessage() . "\n");
       return [];
     }
@@ -90,15 +86,11 @@ class ImageCatalogManager
    */
   public function deleteFolders(array $folderIds): array
   {
-    $this->link->begin_transaction(MYSQLI_TRANS_START_READ_WRITE);
 
     try {
       $res = $this->deleteFolderRecords($folderIds);
-
-      $this->link->commit();
       return $res;
     } catch (Exception $e) {
-      $this->link->rollback();
       error_log("Error occurred while deleting folders: " . $e->getMessage() . "\n");
       return [];
     }

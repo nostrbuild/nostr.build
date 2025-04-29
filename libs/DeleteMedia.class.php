@@ -81,8 +81,6 @@ class DeleteMedia
 
   function deleteFreeMedia(): bool
   {
-    $this->db->begin_transaction(MYSQLI_TRANS_START_READ_WRITE);
-
     try {
       $assocIds = $this->getUploadAttemptIds();
       if (empty($assocIds)) {
@@ -94,7 +92,6 @@ class DeleteMedia
       error_log('Media data: ' . json_encode($mediaData) . PHP_EOL);
       if ($mediaData === null) {
         $this->deleteUploadAttempts($assocIds);
-        $this->db->commit();
         $blossomHash = $this->getBlossomMediahash();
         if (!$this->blossomFrontendCall && !empty($blossomHash)) {
           $this->blossomFrontEndAPI->deleteMedia($this->userNpub, $blossomHash);
@@ -104,9 +101,7 @@ class DeleteMedia
 
       $this->processMediaDeletion($mediaData);
       $this->deleteUploadAttempts($assocIds);
-      $this->db->commit();
     } catch (Exception $e) {
-      $this->db->rollback();
       error_log($e->getMessage());
       // If 404, rethrow exception to return 404 status
       if ($e->getCode() === 404) {
