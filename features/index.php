@@ -92,7 +92,7 @@ $perm = new Permission();
     <table style="width:100%">
     <tr>
       <td>
-      <p><span style="color:white">Supported Media Files up to 100MB:</span> Anyone using Nostr can upload the media of their choice, up to 21MB per file.
+      <p><span style="color:white">Supported Media Files up to 100MB:</span> Anyone using Nostr can upload the media of their choice, up to 100MB per file.
       We support many different media types including .jpg, .png, .gif, .mov, .mp4, .mp3, and .wav. We compress JPEGs, PNGs and GIFs, 
       but currently perform only light processing of video to allow quick preview. If your video is playing weird, no audio or not playing at all, 
       it is likely your video format or how it was transcoded.</p></td>
