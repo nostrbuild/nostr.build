@@ -199,8 +199,8 @@ if (!empty($rows)) {
 				$sizes = '(max-width: 426px) 100vw, (max-width: 640px) 100vw, (max-width: 854px) 100vw, (max-width: 1280px) 50vw, 33vw';
 				// video poster placeholder, until we have real ones: https://cdn.nostr.build/assets/video/jpg/video-poster@0.25x.jpg
 				$lgSrc = match ($mime_main_type) {
-					'video' => 'data-video=\'{"source": [{"src":"' . $media_link . '", "type": "video/mp4"}], "attributes": {"preload": "auto", "playsinline": true, "controls": true}}\' data-poster="https://cdn.nostr.build/assets/video/jpg/video-poster@0.75x.jpg"',
-					'audio' => 'data-video=\'{"source": [{"src":"' . $media_link . '", "type": "' . $mime_type . '"}], "attributes": {"preload": "auto", "playsinline": true, "controls": true}}\' data-poster="https://cdn.nostr.build/assets/audio/jpg/audio-wave@0.75x.jpg"',
+					'video' => 'data-video=\'{"source": [{"src":"' . $media_link . '", "type": "video/mp4"}], "attributes": {"preload": "auto", "playsinline": true, "controls": true}}\' data-poster="' . $media_link . '/poster.jpg"',
+					'audio' => 'data-video=\'{"source": [{"src":"' . $media_link . '", "type": "' . $mime_type . '"}], "attributes": {"preload": "auto", "playsinline": true, "controls": true}}\' data-poster="' . $media_link . '/poster.jpg"',
 					'image' => 'data-responsive="' . $srcset . '" data-src="' . $src . '"',
 				};
 			?>
@@ -208,14 +208,14 @@ if (!empty($rows)) {
 					<a href="<?= $media_link ?>" target="_blank">
 						<?php if ($mime_main_type === 'video') : ?>
 							<!-- A video poster is required for lightgallery to work -->
-							<img src="https://cdn.nostr.build/assets/video/jpg/video-poster@0.5x.jpg" alt="video poster" style="display: none;" />
+							<img src="<?= $src . "/poster.jpg" ?>" alt="video poster" style="display: none;" />
 							<video class="w-full" controls preload="auto">
 								<!-- Fake mime type to force the browser to use the video player -->
 								<source src="<?= $src ?>" type="video/mp4">
 							</video>
 						<?php elseif ($mime_main_type === 'audio') : ?>
 							<img src="https://cdn.nostr.build/assets/audio/jpg/audio-wave@0.5x.jpg" alt="audio poster" style="display: none;" />
-							<video class="w-full" controls preload="metadata" poster="https://cdn.nostr.build/assets/audio/jpg/audio-wave@0.5x.jpg">
+							<video class="w-full" controls preload="metadata" poster="<?= $src . "/poster.jpg" ?>">
 								<!-- Fake mime type to force the browser to use the video player -->
 								<source src="<?= $src ?>" type="<?= $mime_type ?>">
 							</video>

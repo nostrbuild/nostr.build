@@ -80,7 +80,7 @@ global $link;
 						</div>
 
 						<?php if ($mime_main_type === 'video') : ?>
-							<video style="max-height: 325px; max-width: 350px; vertical-align: middle" controls preload="metadata">
+							<video style="max-height: 325px; max-width: 350px; vertical-align: middle" controls preload="metadata" poster="<?= $src . "/poster.jpg" ?>">
 								<!-- Fake mime type to force the browser to use the video player -->
 								<source id="<?= $usernpub ?>" src="<?= $src ?>" type="video/mp4">
 							</video>
