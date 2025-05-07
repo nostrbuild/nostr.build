@@ -211,9 +211,10 @@ $perm = new Permission();
     <table style="width:100%">
     <tr>
       <td>
-      <p><span style="color:white">.pdf and .zip File Support:</span>  Another huge request from users was to support the .pdf and .zip file types. This wasn’t as easy as it seems since 
-        we have to perform a virus scan on each of these file types before publishing and allowing public access. </p></td>
-      <td><img src="https://cdn.nostr.build/assets/images/pdf_zipimages01.png" alt="nostr.build v1"></td>
+      <p><span style="color:white">.pdf and .svg File Support:</span>  Another huge request from users was to support the .pdf and .svg file types. This wasn’t as easy as it seems since 
+        we have to perform a virus scan on each .pdf file type before publishing and allowing public access. Scalable Vector Graphics (SVG) files use mathematical formulas to store graphics. 
+        This makes them able to be resized without losing quality, very common with designers and content creators.</p></td>
+      <td><img src="https://cdn.nostr.build/assets/images/pdf_svgimages01.png" alt="nostr.build v1"></td>
     </tr>
     </table></br>
     <hr width="90%" size="1" color="9d83a2" class="center"> </br>
@@ -282,9 +283,9 @@ $perm = new Permission();
     <table style="width:100%">
     <tr>
       <td>
-      <p><span style="color:white">.svg File Support:</span> Scalable Vector Graphics (SVG) files use mathematical formulas to store graphics. 
-        This makes them able to be resized without losing quality, very common with designers and content creators. </p></td>
-      <td><img src="https://cdn.nostr.build/assets/images/svgicon01.png" alt="nostr.build v1"></td>
+      <p><span style="color:white">.zip, .pdf, and .svg File Support:</span> This plan allows you to upload all of our file types, including .zip files, which take extra time to process because of the
+	virus scan performed on each one. </p></td>
+      <td><img src="https://cdn.nostr.build/assets/images/zip_pdf_svgimages01.png" alt=".zip file type"></td>
     </tr>
     </table></br>
     <hr width="90%" size="1" color="9d83a2" class="center"> </br>
