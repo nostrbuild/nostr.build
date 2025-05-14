@@ -111,6 +111,7 @@ class S3Service
           'storage_class' => $options['StorageClass'],
           'retries' => $options['retries'],
           'part_size' => $multipartThreshold,
+          'concurrency' => 10,
           'before_initiate' => function (Command $command) use ($options) {
             // $command is a CreateMultipartUpload operation
             $command['ContentType'] = $options['ContentType'];
