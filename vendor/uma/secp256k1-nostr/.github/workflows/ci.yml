@@ -3,8 +3,37 @@ name: CI
 on: push
 
 jobs:
-  run:
+  build:
     name: CI on PHP ${{ matrix.php-version }}
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        php-version: [ "7.4", "8.0", "8.1", "8.2", "8.3", "8.4" ]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        env:
+          debug: true
+        with:
+          php-version: ${{ matrix.php-version }}
+          ini-values: opcache.enable=1, opcache.enable_cli=1, opcache.protect_memory=1
+      - name: Build secp256k1_nostr
+        run: |
+          sudo apt-get update
+          sudo apt install libsodium-dev libsecp256k1-dev
+          make ext
+      - name: Test PHP extension without Valgrind
+        if: ${{ matrix.php-version == '7.4' || matrix.php-version == '8.0' }}
+        run: |
+          make check
+      - name: Test PHP extension with Valgrind
+        if: ${{ matrix.php-version != '7.4' && matrix.php-version != '8.0' }}
+        run: |
+          sudo apt-get install valgrind
+          make check-valgrind
+  build-vendored:
+    name: CI on PHP ${{ matrix.php-version }}, vendored dependencies
     runs-on: ubuntu-24.04
     strategy:
       fail-fast: false
@@ -20,9 +49,9 @@ jobs:
         with:
           php-version: ${{ matrix.php-version }}
           ini-values: opcache.enable=1, opcache.enable_cli=1, opcache.protect_memory=1
-      - name: Build secp256k1 and PHP extension
+      - name: Build libsodium, secp256k1 and secp256k1_nostr
         run: |
-          make secp256k1 ext
+          make ext-with-deps
       - name: Test PHP extension without Valgrind
         if: ${{ matrix.php-version == '7.4' || matrix.php-version == '8.0' }}
         run: |

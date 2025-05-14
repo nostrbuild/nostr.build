@@ -41,30 +41,38 @@ bool(false)
 
 ## Installation (Linux)
 
-These instructions are tailored for Ubuntu 22.04 LTS.
+These instructions are tailored for Ubuntu 24.04 LTS.
 Nevertheless, only the first step might be a bit different on other Linux distributions that don't use the APT package manager.
 
 1. Install the required dependencies to build both the extension and secp256k1.
 
     ```shell
-    $ sudo apt install autoconf build-essential git libtool php8.1-dev pkgconf
+    $ sudo apt install autoconf build-essential git libsecp256k1-dev libsodium-dev libtool php8.3-dev pkgconf
     ```
 
-2. Clone this repository and its submodules.
+2. Clone this repository:
 
     ```shell
     $ git clone https://github.com/1ma/secp256k1-nostr-php
     $ cd secp256k1-nostr-php
-    $ git submodule init
-    $ git submodule update
     ```
 
-3. Build secp256k1 and the extension in one step. Then install the extension (`secp256k1_nostr.so`) in your local PHP.
+3. Build the extension (`secp256k1_nostr.so`), then install it into your local PHP runtime.
    The 'install' command will likely require sudo privileges. Optionally, you can run the tests with `make check` before installing.
 
     ```shell
-    $ make secp256k1 ext
+    $ make ext
     $ make check
+    $ sudo make install
+    ```
+
+   If your Linux distro doesn't have packages (or the minimum required version) for libsodium or libsecp256k1 you can build these
+   dependencies in-tree. For that you'll need to clone the submodules of the repository and run `make ext-with-deps` instead of `make ext`:
+
+    ```shell
+    $ git submodule init
+    $ git submodule update
+    $ make ext-with-deps
     $ sudo make install
     ```
 
@@ -72,12 +80,12 @@ Nevertheless, only the first step might be a bit different on other Linux distri
    separate php.ini files, so you need to edit both. Finally, test that the extension loads correctly with `php -m`. 
 
    ```shell
-   $ echo "extension=secp256k1_nostr.so" | sudo tee -a /etc/php/8.1/cli/php.ini
+   $ echo "extension=secp256k1_nostr.so" | sudo tee -a /etc/php/8.3/cli/php.ini
    $ php -m | grep nostr
    secp256k1_nostr
 
-   $ echo "extension=secp256k1_nostr.so" | sudo tee -a /etc/php/8.1/fpm/php.ini
-   $ php-fpm8.1 -m | grep nostr
+   $ echo "extension=secp256k1_nostr.so" | sudo tee -a /etc/php/8.3/fpm/php.ini
+   $ php-fpm8.3 -m | grep nostr
    secp256k1_nostr
    ```
 
@@ -92,8 +100,7 @@ See [secp256k1_nostr.stub.php](ext/secp256k1_nostr.stub.php)
 A private key is just a random string of 32 bytes.
 The only caveat is that it has to be hex-encoded.
 
-All functions of `secp256k1_nostr` work with hex-encoded strings to lessen the friction
-of working with Nostr events.
+All functions of `secp256k1_nostr` only accept hex-encoded strings to lessen the friction of working with Nostr events.
 
    ```php
    $privateKey = bin2hex(random_bytes(32));
@@ -101,18 +108,20 @@ of working with Nostr events.
    ```
 
 There is an exceedingly remote possibility that the bytes are out of range for a valid private key.
-In this case `secp256k1_nostr_derive_pubkey()` would throw an exception, but in practice this should never happen.
+In this case `secp256k1_nostr_derive_pubkey()` would throw an exception, but in practice this should never happen
+unless you deliberately feed the function a faulty private key such as `0000000000000000000000000000000000000000000000000000000000000000`.
 
 ### Are there stubs for the `secp256k1_nostr` functions?
 
 Yes. Simply use Composer to install `uma/secp256k1-nostr` as a development dependency of your project:
 
 ```shell
-$ composer require --dev uma/secp256k-nostr
+$ composer require --dev uma/secp256k1-nostr
 ```
 
-This isn't a substitute for the real installation steps outlined above.
-It will just make the [secp256k1_nostr.stub.php](ext/secp256k1_nostr.stub.php) file visible to your IDE.
+**NOTICE:** This isn't a substitute for the real installation steps described above.
+This will just make the [secp256k1_nostr.stub.php](ext/secp256k1_nostr.stub.php) file visible to your IDE so that it's aware of the extension functions.
+But this *does not* install the extension, which is really the `secp256k1_nostr.so` file mentioned earlier.
 
 ### What was the motivation for developing this extension?
 

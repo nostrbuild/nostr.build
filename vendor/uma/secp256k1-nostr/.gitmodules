@@ -1,3 +1,6 @@
+[submodule "libsodium"]
+	path = vendor/libsodium
+	url = https://github.com/jedisct1/libsodium
 [submodule "secp256k1"]
-	path = secp256k1
+	path = vendor/secp256k1
 	url = https://github.com/bitcoin-core/secp256k1

@@ -10,69 +10,46 @@
    | obtain it through the world-wide-web, please send a note to          |
    | license@php.net so we can mail you a copy immediately.               |
    +----------------------------------------------------------------------+
-   | Authors: Rasmus Lerdorf <rasmus@php.net>                             |
-   |          Stig Sæther Bakken <ssb@php.net>                          |
-   |          Zeev Suraski <zeev@php.net>                                 |
+   | Authors: Frank Denis <jedisct1@php.net>                              |
    +----------------------------------------------------------------------+
- */
+*/
 
 #include "php.h"
 
-/* this is read-only, so it's ok */
-ZEND_SET_ALIGNED(16, static const char hexconvtab[]) = "0123456789abcdef";
+#include "sodium.h"
 
 /* {{{ php_bin2hex */
-zend_string *php_bin2hex(const unsigned char *old, const size_t oldlen)
+zend_string *php_bin2hex(const unsigned char *bin, const size_t bin_len)
 {
-	zend_string *result;
-	size_t i, j;
+	zend_string *hex;
+	size_t hex_len;
 
-	result = zend_string_safe_alloc(oldlen, 2 * sizeof(char), 0, 0);
+	hex_len = bin_len * 2U;
+	hex = zend_string_alloc(hex_len, 0);
 
-	for (i = j = 0; i < oldlen; i++) {
-		ZSTR_VAL(result)[j++] = hexconvtab[old[i] >> 4];
-		ZSTR_VAL(result)[j++] = hexconvtab[old[i] & 15];
-	}
-	ZSTR_VAL(result)[j] = '\0';
+	sodium_bin2hex(ZSTR_VAL(hex), hex_len + 1U, bin, bin_len);
+	ZSTR_VAL(hex)[hex_len] = 0;
 
-	return result;
+	return hex;
 }
 /* }}} */
 
 /* {{{ php_hex2bin */
-zend_string *php_hex2bin(const unsigned char *old, const size_t oldlen)
+zend_string *php_hex2bin(const unsigned char *hex, const size_t hex_len)
 {
-	size_t target_length = oldlen >> 1;
-	zend_string *str = zend_string_alloc(target_length, 0);
-	unsigned char *ret = (unsigned char *)ZSTR_VAL(str);
-	size_t i, j;
+	zend_string *bin;
+	size_t bin_len;
 
-	for (i = j = 0; i < target_length; i++) {
-		unsigned char c = old[j++];
-		unsigned char l = c & ~0x20;
-		int is_letter = ((unsigned int) ((l - 'A') ^ (l - 'F' - 1))) >> (8 * sizeof(unsigned int) - 1);
-		unsigned char d;
+	bin_len = hex_len/2;
+	bin = zend_string_alloc(bin_len, 0);
 
-		/* basically (c >= '0' && c <= '9') || (l >= 'A' && l <= 'F') */
-		if (EXPECTED((((c ^ '0') - 10) >> (8 * sizeof(unsigned int) - 1)) | is_letter)) {
-			d = (l - 0x10 - 0x27 * is_letter) << 4;
-		} else {
-			zend_string_efree(str);
-			return NULL;
-		}
-		c = old[j++];
-		l = c & ~0x20;
-		is_letter = ((unsigned int) ((l - 'A') ^ (l - 'F' - 1))) >> (8 * sizeof(unsigned int) - 1);
-		if (EXPECTED((((c ^ '0') - 10) >> (8 * sizeof(unsigned int) - 1)) | is_letter)) {
-			d |= l - 0x10 - 0x27 * is_letter;
-		} else {
-			zend_string_efree(str);
-			return NULL;
-		}
-		ret[i] = d;
+	if (sodium_hex2bin((unsigned char *) ZSTR_VAL(bin), bin_len, hex, hex_len, NULL, NULL, NULL) != 0) {
+		zend_string_efree(bin);
+		return NULL;
 	}
-	ret[i] = '\0';
 
-	return str;
+	ZSTR_VAL(bin)[bin_len] = 0;
+
+	return bin;
 }
 /* }}} */

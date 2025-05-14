@@ -20,6 +20,8 @@
 
 #include "hex_conversions.h"
 
+#include "sodium.h"
+
 #include "secp256k1.h"
 #include "secp256k1_extrakeys.h"
 #include "secp256k1_schnorrsig.h"
@@ -264,6 +266,10 @@ PHP_MINIT_FUNCTION(secp256k1_nostr)
 #endif
 
 	secp256k1_selftest();
+
+	if (sodium_init() < 0) {
+		return FAILURE;
+	}
 
 	return SUCCESS;
 }

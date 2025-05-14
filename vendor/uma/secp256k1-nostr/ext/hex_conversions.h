@@ -2,15 +2,11 @@
 #define HEX_CONVERSIONS_H
 
 /*
-   The native C functions for hex2bin() and bin2hex() had to be yanked out
-   of the PHP codebase because they are declared as static functions that
-   aren't visible outside of their own source file.
-
-   hex_conversions.c is essentially a stripped down version of
-   php-src/ext/standard/string.c, taken from PHP version 8.2.8.
+   Loosely based on sodium_bin2hex() and sodium_hex2bin() from
+   php-src/ext/sodium/libsodium.c at PHP version 8.4.4
 */
 
-zend_string *php_bin2hex(const unsigned char *old, const size_t oldlen);
-zend_string *php_hex2bin(const unsigned char *old, const size_t oldlen);
+zend_string *php_bin2hex(const unsigned char *bin, const size_t bin_len);
+zend_string *php_hex2bin(const unsigned char *hex, const size_t hex_len);
 
 #endif /* HEX_CONVERSIONS_H */

@@ -116,25 +116,97 @@ class Invoice extends AbstractClient
         }
     }
 
-    public function getAllInvoices(string $storeId): InvoiceList
-    {
-        return $this->_getAllInvoicesWithFilter($storeId, null);
-    }
-
-    public function getInvoicesByOrderIds(string $storeId, array $orderIds): InvoiceList
-    {
-        return $this->_getAllInvoicesWithFilter($storeId, $orderIds);
-    }
-
-    private function _getAllInvoicesWithFilter(
+    public function getAllInvoices(
         string $storeId,
-        array $filterByOrderIds = null
+        int $take = null,
+        int $skip = null
+    ): InvoiceList {
+        return $this->getAllInvoicesWithFilter($storeId, null, null, null, null, null, $take, $skip);
+    }
+
+    public function getInvoicesByOrderIds(
+        string $storeId,
+        array $orderIds,
+        int $take = null,
+        int $skip = null
+    ): InvoiceList {
+        return $this->getAllInvoicesWithFilter($storeId, $orderIds, null, null, null, null, $take, $skip);
+    }
+
+    public function getInvoicesByText(
+        string $storeId,
+        string $text,
+        int $take = null,
+        int $skip = null
+    ): InvoiceList {
+        return $this->getAllInvoicesWithFilter($storeId, null, $text, null, null, null, $take, $skip);
+    }
+
+    public function getInvoicesByStatus(
+        string $storeId,
+        array $status,
+        int $take = null,
+        int $skip = null
+    ): InvoiceList {
+        return $this->getAllInvoicesWithFilter($storeId, null, null, $status, null, null, $take, $skip);
+    }
+
+    public function getInvoicesByStartDate(
+        string $storeId,
+        int $startDate,
+        int $take = null,
+        int $skip = null
+    ): InvoiceList {
+        return $this->getAllInvoicesWithFilter($storeId, null, null, null, $startDate, null, $take, $skip);
+    }
+
+    public function getInvoicesByEndDate(
+        string $storeId,
+        int $endDate,
+        int $take = null,
+        int $skip = null
+    ): InvoiceList {
+        return $this->getAllInvoicesWithFilter($storeId, null, null, null, null, $endDate, $take, $skip);
+    }
+
+    /**
+     * @see https://docs.btcpayserver.org/API/Greenfield/v1/#operation/Invoices_GetInvoices
+     */
+    public function getAllInvoicesWithFilter(
+        string $storeId,
+        array $filterByOrderIds = null,
+        string $filterByText = null,
+        array $filterByStatus = null,
+        int $filterByStartDate = null,
+        int $filterByEndDate = null,
+        int $take = null,
+        int $skip = null
     ): InvoiceList {
         $url = $this->getApiUrl() . 'stores/' . urlencode($storeId) . '/invoices?';
         if ($filterByOrderIds !== null) {
             foreach ($filterByOrderIds as $filterByOrderId) {
                 $url .= 'orderId=' . urlencode($filterByOrderId) . '&';
             }
+        }
+        if ($filterByText !== null) {
+            $url .= 'textSearch=' . urlencode($filterByText) . '&';
+        }
+        if ($filterByStatus !== null) {
+            foreach ($filterByStatus as $filterByStatusItem) {
+                $url .= 'status=' . urlencode($filterByStatusItem) . '&';
+            }
+        }
+        if ($filterByStartDate !== null) {
+            $url .= 'startDate=' . $filterByStartDate . '&';
+        }
+        if ($filterByEndDate !== null) {
+            $url .= 'endDate=' . $filterByEndDate . '&';
+        }
+        if ($take !== null) {
+            $url .= 'take=' . $take . '&';
+        }
+        if ($skip !== null) {
+            $url .= 'skip=' . $skip . '&';
         }
 
         // Clean URL.
