@@ -59,6 +59,7 @@ class UploadsData extends DatabaseTable
   {
     $cacheKey = 'uploads_data_stats';
     $cacheTTL = 3600; // Time-to-live in seconds
+    /*
     $redis = new Redis([
       'host' => 'localhost',
       'port' => 6379,
@@ -68,6 +69,7 @@ class UploadsData extends DatabaseTable
     if ($cache) {
       return json_decode($cache, true);
     }
+      */
 
     // Try to get data from APCu cache first
     // if (apcu_exists($cacheKey)) {
@@ -111,7 +113,9 @@ class UploadsData extends DatabaseTable
       error_log("Exception: " . $e->getMessage());
     }
     // Save the result to Redis cache
+    /*
     $redis->set($cacheKey, json_encode($result), $cacheTTL);
+    */
 
     return $result;
   }
