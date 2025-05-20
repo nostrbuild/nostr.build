@@ -3418,7 +3418,7 @@ Alpine.store('uppyStore', {
         limit: 3,
         shouldRetry: (xhr) => {
           // Retry on 5xx errors
-          return xhr.status >= 500 && xhr.status < 600;
+          return xhr.status >= 500 && xhr.status !== 504 && xhr.status < 600;
         },
         timeout: 60, // LB timeout
         meta: {
