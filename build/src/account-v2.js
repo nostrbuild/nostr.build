@@ -3416,7 +3416,11 @@ Alpine.store('uppyStore', {
         formData: true,
         bundle: false,
         limit: 3,
-        timeout: 0, // Unlimited timeout
+        shouldRetry: (xhr) => {
+          // Retry on 5xx errors
+          return xhr.status >= 500 && xhr.status < 600;
+        },
+        timeout: 60, // LB timeout
         meta: {
           folderName: '', // Initialize folderName metadata
           folderHierarchy: [], // Initialize folderHierarchy metadata
