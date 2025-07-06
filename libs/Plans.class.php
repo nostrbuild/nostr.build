@@ -237,7 +237,7 @@ class Plans
         bonusCredits: 250,
         features: [
           '25GB of private storage',
-          'Upload and share PDFs, SVGs',
+          'PDF and SVG file support',
           'Free Media Gallery, 1.5M+ items',
           'Add/Move/Delete your media',
           'Share media direct to Nostr',
@@ -262,7 +262,7 @@ class Plans
         bonusCredits: 500,
         features: [
           '50GB of private storage',
-          'Upload and share ZIPs, PDFs, SVGs',
+          'ZIP, PDF and SVG file support',
           'AI Studio (Text-to-Image)',
           '<a class="ref_link" target="_blank" href="https://nostr.build/creators/">Host a Creators page</a></b>',
           'S3 backup for all media',
@@ -288,7 +288,6 @@ class Plans
         bonusCredits: 1000,
         features: [
           '250GB of private storage',
-          'Upload and share ZIPs, PDFs, SVGs',
           'AI Studio Extended Access',
           'NIP-05 @nostr.build',
           'Expandable storage *',
