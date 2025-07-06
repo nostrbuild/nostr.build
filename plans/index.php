@@ -244,9 +244,10 @@ SVG;
     <div class="information pb-5">
       <ul>
         <li>
-          <span class="whitespace-pre-line text-pretty text-base sm:text-lg">YakiHonne/Damus/Amethyst/Snort/Coracle/noStrudel/Blossom protocol Integrations
+          <span class="whitespace-pre-line text-pretty text-base sm:text-lg">YakiHonne/Damus/Amethyst/Snort/Coracle/noStrudel
+            and Blossom protocol Integrations
             Bitcoin Only | Never Ads | Billed Annually
-            We will maintain your account media online for an additional year after the expiration date.
+            Media stays online 1 year after account expiration
           </span>
         </li>
       </ul>
@@ -300,11 +301,11 @@ SVG;
                   </label>
                   <label :class="{ 'bg-purple-500': period === '2y' }" class="cursor-pointer rounded-full px-2.5 py-1" @click="multiplier = 1.8">
                     <input type="radio" name="period" value="2y" class="sr-only" x-model="period">
-                    <span>2 years (<?= Plans::$twoYearDiscount * 100 ?>% off)</span>
+                    <span>2 years (-<?= Plans::$twoYearDiscount * 100 ?>%)</span>
                   </label>
                   <label :class="{ 'bg-purple-500': period === '3y' }" class="cursor-pointer rounded-full px-2.5 py-1" @click="multiplier = 2.4">
                     <input type="radio" name="period" value="3y" class="sr-only" x-model="period">
-                    <span>3 years (<?= Plans::$threeYearDiscount * 100 ?>% off)</span>
+                    <span>3 years (-<?= Plans::$threeYearDiscount * 100 ?>%)</span>
                   </label>
                 </fieldset>
               </div>
@@ -433,8 +434,8 @@ SVG;
 
           <div class="rounded-md bg-nbpurple-800 p-4 mb-2">
             <div class="text-sm text-nbpurple-100 text-center">
-              <p>- Downgrading your account is available upon request</p>
-              <p>- Money Back guarantee if not satisfied within 21 days</p>
+              <p>- Account downgrade available on request</p>
+              <p>- 21 day money-back guarantee</p>
               <p> Contact Us - <a href="mailto:admin@nostr.build">admin@nostr.build</a></p>
             </div>
           </div>
