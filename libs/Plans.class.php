@@ -262,7 +262,7 @@ class Plans
         bonusCredits: 500,
         features: [
           '50GB of private storage',
-          'ZIP, PDF and SVG file support',
+          'ZIP, PDF, and SVG file support',
           'AI Studio (Text-to-Image)',
           '<a class="ref_link" target="_blank" href="https://nostr.build/creators/">Host a Creators page</a></b>',
           'S3 backup for all media',
