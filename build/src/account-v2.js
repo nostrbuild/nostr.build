@@ -1662,80 +1662,80 @@ Alpine.store('fileStore', {
   loading: false,
   fullWidth: false,
   Files: {
-    files: [],
-    filesById: new Map(),
-    filesByName: new Map(),
+    _files: [],
+    _filesById: new Map(),
+    _filesByName: new Map(),
 
     get files() {
-      return this.files;
+      return this._files;
     },
 
     get filesById() {
-      return this.filesById;
+      return this._filesById;
     },
 
     get filesByName() {
-      return this.filesByName;
+      return this._filesByName;
     },
 
     /**
      * @param {any[]} files
      */
     set files(files) {
-      this.files = [...files];
+      this._files = [...files];
       this.updateMaps();
     },
 
     updateMaps() {
-      this.filesById = new Map(this.files.map(file => [file.id, file]));
-      this.filesByName = new Map(this.files.map(file => [file.name, file]));
+      this._filesById = new Map(this._files.map(file => [file.id, file]));
+      this._filesByName = new Map(this._files.map(file => [file.name, file]));
     },
 
     addFile(file, position = 'bottom') {
-      if (!this.filesById.has(file.id)) {
+      if (!this._filesById.has(file.id)) {
         if (position === 'top') {
-          this.files.unshift(file);
+          this._files.unshift(file);
         } else {
-          this.files.push(file);
+          this._files.push(file);
         }
         this.addFileToMaps(file);
       }
     },
 
     addFiles(newFiles, position = 'bottom') {
-      const uniqueFiles = newFiles.filter(file => !this.filesById.has(file.id));
+      const uniqueFiles = newFiles.filter(file => !this._filesById.has(file.id));
       if (position === 'top') {
-        this.files.unshift(...uniqueFiles);
+        this._files.unshift(...uniqueFiles);
       } else {
-        this.files.push(...uniqueFiles);
+        this._files.push(...uniqueFiles);
       }
       uniqueFiles.forEach(file => this.addFileToMaps(file));
     },
 
     addFileToMaps(file) {
-      this.filesById.set(file.id, file);
-      this.filesByName.set(file.name, file);
+      this._filesById.set(file.id, file);
+      this._filesByName.set(file.name, file);
     },
 
     removeFile(file) {
-      const index = this.files.findIndex(f => f.id === file.id);
+      const index = this._files.findIndex(f => f.id === file.id);
       if (index !== -1) {
-        this.files.splice(index, 1);
+        this._files.splice(index, 1);
         this.removeFileFromMaps(file);
       }
     },
 
     removeFileFromMaps(file) {
-      this.filesById.delete(file.id);
-      this.filesByName.delete(file.name);
+      this._filesById.delete(file.id);
+      this._filesByName.delete(file.name);
     },
 
     getFileByName(name) {
-      return this.filesByName.get(name);
+      return this._filesByName.get(name);
     },
 
     getFileById(id) {
-      return this.filesById.get(id);
+      return this._filesById.get(id);
     }
   },
   moveToFolder: {
@@ -3231,7 +3231,6 @@ Alpine.store('uppyStore', {
     // This is just for client side convenience, it is still enforced server-side
     const mimeTypesImages = {
       'image/jpeg': 'jpg',
-      'image/jpeg': 'jpeg',
       'image/png': 'png',
       'image/apng': 'apng',
       'image/gif': 'gif',
@@ -3619,7 +3618,7 @@ Alpine.store('uppyStore', {
       })
       .on('progress', (progress) => {
         // progress: integer (total progress percentage)
-        this.mainDialog.uploadProgress = progress + '%';
+        this.mainDialog.uploadProgress = progress > 0 ? progress + '%' : null;
       })
       .on('upload-progress', (file, progress) => {
         // Update the file progress in the fileStore
