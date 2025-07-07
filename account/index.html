@@ -16,7 +16,7 @@
 	<meta name="msapplication-TileColor" content="#9f00a7">
 	<meta name="theme-color" content="#ffffff">
 
-	<script defer src="/scripts/dist/account-v2.js?v=11a468b1b1295dd35c03f5cfc7d102af"></script>
+	<script defer src="/scripts/dist/account-v2.js?v=cf9cf9649ea691168e3ec21f1bde2da2"></script>
 	<link href="/scripts/dist/account-v2.css?v=4ddc12b00ce35067a951c985c8e737a8" rel="stylesheet">
 
 	<link href="/styles/twbuild.css?v=31987550f20db6767fdd948dee32ea8b" rel="stylesheet">
@@ -675,6 +675,38 @@ onDropCB(event) {
 													</div>
 												</li>
 												<!-- /Creators Page Shares -->
+												<!-- Link to https://stats.nostr.build for user statistics -->
+												<li>
+													<div class="flex items-center justify-between">
+														<div class="flex items-center cursor-pointer"
+															@click="window.open('https://stats.nostr.build/' + profileStore.profileInfo.npub, '_blank')">
+															<svg aria-hidden="true" class="size-5 text-nbpurple-300" viewBox="0 0 24 24" fill="none"
+																stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+																<path d="M12 16v5" />
+																<path d="M16 14v7" />
+																<path d="M20 10v11" />
+																<path d="m22 3-8.646 8.646a.5.5 0 0 1-.708 0L9.354 8.354a.5.5 0 0 0-.707 0L2 15" />
+																<path d="M4 18v3" />
+																<path d="M8 14v7" />
+															</svg>
+															<span class="ml-2 text-sm font-medium text-nbpurple-300">Statistics</span>
+														</div>
+														<a class="flex items-center cursor-pointer"
+															:href="'https://stats.nostr.build/' + profileStore.profileInfo.npub" target="_blank">
+															<svg aria-hidden="true" class="size-4 text-nbpurple-300" viewBox="0 0 20 20"
+																fill="currentColor">
+																<path fill-rule="evenodd"
+																	d="M12.232 4.232a2.5 2.5 0 0 1 3.536 3.536l-1.225 1.224a.75.75 0 0 0 1.061 1.06l1.224-1.224a4 4 0 0 0-5.656-5.656l-3 3a4 4 0 0 0 .225 5.865.75.75 0 0 0 .977-1.138 2.5 2.5 0 0 1-.142-3.667l3-3Z"
+																	clip-rule="evenodd" />
+																<path
+																	d="M11.603 7.963a.75.75 0 0 0-.977 1.138 2.5 2.5 0 0 1 .142 3.667l-3 3a2.5 2.5 0 0 1-3.536-3.536l1.225-1.224a.75.75 0 0 0-1.061-1.06l-1.224 1.224a4 4 0 1 0 5.656 5.656l3-3a4 4 0 0 0-.225-5.865Z" />
+															</svg>
+															<span class="ml-1 text-sm font-medium text-nbpurple-300"
+																x-text="menuStore.formatNumberInThousands(menuStore.fileStats.totalStats)"></span>
+														</a>
+													</div>
+												</li>
+												<!-- /Link to https://stats.nostr.build for user statistics -->
 											</ul>
 										</li>
 										<!-- /Sidebar widgets -->
@@ -3662,7 +3694,8 @@ onDropCB(event) {
 															Share</option>
 														<option value="props" :selected="fileStore.mediaProperties.currentTab === $el.value">
 															Properties</option>
-														<option x-show="profileStore.profileInfo.isAnalyticsEligible" value="stats" :selected="fileStore.mediaProperties.currentTab === $el.value">
+														<option x-show="profileStore.profileInfo.isAnalyticsEligible" value="stats"
+															:selected="fileStore.mediaProperties.currentTab === $el.value">
 															Statistics</option>
 														<option x-show="profileStore.profileInfo.isAIToolsEligible" value="ai_tools"
 															:selected="fileStore.mediaProperties.currentTab === $el.value">
