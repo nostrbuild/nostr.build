@@ -36,7 +36,11 @@ class Permission
     if ($this->isLoggedIn && !empty($_SESSION["usernpub"])) {
       // Set or update the cookie to expire in 1 hour
       $userNpub = $_SESSION["usernpub"];
-      $this->setSecureSignedCookie('npub', $userNpub, 3600);
+      $this->setSecureSignedCookie('npub', $userNpub, 86400); // 24 hours
+      // Add new cookies for additional data
+      $this->setSecureSignedCookie('user_level', $this->userLevel, 86400); // 24 hours
+      // Plan expired cookie
+      $this->setSecureSignedCookie('plan_expired', ($this->planExpired ? 'true' : 'false'), 86400); // 24 hours
     }
   }
 
@@ -108,7 +112,7 @@ class Permission
   private function setSecureSignedCookie(
     string $name,
     string $value,
-    int $expire = 3600,
+    int $expire = 15552000, // 180 days
     string $path = '/',
     string $domain = '',
     bool $secure = true,
