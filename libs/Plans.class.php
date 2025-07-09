@@ -238,10 +238,10 @@ class Plans
         features: [
           '25GB of private storage',
           'PDF and SVG file support',
-          'Free Media Gallery, 1.5M+ items',
           'Add/Move/Delete your media',
           'Share media direct to Nostr',
           'Global, lightning fast CDN',
+          'Detailed stats on all media',
         ],
         currency: 'sats',
         remainingDays: $remainingDays,
