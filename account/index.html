@@ -953,7 +953,7 @@ onDropCB(event) {
 															<span
 																x-show="!menuStore.showDeleteFolderButtons || !folder.allowDelete || folder.name === menuStore.activeFolder"
 																class="text-nbpurple-300 text-xs font-semibold leading-6 items-center justify-center rounded-md p-2"
-																x-text="menuStore.formatNumberInThousands(folder.stats.all)"></span>
+																x-text="menuStore.formatNumberInThousands(folder.stats?.all || 0)"></span>
 															<!-- Delete folder Icon -->
 															<button x-cloak
 																x-show="menuStore.showDeleteFolderButtons && folder.allowDelete && folder.name !== menuStore.activeFolder"
