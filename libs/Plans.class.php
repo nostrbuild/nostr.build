@@ -1,4 +1,5 @@
 <?php
+require_once $_SERVER['DOCUMENT_ROOT'] . '/SiteConfig.php';
 // This file containes the plans and their features
 // Although we could use DB for this, it is wasteful to query the DB for this information each time
 
@@ -319,7 +320,7 @@ class Plans
         price: self::$originalPrices[self::PROFESSIONAL],
         bonusCredits: 250,
         features: [
-          '25GB of private storage',
+          '<b>' . SiteConfig::STORAGE_LIMITS[self::PROFESSIONAL]['message'] . '</b> of private storage',
           'PDF and SVG file support',
           'Add/Move/Delete your media',
           'Share media direct to Nostr',
@@ -344,7 +345,7 @@ class Plans
         price: self::$originalPrices[self::CREATOR],
         bonusCredits: 500,
         features: [
-          '50GB of private storage',
+          '<b>' . SiteConfig::STORAGE_LIMITS[self::CREATOR]['message'] . '</b> of private storage',
           'ZIP, PDF, and SVG file support',
           'AI Studio (Text-to-Image)',
           '<a class="ref_link" target="_blank" href="https://nostr.build/creators/">Host a Creators page</a></b>',
@@ -370,7 +371,7 @@ class Plans
         price: self::$originalPrices[self::ADVANCED],
         bonusCredits: 1000,
         features: [
-          '250GB of private storage',
+          '<b>' . SiteConfig::STORAGE_LIMITS[self::ADVANCED]['message'] . '</b> of private storage',
           'AI Studio Extended Access',
           'NIP-05 @nostr.build',
           'Expandable storage *',
