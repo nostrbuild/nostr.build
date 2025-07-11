@@ -19,7 +19,7 @@ class BTCPayClient
   private $invoice;
   private $currency;
 
-  public function __construct(string $apiKey, string $host, string $storeId, string $currency = 'SATS')
+  public function __construct(string $apiKey, string $host, string $storeId, string $currency = 'USD')
   {
     $this->apiKey = $apiKey;
     $this->host = $host;

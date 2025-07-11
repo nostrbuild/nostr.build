@@ -368,11 +368,11 @@ SVG;
                   <p class="mt-6 flex items-baseline gap-x-1 relative md:justify-start justify-center">
                     <!-- Display Adjusted Price -->
                     <?php if ($plan->isCurrentPlan) : ?>
+                      <span class="text-4xl font-bold tracking-tight text-purple-200"><?= $plan->getCurrencySymbol() ?></span>
                       <span class="text-4xl font-bold tracking-tight text-purple-200" x-text="(period === '1y' ? '<?= $plan->fullPrice ?>' : (period === '2y' ? '<?= $plan->full2yPrice ?>' : '<?= $plan->full3yPrice ?>'))"></span>
-                      <span class="text-sm font-semibold leading-6 text-purple-300"><?= $plan->currency ?></span>
                     <?php else : ?>
+                      <span class="text-4xl font-bold tracking-tight text-purple-200" x-text="(period === '1y' ? '<?= $plan->price != -1 ? $plan->getCurrencySymbol() : '' ?>' : (period === '2y' ? '<?= $plan->price2y != -1 ? $plan->getCurrencySymbol() : '' ?>' : '<?= $plan->price3y != -1 ? $plan->getCurrencySymbol() : '' ?>'))"><?= $plan->getCurrencySymbol() ?></span>
                       <span class="text-4xl font-bold tracking-tight text-purple-200" x-text="(period === '1y' ? '<?= $plan->price != -1 ? $plan->price : 'Ineligible' ?>' : (period === '2y' ? '<?= $plan->price2y != -1 ? $plan->price2y : 'Ineligible' ?>' : '<?= $plan->price3y != -1 ? $plan->price3y : 'Ineligible' ?>'))"></span>
-                      <span class="text-sm font-semibold leading-6 text-purple-300" x-text="(period === '1y' ? '<?= $plan->price != -1 ? $plan->currency : 'plan' ?>' : (period === '2y' ? '<?= $plan->price2y != -1 ? $plan->currency : 'plan' ?>' : '<?= $plan->price3y != -1 ? $plan->currency : 'plan' ?>'))"><?= $plan->currency ?></span>
                     <?php endif; ?>
                     <?php if ($plan->promo) : ?>
                       <span class="absolute top-0 right-0 bg-red-500 text-white text-xs font-bold py-1 px-2 rounded-full transform -translate-y-1/3">

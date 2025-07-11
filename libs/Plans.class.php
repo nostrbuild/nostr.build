@@ -115,6 +115,19 @@ class Plan
     $this->full3yPrice = number_format($this->full3yPriceInt, 0, '.', ',');
     // This code is shit but it will do for now.
   }
+
+  public function getCurrencySymbol(): string
+  {
+    return match ($this->currency) {
+      'USD' => '$',
+      'EUR' => '€',
+      'GBP' => '£',
+      'JPY' => '¥',
+      'BTC' => '₿',
+      'SAT' => 'sats',
+      default => $this->currency
+    };
+  }
 }
 
 class Plans
@@ -133,14 +146,14 @@ class Plans
   private static $instance = null;
   // Discount applies only to the additional year(s)
   static $twoYearDiscount = 0.1; // 10% discount for 2 years
-  static $threeYearDiscount = 0.20; // 20% discount for 2 years
+  static $threeYearDiscount = 0.2; // 20% discount for 2 years
 
   static $originalPrices = [
-    self::ADVANCED => 250_000,
-    self::CREATOR => 120_000,
-    self::PROFESSIONAL => 69_000,
-    self::STARTER => 21_000,
-    self::VIEWER => 5_000,
+    self::ADVANCED => 250,
+    self::CREATOR => 120,
+    self::PROFESSIONAL => 69,
+    self::STARTER => 21,
+    self::VIEWER => 5,
     self::NEW => 0,
     self::MODERATOR => 0,
     self::ADMIN => 0
@@ -155,15 +168,15 @@ class Plans
   {
     switch ($period) {
       case '2y':
-        return $price + ($price * 1 * (1 - self::$twoYearDiscount));
+        return round($price + ($price * 1 * (1 - self::$twoYearDiscount)));
       case '3y':
-        return $price + ($price * 2 * (1 - self::$threeYearDiscount));
+        return round($price + ($price * 2 * (1 - self::$threeYearDiscount)));
       default:
         return $price;
     }
   }
 
-  private static function getMultiyearDailyRate(int $price, string $period): int
+  private static function getMultiyearDailyRate(int $price, string $period): float
   {
     $days = match ($period) {
       '2y' => 730,
@@ -198,7 +211,7 @@ class Plans
           $remainingDays = 0;
         } else {
           $dailyRate = self::getMultiyearDailyRate(self::$originalPrices[$currentPlanLevel], $currentPeriod);
-          $credit = $dailyRate * $remainingDays;
+          $credit = (int)round($dailyRate * $remainingDays);
         }
         break;
     }
@@ -243,7 +256,7 @@ class Plans
           'Global, lightning fast CDN',
           'Detailed stats on all media',
         ],
-        currency: 'sats',
+        currency: 'USD',
         remainingDays: $remainingDays,
         fromPlanLevel: $currentPlanLevel,
         credit: $credit,
@@ -268,7 +281,7 @@ class Plans
           'S3 backup for all media',
           'All Professional features',
         ],
-        currency: 'sats',
+        currency: 'USD',
         remainingDays: $remainingDays,
         fromPlanLevel: $currentPlanLevel,
         credit: $credit,
@@ -293,7 +306,7 @@ class Plans
           'Expandable storage *',
           'All Creator features',
         ],
-        currency: 'sats',
+        currency: 'USD',
         remainingDays: $remainingDays,
         fromPlanLevel: $currentPlanLevel,
         credit: $credit,
