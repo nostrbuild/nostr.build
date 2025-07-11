@@ -128,6 +128,76 @@ class Plan
       default => $this->currency
     };
   }
+
+  public function getMonthlyPrice(string $period = '1y'): string
+  {
+    $totalPrice = match ($period) {
+      '1y' => $this->isCurrentPlan ? $this->fullPriceInt : $this->priceInt,
+      '2y' => $this->isCurrentPlan ? $this->full2yPriceInt : $this->priceInt2y,
+      '3y' => $this->isCurrentPlan ? $this->full3yPriceInt : $this->priceInt3y,
+      default => $this->isCurrentPlan ? $this->fullPriceInt : $this->priceInt,
+    };
+    
+    if ($totalPrice === -1) {
+      return 'Ineligible';
+    }
+    
+    $months = match ($period) {
+      '2y' => 24,
+      '3y' => 36,
+      default => 12,
+    };
+    
+    $monthlyAmount = $totalPrice / $months;
+    
+    // Show 2 decimal places if the result isn't a whole number
+    if ($monthlyAmount != floor($monthlyAmount)) {
+      return number_format($monthlyAmount, 2, '.', ',');
+    } else {
+      return number_format($monthlyAmount, 0, '.', ',');
+    }
+  }
+
+  public function getPaymentTerms(string $period = '1y'): string
+  {
+    return match ($period) {
+      '2y' => 'paid for 24 months',
+      '3y' => 'paid for 36 months',
+      default => 'paid for 12 months',
+    };
+  }
+
+  public function getTotalPrice(string $period = '1y'): string
+  {
+    $totalPrice = match ($period) {
+      '1y' => $this->isCurrentPlan ? $this->fullPriceInt : $this->priceInt,
+      '2y' => $this->isCurrentPlan ? $this->full2yPriceInt : $this->priceInt2y,
+      '3y' => $this->isCurrentPlan ? $this->full3yPriceInt : $this->priceInt3y,
+      default => $this->isCurrentPlan ? $this->fullPriceInt : $this->priceInt,
+    };
+    
+    if ($totalPrice === -1) {
+      return 'Ineligible';
+    }
+    
+    return number_format($totalPrice, 0, '.', ',');
+  }
+
+  public function getPaymentTermsWithTotal(string $period = '1y'): string
+  {
+    $totalPrice = $this->getTotalPrice($period);
+    if ($totalPrice === 'Ineligible') {
+      return 'Plan not available';
+    }
+    
+    $months = match ($period) {
+      '2y' => 24,
+      '3y' => 36,
+      default => 12,
+    };
+    
+    return "{$this->getCurrencySymbol()}{$totalPrice} total for {$months} months";
+  }
 }
 
 class Plans
@@ -149,7 +219,7 @@ class Plans
   static $threeYearDiscount = 0.2; // 20% discount for 2 years
 
   static $originalPrices = [
-    self::ADVANCED => 250,
+    self::ADVANCED => 240,
     self::CREATOR => 120,
     self::PROFESSIONAL => 69,
     self::STARTER => 21,

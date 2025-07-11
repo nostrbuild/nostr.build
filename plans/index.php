@@ -221,7 +221,7 @@ SVG;
   <meta charSet="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Nostr.build account signup</title>
-  <link rel="stylesheet" href="/styles/twbuild.css?v=31987550f20db6767fdd948dee32ea8b" />
+  <link rel="stylesheet" href="/styles/twbuild.css?v=948d9edb5b18a26df96901f216d8a54d" />
   <link rel="stylesheet" href="/styles/index.css?v=16013407201d48c976a65d9ea88a77a3" />
   <link rel="stylesheet" href="/styles/signup.css?v=8878cbf7163f77b3a4fb9b30804c73ca" />
   <link rel="icon" href="https://cdn.nostr.build/assets/primo_nostr.png" />
@@ -366,19 +366,25 @@ SVG;
                     </div>
                   <?php endif; ?>
                   <p class="mt-6 flex items-baseline gap-x-1 relative md:justify-start justify-center">
-                    <!-- Display Adjusted Price -->
+                    <!-- Display Monthly Price -->
                     <?php if ($plan->isCurrentPlan) : ?>
                       <span class="text-4xl font-bold tracking-tight text-purple-200"><?= $plan->getCurrencySymbol() ?></span>
-                      <span class="text-4xl font-bold tracking-tight text-purple-200" x-text="(period === '1y' ? '<?= $plan->fullPrice ?>' : (period === '2y' ? '<?= $plan->full2yPrice ?>' : '<?= $plan->full3yPrice ?>'))"></span>
+                      <span class="text-4xl font-bold tracking-tight text-purple-200" x-text="(period === '1y' ? '<?= $plan->getMonthlyPrice('1y') ?>' : (period === '2y' ? '<?= $plan->getMonthlyPrice('2y') ?>' : '<?= $plan->getMonthlyPrice('3y') ?>'))"></span>
+                      <span class="text-sm font-semibold leading-6 text-purple-300">/month</span>
                     <?php else : ?>
                       <span class="text-4xl font-bold tracking-tight text-purple-200" x-text="(period === '1y' ? '<?= $plan->price != -1 ? $plan->getCurrencySymbol() : '' ?>' : (period === '2y' ? '<?= $plan->price2y != -1 ? $plan->getCurrencySymbol() : '' ?>' : '<?= $plan->price3y != -1 ? $plan->getCurrencySymbol() : '' ?>'))"><?= $plan->getCurrencySymbol() ?></span>
-                      <span class="text-4xl font-bold tracking-tight text-purple-200" x-text="(period === '1y' ? '<?= $plan->price != -1 ? $plan->price : 'Ineligible' ?>' : (period === '2y' ? '<?= $plan->price2y != -1 ? $plan->price2y : 'Ineligible' ?>' : '<?= $plan->price3y != -1 ? $plan->price3y : 'Ineligible' ?>'))"></span>
+                      <span class="text-4xl font-bold tracking-tight text-purple-200" x-text="(period === '1y' ? '<?= $plan->getMonthlyPrice('1y') ?>' : (period === '2y' ? '<?= $plan->getMonthlyPrice('2y') ?>' : '<?= $plan->getMonthlyPrice('3y') ?>'))"></span>
+                      <span class="text-sm font-semibold leading-6 text-purple-300" x-text="(period === '1y' ? '<?= $plan->price != -1 ? '/month' : '' ?>' : (period === '2y' ? '<?= $plan->price2y != -1 ? '/month' : '' ?>' : '<?= $plan->price3y != -1 ? '/month' : '' ?>'))">/month</span>
                     <?php endif; ?>
                     <?php if ($plan->promo) : ?>
                       <span class="absolute top-0 right-0 bg-red-500 text-white text-xs font-bold py-1 px-2 rounded-full transform -translate-y-1/3">
                         <?= $plan->discountPercentage ?>% off
                       </span>
                     <?php endif; ?>
+                  </p>
+                  <!-- Payment Terms with Total -->
+                  <p class="mt-2 text-sm text-gray-400 text-center md:text-left" x-text="(period === '1y' ? '<?= $plan->getPaymentTermsWithTotal('1y') ?>' : (period === '2y' ? '<?= $plan->getPaymentTermsWithTotal('2y') ?>' : '<?= $plan->getPaymentTermsWithTotal('3y') ?>'))">
+                    <?= $plan->getPaymentTermsWithTotal('1y') ?>
                   </p>
                   <?php if ($plan->isCurrentPlan && !$plan->isRenewable) : ?>
                     <span aria-describedby="tier-<?= $plan->id ?>" class="mt-6 block rounded-md py-2 px-3 text-center text-sm font-semibold leading-6 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-purple-600 text-purple-300 ring-1 ring-inset ring-purple-200 hover:ring-purple-300">Your current plan</span>
