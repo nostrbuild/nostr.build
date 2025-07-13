@@ -955,9 +955,47 @@ $planData = Plans::$PLANS;
           </div>
         </div>
 
+        <!-- Native Client Integration -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center mb-20">
+          <div class="scroll-reveal lg:order-2">
+            <h3 class="text-4xl font-bold gradient-text mb-6">Native Client Integration</h3>
+            <p class="text-xl text-[#d0bed8] mb-8 leading-relaxed">
+              Seamlessly integrated into the most popular Nostr clients. No setup required - just start sharing your content directly from your favorite apps. Your media works everywhere in the Nostr ecosystem.
+            </p>
+            <div class="space-y-4">
+              <div class="flex items-center">
+                <span class="text-[#2edf95] mr-3">✓</span>
+                <span class="text-[#d0bed8]"><strong>Primal</strong> - Universal platform (iOS, Android, Web) via Blossom</span>
+              </div>
+              <div class="flex items-center">
+                <span class="text-[#2edf95] mr-3">✓</span>
+                <span class="text-[#d0bed8]"><strong>YakiHonne, Damus, Amethyst</strong> - Major mobile clients</span>
+              </div>
+              <div class="flex items-center">
+                <span class="text-[#2edf95] mr-3">✓</span>
+                <span class="text-[#d0bed8]"><strong>Snort, Coracle, noStrudel</strong> - Leading web clients</span>
+              </div>
+              <div class="flex items-center">
+                <span class="text-[#2edf95] mr-3">✓</span>
+                <span class="text-[#d0bed8]">Hassle-free - works out of the box</span>
+              </div>
+              <div class="flex items-center">
+                <span class="text-[#2edf95] mr-3">✓</span>
+                <span class="text-[#d0bed8]">Universal compatibility across the ecosystem</span>
+              </div>
+            </div>
+          </div>
+          <div class="scroll-reveal lg:order-1">
+            <!-- Native clients showcase -->
+            <div class="bg-gradient-to-br from-[#292556] to-[#1e1530] rounded-2xl h-80 border border-[#392f73] overflow-hidden flex items-center justify-center">
+              <img src="https://cdn.nostr.build/assets/fpv2/clogos.png" alt="Global CDN Map" class="w-full h-full object-cover">
+            </div>
+          </div>
+        </div>
+
         <!-- Global CDN Feature -->
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
-          <div class="scroll-reveal lg:order-2">
+          <div class="scroll-reveal">
             <h3 class="text-4xl font-bold gradient-text mb-6">Lightning-Fast Global CDN</h3>
             <p class="text-xl text-[#d0bed8] mb-8 leading-relaxed">
               Your content delivered at the speed of light with our worldwide content delivery network.
@@ -978,7 +1016,7 @@ $planData = Plans::$PLANS;
               </div>
             </div>
           </div>
-          <div class="scroll-reveal lg:order-1">
+          <div class="scroll-reveal">
             <!-- Placeholder for CDN diagram -->
             <div class="bg-gradient-to-br from-[#292556] to-[#1e1530] rounded-2xl h-80 border border-[#392f73] overflow-hidden">
               <!-- 634x317 image of the globe, fill to cover the div https://cdn.nostr.build/assets/fpv2/ww-connect@0.33x.png -->
