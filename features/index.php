@@ -618,7 +618,7 @@ $planData = Plans::$PLANS;
     <section id="built-for-every-creator" class="py-20 px-4 relative w-full">
       <div class="max-w-7xl mx-auto">
         <div class="text-center mb-16 scroll-reveal">
-          <h2 class="text-4xl md:text-6xl font-bold gradient-text mb-6">Built for Every Creator</h2>
+          <h2 class="text-4xl md:text-6xl font-bold gradient-text pb-5 mb-6">Built for Every Creator</h2>
           <p class="text-xl text-[#a58ead] max-w-3xl mx-auto">
             From privacy enthusiasts to professional content creators, we have the perfect tier for your needs
           </p>
@@ -1110,7 +1110,7 @@ $planData = Plans::$PLANS;
     <!-- CTA Section -->
     <section class="py-20 px-4 w-full">
       <div class="max-w-4xl mx-auto text-center scroll-reveal">
-        <h2 class="text-4xl md:text-6xl font-bold gradient-text mb-8">Ready to Get Started?</h2>
+        <h2 class="text-4xl md:text-6xl font-bold gradient-text pb-5 mb-8">Ready to Get Started?</h2>
         <p class="text-xl text-[#a58ead] mb-12 max-w-2xl mx-auto">
           Join thousands of creators who trust nostr.build for their media hosting needs
         </p>
