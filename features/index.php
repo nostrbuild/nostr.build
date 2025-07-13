@@ -19,7 +19,7 @@ $perm = new Permission();
   <meta name="description" content="A complete and detailed list of nostr.build features with images supporting the nostr social media platform. nostr.build is a cloud media hosting service that is paid in bitcoin and lightning and hosts user images to share." />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-  <link rel="stylesheet" href="/styles/twbuild.css?v=326f9e0d57f875eaf86be033fb590d1f" />
+  <link rel="stylesheet" href="/styles/twbuild.css?v=ece73ba32cb6c31b41897e9be18a98fb" />
   <link rel="stylesheet" href="/styles/index.css?v=16013407201d48c976a65d9ea88a77a3" />
   <link rel="stylesheet" href="/styles/header.css?v=19cde718a50bd676387bbe7e9e24c639" />
   <link rel="icon" href="https://cdn.nostr.build/assets/01.png" />
@@ -388,7 +388,7 @@ $perm = new Permission();
                 <div class="w-6 h-6 bg-[#884ea4] rounded-full flex-shrink-0 mt-1"></div>
                 <div>
                   <p class="text-white font-medium">PDF & SVG Support</p>
-                  <p class="text-[#d0bed8] text-sm">Share documents and vector graphics</p>
+                  <p class="text-[#d0bed8] text-sm">Virus-scanned documents and vector graphics</p>
                 </div>
               </div>
               <div class="flex items-start gap-3">
@@ -704,7 +704,7 @@ $perm = new Permission();
               <div class="bg-gradient-to-r from-[#884ea4]/10 to-[#292556]/10 rounded-xl p-6 border border-[#884ea4]/20">
                 <h4 class="text-xl font-semibold text-white mb-3">💼 Professional Storage</h4>
                 <p class="text-[#d0bed8] leading-relaxed">
-                  <strong>25GB of private storage</strong> with support for <strong>PDF and SVG files</strong>. Perfect for sharing presentations, design files, infographics, and professional documents directly through Nostr.
+                  <strong>25GB of private storage</strong> with <strong>100MB file uploads</strong> and support for <strong>virus-scanned PDF and SVG files</strong>. Perfect for sharing presentations, design files, infographics, and professional documents directly through Nostr.
                 </p>
               </div>
 
@@ -712,6 +712,13 @@ $perm = new Permission();
                 <h4 class="text-xl font-semibold text-white mb-3">🎨 AI-Powered Creation</h4>
                 <p class="text-[#d0bed8] leading-relaxed">
                   Access to <strong>AI Studio with SDXL-Lightning and Stable Diffusion models</strong>. Create stunning images for your content, social media posts, or marketing materials. Includes bonus credits to get you started.
+                </p>
+              </div>
+
+              <div class="bg-gradient-to-r from-[#884ea4]/10 to-[#292556]/10 rounded-xl p-6 border border-[#884ea4]/20">
+                <h4 class="text-xl font-semibold text-white mb-3">🗂️ Media Management Portal</h4>
+                <p class="text-[#d0bed8] leading-relaxed">
+                  <strong>Professional media organization</strong> with drag & drop, folders, renaming, and bulk operations - everything you need to manage your content like a pro.
                 </p>
               </div>
 
@@ -743,7 +750,7 @@ $perm = new Permission();
               <div class="bg-gradient-to-r from-[#d251d5]/10 to-[#8a0578]/10 rounded-xl p-6 border border-[#d251d5]/20">
                 <h4 class="text-xl font-semibold text-white mb-3">🎬 Creator-Grade Storage</h4>
                 <p class="text-[#d0bed8] leading-relaxed">
-                  <strong>50GB of private storage</strong> with support for <strong>ZIP, PDF, and SVG files</strong>. Perfect for large video projects, podcast archives, design portfolios, and comprehensive media libraries.
+                  <strong>50GB of private storage</strong> with support for <strong>ZIP, PDF, and SVG files</strong>. ZIP files require extra processing time due to comprehensive virus scanning. Perfect for large video projects, podcast archives, design portfolios, and comprehensive media libraries.
                 </p>
               </div>
 
@@ -836,13 +843,49 @@ $perm = new Permission();
           </p>
         </div>
 
-        <!-- AI Studio Feature -->
+        <!-- Media Management Portal Feature -->
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center mb-20">
           <div class="scroll-reveal">
+            <h3 class="text-4xl font-bold gradient-text mb-6">Media Management Portal</h3>
+            <p class="text-xl text-[#d0bed8] mb-8 leading-relaxed">
+              Professional media organization in your own private portal. Drag & drop files, create folders, bulk operations, and complete control over your content library. See the full interface in action.
+            </p>
+            <div class="space-y-4">
+              <div class="flex items-center">
+                <span class="text-[#884ea4] mr-3">✓</span>
+                <span class="text-[#d0bed8]">Drag & drop interface</span>
+              </div>
+              <div class="flex items-center">
+                <span class="text-[#884ea4] mr-3">✓</span>
+                <span class="text-[#d0bed8]">Folder organization</span>
+              </div>
+              <div class="flex items-center">
+                <span class="text-[#884ea4] mr-3">✓</span>
+                <span class="text-[#d0bed8]">Bulk operations</span>
+              </div>
+            </div>
+          </div>
+          <div class="scroll-reveal">
+            <div class="bg-gradient-to-br from-[#292556] to-[#1e1530] rounded-2xl border border-[#392f73] overflow-hidden">
+              <video class="w-full h-auto"
+                autoplay loop muted playsinline>
+                <source src="https://v.nostr.build/o7Kcp0r1c0LgRR9G.mp4" type="video/mp4">
+                Your browser does not support the video tag.
+              </video>
+            </div>
+          </div>
+        </div>
+
+        <!-- AI Studio Feature -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center mb-20">
+          <div class="scroll-reveal lg:order-2">
             <h3 class="text-4xl font-bold gradient-text mb-6">AI Studio</h3>
             <p class="text-xl text-[#d0bed8] mb-8 leading-relaxed">
               Create stunning images with multiple AI models including SDXL-Lightning, Stable Diffusion, and Flux.1.
-              Unlike other platforms that lock you into a single model, we give you choice and flexibility.
+              Unlike ChatGPT/DALL-E, Discord/Midjourney, or X/Grok2 that lock you into a single model, we give you choice and flexibility.
+              <a href="https://cdn.nostr.build/assets/images/nb_aistudio_compete01.pdf" target="_blank" class="text-[#884ea4] hover:text-[#a58ead] transition-colors duration-200 underline">
+                See our competitive comparison here.
+              </a>
             </p>
             <div class="space-y-4">
               <div class="flex items-center">
@@ -883,7 +926,7 @@ $perm = new Permission();
 
         <!-- Media Analytics Feature -->
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center mb-20">
-          <div class="scroll-reveal lg:order-2">
+          <div class="scroll-reveal">
             <h3 class="text-4xl font-bold gradient-text mb-6">Advanced Analytics & Insights</h3>
             <p class="text-xl text-[#d0bed8] mb-8 leading-relaxed">
               Understand your audience like never before. Track engagement patterns, content performance, and audience demographics to create content that truly resonates. Make data-driven decisions to grow your reach and maximize impact.
@@ -907,7 +950,7 @@ $perm = new Permission();
               </div>
             </div>
           </div>
-          <div class="scroll-reveal lg:order-1">
+          <div class="scroll-reveal">
             <!-- Beautiful JS-powered Analytics Carousel -->
             <div class="bg-gradient-to-br from-[#292556] to-[#1e1530] rounded-2xl h-96 border border-[#392f73] overflow-hidden relative carousel-container">
               <div class="carousel-track relative w-full h-full" id="analyticsCarousel">
@@ -943,7 +986,7 @@ $perm = new Permission();
 
         <!-- Blossom Protocol Support -->
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center mb-20">
-          <div class="scroll-reveal">
+          <div class="scroll-reveal lg:order-2">
             <h3 class="text-4xl font-bold gradient-text mb-6">Blossom Protocol Integration</h3>
             <p class="text-xl text-[#d0bed8] mb-8 leading-relaxed">
               Native support for the cutting-edge Blossom protocol - the future of decentralized media storage.
@@ -968,7 +1011,7 @@ $perm = new Permission();
               </div>
             </div>
           </div>
-          <div class="scroll-reveal">
+          <div class="scroll-reveal lg:order-1">
             <!-- Placeholder for Blossom protocol visualization -->
             <div class="bg-gradient-to-br from-[#292556] to-[#1e1530] rounded-2xl h-80 border border-[#392f73] overflow-hidden">
               <img src="https://cdn.nostr.build/assets/fpv2/blossom.png" alt="Blossom Protocol Visualization" class="w-full h-full object-cover">
@@ -978,7 +1021,7 @@ $perm = new Permission();
 
         <!-- Native Client Integration -->
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center mb-20">
-          <div class="scroll-reveal lg:order-2">
+          <div class="scroll-reveal">
             <h3 class="text-4xl font-bold gradient-text mb-6">Native Client Integration</h3>
             <p class="text-xl text-[#d0bed8] mb-8 leading-relaxed">
               Seamlessly integrated into the most popular Nostr clients. No setup required - just start sharing your content directly from your favorite apps. Your media works everywhere in the Nostr ecosystem.
@@ -1006,7 +1049,7 @@ $perm = new Permission();
               </div>
             </div>
           </div>
-          <div class="scroll-reveal lg:order-1">
+          <div class="scroll-reveal">
             <!-- Native clients showcase -->
             <div class="bg-gradient-to-br from-[#292556] to-[#1e1530] rounded-2xl h-80 border border-[#392f73] overflow-hidden flex items-center justify-center">
               <img src="https://cdn.nostr.build/assets/fpv2/clogos.png" alt="Global CDN Map" class="w-full h-full object-cover">
@@ -1014,9 +1057,79 @@ $perm = new Permission();
           </div>
         </div>
 
+        <!-- Share Direct to Nostr Feature -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center mb-20">
+          <div class="scroll-reveal lg:order-2">
+            <h3 class="text-4xl font-bold gradient-text mb-6">Share Direct to Nostr</h3>
+            <p class="text-xl text-[#d0bed8] mb-8 leading-relaxed">
+              Upload or create media and share it directly to Nostr with or without a note - no other client needed!
+              This tighter integration takes nostr.build steps closer to becoming a true Nostr client.
+            </p>
+            <div class="space-y-4">
+              <div class="flex items-center">
+                <span class="text-[#2edf95] mr-3">✓</span>
+                <span class="text-[#d0bed8]">Direct publishing to Nostr</span>
+              </div>
+              <div class="flex items-center">
+                <span class="text-[#2edf95] mr-3">✓</span>
+                <span class="text-[#d0bed8]">No external client required</span>
+              </div>
+              <div class="flex items-center">
+                <span class="text-[#2edf95] mr-3">✓</span>
+                <span class="text-[#d0bed8]">Integrated workflow</span>
+              </div>
+            </div>
+          </div>
+          <div class="scroll-reveal lg:order-1">
+            <div class="bg-gradient-to-br from-[#292556] to-[#1e1530] rounded-2xl h-96 border border-[#392f73] overflow-hidden">
+              <video class="w-full h-full object-cover rounded-lg"
+                autoplay loop muted playsinline>
+                <source src="https://cdn.nostr.build/assets/images/share_to_nostr01.mp4" type="video/mp4">
+                Your browser does not support the video tag.
+              </video>
+            </div>
+          </div>
+        </div>
+
+        <!-- Creator Showcase Feature -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center mb-20">
+          <div class="scroll-reveal">
+            <h3 class="text-4xl font-bold gradient-text mb-6">Creator Showcase Pages</h3>
+            <div class="inline-block px-3 py-1 bg-gradient-to-r from-[#d251d5] to-[#f78533] text-white text-sm font-semibold rounded-full mb-4">
+              Creator & Advanced Plans
+            </div>
+            <p class="text-xl text-[#d0bed8] mb-8 leading-relaxed">
+              Host your own professional creator page on the nostr.build domain. Showcase your portfolio, build your brand, and make it easy for fans to discover, follow, and support your work.
+            </p>
+            <div class="space-y-4">
+              <div class="flex items-center">
+                <span class="text-[#d251d5] mr-3">✓</span>
+                <span class="text-[#d0bed8]">Custom creator.nostr.build page</span>
+              </div>
+              <div class="flex items-center">
+                <span class="text-[#d251d5] mr-3">✓</span>
+                <span class="text-[#d0bed8]">Portfolio showcase</span>
+              </div>
+              <div class="flex items-center">
+                <span class="text-[#d251d5] mr-3">✓</span>
+                <span class="text-[#d0bed8]">Fan discovery and engagement</span>
+              </div>
+            </div>
+          </div>
+          <div class="scroll-reveal">
+            <div class="bg-gradient-to-br from-[#292556] to-[#1e1530] rounded-2xl h-96 border border-[#392f73] overflow-hidden">
+              <video class="w-full h-full object-cover rounded-lg"
+                autoplay loop muted playsinline>
+                <source src="https://cdn.nostr.build/assets/images/creators11.mp4" type="video/mp4">
+                Your browser does not support the video tag.
+              </video>
+            </div>
+          </div>
+        </div>
+
         <!-- Global CDN Feature -->
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
-          <div class="scroll-reveal">
+          <div class="scroll-reveal lg:order-2">
             <h3 class="text-4xl font-bold gradient-text mb-6">Lightning-Fast Global CDN</h3>
             <p class="text-xl text-[#d0bed8] mb-8 leading-relaxed">
               Your content delivered at the speed of light with our worldwide content delivery network.
@@ -1037,7 +1150,7 @@ $perm = new Permission();
               </div>
             </div>
           </div>
-          <div class="scroll-reveal">
+          <div class="scroll-reveal lg:order-1">
             <!-- Placeholder for CDN diagram -->
             <div class="bg-gradient-to-br from-[#292556] to-[#1e1530] rounded-2xl h-80 border border-[#392f73] overflow-hidden">
               <!-- 634x317 image of the globe, fill to cover the div https://cdn.nostr.build/assets/fpv2/ww-connect@0.33x.png -->
@@ -1160,7 +1273,8 @@ $perm = new Permission();
       entries.forEach(entry => {
         if (entry.isIntersecting) {
           entry.target.classList.add('revealed');
-          observer.unobserve(entry.target);
+        } else {
+          entry.target.classList.remove('revealed');
         }
       });
     }, observerOptions);
