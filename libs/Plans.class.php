@@ -224,7 +224,7 @@ class Plans
     self::ADVANCED => 240,
     self::CREATOR => 120,
     self::PROFESSIONAL => 69,
-    self::PURIST => 12,
+    self::PURIST => 18,
     self::STARTER => 21,
     self::VIEWER => 5,
     self::NEW => 0,
