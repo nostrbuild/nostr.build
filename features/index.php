@@ -1,18 +1,11 @@
 <?php
-require_once $_SERVER['DOCUMENT_ROOT'] . '/config.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/permissions.class.php';
-require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/Plans.class.php';
-require_once $_SERVER['DOCUMENT_ROOT'] . '/SiteConfig.php';
 
 // Globals
 global $link;
 
 // Instantiate permissions class
 $perm = new Permission();
-
-// Get plans information
-$plans = Plans::getInstance();
-$planData = Plans::$PLANS;
 ?>
 
 <!DOCTYPE html>
@@ -245,13 +238,41 @@ $planData = Plans::$PLANS;
         transition: none !important;
       }
     }
+
+    /* Mobile menu fixes for features page */
+    /* Fix the mobile menu z-index and background issues */
+    .menu {
+      z-index: 30 !important;
+      background: rgba(41, 36, 84, 0.95) !important;
+      backdrop-filter: blur(20px) !important;
+      border: 1px solid rgba(61, 55, 131, 0.8) !important;
+    }
+
+    /* Ensure hamburger button is above everything */
+    .menu_button {
+      z-index: 35 !important;
+      position: relative;
+    }
+
+    /* Make sure menu links are clickable */
+    .menu .nav_button {
+      pointer-events: auto !important;
+      position: relative;
+      z-index: 31 !important;
+    }
+
+    /* Ensure the header itself has proper z-index */
+    .navigation_header {
+      z-index: 25 !important;
+      position: relative;
+    }
   </style>
 
   <title>nostr.build - Features</title>
 </head>
 
 <body class="min-h-screen bg-gradient-to-tr from-[#292556] to-[#120a24] overflow-x-hidden">
-  <header class="header">
+  <header class="header relative z-20">
     <?php include $_SERVER['DOCUMENT_ROOT'] . '/components/mainnav.php'; ?>
   </header>
 
@@ -1124,7 +1145,9 @@ $planData = Plans::$PLANS;
 
   </main>
 
-  <?php include $_SERVER['DOCUMENT_ROOT'] . '/components/footer.php'; ?>
+  <footer class="relative z-20">
+    <?php include $_SERVER['DOCUMENT_ROOT'] . '/components/footer.php'; ?>
+  </footer>
 
   <script>
     // Simple and clean scroll animations - no complex background management
