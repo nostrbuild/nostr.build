@@ -183,7 +183,8 @@ class SiteConfig
     '0' => ['limit' => 0, 'message' => 'No Storage, consider upgrading'],
   ];
 
-  const FREE_UPLOAD_LIMIT = 100 * 1024 * 1024; // 100MB in bytes, up to blossom limit
+  const PURIST_PER_FILE_UPLOAD_LIMIT = 450 * 1024 * 1024; // 450MB in bytes, up to blossom limit
+  const FREE_UPLOAD_LIMIT = 50 * 1024 * 1024; // 50MB in bytes, up to blossom limit
 
   public static function getHost($mediaType)
   {

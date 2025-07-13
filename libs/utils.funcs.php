@@ -130,6 +130,23 @@ function getAllowedMimesArray(int $acctlevel = 0): array
     'video/x-sgi-movie' => 'movie', // Silicon Graphics movie
   ];
 
+  $mimeTypesImageAndVideoOnly = [
+    // Images
+    'image/jpeg' => 'jpg', // JPEG image
+    'image/png' => 'png', // PNG image
+    'image/gif' => 'gif', // GIF image
+    'image/webp' => 'webp', // WebP image
+    'image/heic' => 'heic', // High Efficiency Image Format (HEIC)
+    'image/avif' => 'avif', // AV1 Image File Format (AVIF)
+    // Video
+    'video/mp4' => 'mp4', // MP4 video
+    'video/webm' => 'webm', // WebM video
+    'video/quicktime' => 'mov', // QuickTime video
+    'video/mpeg' => 'mpeg', // MPEG video
+    'video/x-m4v' => 'm4v', // M4V video
+    'video/x-matroska' => 'mkv', // Matroska Multimedia Container (MKV)
+  ];
+
   $mimeTypesAddonDocs = [
     // Documents
     'application/pdf' => 'pdf', // Portable Document Format (PDF)
@@ -149,6 +166,8 @@ function getAllowedMimesArray(int $acctlevel = 0): array
     $mimeTypes = array_merge($mimeTypes, $mimeTypesAddonDocs, $mimeTypesAddonExtra);
   } elseif ($acctlevel === 2 /* Pro */) {
     $mimeTypes = array_merge($mimeTypes, $mimeTypesAddonDocs);
+  } elseif ($acctlevel === 3 /* Purist */) {
+    $mimeTypes = $mimeTypesImageAndVideoOnly;
   }
 
   return $mimeTypes;

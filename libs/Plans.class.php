@@ -207,6 +207,7 @@ class Plans
   const ADVANCED = 10; // Starting the account level renumbering from 10 to avoid conflicts with the old account levels.
   const CREATOR = 1; // The highest previouse level
   const PROFESSIONAL = 2;
+  const PURIST = 3;
   const STARTER = 5;
   const VIEWER = 4;
   const MODERATOR = 89;
@@ -223,6 +224,7 @@ class Plans
     self::ADVANCED => 240,
     self::CREATOR => 120,
     self::PROFESSIONAL => 69,
+    self::PURIST => 12,
     self::STARTER => 21,
     self::VIEWER => 5,
     self::NEW => 0,
@@ -308,6 +310,37 @@ class Plans
     // Create the plans
     // Only create plans that are for the current user level or higher
     // Do not show current plan for renew if it has more than 30 days remaining
+
+    // Purist plan
+    if (
+      ($currentPlanLevel === null || $currentPlanLevel === 0) ||
+      ($currentPlanLevel >= self::PURIST && $currentPlanLevel < self::ADVANCED)
+    ) {
+      self::$PLANS[self::PURIST] = new Plan(
+        id: self::PURIST,
+        name: 'Purist',
+        image: 'https://cdn.nostr.build/assets/signup/pro.png',
+        imageAlt: 'pur plan image',
+        price: self::$originalPrices[self::PURIST],
+        bonusCredits: 0,
+        features: [
+          '<b>' . SiteConfig::STORAGE_LIMITS[self::PURIST]['message'] . '</b> of private storage',
+          SiteConfig::PURIST_PER_FILE_UPLOAD_LIMIT/1024/1024 . 'MB per file upload limit',
+          'Only images and video common formats supported',
+          'Add/Move/Delete your media',
+          'Share media direct to Nostr',
+          'Global, lightning fast CDN',
+          'Detailed stats on all media',
+        ],
+        currency: 'USD',
+        remainingDays: $remainingDays,
+        fromPlanLevel: $currentPlanLevel,
+        credit: $credit,
+        currentPeriod: $currentPeriod,
+      );
+    };
+    
+    // Proffessional plan
     if (
       ($currentPlanLevel === null || $currentPlanLevel === 0) ||
       ($currentPlanLevel >= self::PROFESSIONAL && $currentPlanLevel < self::ADVANCED)
@@ -335,6 +368,7 @@ class Plans
       );
     };
 
+    // Creator plan
     if (
       ($currentPlanLevel === null || $currentPlanLevel === 0) ||
       ($currentPlanLevel >= self::CREATOR && $currentPlanLevel < self::ADVANCED)
@@ -360,6 +394,7 @@ class Plans
       );
     };
 
+    // Advanced plan
     // New numbering for the advanced plan, hence the less than or equal
     if (
       ($currentPlanLevel === null || $currentPlanLevel === 0) ||

@@ -469,6 +469,7 @@ Alpine.store('profileStore', {
         case 2:
           return 'Professional';
         case 3:
+          return 'Purist';
         case 4:
         case 5:
           return 'Legacy';
@@ -557,13 +558,13 @@ Alpine.store('profileStore', {
     },
     // Nostr Share
     get isNostrShareEligible() {
-      return [1, 2, 10, 99].includes(this.accountLevel) &&
+      return [1, 2, 3, 10, 99].includes(this.accountLevel) &&
         !this.accountExpired;
     },
     // General upload and URL Import
     get isUploadEligible() {
       // All unexpired accounts can upload with available storage
-      return [1, 2, 5, 10, 99].includes(this.accountLevel) &&
+      return [1, 2, 3, 5, 10, 99].includes(this.accountLevel) &&
         !this.accountExpired && !this.storageOverLimit;
     },
     // General in-account Sharing
@@ -588,7 +589,7 @@ Alpine.store('profileStore', {
     },
     // Analytics
     get isAnalyticsEligible() {
-      return [1, 2, 10, 99].includes(this.accountLevel) &&
+      return [1, 2, 3, 10, 99].includes(this.accountLevel) &&
         !this.accountExpired;
     },
     allowed(permission) {
@@ -3311,6 +3312,22 @@ Alpine.store('uppyStore', {
       'application/x-tar': 'tar',
     };
 
+    // Purist mime types
+    const mimeTypesPurist = {
+      'image/jpeg': 'jpg',
+      'image/png': 'png',
+      'image/gif': 'gif',
+      'image/webp': 'webp',
+      'image/heic': 'heic',
+      'image/avif': 'avif',
+      'video/mp4': 'mp4',
+      'video/webm': 'webm',
+      'video/quicktime': 'mov',
+      'video/mpeg': 'mpeg',
+      'video/x-mv4': 'm4v',
+      'video/x-matroska': 'mkv',
+    };
+
     // Construct lists of extensions based on account level
     const extsImages = Object.values(mimeTypesImages).map(ext => `.${ext}`);
     const extsAudio = Object.values(mimeTypesAudio).map(ext => `.${ext}`);
@@ -3333,6 +3350,9 @@ Alpine.store('uppyStore', {
       case 2:
         console.debug('All file types allowed except for archives.');
         return [...mimesImages, ...mimesAudio, ...mimesVideo, ...mimesAddonDocs, ...extsAddonDocs];
+      case 3:
+        console.debug('Only images, and video allowed.');
+        return [...mimeTypesPurist];
       default:
         console.debug('Default file types allowed.');
         return [...mimesImages, ...mimesAudio, ...mimesVideo];
@@ -3702,7 +3722,7 @@ Alpine.store('uppyStore', {
     Alpine.effect(() => {
       if (this.instance) {
         // Determine if user has less than 4GB remaining storage
-        const byteLimit = (profileStore.profileInfo.storageRemaining < 4 * 1024 * 1024 * 1024) ?
+        let byteLimit = (profileStore.profileInfo.storageRemaining < 4 * 1024 * 1024 * 1024) ?
           profileStore.profileInfo.storageRemaining : 4 * 1024 * 1024 * 1024;
         const allowedFileTypes = this.getAllowedFileTypes(profileStore.profileInfo.accountLevel);
         let note = 'Images, video, audio';
@@ -3714,6 +3734,9 @@ Alpine.store('uppyStore', {
           case 1:
             note += ', including documents';
             break;
+          case 3:
+            note = 'Images and video only';
+            byteLimit = Math.min(byteLimit, 1024 * 1024 * 450); // 450MB limit
         }
         note += `, up to your storage limit, and ${formatBytes(byteLimit)} per file`;
 

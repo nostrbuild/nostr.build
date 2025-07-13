@@ -83,7 +83,7 @@ $perm = new Permission();
 	  very easy for any nostr app to connect to any Blossom server, <a class="ref_link" href="https://v.nostr.build/RL8J5JBA9vPE0cki.mp4" target="_blank">check out the video here!</a>
 	  This not only greatly helps with overall interoperability, it also makes it easier to have multiple servers, mirror servers, and for users 
 	  to host their own media server. Blossom is a free service, but it also works with nostr.build Accounts. Because Blossom is based on Blob technology, 
-	  it is limited to 100MB uploads. We recommend using native NIP96 nostr.build integration if your app supports it, ex. Damus, Amethyst, noStrudel, Snort, Iris, Coracle, and YakiHonne.</p>
+	  it is limited to 100MB uploads (50MB for free accounts). We recommend using native NIP96 nostr.build integration if your app supports it, ex. Damus, Amethyst, noStrudel, Snort, Iris, Coracle, and YakiHonne.</p>
       <img src="https://cdn.nostr.build/assets/images/blossom01.png" alt="Media Management Portal" width="250" style="width:90%"></a>
    </section>
     </br>
@@ -92,7 +92,7 @@ $perm = new Permission();
     <table style="width:100%">
     <tr>
       <td>
-      <p><span style="color:white">Supported Media Files up to 100MB:</span> Anyone using Nostr can upload the media of their choice, up to 100MB per file.
+      <p><span style="color:white">Supported Media Files up to 100MB (50MB for free accounts):</span> Anyone using Nostr can upload the media of their choice, up to 100MB (50MB for free accounts) per file.
       We support many different media types including .jpg, .png, .gif, .mov, .mp4, .mp3, and .wav. We compress JPEGs, PNGs and GIFs, 
       but currently perform only light processing of video to allow quick preview. If your video is playing weird, no audio or not playing at all, 
       it is likely your video format or how it was transcoded.</p></td>
@@ -178,8 +178,8 @@ $perm = new Permission();
     <table style="width:100%">
     <tr>
       <td>
-      <p><span style="color:white">25GB of Private Storage:</span> One of the most common problems with the free service is the file size is capped at 100MB per file. For long videos, 
-        this becomes a challenge. With paid accounts, there is no file size limit to what you upload, only the size of the account. </p></td>
+      <p><span style="color:white">25GB of Private Storage:</span> One of the most common problems with the free service is the file size is capped at 50MB per file. For long videos, 
+        this becomes a challenge. With paid accounts, there is no file size limit (450MB for Purist plan) to what you upload, only the size of the account. </p></td>
     </tr>
     </table></br>
     <hr width="90%" size="1" color="9d83a2" class="center"> </br>
