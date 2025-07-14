@@ -1014,7 +1014,7 @@ $perm = new Permission();
           <div class="scroll-reveal lg:order-1">
             <!-- Placeholder for Blossom protocol visualization -->
             <div class="bg-gradient-to-br from-[#292556] to-[#1e1530] rounded-2xl h-80 border border-[#392f73] overflow-hidden">
-              <img src="https://cdn.nostr.build/assets/fpv2/blossom.png" alt="Blossom Protocol Visualization" class="w-full h-full object-cover">
+              <img src="https://cdn.nostr.build/assets/images/blossom01.png" alt="Blossom Protocol Visualization" class="w-full h-full object-cover">
             </div>
           </div>
         </div>
