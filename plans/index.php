@@ -221,7 +221,7 @@ SVG;
   <meta charSet="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Nostr.build account signup</title>
-  <link rel="stylesheet" href="/styles/twbuild.css?v=ece73ba32cb6c31b41897e9be18a98fb" />
+  <link rel="stylesheet" href="/styles/twbuild.css?v=d78bb9da7b614bd0c5afa63be4c14456" />
   <link rel="stylesheet" href="/styles/index.css?v=16013407201d48c976a65d9ea88a77a3" />
   <link rel="stylesheet" href="/styles/signup.css?v=8878cbf7163f77b3a4fb9b30804c73ca" />
   <link rel="icon" href="https://cdn.nostr.build/assets/primo_nostr.png" />
@@ -823,6 +823,22 @@ SVG;
           <a href="/account" class="rounded-md bg-purple-100 px-3.5 py-2.5 text-sm font-semibold text-purple-900 shadow-sm hover:bg-purple-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-purple-100">Return to Account page</a>
         </div>
       <?php endif; ?>
+
+      <!-- Features link for all users -->
+      <div class="flex justify-center mt-12 mb-8">
+        <div class="text-center">
+          <p class="text-gray-400 text-sm mb-3">Want to learn more about what's included?</p>
+          <a href="/features/" class="inline-flex items-center text-purple-400 hover:text-purple-300 text-sm font-medium transition-colors duration-200">
+            <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+            Explore all features in detail
+            <svg class="w-4 h-4 ml-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+            </svg>
+          </a>
+        </div>
+      </div>
   </main>
 
   <!-- Footer -->
