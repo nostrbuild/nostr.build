@@ -1,4 +1,6 @@
 <?php
+require_once $_SERVER['DOCUMENT_ROOT'] . '/SiteConfig.php';
+require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/Plans.class.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/permissions.class.php';
 
 // Globals
@@ -341,14 +343,14 @@ $perm = new Permission();
               <div class="flex items-start gap-3">
                 <div class="w-6 h-6 bg-[#2edf95] rounded-full flex-shrink-0 mt-1"></div>
                 <div>
-                  <p class="text-white font-medium">5GB Private Storage</p>
+                  <p class="text-white font-medium"><?= SiteConfig::STORAGE_LIMITS[Plans::PURIST]['message'] ?> Private Storage</p>
                   <p class="text-[#d0bed8] text-sm">Organize your content privately</p>
                 </div>
               </div>
               <div class="flex items-start gap-3">
                 <div class="w-6 h-6 bg-[#2edf95] rounded-full flex-shrink-0 mt-1"></div>
                 <div>
-                  <p class="text-white font-medium">450MB File Uploads</p>
+                  <p class="text-white font-medium"><?= SiteConfig::PURIST_PER_FILE_UPLOAD_LIMIT / 1024 / 1024 ?>MB File Uploads</p>
                   <p class="text-[#d0bed8] text-sm">Share high-quality videos and images</p>
                 </div>
               </div>
@@ -380,7 +382,7 @@ $perm = new Permission();
               <div class="flex items-start gap-3">
                 <div class="w-6 h-6 bg-[#884ea4] rounded-full flex-shrink-0 mt-1"></div>
                 <div>
-                  <p class="text-white font-medium">25GB Private Storage</p>
+                  <p class="text-white font-medium"><?= SiteConfig::STORAGE_LIMITS[Plans::PROFESSIONAL]['message'] ?> Private Storage</p>
                   <p class="text-[#d0bed8] text-sm">5x more space for your content</p>
                 </div>
               </div>
@@ -419,7 +421,7 @@ $perm = new Permission();
               <div class="flex items-start gap-3">
                 <div class="w-6 h-6 bg-[#f78533] rounded-full flex-shrink-0 mt-1"></div>
                 <div>
-                  <p class="text-white font-medium">100GB Private Storage</p>
+                  <p class="text-white font-medium"><?= SiteConfig::STORAGE_LIMITS[Plans::CREATOR]['message'] ?> Private Storage</p>
                   <p class="text-[#d0bed8] text-sm">Massive storage for content creators</p>
                 </div>
               </div>
@@ -458,7 +460,7 @@ $perm = new Permission();
               <div class="flex items-start gap-3">
                 <div class="w-6 h-6 bg-[#dabd55] rounded-full flex-shrink-0 mt-1"></div>
                 <div>
-                  <p class="text-white font-medium">500GB Private Storage</p>
+                  <p class="text-white font-medium"><?= SiteConfig::STORAGE_LIMITS[Plans::ADVANCED]['message'] ?> Private Storage</p>
                   <p class="text-[#d0bed8] text-sm">Enterprise-level storage capacity</p>
                 </div>
               </div>
@@ -660,14 +662,14 @@ $perm = new Permission();
               <div class="bg-gradient-to-r from-[#2edf95]/10 to-[#07847c]/10 rounded-xl p-6 border border-[#2edf95]/20">
                 <h4 class="text-xl font-semibold text-white mb-3">🧘‍♀️ Clean & Simple Experience</h4>
                 <p class="text-[#d0bed8] leading-relaxed">
-                  <strong>5GB of private storage</strong> with support for essential image and video formats. No complexity, just pure functionality for users who value simplicity and want to keep their content organized without overwhelming features.
+                  <strong><?= SiteConfig::STORAGE_LIMITS[Plans::PURIST]['message'] ?></strong> with support for essential image and video formats. No complexity, just pure functionality for users who value simplicity and want to keep their content organized without overwhelming features.
                 </p>
               </div>
 
               <div class="bg-gradient-to-r from-[#2edf95]/10 to-[#07847c]/10 rounded-xl p-6 border border-[#2edf95]/20">
                 <h4 class="text-xl font-semibold text-white mb-3">📁 Larger File Support</h4>
                 <p class="text-[#d0bed8] leading-relaxed">
-                  Upload files up to <strong>450MB each</strong> - perfect for high-quality photos, longer videos, or presentations. No more compression headaches or splitting files.
+                  Upload files up to <strong><?= SiteConfig::PURIST_PER_FILE_UPLOAD_LIMIT / 1024 / 1024 ?>MB each</strong> - perfect for high-quality photos, longer videos, or presentations. No more compression headaches or splitting files.
                 </p>
               </div>
 
@@ -704,7 +706,7 @@ $perm = new Permission();
               <div class="bg-gradient-to-r from-[#884ea4]/10 to-[#292556]/10 rounded-xl p-6 border border-[#884ea4]/20">
                 <h4 class="text-xl font-semibold text-white mb-3">💼 Professional Storage</h4>
                 <p class="text-[#d0bed8] leading-relaxed">
-                  <strong>25GB of private storage</strong> with <strong>100MB file uploads</strong> and support for <strong>virus-scanned PDF and SVG files</strong>. Perfect for sharing presentations, design files, infographics, and professional documents directly through Nostr.
+                  <strong><?= SiteConfig::STORAGE_LIMITS[Plans::PROFESSIONAL]['message'] ?></strong> with support for <strong>virus-scanned PDF and SVG files</strong>. Perfect for sharing presentations, design files, infographics, and professional documents directly through Nostr.
                 </p>
               </div>
 
@@ -750,7 +752,7 @@ $perm = new Permission();
               <div class="bg-gradient-to-r from-[#d251d5]/10 to-[#8a0578]/10 rounded-xl p-6 border border-[#d251d5]/20">
                 <h4 class="text-xl font-semibold text-white mb-3">🎬 Creator-Grade Storage</h4>
                 <p class="text-[#d0bed8] leading-relaxed">
-                  <strong>100GB of private storage</strong> with support for <strong>ZIP, PDF, and SVG files</strong>. ZIP files require extra processing time due to comprehensive virus scanning. Perfect for large video projects, podcast archives, design portfolios, and comprehensive media libraries.
+                  <strong><?= SiteConfig::STORAGE_LIMITS[Plans::CREATOR]['message'] ?></strong> with support for <strong>ZIP, PDF, and SVG files</strong>. ZIP files require extra processing time due to comprehensive virus scanning. Perfect for large video projects, podcast archives, design portfolios, and comprehensive media libraries.
                 </p>
               </div>
 
@@ -796,7 +798,7 @@ $perm = new Permission();
               <div class="bg-gradient-to-r from-[#dabd55]/10 to-[#f78533]/10 rounded-xl p-6 border border-[#dabd55]/20">
                 <h4 class="text-xl font-semibold text-white mb-3">🚀 Enterprise Storage</h4>
                 <p class="text-[#d0bed8] leading-relaxed">
-                  <strong>500GB of private storage</strong> - 5x more than Creator tier. Perfect for large-scale content operations, extensive media libraries, or team collaborations.
+                  <strong><?= SiteConfig::STORAGE_LIMITS[Plans::ADVANCED]['message'] ?></strong> - 5x more than Creator tier. Perfect for large-scale content operations, extensive media libraries, or team collaborations.
                 </p>
               </div>
 
