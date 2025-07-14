@@ -3662,13 +3662,23 @@ Alpine.store('uppyStore', {
       })
       .on('info-visible', () => {
         const { info } = this.instance.getState();
+        // Log the entire info object to see its structure
+        console.debug('Full info object:', info);
+        // According to Uppy docs, info structure should be:
         // info: {
         //  isHidden: false,
         //  type: 'error',
         //  message: 'Failed to upload',
         //  details: 'Error description'
         // }
-        console.debug(`Info: ${info.type} ${info.message} ${info.details}`);
+        if (info && info.message) {
+          // Build message with only defined parts
+          let infoMessage = info.message;
+          if (info.details) {
+            infoMessage += ` - ${info.details}`;
+          }
+          console.debug(`Info (${info.type || 'unknown'}): ${infoMessage}`);
+        }
       })
       .on('file-removed', (file) => {
         console.debug('File removed:', file);
