@@ -21,7 +21,7 @@ $perm = new Permission();
   <meta name="description" content="A complete and detailed list of nostr.build features with images supporting the nostr social media platform. nostr.build is a cloud media hosting service that is paid in bitcoin and lightning and hosts user images to share." />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-  <link rel="stylesheet" href="/styles/twbuild.css?v=d78bb9da7b614bd0c5afa63be4c14456" />
+  <link rel="stylesheet" href="/styles/twbuild.css?v=fa2c25f08b9c806910959aa9408f8666" />
   <link rel="stylesheet" href="/styles/index.css?v=16013407201d48c976a65d9ea88a77a3" />
   <link rel="stylesheet" href="/styles/header.css?v=19cde718a50bd676387bbe7e9e24c639" />
   <link rel="icon" href="https://cdn.nostr.build/assets/01.png" />
@@ -979,7 +979,7 @@ $perm = new Permission();
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 mb-20">
 
           <!-- Purist Tier -->
-          <div class="feature-card rounded-3xl p-10 scroll-reveal relative">
+          <div class="feature-card rounded-3xl p-5 sm:p-10 scroll-reveal relative">
             <div class="mb-8">
               <h3 class="text-3xl font-bold text-white mb-4">Purist</h3>
               <p class="text-lg text-[#a58ead] mb-6">
@@ -1018,10 +1018,10 @@ $perm = new Permission();
           </div>
 
           <!-- Professional Tier -->
-          <div class="feature-card rounded-3xl p-10 scroll-reveal relative border-2 border-[#884ea4]/30">
+          <div class="feature-card rounded-3xl p-5 sm:p-10 scroll-reveal relative border-2 border-[#884ea4]/30">
             <div class="absolute -top-4 left-1/2 transform -translate-x-1/2">
-              <span class="bg-gradient-to-r from-[#884ea4] to-[#292556] text-white px-6 py-2 rounded-full text-sm font-semibold">
-                MOST POPULAR
+              <span class="bg-gradient-to-r from-[#884ea4] to-[#292556] text-white px-3 py-1.5 sm:px-6 sm:py-2 rounded-full text-xs sm:text-sm font-semibold">
+                POPULAR
               </span>
             </div>
             <div class="mb-8">
@@ -1069,7 +1069,7 @@ $perm = new Permission();
           </div>
 
           <!-- Creator Tier -->
-          <div class="feature-card rounded-3xl p-10 scroll-reveal relative">
+          <div class="feature-card rounded-3xl p-5 sm:p-10 scroll-reveal relative">
             <div class="mb-8">
               <h3 class="text-3xl font-bold text-white mb-4">Creator</h3>
               <p class="text-lg text-[#a58ead] mb-6">
@@ -1115,7 +1115,7 @@ $perm = new Permission();
           </div>
 
           <!-- Advanced Tier -->
-          <div class="feature-card rounded-3xl p-10 scroll-reveal relative">
+          <div class="feature-card rounded-3xl p-5 sm:p-10 scroll-reveal relative">
             <div class="mb-8">
               <h3 class="text-3xl font-bold text-white mb-4">Advanced</h3>
               <p class="text-lg text-[#a58ead] mb-6">
