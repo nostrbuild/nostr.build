@@ -971,7 +971,7 @@ class MultimediaUpload
   public function uploadFileFromUrl(string $url, bool $pfp = false, ?string $title = '', ?string $ai_prompt = '', ?bool $no_transform = false, ?bool $blossom = false, ?string $sha256 = '', ?string $clientInfo = ''): array
   {
     $sizeLimit = $this->pro ?
-      $this->userAccount->getRemainingStorageSpace() :
+      $this->userAccount->getPerFileUploadLimit() :
       SiteConfig::FREE_UPLOAD_LIMIT;
 
     // Get the metadata from the URL
@@ -1222,11 +1222,11 @@ class MultimediaUpload
         return [false, 403, "Account has expired, please renew at https://nostr.build/plans/"];
       }
       // TODO: Need to validate array of files, so we do not allow to go over the limit with batch
-      //error_log('Remaining space: ' . $this->userAccount->getRemainingStorageSpace() .
+      //error_log('Remaining space: ' . $this->userAccount->getPerFileUploadLimit() .
       //  ', uploading:' . $this->file['size'] . PHP_EOL);
       if (!$this->userAccount->hasSufficientStorageSpace($this->file['size'])) {
-        error_log('File size exceeds the remaining space of ' . formatSizeUnits($this->userAccount->getRemainingStorageSpace()));
-        return [false, 413, "File size exceeds the remaining space of " . formatSizeUnits($this->userAccount->getRemainingStorageSpace())];
+        error_log('File size exceeds the remaining space of ' . formatSizeUnits($this->userAccount->getPerFileUploadLimit()));
+        return [false, 413, "File size exceeds the remaining space of " . formatSizeUnits($this->userAccount->getPerFileUploadLimit())];
       }
     }
 
