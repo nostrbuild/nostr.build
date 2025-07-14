@@ -769,7 +769,7 @@ if (isset($_GET["action"])) {
 	// Handle AI image generation
 	if ($_POST['action'] == "generate_ai_image") {
 		// Check if account is expired
-		if ($daysRemaining <= 0 || $account->getRemainingStorageSpace() <= 0) {
+		if ($daysRemaining <= 0 || $account->getPerFileUploadLimit() <= 0) {
 			http_response_code(403);
 			echo json_encode(array("error" => "Your account has expired"));
 			$link->close(); // CLOSE MYSQL LINK
@@ -841,7 +841,7 @@ if (isset($_GET["action"])) {
 		}
 	} elseif ($_POST['action'] === 'import_from_url') {
 		// Check if account is expired
-		if ($daysRemaining <= 0 || $account->getRemainingStorageSpace() <= 0) {
+		if ($daysRemaining <= 0 || $account->getPerFileUploadLimit() <= 0) {
 			http_response_code(403);
 			echo json_encode(array("error" => "Your account has expired"));
 			$link->close(); // CLOSE MYSQL LINK

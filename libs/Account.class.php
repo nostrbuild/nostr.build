@@ -65,6 +65,7 @@ enum AccountLevel: int
   case Advanced = 10;
   case Creator = 1;
   case Professional = 2;
+  case Purist = 3; // New Purist level
   case Viewer = 4;
   case Starter = 5;
   case Moderator = 89;
@@ -842,7 +843,24 @@ class Account
 
     $usedSpace = $this->fetchAccountSpaceConsumption();
 
-    return $limit - $usedSpace;
+    $remaining = $limit - $usedSpace;
+
+    return $remaining;
+  }
+
+  public function getPerFileUploadLimit(): int
+  {
+    // If account is level 3 (Purist) we also need to account for the SiteConfig::PURIST_PER_FILE_UPLOAD_LIMIT, which would be max for any uploads for that account
+    if ($this->getAccountLevel() === AccountLevel::Purist) {
+      // Min of remaining space and Purist per file upload limit
+      $remainingSpace = $this->getRemainingStorageSpace();
+      if ($remainingSpace < SiteConfig::PURIST_PER_FILE_UPLOAD_LIMIT) {
+        return $remainingSpace;
+      }
+      // If remaining space is more than Purist per file upload limit, return the Purist
+      return SiteConfig::PURIST_PER_FILE_UPLOAD_LIMIT;
+    }
+    return $this->getRemainingStorageSpace();
   }
 
   public function getUsedStorageSpace(): int
@@ -871,7 +889,7 @@ class Account
    */
   public function hasSufficientStorageSpace(int $fileSize): bool
   {
-    $remainingSpace = $this->getRemainingStorageSpace();
+    $remainingSpace = $this->getPerFileUploadLimit();
 
     // If there's enough space for the file, including unlimited space for Admin
     return $fileSize <= $remainingSpace;
