@@ -221,7 +221,7 @@ SVG;
   <meta charSet="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Nostr.build account signup</title>
-  <link rel="stylesheet" href="/styles/twbuild.css?v=948d9edb5b18a26df96901f216d8a54d" />
+  <link rel="stylesheet" href="/styles/twbuild.css?v=d78bb9da7b614bd0c5afa63be4c14456" />
   <link rel="stylesheet" href="/styles/index.css?v=16013407201d48c976a65d9ea88a77a3" />
   <link rel="stylesheet" href="/styles/signup.css?v=8878cbf7163f77b3a4fb9b30804c73ca" />
   <link rel="icon" href="https://cdn.nostr.build/assets/primo_nostr.png" />
@@ -398,7 +398,7 @@ SVG;
                   <?php endif; ?>
                   <ul role="list" class="mt-8 space-y-3 text-sm leading-6 text-gray-300">
                     <!-- Bonus Credits -->
-                    <?php if ($currentAccountLevel === null) : ?>
+                    <?php if ($currentAccountLevel === null && $plan->bonusCredits > 0) : ?>
                       <li class="flex gap-x-3">
                         <svg class="h-6 w-5 flex-none text-purple-300" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
                           <path fill-rule="evenodd" d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.05-.143z" clip-rule="evenodd" />
@@ -440,7 +440,7 @@ SVG;
 
           <div class="rounded-md bg-nbpurple-800 p-4 mb-2">
             <div class="text-sm text-nbpurple-100 text-center">
-              <p>- Account downgrade available on request</p>
+              <p>- Account downgrade available on request (we cannot downgrade accounts to Purist tier)</p>
               <p>- 21 day money-back guarantee</p>
               <p> Contact Us - <a href="mailto:admin@nostr.build">admin@nostr.build</a></p>
             </div>
@@ -823,6 +823,22 @@ SVG;
           <a href="/account" class="rounded-md bg-purple-100 px-3.5 py-2.5 text-sm font-semibold text-purple-900 shadow-sm hover:bg-purple-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-purple-100">Return to Account page</a>
         </div>
       <?php endif; ?>
+
+      <!-- Features link for all users -->
+      <div class="flex justify-center mt-12 mb-8">
+        <div class="text-center">
+          <p class="text-gray-400 text-sm mb-3">Want to learn more about what's included?</p>
+          <a href="/features/" class="inline-flex items-center text-purple-400 hover:text-purple-300 text-sm font-medium transition-colors duration-200">
+            <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+            Explore all features in detail
+            <svg class="w-4 h-4 ml-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+            </svg>
+          </a>
+        </div>
+      </div>
   </main>
 
   <!-- Footer -->

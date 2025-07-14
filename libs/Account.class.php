@@ -65,6 +65,7 @@ enum AccountLevel: int
   case Advanced = 10;
   case Creator = 1;
   case Professional = 2;
+  case Purist = 3; // New Purist level
   case Viewer = 4;
   case Starter = 5;
   case Moderator = 89;
@@ -842,7 +843,14 @@ class Account
 
     $usedSpace = $this->fetchAccountSpaceConsumption();
 
-    return $limit - $usedSpace;
+    $remaining = $limit - $usedSpace;
+    // If account is level 3 (Purist) we also need to account for the SiteConfig::PURIST_PER_FILE_UPLOAD_LIMIT, which would be max for any uploads for that account
+    if ($this->getAccountLevel() === AccountLevel::Purist) {
+      return $remaining <= SiteConfig::PURIST_PER_FILE_UPLOAD_LIMIT
+        ? $remaining
+        : SiteConfig::PURIST_PER_FILE_UPLOAD_LIMIT;
+    }
+    return $remaining;
   }
 
   public function getUsedStorageSpace(): int
