@@ -3332,6 +3332,7 @@ Alpine.store('uppyStore', {
     const mimesVideo = Object.keys(mimeTypesVideo).map(mime => mime);
     const mimesAddonDocs = Object.keys(mimeTypesAddonDocs).map(mime => mime);
     const mimesAddonExtra = Object.keys(mimeTypesAddonExtra).map(mime => mime);
+    const mimesPurist = Object.keys(mimeTypesPurist).map(mime => mime);
 
     switch (accountLevel) {
       case 1:
@@ -3344,7 +3345,7 @@ Alpine.store('uppyStore', {
         return [...mimesImages, ...mimesAudio, ...mimesVideo, ...mimesAddonDocs, ...extsAddonDocs];
       case 3:
         console.debug('Only images, and video allowed.');
-        return [...mimeTypesPurist];
+        return mimesPurist;
       default:
         console.debug('Default file types allowed.');
         return [...mimesImages, ...mimesAudio, ...mimesVideo];
@@ -3728,10 +3729,9 @@ Alpine.store('uppyStore', {
             break;
           case 3:
             note = 'Images and video only';
-            byteLimit = Math.min(byteLimit, 1024 * 1024 * 450); // 450MB limit
+            byteLimit = Math.min(byteLimit, (1024 * 1024 * 450)); // 450MB limit
         }
         note += `, up to your storage limit, and ${formatBytes(byteLimit)} per file`;
-
         this.instance.setOptions({
           restrictions: {
             maxFileSize: byteLimit,
