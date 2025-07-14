@@ -326,7 +326,7 @@ class Plans
         features: [
           '<b>' . SiteConfig::STORAGE_LIMITS[self::PURIST]['message'] . '</b> of private storage',
           SiteConfig::PURIST_PER_FILE_UPLOAD_LIMIT/1024/1024 . 'MB per file upload limit',
-          'Only images and video common formats supported',
+          'Only images and video',
           'Add/Move/Delete media',
           'Share media direct to Nostr',
           'Global, lightning fast CDN',
