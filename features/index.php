@@ -628,7 +628,7 @@ $perm = new Permission();
                 Choose Your Plan
               </a>
               <span class="text-[#a58ead] text-lg">or</span>
-              <a href="#built-for-every-creator" class="inline-block px-8 py-4 bg-transparent border-2 border-[#884ea4] text-[#884ea4] font-semibold rounded-xl hover:bg-[#884ea4] hover:text-white transition-all duration-300 text-lg">
+              <a href="#advanced-capabilities" class="inline-block px-8 py-4 bg-transparent border-2 border-[#884ea4] text-[#884ea4] font-semibold rounded-xl hover:bg-[#884ea4] hover:text-white transition-all duration-300 text-lg">
                 Learn More Features
               </a>
             </div>
@@ -637,209 +637,12 @@ $perm = new Permission();
       </div>
     </section>
 
-    <!-- Account Tiers Section -->
-    <section id="built-for-every-creator" class="py-20 px-4 relative w-full">
-      <div class="max-w-7xl mx-auto">
-        <div class="text-center mb-16 scroll-reveal">
-          <h2 class="text-4xl md:text-6xl font-bold gradient-text pb-5 mb-6">Built for Every Creator</h2>
-          <p class="text-xl text-[#a58ead] max-w-3xl mx-auto">
-            From privacy enthusiasts to professional content creators, we have the perfect tier for your needs
-          </p>
-        </div>
-
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 mb-20">
-
-          <!-- Purist Tier -->
-          <div class="feature-card rounded-3xl p-10 scroll-reveal relative">
-            <div class="mb-8">
-              <h3 class="text-3xl font-bold text-white mb-4">Purist</h3>
-              <p class="text-lg text-[#a58ead] mb-6">
-                <strong>Perfect for:</strong> Privacy-conscious users, minimalists, and those new to Nostr
-              </p>
-            </div>
-
-            <div class="space-y-6">
-              <div class="bg-gradient-to-r from-[#2edf95]/10 to-[#07847c]/10 rounded-xl p-6 border border-[#2edf95]/20">
-                <h4 class="text-xl font-semibold text-white mb-3">🧘‍♀️ Clean & Simple Experience</h4>
-                <p class="text-[#d0bed8] leading-relaxed">
-                  <strong><?= SiteConfig::STORAGE_LIMITS[Plans::PURIST]['message'] ?></strong> with support for essential image and video formats. No complexity, just pure functionality for users who value simplicity and want to keep their content organized without overwhelming features.
-                </p>
-              </div>
-
-              <div class="bg-gradient-to-r from-[#2edf95]/10 to-[#07847c]/10 rounded-xl p-6 border border-[#2edf95]/20">
-                <h4 class="text-xl font-semibold text-white mb-3">📁 Larger File Support</h4>
-                <p class="text-[#d0bed8] leading-relaxed">
-                  Upload files up to <strong><?= SiteConfig::PURIST_PER_FILE_UPLOAD_LIMIT / 1024 / 1024 ?>MB each</strong> - perfect for high-quality photos, longer videos, or presentations. No more compression headaches or splitting files.
-                </p>
-              </div>
-
-              <div class="bg-gradient-to-r from-[#2edf95]/10 to-[#07847c]/10 rounded-xl p-6 border border-[#2edf95]/20">
-                <h4 class="text-xl font-semibold text-white mb-3">🎯 Focus on Content</h4>
-                <p class="text-[#d0bed8] leading-relaxed">
-                  All the core features you need: <strong>media management, direct Nostr sharing, global CDN delivery, and detailed statistics</strong> - without the complexity of advanced tools.
-                </p>
-              </div>
-
-              <div class="mt-8 p-4 bg-[#2edf95]/5 rounded-lg border-l-4 border-[#2edf95]">
-                <p class="text-sm text-[#2edf95] font-semibold">
-                  💭 "I just want reliable hosting for my photos and memes without paying for features I don't use"
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <!-- Professional Tier -->
-          <div class="feature-card rounded-3xl p-10 scroll-reveal relative border-2 border-[#884ea4]/30">
-            <div class="absolute -top-4 left-1/2 transform -translate-x-1/2">
-              <span class="bg-gradient-to-r from-[#884ea4] to-[#292556] text-white px-6 py-2 rounded-full text-sm font-semibold">
-                MOST POPULAR
-              </span>
-            </div>
-            <div class="mb-8">
-              <h3 class="text-3xl font-bold text-white mb-4">Professional</h3>
-              <p class="text-lg text-[#a58ead] mb-6">
-                <strong>Perfect for:</strong> Content creators, influencers, and active Nostr users
-              </p>
-            </div>
-
-            <div class="space-y-6">
-              <div class="bg-gradient-to-r from-[#884ea4]/10 to-[#292556]/10 rounded-xl p-6 border border-[#884ea4]/20">
-                <h4 class="text-xl font-semibold text-white mb-3">💼 Professional Storage</h4>
-                <p class="text-[#d0bed8] leading-relaxed">
-                  <strong><?= SiteConfig::STORAGE_LIMITS[Plans::PROFESSIONAL]['message'] ?></strong> with support for <strong>virus-scanned PDF and SVG files</strong>. Perfect for sharing presentations, design files, infographics, and professional documents directly through Nostr.
-                </p>
-              </div>
-
-              <div class="bg-gradient-to-r from-[#884ea4]/10 to-[#292556]/10 rounded-xl p-6 border border-[#884ea4]/20">
-                <h4 class="text-xl font-semibold text-white mb-3">🎨 AI-Powered Creation</h4>
-                <p class="text-[#d0bed8] leading-relaxed">
-                  Access to <strong>AI Studio with SDXL-Lightning and Stable Diffusion models</strong>. Create stunning images for your content, social media posts, or marketing materials. Includes bonus credits to get you started.
-                </p>
-              </div>
-
-              <div class="bg-gradient-to-r from-[#884ea4]/10 to-[#292556]/10 rounded-xl p-6 border border-[#884ea4]/20">
-                <h4 class="text-xl font-semibold text-white mb-3">🗂️ Media Management Portal</h4>
-                <p class="text-[#d0bed8] leading-relaxed">
-                  <strong>Professional media organization</strong> with drag & drop, folders, renaming, and bulk operations - everything you need to manage your content like a pro.
-                </p>
-              </div>
-
-              <div class="bg-gradient-to-r from-[#884ea4]/10 to-[#292556]/10 rounded-xl p-6 border border-[#884ea4]/20">
-                <h4 class="text-xl font-semibold text-white mb-3">📊 Advanced Analytics</h4>
-                <p class="text-[#d0bed8] leading-relaxed">
-                  <strong>Detailed usage statistics and analytics</strong> help you understand your audience engagement. Track views, downloads, and performance metrics to optimize your content strategy.
-                </p>
-              </div>
-
-              <div class="mt-8 p-4 bg-[#884ea4]/5 rounded-lg border-l-4 border-[#884ea4]">
-                <p class="text-sm text-[#884ea4] font-semibold">
-                  💭 "I need reliable hosting for my business content plus AI tools to create engaging visuals"
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <!-- Creator Tier -->
-          <div class="feature-card rounded-3xl p-10 scroll-reveal relative">
-            <div class="mb-8">
-              <h3 class="text-3xl font-bold text-white mb-4">Creator</h3>
-              <p class="text-lg text-[#a58ead] mb-6">
-                <strong>Perfect for:</strong> Full-time creators, podcasters, and content professionals
-              </p>
-            </div>
-
-            <div class="space-y-6">
-              <div class="bg-gradient-to-r from-[#d251d5]/10 to-[#8a0578]/10 rounded-xl p-6 border border-[#d251d5]/20">
-                <h4 class="text-xl font-semibold text-white mb-3">🎬 Creator-Grade Storage</h4>
-                <p class="text-[#d0bed8] leading-relaxed">
-                  <strong><?= SiteConfig::STORAGE_LIMITS[Plans::CREATOR]['message'] ?></strong> with support for <strong>ZIP, PDF, and SVG files</strong>. ZIP files require extra processing time due to comprehensive virus scanning. Perfect for large video projects, podcast archives, design portfolios, and comprehensive media libraries.
-                </p>
-              </div>
-
-              <div class="bg-gradient-to-r from-[#d251d5]/10 to-[#8a0578]/10 rounded-xl p-6 border border-[#d251d5]/20">
-                <h4 class="text-xl font-semibold text-white mb-3">🤖 Advanced AI Studio</h4>
-                <p class="text-[#d0bed8] leading-relaxed">
-                  Unlimited access to <strong>Flux.1 model</strong> plus all Professional AI models. Create professional-grade images, thumbnails, and visual content that stands out. Perfect for social media, marketing, and creative projects.
-                </p>
-              </div>
-
-              <div class="bg-gradient-to-r from-[#d251d5]/10 to-[#8a0578]/10 rounded-xl p-6 border border-[#d251d5]/20">
-                <h4 class="text-xl font-semibold text-white mb-3">🏠 Creator Showcase</h4>
-                <p class="text-[#d0bed8] leading-relaxed">
-                  <strong>Host your own creators page</strong> on nostr.build domain. Showcase your best work, build your brand, and make it easy for fans to discover and support your content.
-                </p>
-              </div>
-
-              <div class="bg-gradient-to-r from-[#d251d5]/10 to-[#8a0578]/10 rounded-xl p-6 border border-[#d251d5]/20">
-                <h4 class="text-xl font-semibold text-white mb-3">🛡️ Redundant Backup</h4>
-                <p class="text-[#d0bed8] leading-relaxed">
-                  <strong>S3 backup across multiple providers</strong> ensures your creative work is never lost. Your content is automatically backed up to different data centers for maximum protection.
-                </p>
-              </div>
-
-              <div class="mt-8 p-4 bg-[#d251d5]/5 rounded-lg border-l-4 border-[#d251d5]">
-                <p class="text-sm text-[#d251d5] font-semibold">
-                  💭 "My content is my livelihood - I need professional tools, ample storage, and bulletproof reliability"
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <!-- Advanced Tier -->
-          <div class="feature-card rounded-3xl p-10 scroll-reveal relative">
-            <div class="mb-8">
-              <h3 class="text-3xl font-bold text-white mb-4">Advanced</h3>
-              <p class="text-lg text-[#a58ead] mb-6">
-                <strong>Perfect for:</strong> Enterprises, organizations, and power users who need scalable solutions
-              </p>
-            </div>
-
-            <div class="space-y-6">
-              <div class="bg-gradient-to-r from-[#dabd55]/10 to-[#f78533]/10 rounded-xl p-6 border border-[#dabd55]/20">
-                <h4 class="text-xl font-semibold text-white mb-3">🚀 Enterprise Storage</h4>
-                <p class="text-[#d0bed8] leading-relaxed">
-                  <strong><?= SiteConfig::STORAGE_LIMITS[Plans::ADVANCED]['message'] ?></strong> - 5x more than Creator tier. Perfect for large-scale content operations, extensive media libraries, or team collaborations.
-                </p>
-              </div>
-
-              <div class="bg-gradient-to-r from-[#dabd55]/10 to-[#f78533]/10 rounded-xl p-6 border border-[#dabd55]/20">
-                <h4 class="text-xl font-semibold text-white mb-3">🧪 Cutting-Edge AI</h4>
-                <p class="text-[#d0bed8] leading-relaxed">
-                  <strong>Extended AI Studio access</strong> with all models, experimental features, and priority access to new AI capabilities. Be the first to use breakthrough AI technology.
-                </p>
-              </div>
-
-              <div class="bg-gradient-to-r from-[#dabd55]/10 to-[#f78533]/10 rounded-xl p-6 border border-[#dabd55]/20">
-                <h4 class="text-xl font-semibold text-white mb-3">🏷️ Premium Identity</h4>
-                <p class="text-[#d0bed8] leading-relaxed">
-                  <strong>Custom NIP-05 @nostr.build verification</strong> - establish your premium identity on Nostr with official verification that builds trust and credibility.
-                </p>
-              </div>
-
-              <div class="bg-gradient-to-r from-[#dabd55]/10 to-[#f78533]/10 rounded-xl p-6 border border-[#dabd55]/20">
-                <h4 class="text-xl font-semibold text-white mb-3">📈 Expandable Infrastructure</h4>
-                <p class="text-[#d0bed8] leading-relaxed">
-                  <strong>Future-ready with expandable storage options</strong> and priority access to new features. Your account grows with your needs.
-                </p>
-              </div>
-
-              <div class="mt-8 p-4 bg-[#dabd55]/5 rounded-lg border-l-4 border-[#dabd55]">
-                <p class="text-sm text-[#dabd55] font-semibold">
-                  💭 "I need enterprise-grade infrastructure with cutting-edge features and room to scale"
-                </p>
-              </div>
-            </div>
-          </div>
-
-        </div>
-      </div>
-    </section>
 
     <!-- Advanced Features Showcase -->
     <section id="advanced-capabilities" class="py-20 px-4">
       <div class="max-w-7xl mx-auto">
         <div class="text-center mb-16 scroll-reveal">
-          <h2 class="text-4xl md:text-6xl font-bold gradient-text mb-6">Advanced Capabilities</h2>
+          <h2 class="text-4xl md:text-6xl font-bold gradient-text mb-6">Capabilities</h2>
           <p class="text-xl text-[#a58ead] max-w-3xl mx-auto">
             Powerful tools designed for creators, developers, and power users
           </p>
@@ -1159,6 +962,204 @@ $perm = new Permission();
               <img src="https://cdn.nostr.build/assets/fpv2/ww-connect@0.33x.png" alt="Global CDN Map" class="w-full h-full object-cover">
             </div>
           </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Account Tiers Section -->
+    <section id="built-for-every-creator" class="py-20 px-4 relative w-full">
+      <div class="max-w-7xl mx-auto">
+        <div class="text-center mb-16 scroll-reveal">
+          <h2 class="text-4xl md:text-6xl font-bold gradient-text pb-5 mb-6">Built for Every Creator</h2>
+          <p class="text-xl text-[#a58ead] max-w-3xl mx-auto">
+            From privacy enthusiasts to professional content creators, we have the perfect tier for your needs
+          </p>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 mb-20">
+
+          <!-- Purist Tier -->
+          <div class="feature-card rounded-3xl p-10 scroll-reveal relative">
+            <div class="mb-8">
+              <h3 class="text-3xl font-bold text-white mb-4">Purist</h3>
+              <p class="text-lg text-[#a58ead] mb-6">
+                <strong>Perfect for:</strong> Privacy-conscious users, minimalists, and those new to Nostr
+              </p>
+            </div>
+
+            <div class="space-y-6">
+              <div class="bg-gradient-to-r from-[#2edf95]/10 to-[#07847c]/10 rounded-xl p-6 border border-[#2edf95]/20">
+                <h4 class="text-xl font-semibold text-white mb-3">🧘‍♀️ Clean & Simple Experience</h4>
+                <p class="text-[#d0bed8] leading-relaxed">
+                  <strong><?= SiteConfig::STORAGE_LIMITS[Plans::PURIST]['message'] ?></strong> with support for essential image and video formats. No complexity, just pure functionality for users who value simplicity and want to keep their content organized without overwhelming features.
+                </p>
+              </div>
+
+              <div class="bg-gradient-to-r from-[#2edf95]/10 to-[#07847c]/10 rounded-xl p-6 border border-[#2edf95]/20">
+                <h4 class="text-xl font-semibold text-white mb-3">📁 Larger File Support</h4>
+                <p class="text-[#d0bed8] leading-relaxed">
+                  Upload files up to <strong><?= SiteConfig::PURIST_PER_FILE_UPLOAD_LIMIT / 1024 / 1024 ?>MB each</strong> - perfect for high-quality photos, longer videos, or presentations. No more compression headaches or splitting files.
+                </p>
+              </div>
+
+              <div class="bg-gradient-to-r from-[#2edf95]/10 to-[#07847c]/10 rounded-xl p-6 border border-[#2edf95]/20">
+                <h4 class="text-xl font-semibold text-white mb-3">🎯 Focus on Content</h4>
+                <p class="text-[#d0bed8] leading-relaxed">
+                  All the core features you need: <strong>media management, direct Nostr sharing, global CDN delivery, and detailed statistics</strong> - without the complexity of advanced tools.
+                </p>
+              </div>
+
+              <div class="mt-8 p-4 bg-[#2edf95]/5 rounded-lg border-l-4 border-[#2edf95]">
+                <p class="text-sm text-[#2edf95] font-semibold">
+                  💭 "I just want reliable hosting for my photos and memes without paying for features I don't use"
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Professional Tier -->
+          <div class="feature-card rounded-3xl p-10 scroll-reveal relative border-2 border-[#884ea4]/30">
+            <div class="absolute -top-4 left-1/2 transform -translate-x-1/2">
+              <span class="bg-gradient-to-r from-[#884ea4] to-[#292556] text-white px-6 py-2 rounded-full text-sm font-semibold">
+                MOST POPULAR
+              </span>
+            </div>
+            <div class="mb-8">
+              <h3 class="text-3xl font-bold text-white mb-4">Professional</h3>
+              <p class="text-lg text-[#a58ead] mb-6">
+                <strong>Perfect for:</strong> Content creators, influencers, and active Nostr users
+              </p>
+            </div>
+
+            <div class="space-y-6">
+              <div class="bg-gradient-to-r from-[#884ea4]/10 to-[#292556]/10 rounded-xl p-6 border border-[#884ea4]/20">
+                <h4 class="text-xl font-semibold text-white mb-3">💼 Professional Storage</h4>
+                <p class="text-[#d0bed8] leading-relaxed">
+                  <strong><?= SiteConfig::STORAGE_LIMITS[Plans::PROFESSIONAL]['message'] ?></strong> with support for <strong>virus-scanned PDF and SVG files</strong>. Perfect for sharing presentations, design files, infographics, and professional documents directly through Nostr.
+                </p>
+              </div>
+
+              <div class="bg-gradient-to-r from-[#884ea4]/10 to-[#292556]/10 rounded-xl p-6 border border-[#884ea4]/20">
+                <h4 class="text-xl font-semibold text-white mb-3">🎨 AI-Powered Creation</h4>
+                <p class="text-[#d0bed8] leading-relaxed">
+                  Access to <strong>AI Studio with SDXL-Lightning and Stable Diffusion models</strong>. Create stunning images for your content, social media posts, or marketing materials. Includes bonus credits to get you started.
+                </p>
+              </div>
+
+              <div class="bg-gradient-to-r from-[#884ea4]/10 to-[#292556]/10 rounded-xl p-6 border border-[#884ea4]/20">
+                <h4 class="text-xl font-semibold text-white mb-3">🗂️ Media Management Portal</h4>
+                <p class="text-[#d0bed8] leading-relaxed">
+                  <strong>Professional media organization</strong> with drag & drop, folders, renaming, and bulk operations - everything you need to manage your content like a pro.
+                </p>
+              </div>
+
+              <div class="bg-gradient-to-r from-[#884ea4]/10 to-[#292556]/10 rounded-xl p-6 border border-[#884ea4]/20">
+                <h4 class="text-xl font-semibold text-white mb-3">📊 Advanced Analytics</h4>
+                <p class="text-[#d0bed8] leading-relaxed">
+                  <strong>Detailed usage statistics and analytics</strong> help you understand your audience engagement. Track views, downloads, and performance metrics to optimize your content strategy.
+                </p>
+              </div>
+
+              <div class="mt-8 p-4 bg-[#884ea4]/5 rounded-lg border-l-4 border-[#884ea4]">
+                <p class="text-sm text-[#884ea4] font-semibold">
+                  💭 "I need reliable hosting for my business content plus AI tools to create engaging visuals"
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Creator Tier -->
+          <div class="feature-card rounded-3xl p-10 scroll-reveal relative">
+            <div class="mb-8">
+              <h3 class="text-3xl font-bold text-white mb-4">Creator</h3>
+              <p class="text-lg text-[#a58ead] mb-6">
+                <strong>Perfect for:</strong> Full-time creators, podcasters, and content professionals
+              </p>
+            </div>
+
+            <div class="space-y-6">
+              <div class="bg-gradient-to-r from-[#d251d5]/10 to-[#8a0578]/10 rounded-xl p-6 border border-[#d251d5]/20">
+                <h4 class="text-xl font-semibold text-white mb-3">🎬 Creator-Grade Storage</h4>
+                <p class="text-[#d0bed8] leading-relaxed">
+                  <strong><?= SiteConfig::STORAGE_LIMITS[Plans::CREATOR]['message'] ?></strong> with support for <strong>ZIP, PDF, and SVG files</strong>. ZIP files require extra processing time due to comprehensive virus scanning. Perfect for large video projects, podcast archives, design portfolios, and comprehensive media libraries.
+                </p>
+              </div>
+
+              <div class="bg-gradient-to-r from-[#d251d5]/10 to-[#8a0578]/10 rounded-xl p-6 border border-[#d251d5]/20">
+                <h4 class="text-xl font-semibold text-white mb-3">🤖 Advanced AI Studio</h4>
+                <p class="text-[#d0bed8] leading-relaxed">
+                  Unlimited access to <strong>Flux.1 model</strong> plus all Professional AI models. Create professional-grade images, thumbnails, and visual content that stands out. Perfect for social media, marketing, and creative projects.
+                </p>
+              </div>
+
+              <div class="bg-gradient-to-r from-[#d251d5]/10 to-[#8a0578]/10 rounded-xl p-6 border border-[#d251d5]/20">
+                <h4 class="text-xl font-semibold text-white mb-3">🏠 Creator Showcase</h4>
+                <p class="text-[#d0bed8] leading-relaxed">
+                  <strong>Host your own creators page</strong> on nostr.build domain. Showcase your best work, build your brand, and make it easy for fans to discover and support your content.
+                </p>
+              </div>
+
+              <div class="bg-gradient-to-r from-[#d251d5]/10 to-[#8a0578]/10 rounded-xl p-6 border border-[#d251d5]/20">
+                <h4 class="text-xl font-semibold text-white mb-3">🛡️ Redundant Backup</h4>
+                <p class="text-[#d0bed8] leading-relaxed">
+                  <strong>S3 backup across multiple providers</strong> ensures your creative work is never lost. Your content is automatically backed up to different data centers for maximum protection.
+                </p>
+              </div>
+
+              <div class="mt-8 p-4 bg-[#d251d5]/5 rounded-lg border-l-4 border-[#d251d5]">
+                <p class="text-sm text-[#d251d5] font-semibold">
+                  💭 "My content is my livelihood - I need professional tools, ample storage, and bulletproof reliability"
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Advanced Tier -->
+          <div class="feature-card rounded-3xl p-10 scroll-reveal relative">
+            <div class="mb-8">
+              <h3 class="text-3xl font-bold text-white mb-4">Advanced</h3>
+              <p class="text-lg text-[#a58ead] mb-6">
+                <strong>Perfect for:</strong> Enterprises, organizations, and power users who need scalable solutions
+              </p>
+            </div>
+
+            <div class="space-y-6">
+              <div class="bg-gradient-to-r from-[#dabd55]/10 to-[#f78533]/10 rounded-xl p-6 border border-[#dabd55]/20">
+                <h4 class="text-xl font-semibold text-white mb-3">🚀 Enterprise Storage</h4>
+                <p class="text-[#d0bed8] leading-relaxed">
+                  <strong><?= SiteConfig::STORAGE_LIMITS[Plans::ADVANCED]['message'] ?></strong> - 5x more than Creator tier. Perfect for large-scale content operations, extensive media libraries, or team collaborations.
+                </p>
+              </div>
+
+              <div class="bg-gradient-to-r from-[#dabd55]/10 to-[#f78533]/10 rounded-xl p-6 border border-[#dabd55]/20">
+                <h4 class="text-xl font-semibold text-white mb-3">🧪 Cutting-Edge AI</h4>
+                <p class="text-[#d0bed8] leading-relaxed">
+                  <strong>Extended AI Studio access</strong> with all models, experimental features, and priority access to new AI capabilities. Be the first to use breakthrough AI technology.
+                </p>
+              </div>
+
+              <div class="bg-gradient-to-r from-[#dabd55]/10 to-[#f78533]/10 rounded-xl p-6 border border-[#dabd55]/20">
+                <h4 class="text-xl font-semibold text-white mb-3">🏷️ Premium Identity</h4>
+                <p class="text-[#d0bed8] leading-relaxed">
+                  <strong>Custom NIP-05 @nostr.build verification</strong> - establish your premium identity on Nostr with official verification that builds trust and credibility.
+                </p>
+              </div>
+
+              <div class="bg-gradient-to-r from-[#dabd55]/10 to-[#f78533]/10 rounded-xl p-6 border border-[#dabd55]/20">
+                <h4 class="text-xl font-semibold text-white mb-3">📈 Expandable Infrastructure</h4>
+                <p class="text-[#d0bed8] leading-relaxed">
+                  <strong>Future-ready with expandable storage options</strong> and priority access to new features. Your account grows with your needs.
+                </p>
+              </div>
+
+              <div class="mt-8 p-4 bg-[#dabd55]/5 rounded-lg border-l-4 border-[#dabd55]">
+                <p class="text-sm text-[#dabd55] font-semibold">
+                  💭 "I need enterprise-grade infrastructure with cutting-edge features and room to scale"
+                </p>
+              </div>
+            </div>
+          </div>
+
         </div>
       </div>
     </section>
