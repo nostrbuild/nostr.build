@@ -419,7 +419,7 @@ $perm = new Permission();
               <div class="flex items-start gap-3">
                 <div class="w-6 h-6 bg-[#f78533] rounded-full flex-shrink-0 mt-1"></div>
                 <div>
-                  <p class="text-white font-medium">50GB Private Storage</p>
+                  <p class="text-white font-medium">100GB Private Storage</p>
                   <p class="text-[#d0bed8] text-sm">Massive storage for content creators</p>
                 </div>
               </div>
@@ -458,7 +458,7 @@ $perm = new Permission();
               <div class="flex items-start gap-3">
                 <div class="w-6 h-6 bg-[#dabd55] rounded-full flex-shrink-0 mt-1"></div>
                 <div>
-                  <p class="text-white font-medium">250GB Private Storage</p>
+                  <p class="text-white font-medium">500GB Private Storage</p>
                   <p class="text-[#d0bed8] text-sm">Enterprise-level storage capacity</p>
                 </div>
               </div>
@@ -750,7 +750,7 @@ $perm = new Permission();
               <div class="bg-gradient-to-r from-[#d251d5]/10 to-[#8a0578]/10 rounded-xl p-6 border border-[#d251d5]/20">
                 <h4 class="text-xl font-semibold text-white mb-3">🎬 Creator-Grade Storage</h4>
                 <p class="text-[#d0bed8] leading-relaxed">
-                  <strong>50GB of private storage</strong> with support for <strong>ZIP, PDF, and SVG files</strong>. ZIP files require extra processing time due to comprehensive virus scanning. Perfect for large video projects, podcast archives, design portfolios, and comprehensive media libraries.
+                  <strong>100GB of private storage</strong> with support for <strong>ZIP, PDF, and SVG files</strong>. ZIP files require extra processing time due to comprehensive virus scanning. Perfect for large video projects, podcast archives, design portfolios, and comprehensive media libraries.
                 </p>
               </div>
 
@@ -796,7 +796,7 @@ $perm = new Permission();
               <div class="bg-gradient-to-r from-[#dabd55]/10 to-[#f78533]/10 rounded-xl p-6 border border-[#dabd55]/20">
                 <h4 class="text-xl font-semibold text-white mb-3">🚀 Enterprise Storage</h4>
                 <p class="text-[#d0bed8] leading-relaxed">
-                  <strong>250GB of private storage</strong> - 5x more than Creator tier. Perfect for large-scale content operations, extensive media libraries, or team collaborations.
+                  <strong>500GB of private storage</strong> - 5x more than Creator tier. Perfect for large-scale content operations, extensive media libraries, or team collaborations.
                 </p>
               </div>
 
