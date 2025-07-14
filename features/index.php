@@ -171,8 +171,8 @@ $perm = new Permission();
     .bg-element {
       position: absolute;
       border-radius: 50%;
-      filter: blur(60px);
-      opacity: 0.15;
+      filter: blur(40px);
+      opacity: 0.4;
       pointer-events: none;
       will-change: auto;
     }
