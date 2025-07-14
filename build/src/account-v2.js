@@ -1173,23 +1173,31 @@ Alpine.store('menuStore', {
     });
     console.debug('Menu store initiated');
   },
-  menuItemsAI: [{
-    name: 'AI Studio',
-    icon: '<path stroke-linecap="round" stroke-linejoin="round" d="M15.59 14.37a6 6 0 0 1-5.84 7.38v-4.8m5.84-2.58a14.98 14.98 0 0 0 6.16-12.12A14.98 14.98 0 0 0 9.631 8.41m5.96 5.96a14.926 14.926 0 0 1-5.841 2.58m-.119-8.54a6 6 0 0 0-7.381 5.84h4.8m2.581-5.84a14.927 14.927 0 0 0-2.58 5.84m2.699 2.7c-.103.021-.207.041-.311.06a15.09 15.09 0 0 1-2.448-2.448 14.9 14.9 0 0 1 .06-.312m-2.24 2.39a4.493 4.493 0 0 0-1.757 4.306 4.493 4.493 0 0 0 4.306-1.758M16.5 9a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0Z" />',
-    route: getUpdatedHashLink(aiImagesFolderName, 'gai'),
-    routeId: 'gai',
-    rootFolder: aiImagesFolderName
-  },
-    /*
-    {
-      name: 'AI reImage',
-      icon: '<path d="M18 22H4a2 2 0 0 1-2-2V6"/><path d="m22 13-1.296-1.296a2.41 2.41 0 0 0-3.408 0L11 18"/><circle cx="12" cy="8" r="2"/><rect width="16" height="16" x="6" y="2" rx="2"/>',
-      route: getUpdatedHashLink(aiImagesFolderName, 'rai'),
-      routeId: 'rai',
+  get menuItemsAI() {
+    // Only return AI menu items if user is AI Studio eligible
+    const profileStore = Alpine.store('profileStore');
+    if (!profileStore?.profileInfo?.isAIStudioEligible) {
+      return [];
+    }
+
+    return [{
+      name: 'AI Studio',
+      icon: '<path stroke-linecap="round" stroke-linejoin="round" d="M15.59 14.37a6 6 0 0 1-5.84 7.38v-4.8m5.84-2.58a14.98 14.98 0 0 0 6.16-12.12A14.98 14.98 0 0 0 9.631 8.41m5.96 5.96a14.926 14.926 0 0 1-5.841 2.58m-.119-8.54a6 6 0 0 0-7.381 5.84h4.8m2.581-5.84a14.927 14.927 0 0 0-2.58 5.84m2.699 2.7c-.103.021-.207.041-.311.06a15.09 15.09 0 0 1-2.448-2.448 14.9 14.9 0 0 1 .06-.312m-2.24 2.39a4.493 4.493 0 0 0-1.757 4.306 4.493 4.493 0 0 0 4.306-1.758M16.5 9a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0Z" />',
+      route: getUpdatedHashLink(aiImagesFolderName, 'gai'),
+      routeId: 'gai',
       rootFolder: aiImagesFolderName
     },
-    */
-  ],
+      /*
+      {
+        name: 'AI reImage',
+        icon: '<path d="M18 22H4a2 2 0 0 1-2-2V6"/><path d="m22 13-1.296-1.296a2.41 2.41 0 0 0-3.408 0L11 18"/><circle cx="12" cy="8" r="2"/><rect width="16" height="16" x="6" y="2" rx="2"/>',
+        route: getUpdatedHashLink(aiImagesFolderName, 'rai'),
+        routeId: 'rai',
+        rootFolder: aiImagesFolderName
+      },
+      */
+    ];
+  },
   menuItems: [{
     name: 'Account Main Page',
     icon: '<path stroke-linecap="round" stroke-linejoin="round" d="M17.982 18.725A7.488 7.488 0 0 0 12 15.75a7.488 7.488 0 0 0-5.982 2.975m11.963 0a9 9 0 1 0-11.963 0m11.963 0A8.966 8.966 0 0 1 12 21a8.966 8.966 0 0 1-5.982-2.275M15 9.75a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />',
@@ -1259,20 +1267,28 @@ Alpine.store('menuStore', {
   activeFolderStats: {},
   activeFolderObj: {},
   // Top most folders
-  staticFolders: [{
-    id: 0, // There is no actual folder so we use 0
-    name: homeFolderName,
-    icon: 'H',
-    route: '#',
-    allowDelete: false
+  get staticFolders() {
+    const folders = [{
+      id: 0, // There is no actual folder so we use 0
+      name: homeFolderName,
+      icon: 'H',
+      route: '#',
+      allowDelete: false
+    }];
+
+    // Only include AI Images folder if user is AI Studio eligible
+    const profileStore = Alpine.store('profileStore');
+    if (profileStore?.profileInfo?.isAIStudioEligible) {
+      folders.push({
+        name: aiImagesFolderName,
+        icon: 'A',
+        route: '#',
+        allowDelete: false
+      });
+    }
+
+    return folders;
   },
-  {
-    name: aiImagesFolderName,
-    icon: 'A',
-    route: '#',
-    allowDelete: false
-  },
-  ],
   getFolderObjByName(folderName) {
     return this.folders.find(folder => folder.name === folderName);
   },
@@ -1636,17 +1652,17 @@ Alpine.store('menuStore', {
       .then(response => response.data)
       .then(data => {
         this.fileStats.stats = data;
-        // Convert potential strings into numbers
-        this.fileStats.totalFiles = parseInt(data.totalStats?.all);
-        this.fileStats.totalGifs = parseInt(data.totalStats.gifs);
-        this.fileStats.totalImages = parseInt(data.totalStats.images);
-        this.fileStats.totalVideos = parseInt(data.totalStats.videos + data.totalStats.audio);
-        this.fileStats.totalDocuments = parseInt(data.totalStats.documents);
-        this.fileStats.totalArchives = parseInt(data.totalStats.archives);
-        this.fileStats.totalOthers = parseInt(data.totalStats.others);
-        this.fileStats.creatorCount = parseInt(data.totalStats.publicCount);
+        // Convert potential strings into numbers, ensuring we handle undefined/null values
+        this.fileStats.totalFiles = parseInt(data.totalStats?.all || 0) || 0;
+        this.fileStats.totalGifs = parseInt(data.totalStats?.gifs || 0) || 0;
+        this.fileStats.totalImages = parseInt(data.totalStats?.images || 0) || 0;
+        this.fileStats.totalVideos = parseInt((data.totalStats?.videos || 0) + (data.totalStats?.audio || 0)) || 0;
+        this.fileStats.totalDocuments = parseInt(data.totalStats?.documents || 0) || 0;
+        this.fileStats.totalArchives = parseInt(data.totalStats?.archives || 0) || 0;
+        this.fileStats.totalOthers = parseInt(data.totalStats?.others || 0) || 0;
+        this.fileStats.creatorCount = parseInt(data.totalStats?.publicCount || 0) || 0;
         this.fileStats.totalFolders = Alpine.store('menuStore').folders.length;
-        this.fileStats.totalSize = parseInt(data.totalStats.allSize);
+        this.fileStats.totalSize = parseInt(data.totalStats?.allSize || 0) || 0;
       })
       .catch(error => {
         console.error('Error refreshing file stats:', error);
