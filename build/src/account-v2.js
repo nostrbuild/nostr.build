@@ -1632,7 +1632,7 @@ Alpine.store('menuStore', {
         this.fileStats.totalFiles = parseInt(data.totalStats?.all || 0) || 0;
         this.fileStats.totalGifs = parseInt(data.totalStats?.gifs || 0) || 0;
         this.fileStats.totalImages = parseInt(data.totalStats?.images || 0) || 0;
-        this.fileStats.totalVideos = parseInt((data.totalStats?.videos || 0) + (data.totalStats?.audio || 0)) || 0;
+        this.fileStats.totalVideos = parseInt(data.totalStats?.videos || 0) + parseInt(data.totalStats?.audio || 0);
         this.fileStats.totalDocuments = parseInt(data.totalStats?.documents || 0) || 0;
         this.fileStats.totalArchives = parseInt(data.totalStats?.archives || 0) || 0;
         this.fileStats.totalOthers = parseInt(data.totalStats?.others || 0) || 0;
