@@ -42,7 +42,7 @@ If installing this code on your own platform, the below are some examples of thi
 - Add or remove certain media options - such as 'image only' or 'video only'
 - Change Account options to align to your platform
 - Change the html look and feel of the website
-- Change where media is stored - currently https://nostr.build stores all media on AWS S3
+- Change where media is stored - currently https://nostr.build stores all media on Cloudflare R2 but this may change
 
 ## Contributions and Contacts
 
