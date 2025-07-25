@@ -106,19 +106,21 @@ class VideoRepackager
 
   public function repackageVideo(): string
   {
+
     $inputFile = $this->videoFile;
-    if (!$inputFile && !file_exists($inputFile)) {
+    if (!$inputFile || !file_exists($inputFile)) {
       return $inputFile;
     }
 
     // Check if video has audio and if audio is AAC
     $audioCodec = $this->videoInfoClass->get_audio_codec();
     $audioCodecParam = "-c:a copy"; // Copy audio by default
-    if ($audioCodec !== 'aac') {
+    if ($audioCodec !== 'aac' && !empty($audioCodec)) {
       $audioCodecParam = "-c:a aac"; // Re-encode audio to AAC
     } elseif (empty($audioCodec)) {
       $audioCodecParam = ""; // No audio
     }
+
 
     $compatibleVideoCodecs = ['h264', 'hevc', 'mpeg4', 'mpeg2video', 'av01'];
     $videoCodec = $this->videoInfoClass->get_video_codec();
@@ -126,13 +128,18 @@ class VideoRepackager
       return $inputFile;
     }
 
+
     // Add tag to h265/hevc video to make it compatible with iOS
     $tagParam = "";
     if ($videoCodec === 'hevc') {
       $tagParam = "-tag:v hvc1";
     }
 
-    $repackCommand = "timeout {$this->timeout} nice -n 19 {$this->ffmpegPath} -y -hide_banner -i \"{$inputFile}\" -c:v copy {$audioCodecParam} {$tagParam} -map 0:v -map 0:a? -movflags +faststart -f mp4 \"{$this->tempFile}\" 2>&1";
+
+    // Escape file paths for shell safety
+    $inputFileEsc = escapeshellarg($inputFile);
+    $tempFileEsc = escapeshellarg($this->tempFile);
+    $repackCommand = "timeout {$this->timeout} nice -n 19 {$this->ffmpegPath} -y -hide_banner -i {$inputFileEsc} -c:v copy {$audioCodecParam} {$tagParam} -map 0:v -map 0:a? -movflags +faststart -f mp4 {$tempFileEsc} 2>&1";
     try {
       exec($repackCommand, $output, $returnVar);
     } catch (Exception $e) {
@@ -140,8 +147,12 @@ class VideoRepackager
       return $inputFile;
     }
 
-    if ($returnVar !== 0) {
+    if ($returnVar !== 0 || !file_exists($this->tempFile) || filesize($this->tempFile) === 0) {
       error_log("Error running FFmpeg command to repackage video: " . implode("\n", $output));
+      // Clean up possibly corrupt temp file
+      if (file_exists($this->tempFile)) {
+        unlink($this->tempFile);
+      }
       return $inputFile;
     }
 
@@ -149,13 +160,10 @@ class VideoRepackager
   }
 
 
+
+
   /**
    * Summary of __destruct
    */
-  function __destruct()
-  {
-    if (file_exists($this->tempFile)) {
-      unlink($this->tempFile);
-    }
-  }
+  function __destruct() {}
 }
