@@ -3696,7 +3696,7 @@ onDropCB(event) {
 															Properties</option>
 														<option x-show="profileStore.profileInfo.isAnalyticsEligible" value="stats"
 															:selected="fileStore.mediaProperties.currentTab === $el.value">
-															Statistics</option>
+															Analytics</option>
 														<option x-show="profileStore.profileInfo.isAIToolsEligible" value="ai_tools"
 															:selected="fileStore.mediaProperties.currentTab === $el.value">
 															AI
@@ -3717,7 +3717,7 @@ onDropCB(event) {
 															</li>
 															<li x-show="profileStore.profileInfo.isAnalyticsEligible">
 																<button @click="fileStore.mediaProperties.currentTab = 'stats'"
-																	:class="{ 'text-nbpurple-200 border-b-2 border-nbpurple-500': fileStore.mediaProperties.currentTab === 'stats' }">Statistics</button>
+																	:class="{ 'text-nbpurple-200 border-b-2 border-nbpurple-500': fileStore.mediaProperties.currentTab === 'stats' }">Analytics</button>
 															</li>
 															<li x-show="profileStore.profileInfo.isAIToolsEligible">
 																<button @click="fileStore.mediaProperties.currentTab = 'ai_tools'"
