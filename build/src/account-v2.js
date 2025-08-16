@@ -3359,7 +3359,13 @@ Alpine.store('uppyStore', {
     const fileStore = Alpine.store('fileStore');
     const profileStore = Alpine.store('profileStore');
 
-    this.instance = new Uppy({
+    // Externalize Uppy instance to a global to avoid Alpine proxies entirely.
+    // This prevents brand-check errors on native private fields/methods.
+    // Ensure any previous instance is cleaned up if needed.
+    if (window.__nbUppy && typeof window.__nbUppy.destroy === 'function') {
+      try { window.__nbUppy.destroy(); } catch (_) {}
+    }
+    window.__nbUppy = new Uppy({
       debug: false,
       autoProceed: true, // Automatically upload files after adding them
       allowMultipleUploadBatches: false, // Disallow multiple upload batches
@@ -3375,7 +3381,7 @@ Alpine.store('uppyStore', {
 
         if (fileType !== 'image' && fileType !== 'video' && fileType !== 'audio') {
           if (currentFile.size > 1024 ** 3) {
-            this.instance.info(`Skipping file ${currentFile.name} because it's too large`, 'error', 500);
+            window.__nbUppy.info(`Skipping file ${currentFile.name} because it's too large`, 'error', 500);
             return false; // Exclude the file
           }
         }
@@ -3385,21 +3391,21 @@ Alpine.store('uppyStore', {
 
         if (!allowedTypes.includes(fileType)) {
           // log to console
-          this.instance.log(`Skipping file ${currentFile.name} because it's not an allowed file type`);
+          window.__nbUppy.log(`Skipping file ${currentFile.name} because it's not an allowed file type`);
           // show error message to the user
-          this.instance.info(`Skipping file ${currentFile.name} because it's not an allowed file type`, 'error', 500);
+          window.__nbUppy.info(`Skipping file ${currentFile.name} because it's not an allowed file type`, 'error', 500);
           return false; // Exclude the file
         }
 
         // Prevent SVG files from being uploaded
         if (currentFile.type === 'image/svg+xml' || currentFile.name.endsWith('.svg')) {
-          this.instance.info(`Skipping file ${currentFile.name} because SVG files are not allowed`, 'error', 500);
+          window.__nbUppy.info(`Skipping file ${currentFile.name} because SVG files are not allowed`, 'error', 500);
           return false; // Exclude the file
         }
 
         // Prevent PSD files from being uploaded
         if (currentFile.type === 'image/vnd.adobe.photoshop' || currentFile.name.endsWith('.psd')) {
-          this.instance.info(`Skipping file ${currentFile.name} because PSD files are not allowed`, 'error', 500);
+          window.__nbUppy.info(`Skipping file ${currentFile.name} because PSD files are not allowed`, 'error', 500);
           return false; // Exclude the file
         }*/
 
@@ -3421,8 +3427,8 @@ Alpine.store('uppyStore', {
         width: '100%',
         height: '100%',
       })
-      .use(Webcam, { target: Dashboard })
-      .use(XHRUpload, {
+  .use(Webcam, { target: Dashboard })
+  .use(XHRUpload, {
         endpoint: '/api/v2/account/files/uppy',
         method: 'post',
         formData: true,
@@ -3439,7 +3445,7 @@ Alpine.store('uppyStore', {
           noTransform: false, // Disable image transformations by the server
         },
       })
-      .use(DropTarget, {
+  .use(DropTarget, {
         target: dropTarget,
         onDragLeave: (event) => {
           if (typeof onDragLeaveCallback === 'function') {
@@ -3457,18 +3463,18 @@ Alpine.store('uppyStore', {
           }
         }
       })
-      .on('upload-success', (file, response) => {
+  .on('upload-success', (file, response) => {
         if (Array.isArray(response.body)) {
           const fileResponse = response.body.find(f => f.id === file.id);
           if (fileResponse) {
-            this.instance.setFileMeta(file.id, {
+    window.__nbUppy.setFileMeta(file.id, {
               name: fileResponse.name,
               type: fileResponse.type,
               size: fileResponse.size
             });
           }
         } else {
-          this.instance.setFileMeta(file.id, {
+      window.__nbUppy.setFileMeta(file.id, {
             name: response.body.name,
             type: response.body.type,
             size: response.body.size
@@ -3479,7 +3485,7 @@ Alpine.store('uppyStore', {
         console.debug('Upload result:', response);
         // Set uploadComplete state for the file
         file.progress.uploadComplete = true;
-        //this.instance.removeFile(file.id);
+  //window.__nbUppy.removeFile(file.id);
         const fd = response.body.fileData;
         console.debug('File uploaded:', fd);
         // Get folderName from uppy file metadata
@@ -3554,7 +3560,7 @@ Alpine.store('uppyStore', {
         }
         console.debug('Folder name', folderName);
         console.debug('Folder hierarchy', folderHierarchy);
-        this.instance.setFileMeta(file.id, {
+  window.__nbUppy.setFileMeta(file.id, {
           folderName: JSON.stringify(folderName),
           folderHierarchy: JSON.stringify(folderHierarchy),
           noTransform: noTransform,
@@ -3583,7 +3589,7 @@ Alpine.store('uppyStore', {
           fileStore.injectFile(currentFile);
         }
       })
-      .on('upload', (data) => {
+  .on('upload', (data) => {
         console.debug('Upload started:', data);
         this.mainDialog.isLoading = true;
       })
@@ -3600,7 +3606,7 @@ Alpine.store('uppyStore', {
           //location.reload(); // reload the page
           console.debug('Upload complete:', result);
           // Mark dialog as done!
-          this.instance.cancelAll();
+          window.__nbUppy.cancelAll();
           // Close the dialog
           this.mainDialog.close();
           // Clear progress
@@ -3610,7 +3616,7 @@ Alpine.store('uppyStore', {
         } else {
           // Remove successful uploads
           result.successful.forEach(file => {
-            this.instance.removeFile(file.id);
+            window.__nbUppy.removeFile(file.id);
             this.mainDialog.removeFile(file.id);
           });
           // Open the dialog
@@ -3661,7 +3667,7 @@ Alpine.store('uppyStore', {
         }
       })
       .on('info-visible', () => {
-        const { info } = this.instance.getState();
+        const { info } = window.__nbUppy.getState();
         // Log the entire info object to see its structure
         console.debug('Full info object:', info);
         // According to Uppy docs, info structure should be:
@@ -3687,7 +3693,7 @@ Alpine.store('uppyStore', {
         // Remove file from the fileStore
         fileStore.files = fileStore.files.filter(f => f.id !== file.id);
         // If no more files in uppy reset prgress and close the dialog
-        if (this.instance.getFiles().length === 0) {
+        if (window.__nbUppy.getFiles().length === 0) {
           this.mainDialog.uploadProgress = null;
           this.mainDialog.isLoading = false;
           this.mainDialog.clearFiles();
@@ -3723,7 +3729,7 @@ Alpine.store('uppyStore', {
     console.debug('Uppy instance created:', el.id);
     // Dynamic note
     Alpine.effect(() => {
-      if (this.instance) {
+      if (window.__nbUppy) {
         // Determine if user has less than 4GB remaining storage
         let byteLimit = (profileStore.profileInfo.storageRemaining < 4 * 1024 * 1024 * 1024) ?
           profileStore.profileInfo.storageRemaining : 4 * 1024 * 1024 * 1024;
@@ -3742,14 +3748,14 @@ Alpine.store('uppyStore', {
             byteLimit = Math.min(byteLimit, (1024 * 1024 * 450)); // 450MB limit
         }
         note += `, up to your storage limit, and ${formatBytes(byteLimit)} per file`;
-        this.instance.setOptions({
+  window.__nbUppy.setOptions({
           restrictions: {
             maxFileSize: byteLimit,
             maxTotalFileSize: profileStore.profileInfo.storageRemaining,
             allowedFileTypes: allowedFileTypes,
           },
         });
-        this.instance.getPlugin('Dashboard').setOptions({
+  window.__nbUppy.getPlugin('Dashboard').setOptions({
           note: note,
         });
       }

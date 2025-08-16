@@ -31,7 +31,7 @@
     "nostr-tools": "2.12.0",
     "sortablejs": "^1.15.6",
     "tua-body-scroll-lock": "^1.5.3",
-    "uppy": "^4.18.0",
+    "uppy": "4.18.2",
     "vidstack": "1.11.22"
   },
   "devDependencies": {
