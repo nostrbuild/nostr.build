@@ -226,7 +226,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         </div>
     </main>
     <?php include $_SERVER['DOCUMENT_ROOT'] . '/components/footer.php'; ?>
-    <script src="/scripts/dist/login.js?v=f21aa8a60b11e20116b2c661faad1e9e"></script>
+    <script src="/scripts/dist/login.js?v=6adbd0beb30cbadc3b36289ff445ad2c"></script>
     <script>
         document.addEventListener('DOMContentLoaded', (event) => {
             // Check for the existance of n and c URL parameters and execute loginWithDMLink function if they exist

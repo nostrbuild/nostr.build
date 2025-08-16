@@ -16,10 +16,10 @@
 	<meta name="msapplication-TileColor" content="#9f00a7">
 	<meta name="theme-color" content="#ffffff">
 
-	<script defer src="/scripts/dist/account-v2.js?v=3b283c0845c25c7ddd13d8ca12e81d01"></script>
-	<link href="/scripts/dist/account-v2.css?v=4ddc12b00ce35067a951c985c8e737a8" rel="stylesheet">
+	<script defer src="/scripts/dist/account-v2.js?v=09d47cbb6729610cc05daf9baf5e6e12"></script>
+	<link href="/scripts/dist/account-v2.css?v=27ba93e570a70d775737614d6faf6846" rel="stylesheet">
 
-	<link href="/styles/twbuild.css?v=fa2c25f08b9c806910959aa9408f8666" rel="stylesheet">
+	<link href="/styles/twbuild.css?v=2df4bba100936abefa8c1ef11e27421f" rel="stylesheet">
 
 	<!-- Pre-connect and DNS prefetch -->
 	<link rel="preconnect" href="https://i.nostr.build" crossorigin>
@@ -776,10 +776,14 @@ onDropCB(event) {
 													<li x-show="profileStore.profileInfo.allowed(item.allowed)">
 														<a :href="item.route"
 															:class="{ 'bg-nbpurple-800 text-nbpurple-50': menuStore.activeMenu === item.name, 'text-nbpurple-300 hover:text-nbpurple-50 hover:bg-nbpurple-800': menuStore.activeMenu !== item.name }"
-															class="group flex gap-x-3 rounded-md p-2 text-sm leading-6 font-semibold">
+															class="group flex gap-x-3 rounded-md p-2 text-sm leading-6 font-semibold"
+															target="_blank"
+															>
 															<svg aria-hidden="true" class="size-6 shrink-0" fill="none" viewBox="0 0 24 24"
 																stroke-width="1.5" stroke="currentColor" aria-hidden="true" x-html="item.icon"></svg>
 															<span x-text="item.name"></span>
+															<span
+																class="inline-flex items-center rounded-full bg-nbpurple-200 px-1.5 py-0.5 text-xs font-medium text-nbpurple-800 ring-1 ring-inset ring-nbpurple-700/10">New</span>
 														</a>
 													</li>
 												</template>
