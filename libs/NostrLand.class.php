@@ -175,6 +175,7 @@ class NostrLand
   {
     // basic tracing
     error_log('[NostrLand] submitPayload send url=' . $this->apiUrl . ' len=' . strlen((string)$payload));
+    error_log('[NostrLand] submitPayload payload=' . $payload);
 
     $ch = curl_init($this->apiUrl);
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
@@ -187,13 +188,22 @@ class NostrLand
 
     $response = curl_exec($ch);
     $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    $curlError = curl_error($ch);
     curl_close($ch);
 
     error_log('[NostrLand] submitPayload response http=' . $httpCode . ' len=' . (is_string($response) ? strlen($response) : 0));
+    
+    if (!empty($curlError)) {
+      error_log('[NostrLand] submitPayload curl error: ' . $curlError);
+    }
+    
+    if (is_string($response) && strlen($response) > 0) {
+      error_log('[NostrLand] submitPayload response body: ' . substr($response, 0, 500));
+    }
 
     if ($httpCode !== 200) {
-      error_log('[NostrLand] submitPayload failed http=' . $httpCode);
-      throw new \RuntimeException('Failed to submit payload: ' . $response);
+      error_log('[NostrLand] submitPayload failed http=' . $httpCode . ' response=' . ($response ?: 'empty'));
+      throw new \RuntimeException('Failed to submit payload (HTTP ' . $httpCode . '): ' . ($response ?: 'Empty response'));
     }
 
     /**
@@ -235,9 +245,11 @@ class NostrLand
   private function calculateActivationTimeSeconds(): int
   {
     $planUntilDate = $this->account->getAccountPlanUntilDate();
+    error_log('[NostrLand] calculateActivationTimeSeconds planUntilDate=' . ($planUntilDate ?? 'NULL'));
     
     // Check if user has existing NostrLand subscription
     if ($this->account->hasNlSubActivation()) {
+      error_log('[NostrLand] calculateActivationTimeSeconds existing activation found');
       $subscriptionInfo = $this->getSubscriptionInfo();
       
       // Calculate our activation end date using executed_at + time_added
@@ -267,11 +279,15 @@ class NostrLand
         
         return $timeSeconds;
       }
+    } else {
+      error_log('[NostrLand] calculateActivationTimeSeconds no existing activation, new activation');
     }
     
     // Default: calculate from now to plan end (for new activations)
     error_log('[NostrLand] calculateActivationTimeSeconds from now to plan end: ' . $planUntilDate);
-    return $this->convertEndDateToSeconds($planUntilDate);
+    $timeSeconds = $this->convertEndDateToSeconds($planUntilDate);
+    error_log('[NostrLand] calculateActivationTimeSeconds calculated timeSeconds=' . $timeSeconds);
+    return $timeSeconds;
   }
 
   /**
