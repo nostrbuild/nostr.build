@@ -226,6 +226,55 @@ class NostrLand
   }
 
   /**
+   * Calculate time duration for NostrLand activation considering existing subscription
+   * If user has existing NostrLand subscription, calculate from when it expires
+   * Otherwise, calculate from now
+   *
+   * @return int Time in seconds to add to NostrLand subscription
+   */
+  private function calculateActivationTimeSeconds(): int
+  {
+    $planUntilDate = $this->account->getAccountPlanUntilDate();
+    
+    // Check if user has existing NostrLand subscription
+    if ($this->account->hasNlSubActivation()) {
+      $subscriptionInfo = $this->getSubscriptionInfo();
+      
+      // Calculate our activation end date using executed_at + time_added
+      if ($subscriptionInfo && 
+          isset($subscriptionInfo['activated_at']) && 
+          isset($subscriptionInfo['time_added_seconds'])) {
+        
+        $lastExecutedAt = $subscriptionInfo['activated_at'];
+        $lastTimeAdded = $subscriptionInfo['time_added_seconds'];
+        
+        // Calculate when OUR activation expires (not the total tier end)
+        $ourActivationEndTimestamp = strtotime($lastExecutedAt) + $lastTimeAdded;
+        $ourActivationEndDate = date('Y-m-d H:i:s', $ourActivationEndTimestamp);
+        
+        error_log('[NostrLand] calculateActivationTimeSeconds from our activation end: ' . $ourActivationEndDate . ' to plan end: ' . $planUntilDate);
+        
+        $planEndTimestamp = strtotime($planUntilDate);
+        
+        // Calculate seconds from our activation end to plan end
+        $timeSeconds = max(0, $planEndTimestamp - $ourActivationEndTimestamp);
+        
+        // If our activation already extends beyond plan end, no additional time needed
+        if ($timeSeconds <= 0) {
+          error_log('[NostrLand] calculateActivationTimeSeconds our activation already extends beyond plan');
+          return 0;
+        }
+        
+        return $timeSeconds;
+      }
+    }
+    
+    // Default: calculate from now to plan end (for new activations)
+    error_log('[NostrLand] calculateActivationTimeSeconds from now to plan end: ' . $planUntilDate);
+    return $this->convertEndDateToSeconds($planUntilDate);
+  }
+
+  /**
    * Activate NostrLand Plus subscription for the user
    * Checks eligibility first, then performs activation and updates account
    *
@@ -251,12 +300,11 @@ class NostrLand
       return null;
     }
 
-    // Calculate time from now until plan_until_date
-    $planUntilDate = $this->account->getAccountPlanUntilDate();
-    $timeSeconds = $this->convertEndDateToSeconds($planUntilDate);
+    // Calculate time duration considering existing subscription
+    $timeSeconds = $this->calculateActivationTimeSeconds();
 
     if ($timeSeconds <= 0) {
-      error_log('[NostrLand] activateSubscription plan already expired');
+      error_log('[NostrLand] activateSubscription no additional time needed');
       return null;
     }
 
