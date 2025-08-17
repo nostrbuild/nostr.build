@@ -562,22 +562,25 @@ onDropCB(event) {
 																	</svg>
 																</a>
 															</template>
-															<!-- Show days remaining if activated -->
-															<template x-if="profileStore.profileInfo.hasNostrLandPlus">
-																<div class="text-sm font-medium text-purple-300" 
-																	x-text="Math.ceil((new Date(profileStore.profileInfo.nostrLandExpiresAt) - new Date()) / (1000 * 60 * 60 * 24)) + ' days'">
-																</div>
-															</template>
 														</div>
 													</div>
 													<!-- Show subscription details if activated -->
 													<template x-if="profileStore.profileInfo.hasNostrLandPlus">
-														<div class="mt-1 text-xs text-purple-400" 
-															x-text="'Active until ' + new Date(profileStore.profileInfo.nostrLandExpiresAt).toLocaleDateString()">
+														<div class="mt-1 flex items-center justify-between text-xs text-purple-400">
+															<span x-text="'Active until ' + new Date(profileStore.profileInfo.nostrLandExpiresAt).toLocaleDateString()"></span>
+															<span class="text-purple-300 font-medium" 
+																x-text="Math.ceil((new Date(profileStore.profileInfo.nostrLandExpiresAt) - new Date()) / (1000 * 60 * 60 * 24)) + ' days'">
+															</span>
 														</div>
 													</template>
 												</li>
 												<!-- /NostrLand Plus Widget -->
+												
+												<!-- Separator -->
+												<li x-cloak x-show="profileStore.profileInfo.nlSubEligible">
+													<div class="border-t border-purple-300/20 my-2"></div>
+												</li>
+												
 												<!-- Storage Usage Widget -->
 												<li>
 													<div class="flex items-center justify-between">
