@@ -21,7 +21,7 @@ $perm = new Permission();
   <meta name="description" content="A complete and detailed list of nostr.build features with images supporting the nostr social media platform. nostr.build is a cloud media hosting service that is paid in bitcoin and lightning and hosts user images to share." />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-  <link rel="stylesheet" href="/styles/twbuild.css?v=b18e00cc8f719fc192928a72156ac258" />
+  <link rel="stylesheet" href="/styles/twbuild.css?v=4cc655f6c144a14a70db7e14a1b77d06" />
   <link rel="stylesheet" href="/styles/index.css?v=16013407201d48c976a65d9ea88a77a3" />
   <link rel="stylesheet" href="/styles/header.css?v=19cde718a50bd676387bbe7e9e24c639" />
   <link rel="icon" href="https://cdn.nostr.build/assets/01.png" />
@@ -442,6 +442,13 @@ $perm = new Permission();
               <div class="flex items-start gap-3">
                 <div class="w-6 h-6 bg-[#f78533] rounded-full flex-shrink-0 mt-1"></div>
                 <div>
+                  <p class="text-white font-medium">nostr.land Plus Access</p>
+                  <p class="text-[#d0bed8] text-sm">Premium Nostr relay service</p>
+                </div>
+              </div>
+              <div class="flex items-start gap-3">
+                <div class="w-6 h-6 bg-[#f78533] rounded-full flex-shrink-0 mt-1"></div>
+                <div>
                   <p class="text-white font-medium">Enhanced Analytics</p>
                   <p class="text-[#d0bed8] text-sm">Detailed creator insights</p>
                 </div>
@@ -469,6 +476,13 @@ $perm = new Permission();
                 <div>
                   <p class="text-white font-medium">Maximum AI Credits</p>
                   <p class="text-[#d0bed8] text-sm">Unlimited creative possibilities</p>
+                </div>
+              </div>
+              <div class="flex items-start gap-3">
+                <div class="w-6 h-6 bg-[#dabd55] rounded-full flex-shrink-0 mt-1"></div>
+                <div>
+                  <p class="text-white font-medium">nostr.land Plus Access</p>
+                  <p class="text-[#d0bed8] text-sm">Premium Nostr relay service</p>
                 </div>
               </div>
               <div class="flex items-start gap-3">
@@ -928,6 +942,81 @@ $perm = new Permission();
                 <source src="https://cdn.nostr.build/assets/images/creators11.mp4" type="video/mp4">
                 Your browser does not support the video tag.
               </video>
+            </div>
+          </div>
+        </div>
+
+        <!-- nostr.land Plus Integration Feature -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center mb-20">
+          <div class="scroll-reveal lg:order-2">
+            <h3 class="text-4xl font-bold gradient-text mb-6">nostr.land Plus Integration</h3>
+            <div class="inline-block px-3 py-1 bg-gradient-to-r from-[#d251d5] to-[#f78533] text-white text-sm font-semibold rounded-full mb-4">
+              Creator & Advanced Plans
+            </div>
+            <p class="text-xl text-[#d0bed8] mb-8 leading-relaxed">
+              Get premium access to nostr.land, the leading Nostr relay service. Think of it as upgrading your internet connection for Nostr - faster loading, better reliability, and enhanced privacy.
+            </p>
+            <div class="space-y-4">
+              <div class="flex items-center">
+                <span class="text-[#6366f1] mr-3">✓</span>
+                <span class="text-[#d0bed8]">Lightning-fast post loading</span>
+              </div>
+              <div class="flex items-center">
+                <span class="text-[#6366f1] mr-3">✓</span>
+                <span class="text-[#d0bed8]">Never miss posts from people you follow</span>
+              </div>
+              <div class="flex items-center">
+                <span class="text-[#6366f1] mr-3">✓</span>
+                <span class="text-[#d0bed8]">Spam-filtered clean experience</span>
+              </div>
+              <div class="flex items-center">
+                <span class="text-[#6366f1] mr-3">✓</span>
+                <span class="text-[#d0bed8]">Save mobile data with smart relay</span>
+              </div>
+              <div class="flex items-center">
+                <span class="text-[#6366f1] mr-3">✓</span>
+                <span class="text-[#d0bed8]">Enhanced privacy protection</span>
+              </div>
+            </div>
+            <div class="mt-8">
+              <a href="https://nostr.land" target="_blank" class="inline-flex items-center px-6 py-3 bg-gradient-to-r from-[#6366f1] to-[#8b5cf6] text-white font-semibold rounded-lg hover:from-[#5856eb] hover:to-[#7c3aed] transition-all duration-300">
+                Learn more about nostr.land
+                <svg class="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
+                </svg>
+              </a>
+            </div>
+          </div>
+          <div class="scroll-reveal lg:order-1">
+            <div class="bg-gradient-to-br from-[#292556] to-[#1e1530] rounded-2xl p-8 border border-[#392f73] relative overflow-hidden">
+              <!-- Router/Network Icon Background -->
+              <div class="absolute top-4 right-4 opacity-20">
+                <svg xmlns="http://www.w3.org/2000/svg" width="120" height="120" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="text-[#6366f1]">
+                  <rect width="20" height="8" x="2" y="14" rx="2"/>
+                  <path d="M6.01 18H6"/>
+                  <path d="M10.01 18H10"/>
+                  <path d="M15 10v4"/>
+                  <path d="M17.84 7.17a4 4 0 0 0-5.66 0"/>
+                  <path d="M20.66 4.34a8 8 0 0 0-11.31 0"/>
+                </svg>
+              </div>
+              <!-- Content -->
+              <div class="relative z-10">
+                <h4 class="text-2xl font-bold text-white mb-4">Premium Nostr Experience</h4>
+                <p class="text-[#d0bed8] mb-6">
+                  Get the best possible Nostr experience with professional relay infrastructure that just works.
+                </p>
+                <div class="grid grid-cols-2 gap-4">
+                  <div class="text-center">
+                    <div class="text-3xl font-bold text-[#6366f1] mb-2">99.9%</div>
+                    <div class="text-sm text-[#d0bed8]">Uptime</div>
+                  </div>
+                  <div class="text-center">
+                    <div class="text-3xl font-bold text-[#6366f1] mb-2">< 100ms</div>
+                    <div class="text-sm text-[#d0bed8]">Response</div>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
