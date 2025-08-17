@@ -882,6 +882,8 @@ Alpine.store('profileStore', {
         if (data.accountData) {
           this.updateProfileInfoFromData(data.accountData);
         }
+        // Refresh profile info to ensure all data is current
+        this.refreshProfileInfo();
         alert('NostrLand Plus activated successfully! 🎉');
         this.closeNlActivationModal();
       }
