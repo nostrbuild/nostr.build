@@ -33,6 +33,9 @@ desc users;
 | default_folder         | varchar(255) | YES  |     | NULL              |                   |
 | addon_storage          | bigint       | YES  |     | 0                 |                   |
 | referral_code          | varchar(14)  | YES  | UNI | NULL              |                   |
+| nl_sub_activated_date  | datetime     | YES  |     | NULL              |                   |
+| nl_sub_activation_id   | varchar(255) | YES  |     | NULL              |                   |
+| nl_sub_activation_return_value | json | YES  |     | NULL              |                   |
 +------------------------+--------------+------+-----+-------------------+-------------------+
 
  desc users_images;
@@ -601,6 +604,9 @@ class Account
    * @param int|null $allow_npub_login
    * @param string|null $subscription_period
    * @param string|null $default_folder
+   * @param string|null $nl_sub_activated_date
+   * @param string|null $nl_sub_activation_id
+   * @param array|null $nl_sub_activation_return_value
    * @throws \Exception
    * @return void
    */
@@ -620,7 +626,10 @@ class Account
     ?int $npub_verified = null,
     ?int $allow_npub_login = null,
     ?string $subscription_period = null,
-    ?string $default_folder = null
+    ?string $default_folder = null,
+    ?string $nl_sub_activated_date = null,
+    ?string $nl_sub_activation_id = null,
+    ?array $nl_sub_activation_return_value = null
   ) {
     $updates = [
       'password' => $password,
@@ -638,7 +647,10 @@ class Account
       'npub_verified' => $npub_verified,
       'allow_npub_login' => $allow_npub_login,
       'subscription_period' => $subscription_period,
-      'default_folder' => $default_folder
+      'default_folder' => $default_folder,
+      'nl_sub_activated_date' => $nl_sub_activated_date,
+      'nl_sub_activation_id' => $nl_sub_activation_id,
+      'nl_sub_activation_return_value' => $nl_sub_activation_return_value ? json_encode($nl_sub_activation_return_value) : null
     ];
 
     $sql = "UPDATE users SET ";
@@ -715,6 +727,38 @@ class Account
     } finally {
       $stmt->close();
     }
+  }
+
+  /**
+   * Is Account NostrLand Plus Subscription eligible?
+   * @return bool
+   */
+  public function isAccountNostrLandPlusEligible(): bool
+  {
+    // Account has to have at least 30 days remaining
+    $remainingDays = $this->getRemainingSubscriptionDays();
+
+    return $remainingDays >= 30 && (
+           $this->getAccountLevel() === AccountLevel::Creator ||
+           $this->getAccountLevel() === AccountLevel::Advanced ||
+           $this->getAccountLevel() === AccountLevel::Admin);
+  }
+  /**
+   * Get account plan until date
+   * @return string|null
+   */
+  public function getAccountPlanUntilDate(): ?string
+  {
+    return $this->account['plan_until_date'] ?? null;
+  }
+
+  /**
+   * Get account numeric id
+   * @return int|null
+   */
+  public function getAccountNumericId(): ?int
+  {
+    return $this->account['id'] ?? null;
   }
 
   /**
@@ -896,6 +940,95 @@ class Account
   }
 
   /**
+   * Get NostrLand subscription activated date
+   * @return string|null
+   */
+  public function getNlSubActivatedDate(): ?string
+  {
+    return $this->account['nl_sub_activated_date'] ?? null;
+  }
+
+  /**
+   * Get NostrLand subscription activation ID
+   * @return string|null
+   */
+  public function getNlSubActivationId(): ?string
+  {
+    return $this->account['nl_sub_activation_id'] ?? null;
+  }
+
+  /**
+   * Get NostrLand subscription activation return value
+   * @return array|null
+   */
+  public function getNlSubActivationReturnValue(): ?array
+  {
+    $value = $this->account['nl_sub_activation_return_value'] ?? null;
+    if ($value === null) {
+      return null;
+    }
+    return json_decode($value, true);
+  }
+
+  /**
+   * Set NostrLand subscription activation data
+   * @param string $activationId
+   * @param array $returnValue
+   * @return void
+   */
+  public function setNlSubActivation(string $activationId, array $returnValue): void
+  {
+    $this->updateAccount(
+      nl_sub_activated_date: date('Y-m-d H:i:s'),
+      nl_sub_activation_id: $activationId,
+      nl_sub_activation_return_value: $returnValue
+    );
+  }
+
+  /**
+   * Check if NostrLand subscription has been activated for current plan
+   * @return bool
+   */
+  public function hasNlSubActivation(): bool
+  {
+    return !empty($this->account['nl_sub_activation_id']);
+  }
+
+  /**
+   * Get parsed NostrLand subscription information
+   *
+   * @return array|null Parsed subscription info or null if no activation
+   */
+  public function getNlSubInfo(): ?array
+  {
+    if (!$this->hasNlSubActivation()) {
+      return null;
+    }
+
+    try {
+      require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/NostrLand.class.php';
+      $nostrLand = new NostrLand($this->npub, $this->db);
+      return $nostrLand->getSubscriptionInfo();
+    } catch (Exception $e) {
+      error_log("Failed to get NostrLand subscription info for npub: " . $this->npub . " - " . $e->getMessage());
+      return null;
+    }
+  }
+
+  /**
+   * Clear NostrLand subscription activation data (for testing or reset)
+   * @return void
+   */
+  public function clearNlSubActivation(): void
+  {
+    $this->updateAccount(
+      nl_sub_activated_date: null,
+      nl_sub_activation_id: null,
+      nl_sub_activation_return_value: null
+    );
+  }
+
+  /**
    * Summary of setPlan
    * @param int $planLevel
    * @param string $period
@@ -905,22 +1038,78 @@ class Account
    */
   public function setPlan(int $planLevel, string $period = '1y', bool $new = true): void
   {
+    // Refresh account data to ensure we have latest DB state for deterministic calculations
+    $this->fetchAccountData();
+    
     $safeRenewDays = 181; // 180 days + 1 day buffer
     error_log("Setting plan level: $planLevel, period: $period, new: " . ($new ? 'true' : 'false') . PHP_EOL);
 
-    // Validate period
+    // Validate and sanitize period input
     if (!in_array($period, ['1y', '2y', '3y'])) {
       $period = '1y';
     }
 
-    // Check renewal restriction
+    // Prevent renewal if too much time remaining (business rule enforcement)
     if ($new === false && $this->getRemainingSubscriptionDays() > $safeRenewDays) {
       error_log("Cannot renew plan when remaining subscription days is more than {$safeRenewDays} days, current remaining days: " .
         $this->getRemainingSubscriptionDays() . " days for npub: " . $this->npub);
       return;
     }
 
-    if ($new) {
+    // Calculate what the plan should be to check if already applied (idempotent behavior)
+    $hasExistingPlan = !empty($this->account['plan_until_date']);
+    
+    // For deterministic behavior: treat as renewal if plan already exists, regardless of $new parameter
+    $isActuallyNew = $new && !$hasExistingPlan;
+    $isExpiredPlan = $this->isExpired();
+    
+    $expectedStartDate = ($isActuallyNew || $isExpiredPlan) ? date('Y-m-d') : $this->account['plan_start_date'];
+    
+    // For deterministic end date calculation, use a consistent base date
+    if ($isActuallyNew || $isExpiredPlan) {
+      $baseDate = date('Y-m-d');
+    } else {
+      // For renewals of active plans: calculate from original plan end date to maintain consistency
+      $baseDate = $this->account['plan_until_date'];
+    }
+    
+    // Convert period to date interval string
+    $periodDuration = match ($period) {
+      '1y' => '+1 year',
+      '2y' => '+2 years',
+      '3y' => '+3 years',
+      default => '+1 year',
+    };
+    
+    $expectedEndDate = date('Y-m-d', strtotime($baseDate . ' ' . $periodDuration));
+    
+    // Check if plan already matches expected state (idempotent check)
+    $currentLevel = $this->account['acctlevel'] ?? 0;
+    $currentPeriod = $this->account['subscription_period'] ?? '1y';
+    $currentEndDate = $this->account['plan_until_date'] ?? null;
+    $currentStartDate = $this->account['plan_start_date'] ?? null;
+    
+    // For truly new accounts, expired renewals, or if plan matches exactly what we would set
+    if ($currentLevel == $planLevel && $currentPeriod == $period && 
+        (($isActuallyNew && $currentEndDate !== null) || 
+         ($isExpiredPlan && $currentEndDate == $expectedEndDate && $currentStartDate == $expectedStartDate) ||
+         (!$isActuallyNew && !$isExpiredPlan && $currentEndDate == $expectedEndDate))) {
+      error_log("Plan already set to expected state - skipping update (idempotent behavior) for npub: " . $this->npub);
+      return;
+    }
+
+    // Proceed with update since plan doesn't match expected state
+    $planStartDate = $expectedStartDate;
+    $planEndDate = $expectedEndDate;
+
+    // Fallback if date calculation fails (edge case protection)
+    if ($planEndDate === false) {
+      error_log("Warning: Invalid date calculation for npub: " . $this->npub);
+      $planEndDate = date('Y-m-d', strtotime(date('Y-m-d') . ' ' . $periodDuration));
+    }
+
+    // Build SQL query with conditional WHERE clause for renewals  
+    if ($isActuallyNew) {
       $sql = "UPDATE users SET acctlevel = ?, plan_start_date = ?, plan_until_date = ?, subscription_period = ? WHERE usernpub = ?";
     } else {
       $sql = "UPDATE users SET acctlevel = ?, plan_start_date = ?, plan_until_date = ?, subscription_period = ? " .
@@ -933,38 +1122,12 @@ class Account
     }
 
     try {
-      if ($new || $this->isExpired()) {
-        $planStartDate = date('Y-m-d');
-        error_log("Setting plan start date to current date: $planStartDate" . PHP_EOL);
-      } else {
-        $planStartDate = $this->account['plan_start_date'];
-        error_log("Setting plan start date to existing plan start date: $planStartDate" . PHP_EOL);
-      }
-
       error_log("Account data: " . print_r($this->account, true));
-
-      $periodDuration = match ($period) {
-        '1y' => '+1 year',
-        '2y' => '+2 years',
-        '3y' => '+3 years',
-        default => '+1 year',
-      };
-
-      $_planStartDate = $new ? date('Y-m-d') : $this->account['plan_until_date'];
-      $planEndDate = date('Y-m-d', strtotime($_planStartDate . ' ' . $periodDuration));
-
       error_log("Plan start date: $planStartDate, Plan end date: $planEndDate" . PHP_EOL);
-
-      if ($planEndDate === false) {
-        error_log("Warning: Invalid date calculation for npub: " . $this->npub);
-        $planEndDate = date('Y-m-d', strtotime(date('Y-m-d') . ' ' . $periodDuration));
-      }
 
       if (!$stmt->bind_param('issss', $planLevel, $planStartDate, $planEndDate, $period, $this->npub)) {
         throw new Exception("Error binding parameters: " . $stmt->error);
-      }
-
-      if (!$stmt->execute()) {
+      }      if (!$stmt->execute()) {
         throw new Exception("Error executing statement: " . $stmt->error);
       }
 
@@ -972,6 +1135,23 @@ class Account
         error_log("Notice: No rows updated for npub: " . $this->npub .
           ", new: " . ($new ? 'true' : 'false') .
           ", remaining days: " . $this->getRemainingSubscriptionDays());
+      } else {
+        // Refresh local account data after successful DB update to maintain consistency
+        $this->fetchAccountData();
+        
+        // Trigger NostrLand renewal activation if eligible and previously activated
+        if (!$isActuallyNew) { // Only for renewals, not new accounts
+          try {
+            require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/NostrLand.class.php';
+            $nostrLand = new NostrLand($this->npub, $this->db);
+            $activationResult = $nostrLand->handlePlanRenewal();
+            if ($activationResult !== null) {
+              error_log("NostrLand renewal activation successful for npub: " . $this->npub);
+            }
+          } catch (Exception $e) {
+            error_log("NostrLand renewal activation failed for npub: " . $this->npub . " - " . $e->getMessage());
+          }
+        }
       }
     } finally {
       $stmt->close();
@@ -1161,6 +1341,13 @@ class Account
     $accountInfo['storage_space_limit'] = $this->getStorageSpaceLimit();
     // Add remaining subscription days
     $accountInfo['remaining_subscription_days'] = $this->getRemainingSubscriptionDays();
+    // Add NostrLand eligibility and activation status
+    $accountInfo['nl_sub_eligible'] = $this->isAccountNostrLandPlusEligible();
+    $accountInfo['nl_sub_activated'] = $accountInfo['nl_sub_eligible'] && $this->hasNlSubActivation();
+    // Add detailed NostrLand subscription info if activated and eligible
+    if ($accountInfo['nl_sub_activated']) {
+      $accountInfo['nl_sub_info'] = $this->getNlSubInfo();
+    }
     return $accountInfo;
   }
 }

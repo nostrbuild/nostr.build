@@ -520,7 +520,7 @@ function getAccountData(): array
 	if (is_null($account)) {
 		$account = new Account($_SESSION['usernpub'], $link);
 	}
-	$info = $account->getAccount();
+	$info = $account->getAccountInfo(); // Use getAccountInfo() instead of getAccount() to get enhanced data
 	$credits = getSDUserCredits();
 	$data = [
 		"userId" => $info['id'],
@@ -533,14 +533,17 @@ function getAccountData(): array
 		"npubVerified" => $info['npub_verified'],
 		"accountLevel" => $info['acctlevel'],
 		"accountFlags" => $info['accflags'],
-		"remainingDays" => $account->getRemainingSubscriptionDays(),
-		"storageUsed" => $account->getUsedStorageSpace(),
-		"storageLimit" => $account->getStorageSpaceLimit(),
-		"totalStorageLimit" => $account->getStorageSpaceLimit() === PHP_INT_MAX ? "Unlimited" : formatSizeUnits($account->getStorageSpaceLimit()),
+		"remainingDays" => $info['remaining_subscription_days'],
+		"storageUsed" => $info['used_storage_space'],
+		"storageLimit" => $info['storage_space_limit'],
+		"totalStorageLimit" => $info['storage_space_limit'] === PHP_INT_MAX ? "Unlimited" : formatSizeUnits($info['storage_space_limit']),
 		"availableCredits" => $credits['available'],
 		"debitedCredits" => $credits['debited'] ?? 0,
 		"creditedCredits" => $credits['credited'] ?? 0,
-		"referralCode" => $account->getAccountReferralCode()
+		"referralCode" => $account->getAccountReferralCode(),
+		"nlSubEligible" => $info['nl_sub_eligible'] ?? false,
+		"nlSubActivated" => $info['nl_sub_activated'] ?? false,
+		"nlSubInfo" => $info['nl_sub_info'] ?? null
 	];
 	return $data;
 }
@@ -1227,6 +1230,48 @@ if (isset($_GET["action"])) {
 			http_response_code(500);
 			echo json_encode(array("error" => "Failed to upload video poster"));
 			exit;
+		}
+	} elseif ($_POST['action'] === 'activate_nostrland_plus') {
+		error_log("Activating NostrLand Plus subscription");
+		
+		// Check if account is eligible for NostrLand Plus
+		if (!$account->isAccountNostrLandPlusEligible()) {
+			http_response_code(403);
+			echo json_encode(array("error" => "Account is not eligible for NostrLand Plus"));
+			exit;
+		}
+
+		// Check if already activated
+		if ($account->hasNlSubActivation()) {
+			http_response_code(400);
+			echo json_encode(array("error" => "NostrLand Plus is already activated"));
+			exit;
+		}
+
+		try {
+			require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/NostrLand.class.php';
+			$nostrLand = new NostrLand($_SESSION['usernpub'], $link);
+			$result = $nostrLand->activateSubscription();
+			
+			if ($result === null) {
+				http_response_code(400);
+				echo json_encode(array("error" => "Unable to activate NostrLand Plus. Please try again later."));
+				exit;
+			}
+
+			// Refresh account data to get updated info
+			$refreshedData = getAccountData();
+			
+			http_response_code(200);
+			echo json_encode(array(
+				"success" => true,
+				"message" => "NostrLand Plus activated successfully!",
+				"accountData" => $refreshedData
+			));
+		} catch (Exception $e) {
+			error_log("NostrLand activation failed: " . $e->getMessage());
+			http_response_code(500);
+			echo json_encode(array("error" => "Failed to activate NostrLand Plus: " . $e->getMessage()));
 		}
 	} else {
 		http_response_code(400);

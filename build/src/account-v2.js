@@ -451,6 +451,9 @@ Alpine.store('profileStore', {
     debitedCredits: 0,
     creditedCredits: 0,
     referralCode: '',
+    nlSubEligible: false,
+    nlSubActivated: false,
+    nlSubInfo: null,
     get creatorPageLink() {
       return `https://${window.location.hostname}/creators/creator/?user=${this.userId}`;
     },
@@ -459,6 +462,15 @@ Alpine.store('profileStore', {
     },
     get storageOverLimit() {
       return this.storageRemaining <= 0;
+    },
+    get hasNostrLandPlus() {
+      return this.nlSubEligible && this.nlSubActivated && this.nlSubInfo && this.nlSubInfo.tier === 'plus';
+    },
+    get canActivateNostrLandPlus() {
+      return this.nlSubEligible && !this.nlSubActivated;
+    },
+    get nostrLandExpiresAt() {
+      return this.nlSubInfo?.tier_ends_at || null;
     },
     get planName() {
       switch (this.accountLevel) {
@@ -638,6 +650,9 @@ Alpine.store('profileStore', {
   dialogError: false,
   dialogErrorMessages: [],
   dialogSuccessMessages: [],
+  // NostrLand Plus activation modal
+  nlActivationModalOpen: false,
+  nlActivationLoading: false,
   isFormUpdated(nym, phpUrl, password) {
     return this.profileInfo.name !== nym || this.profileInfo.pfpUrl !== phpUrl || password;
   },
@@ -833,6 +848,49 @@ Alpine.store('profileStore', {
     this.profileInfo.creditedCredits = data.creditedCredits;
     this.profileInfo.referralCode = data.referralCode;
     this.profileInfo.referralLink = `https://getnb.me/${data.referralCode}`;
+    this.profileInfo.nlSubEligible = data.nlSubEligible || false;
+    this.profileInfo.nlSubActivated = data.nlSubActivated || false;
+    this.profileInfo.nlSubInfo = data.nlSubInfo || null;
+  },
+  // NostrLand Plus activation
+  openNlActivationModal() {
+    this.nlActivationModalOpen = true;
+  },
+  closeNlActivationModal() {
+    this.nlActivationModalOpen = false;
+    this.nlActivationLoading = false;
+  },
+  async activateNostrLandPlus() {
+    this.nlActivationLoading = true;
+    
+    const formData = {
+      action: 'activate_nostrland_plus'
+    };
+    
+    const api = getApiFetcher(apiUrl, 'multipart/form-data');
+    
+    try {
+      const response = await api.post('', formData);
+      const data = response.data;
+      
+      if (data.error) {
+        console.error('Error activating NostrLand Plus:', data);
+        alert('Error: ' + data.error);
+      } else {
+        console.log('NostrLand Plus activated successfully:', data);
+        // Update profile info with refreshed data
+        if (data.accountData) {
+          this.updateProfileInfoFromData(data.accountData);
+        }
+        alert('NostrLand Plus activated successfully! 🎉');
+        this.closeNlActivationModal();
+      }
+    } catch (error) {
+      console.error('Error activating NostrLand Plus:', error);
+      alert('Failed to activate NostrLand Plus. Please try again.');
+    } finally {
+      this.nlActivationLoading = false;
+    }
   },
   // Credits
   async getCreditHistory(type = "all", limit = 100, offset = 0) {
