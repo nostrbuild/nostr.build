@@ -977,6 +977,10 @@ $perm = new Permission();
                 <span class="text-[#6366f1] mr-3">✓</span>
                 <span class="text-[#d0bed8]">Enhanced privacy protection</span>
               </div>
+              <div class="flex items-center">
+                <span class="text-[#6366f1] mr-3">✓</span>
+                <span class="text-[#d0bed8]">nostr.land NIP-05 identity</span>
+              </div>
             </div>
             <div class="mt-8">
               <a href="https://nostr.land" target="_blank" class="inline-flex items-center px-6 py-3 bg-gradient-to-r from-[#6366f1] to-[#8b5cf6] text-white font-semibold rounded-lg hover:from-[#5856eb] hover:to-[#7c3aed] transition-all duration-300">
