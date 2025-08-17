@@ -874,22 +874,22 @@ Alpine.store('profileStore', {
       const data = response.data;
       
       if (data.error) {
-        console.error('Error activating NostrLand Plus:', data);
+        console.error('Error activating nostr.land Plus:', data);
         alert('Error: ' + data.error);
       } else {
-        console.log('NostrLand Plus activated successfully:', data);
+        console.log('nostr.land Plus activated successfully:', data);
         // Update profile info with refreshed data
         if (data.accountData) {
           this.updateProfileInfoFromData(data.accountData);
         }
         // Refresh profile info to ensure all data is current
         this.refreshProfileInfo();
-        alert('NostrLand Plus activated successfully! 🎉');
+        alert('nostr.land Plus activated successfully! 🎉');
         this.closeNlActivationModal();
       }
     } catch (error) {
-      console.error('Error activating NostrLand Plus:', error);
-      alert('Failed to activate NostrLand Plus. Please try again.');
+      console.error('Error activating nostr.land Plus:', error);
+      alert('Failed to activate nostr.land Plus. Please try again.');
     } finally {
       this.nlActivationLoading = false;
     }
