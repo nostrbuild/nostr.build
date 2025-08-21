@@ -55,12 +55,12 @@ SVG;
       Creators
     </a>
     <?php if ($perm->isGuest()) : ?>
-      <a href="/freeview" class="nav_button">
+      <a href="https://gallery.nostr.build/memes" class="nav_button" target="_blank">
         <?= $svg_freeview_icon ?>
         Free View
       </a>
     <?php else : ?>
-      <a href="/viewall" class="nav_button">
+      <a href="https://gallery.nostr.build" class="nav_button" target="_blank">
         <?= $svg_freeview_icon ?>
         View All
       </a>
@@ -114,14 +114,14 @@ SVG;
       Creators
     </a>
     <?php if ($perm->isGuest()) : ?>
-      <a href="/freeview" class="nav_button">
+      <a href="https://gallery.nostr.build/memes" class="nav_button" target="_blank">
         <span>
           <?= $svg_freeview_icon ?>
         </span>
         Free View
       </a>
     <?php else : ?>
-      <a href="/viewall" class="nav_button">
+      <a href="https://gallery.nostr.build" class="nav_button" target="_blank">
         <span>
           <?= $svg_freeview_icon ?>
         </span>
