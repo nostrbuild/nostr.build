@@ -167,7 +167,8 @@ function getAllowedMimesArray(int $acctlevel = 0): array
   } elseif ($acctlevel === 2 /* Pro */) {
     $mimeTypes = array_merge($mimeTypes, $mimeTypesAddonDocs);
   } elseif ($acctlevel === 3 /* Purist */) {
-    $mimeTypes = $mimeTypesImageAndVideoOnly;
+    //$mimeTypes = $mimeTypesImageAndVideoOnly;
+    $mimeTypes = array_merge($mimeTypes, $mimeTypesAddonDocs);
   }
 
   return $mimeTypes;
