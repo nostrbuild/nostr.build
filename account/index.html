@@ -16,10 +16,10 @@
 	<meta name="msapplication-TileColor" content="#9f00a7">
 	<meta name="theme-color" content="#ffffff">
 
-	<script defer src="/scripts/dist/account-v2.js?v=6a9be3e7ad7678605e06fd4261f5776c"></script>
+	<script defer src="/scripts/dist/account-v2.js?v=d7839966fd310d99f667d18fbf4419a0"></script>
 	<link href="/scripts/dist/account-v2.css?v=27ba93e570a70d775737614d6faf6846" rel="stylesheet">
 
-	<link href="/styles/twbuild.css?v=453810f00cd64a242ea914d0da219658" rel="stylesheet">
+	<link href="/styles/twbuild.css?v=416d3fe0e8fe5daa6a9379e0afadc93f" rel="stylesheet">
 
 	<!-- Pre-connect and DNS prefetch -->
 	<link rel="preconnect" href="https://i.nostr.build" crossorigin>
@@ -3374,6 +3374,17 @@ onDropCB(event) {
 													<textarea x-model="nostrStore.share.note" rows="4" name="nostr-comment" id="nostr-comment"
 														class="block w-full rounded-md border-0 py-1.5 bg-nostrpurple-600 text-nostrpurple-50 shadow-sm ring-1 ring-inset ring-nostrpurple-300 placeholder:text-nostrpurple-400 focus:ring-2 focus:ring-inset focus:ring-nostrpurple-600"></textarea>
 												</div>
+												<!-- Kind selection switch -->
+												<div class="mt-3 flex items-center justify-center space-x-3">
+													<span class="text-sm text-nostrpurple-200">Note (Kind 1)</span>
+													<div class="relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-nostrpurple-600 focus:ring-offset-2"
+														:class="nostrStore.share.selectedKind === 1 ? 'bg-nostrpurple-600' : 'bg-nostrpurple-400'"
+														@click="nostrStore.share.selectedKind = nostrStore.share.selectedKind === 1 ? 20 : 1">
+														<span class="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out"
+															:class="nostrStore.share.selectedKind === 1 ? 'translate-x-0' : 'translate-x-5'"></span>
+													</div>
+													<span class="text-sm text-nostrpurple-200">Media (Kind 20/21)</span>
+												</div>
 											</div>
 											<!-- List of selected media -->
 											<div :class="nostrStore.share.selectedFiles.length > 3 ? 'justify-start' : 'justify-center'"
@@ -4450,6 +4461,17 @@ onDropCB(event) {
 																					<textarea x-model="nostrStore.share.note" rows="4" name="nostr-comment"
 																						id="nostr-comment"
 																						class="block w-full rounded-md border-0 py-1.5 bg-nostrpurple-600 text-nostrpurple-50 shadow-sm ring-1 ring-inset ring-nostrpurple-300 placeholder:text-nostrpurple-400 focus:ring-2 focus:ring-inset focus:ring-nostrpurple-600"></textarea>
+																				</div>
+																				<!-- Kind selection switch -->
+																				<div class="mt-3 flex items-center justify-center space-x-3">
+																					<span class="text-sm text-nostrpurple-200">Note (Kind 1)</span>
+																					<div class="relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-nostrpurple-600 focus:ring-offset-2"
+																						:class="nostrStore.share.selectedKind === 1 ? 'bg-nostrpurple-600' : 'bg-nostrpurple-400'"
+																						@click="nostrStore.share.selectedKind = nostrStore.share.selectedKind === 1 ? 20 : 1">
+																						<span class="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out"
+																							:class="nostrStore.share.selectedKind === 1 ? 'translate-x-0' : 'translate-x-5'"></span>
+																					</div>
+																					<span class="text-sm text-nostrpurple-200">Media (Kind 20/21)</span>
 																				</div>
 																			</div>
 																			<!-- Error message -->

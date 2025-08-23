@@ -862,17 +862,17 @@ Alpine.store('profileStore', {
   },
   async activateNostrLandPlus() {
     this.nlActivationLoading = true;
-    
+
     const formData = {
       action: 'activate_nostrland_plus'
     };
-    
+
     const api = getApiFetcher(apiUrl, 'multipart/form-data');
-    
+
     try {
       const response = await api.post('', formData);
       const data = response.data;
-      
+
       if (data.error) {
         console.error('Error activating nostr.land Plus:', data);
         alert('Error: ' + data.error);
@@ -965,6 +965,7 @@ Alpine.store('nostrStore', {
     extNpub: '',
     note: '',
     signedEvent: {},
+    selectedKind: 1,
     getDeduplicatedErrors() {
       return Array.from(new Set(this.isErrorMessages));
     },
@@ -995,6 +996,7 @@ Alpine.store('nostrStore', {
       this.note = '';
       this.signedEvent = {};
       this.isCriticalError = false;
+      // Keep selectedKind persistent across dialog open/close
       // execute callback if provided
       if (this.callback && !dontCallback) {
         this.callback();
@@ -1005,6 +1007,25 @@ Alpine.store('nostrStore', {
     },
     async send(files = [], callback = null) {
       const nostrStore = Alpine.store('nostrStore');
+      console.debug('Sending files:', files);
+
+      // Determine kind based on selectedKind
+      let kind = this.selectedKind;
+      
+      // For kind 20/21, validate and determine exact kind
+      if (this.selectedKind !== 1) {
+        const filesToCheck = files.length > 0 ? files : this.selectedFiles;
+        const isImage = filesToCheck.every(f => f.mime && f.mime.startsWith('image/'));
+        const isVideo = filesToCheck.every(f => f.mime && f.mime.startsWith('video/'));
+        
+        if (!(isImage || isVideo)) {
+          this.isError = true;
+          this.isErrorMessages = ['All files must be images or all must be videos'];
+          this.isLoading = false;
+          return;
+        }
+        kind = isImage ? 20 : 21;
+      }
 
       // If mediaIds and note are not provided, use the selected files and note
       if (files.length > 0) {
@@ -1018,10 +1039,14 @@ Alpine.store('nostrStore', {
       this.isLoading = true;
       this.isError = false;
       this.isErrorMessages = [];
-      // Append file URLs to the note
-      this.selectedFiles.forEach(file => {
-        this.note += `\n${file.url}`;
-      });
+      
+      // For kind 1, append file URLs to the note content
+      // For kind 20/21, the content should only contain description, URLs are in imeta tags
+      if (kind === 1) {
+        this.selectedFiles.forEach(file => {
+          this.note += `\n${file.url}`;
+        });
+      }
       // TODO: Add support to create and manage badges - https://github.com/nostr-protocol/nips/blob/master/58.md
       // TODO: Add event deletion - https://github.com/nostr-protocol/nips/blob/master/09.md
       // Create imeta tags:
@@ -1044,14 +1069,17 @@ Alpine.store('nostrStore', {
           ...imeta,
         ];
       });
-      // TODO: NIP-94 https://github.com/nostr-protocol/nips/blob/master/94.md
-      // Append the URL r tags
-      this.selectedFiles.forEach(file => {
-        tags.push([
-          'r',
-          file.url,
-        ]);
-      });
+      
+      // For kind 1, append the URL r tags (NIP-94)
+      if (kind === 1) {
+        this.selectedFiles.forEach(file => {
+          tags.push([
+            'r',
+            file.url,
+          ]);
+        });
+      }
+      
       // Parse for the hashtags and add them to the tags as 't'
       // Regular expression to match hashtags, excluding those in URLs
       const hashtagRegex = /(?<!\w|#)#([\p{L}\p{N}\p{M}\p{Emoji_Presentation}\p{Emoji}]+)/gu;
@@ -1064,13 +1092,13 @@ Alpine.store('nostrStore', {
       }
 
       const event = {
-        kind: 1,
+        kind: kind,
         created_at: Math.floor(Date.now() / 1000),
         tags: tags,
         content: this.note,
       }
       this.signedEvent = await window.nostr.signEvent(event);
-      //console.debug('Signed event:', this.signedEvent);
+      console.debug('Signed event:', this.signedEvent);
       nostrStore.publishSignedEvent(this.signedEvent, this.selectedIds)
         .then(() => {
           console.debug('Published Nostr event:', this.signedEvent);
@@ -3423,7 +3451,7 @@ Alpine.store('uppyStore', {
     // This prevents brand-check errors on native private fields/methods.
     // Ensure any previous instance is cleaned up if needed.
     if (window.__nbUppy && typeof window.__nbUppy.destroy === 'function') {
-      try { window.__nbUppy.destroy(); } catch (_) {}
+      try { window.__nbUppy.destroy(); } catch (_) { }
     }
     window.__nbUppy = new Uppy({
       debug: false,
@@ -3487,8 +3515,8 @@ Alpine.store('uppyStore', {
         width: '100%',
         height: '100%',
       })
-  .use(Webcam, { target: Dashboard })
-  .use(XHRUpload, {
+      .use(Webcam, { target: Dashboard })
+      .use(XHRUpload, {
         endpoint: '/api/v2/account/files/uppy',
         method: 'post',
         formData: true,
@@ -3505,7 +3533,7 @@ Alpine.store('uppyStore', {
           noTransform: false, // Disable image transformations by the server
         },
       })
-  .use(DropTarget, {
+      .use(DropTarget, {
         target: dropTarget,
         onDragLeave: (event) => {
           if (typeof onDragLeaveCallback === 'function') {
@@ -3523,18 +3551,18 @@ Alpine.store('uppyStore', {
           }
         }
       })
-  .on('upload-success', (file, response) => {
+      .on('upload-success', (file, response) => {
         if (Array.isArray(response.body)) {
           const fileResponse = response.body.find(f => f.id === file.id);
           if (fileResponse) {
-    window.__nbUppy.setFileMeta(file.id, {
+            window.__nbUppy.setFileMeta(file.id, {
               name: fileResponse.name,
               type: fileResponse.type,
               size: fileResponse.size
             });
           }
         } else {
-      window.__nbUppy.setFileMeta(file.id, {
+          window.__nbUppy.setFileMeta(file.id, {
             name: response.body.name,
             type: response.body.type,
             size: response.body.size
@@ -3545,7 +3573,7 @@ Alpine.store('uppyStore', {
         console.debug('Upload result:', response);
         // Set uploadComplete state for the file
         file.progress.uploadComplete = true;
-  //window.__nbUppy.removeFile(file.id);
+        //window.__nbUppy.removeFile(file.id);
         const fd = response.body.fileData;
         console.debug('File uploaded:', fd);
         // Get folderName from uppy file metadata
@@ -3620,7 +3648,7 @@ Alpine.store('uppyStore', {
         }
         console.debug('Folder name', folderName);
         console.debug('Folder hierarchy', folderHierarchy);
-  window.__nbUppy.setFileMeta(file.id, {
+        window.__nbUppy.setFileMeta(file.id, {
           folderName: JSON.stringify(folderName),
           folderHierarchy: JSON.stringify(folderHierarchy),
           noTransform: noTransform,
@@ -3649,7 +3677,7 @@ Alpine.store('uppyStore', {
           fileStore.injectFile(currentFile);
         }
       })
-  .on('upload', (data) => {
+      .on('upload', (data) => {
         console.debug('Upload started:', data);
         this.mainDialog.isLoading = true;
       })
@@ -3808,14 +3836,14 @@ Alpine.store('uppyStore', {
             byteLimit = Math.min(byteLimit, (1024 * 1024 * 450)); // 450MB limit
         }
         note += `, up to your storage limit, and ${formatBytes(byteLimit)} per file`;
-  window.__nbUppy.setOptions({
+        window.__nbUppy.setOptions({
           restrictions: {
             maxFileSize: byteLimit,
             maxTotalFileSize: profileStore.profileInfo.storageRemaining,
             allowedFileTypes: allowedFileTypes,
           },
         });
-  window.__nbUppy.getPlugin('Dashboard').setOptions({
+        window.__nbUppy.getPlugin('Dashboard').setOptions({
           note: note,
         });
       }

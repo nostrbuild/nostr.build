@@ -997,7 +997,7 @@ if (isset($_GET["action"])) {
 			exit;
 		}
 		// Check if account level is eligible to publish Nostr events
-		if (!$perm->validatePermissionsLevelAny(1, 2, 10, 99)) {
+		if (!$perm->validatePermissionsLevelAny(1, 2, 3, 10, 99)) {
 			http_response_code(403);
 			echo json_encode(array("error" => "You do not have permission to publish Nostr events"));
 			$link->close(); // CLOSE MYSQL LINK
@@ -1065,6 +1065,8 @@ if (isset($_GET["action"])) {
 					$stmtDeleteImage->close();
 					break;
 				case 1:
+				case 21:
+				case 20:
 					// Store the Nostr event in the database, or delete it if it is kind 5 (delete)
 					$sql = "INSERT INTO users_nostr_notes (usernpub, note_id, created_at, content, full_json) VALUES (?, ?, FROM_UNIXTIME(?), ?, ?)";
 					$stmt = $link->prepare($sql);
