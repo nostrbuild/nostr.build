@@ -966,6 +966,8 @@ Alpine.store('nostrStore', {
     note: '',
     signedEvent: {},
     selectedKind: 1,
+    isSuccessOpen: false,
+    publishedEventId: '',
     getDeduplicatedErrors() {
       return Array.from(new Set(this.isErrorMessages));
     },
@@ -1002,6 +1004,24 @@ Alpine.store('nostrStore', {
         this.callback();
       }
     },
+    openSuccessModal(eventId) {
+      console.debug('Opening success modal with event ID:', eventId);
+      console.debug('Event ID type:', typeof eventId);
+      console.debug('Event ID length:', eventId?.length);
+      this.publishedEventId = eventId || '';
+      console.debug('Stored publishedEventId:', this.publishedEventId);
+      this.isSuccessOpen = true;
+      console.debug('Success modal isOpen:', this.isSuccessOpen);
+    },
+    closeSuccessModal() {
+      this.isSuccessOpen = false;
+      this.publishedEventId = '';
+      // Execute callback if it exists
+      if (this.callback && typeof this.callback === 'function') {
+        this.callback();
+        this.callback = null;
+      }
+    },
     async isNostrExtensionEnabled() {
       return (await window?.nostr?.getPublicKey()) !== null;
     },
@@ -1035,14 +1055,16 @@ Alpine.store('nostrStore', {
         return;
       }
 
+      // Set callback if provided
+      if (typeof callback === 'function') {
+        this.callback = callback;
+      }
+      
       // If mediaIds and note are not provided, use the selected files and note
       if (files.length > 0) {
         console.debug('Using provided files:', files);
         this.selectedIds = files.map(file => file.id);
         this.selectedFiles = files;
-        if (typeof callback === 'function') {
-          this.callback = callback;
-        }
       }
       this.isLoading = true;
       this.isError = false;
@@ -1115,10 +1137,14 @@ Alpine.store('nostrStore', {
       }
       this.signedEvent = await window.nostr.signEvent(event);
       console.debug('Signed event:', this.signedEvent);
+      console.debug('Event ID from signedEvent:', this.signedEvent?.id);
       nostrStore.publishSignedEvent(this.signedEvent, this.selectedIds)
         .then(() => {
           console.debug('Published Nostr event:', this.signedEvent);
+          const eventId = this.signedEvent?.id;
+          console.debug('About to open success modal with ID:', eventId);
           this.close();
+          this.openSuccessModal(eventId);
         })
         .catch(error => {
           console.error('Error publishing Nostr event:', error);
@@ -2140,6 +2166,9 @@ Alpine.store('fileStore', {
       this.isNostrShareDialogOpen = false;
       const nostrStore = Alpine.store('nostrStore');
       nostrStore.share.close();
+    },
+    closeNostrDialogOnly() {
+      this.isNostrShareDialogOpen = false;
     },
     saveDescription() {
       this.isSavingDescription = true;
