@@ -1067,6 +1067,7 @@ if (isset($_GET["action"])) {
 				case 1:
 				case 21:
 				case 20:
+				case 1222:
 					// Store the Nostr event in the database, or delete it if it is kind 5 (delete)
 					$sql = "INSERT INTO users_nostr_notes (usernpub, note_id, created_at, content, full_json) VALUES (?, ?, FROM_UNIXTIME(?), ?, ?)";
 					$stmt = $link->prepare($sql);

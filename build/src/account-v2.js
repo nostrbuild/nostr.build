@@ -971,6 +971,30 @@ Alpine.store('nostrStore', {
     getDeduplicatedErrors() {
       return Array.from(new Set(this.isErrorMessages));
     },
+    getMediaTypeLabel() {
+      if (this.selectedFiles.length === 0) return 'Media (Kind 20/21/1222)';
+      
+      const isImage = this.selectedFiles.every(f => f.mime && f.mime.startsWith('image/'));
+      const isVideo = this.selectedFiles.every(f => f.mime && f.mime.startsWith('video/'));
+      const isAudio = this.selectedFiles.every(f => f.mime && f.mime.startsWith('audio/'));
+      
+      if (isImage) return 'Images (Kind 20)';
+      if (isVideo) return 'Video (Kind 21)';
+      if (isAudio) return 'Voice (Kind 1222)';
+      
+      return 'Media (Kind 20/21/1222)';
+    },
+    shouldShowKindSwitch() {
+      // Show switch by default when no files are selected
+      if (this.selectedFiles.length === 0) return true;
+      
+      // Show switch only if ALL files are media files (image/video/audio)
+      return this.selectedFiles.every(f => f.mime && (
+        f.mime.startsWith('image/') || 
+        f.mime.startsWith('video/') || 
+        f.mime.startsWith('audio/')
+      ));
+    },
     remove(fileId) {
       this.selectedIds = this.selectedIds.filter(id => id !== fileId);
       this.selectedFiles = this.selectedFiles.filter(file => file.id !== fileId);
@@ -1032,25 +1056,36 @@ Alpine.store('nostrStore', {
       // Determine kind based on selectedKind
       let kind = this.selectedKind;
 
-      // For kind 20/21, validate and determine exact kind
+      // For kind 20/21/1222, validate and determine exact kind
       if (this.selectedKind !== 1) {
         const filesToCheck = files.length > 0 ? files : this.selectedFiles;
         const isImage = filesToCheck.every(f => f.mime && f.mime.startsWith('image/'));
         const isVideo = filesToCheck.every(f => f.mime && f.mime.startsWith('video/'));
-
-        if (!(isImage || isVideo)) {
+        const isAudio = filesToCheck.every(f => f.mime && f.mime.startsWith('audio/'));
+        
+        // Check that all files are media files (image, video, or audio)
+        const hasNonMediaFiles = filesToCheck.some(f => !f.mime || (!f.mime.startsWith('image/') && !f.mime.startsWith('video/') && !f.mime.startsWith('audio/')));
+        
+        if (hasNonMediaFiles) {
           this.isError = true;
-          this.isErrorMessages = ['All files must be images or all must be videos'];
+          this.isErrorMessages = ['Media kinds (20/21/1222) only support image, video, or audio files. Use Note (Kind 1) for other file types.'];
           this.isLoading = false;
           return;
         }
-        kind = isImage ? 20 : 21;
+
+        if (!(isImage || isVideo || isAudio)) {
+          this.isError = true;
+          this.isErrorMessages = ['All files must be images, videos, or audio files'];
+          this.isLoading = false;
+          return;
+        }
+        kind = isImage ? 20 : (isVideo ? 21 : 1222);
       }
 
-      // Return error if kind is 21 and we have more than one file
-      if (kind === 21 && this.selectedFiles.length > 1) {
+      // Return error if kind is 21 or 1222 and we have more than one file
+      if ((kind === 21 || kind === 1222) && this.selectedFiles.length > 1) {
         this.isError = true;
-        this.isErrorMessages = ['Kind 21 does not support multiple files'];
+        this.isErrorMessages = [kind === 21 ? 'Kind 21 does not support multiple files' : 'Kind 1222 (voice messages) does not support multiple files'];
         this.isLoading = false;
         return;
       }
@@ -1072,10 +1107,16 @@ Alpine.store('nostrStore', {
 
       // For kind 1, append file URLs to the note content
       // For kind 20/21, the content should only contain description, URLs are in imeta tags
+      // For kind 1222, the content MUST be the URL directly
       if (kind === 1) {
         this.selectedFiles.forEach(file => {
           this.note += `\n${file.url}`;
         });
+      } else if (kind === 1222) {
+        // For voice messages, content MUST be the URL
+        if (this.selectedFiles.length > 0) {
+          this.note = this.selectedFiles[0].url;
+        }
       }
       // TODO: Add support to create and manage badges - https://github.com/nostr-protocol/nips/blob/master/58.md
       // TODO: Add event deletion - https://github.com/nostr-protocol/nips/blob/master/09.md
