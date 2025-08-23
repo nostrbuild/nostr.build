@@ -13,7 +13,7 @@ use DI\Definition\FactoryDefinition;
 use DI\Definition\InstanceDefinition;
 use DI\Definition\ObjectDefinition;
 use DI\Definition\SelfResolvingDefinition;
-use DI\Proxy\ProxyFactory;
+use DI\Proxy\ProxyFactoryInterface;
 use Psr\Container\ContainerInterface;
 
 /**
@@ -37,7 +37,7 @@ class ResolverDispatcher implements DefinitionResolver
 
     public function __construct(
         private ContainerInterface $container,
-        private ProxyFactory $proxyFactory,
+        private ProxyFactoryInterface $proxyFactory,
     ) {
     }
 

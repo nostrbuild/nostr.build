@@ -7,6 +7,7 @@ import XHRUpload from '@uppy/xhr-upload';
 //import ImageEditor from '@uppy/image-editor';
 import Webcam from '@uppy/webcam';
 import DropTarget from '@uppy/drop-target';
+import AwsS3 from '@uppy/aws-s3';
 
 
 import '@uppy/core/dist/style.min.css';
