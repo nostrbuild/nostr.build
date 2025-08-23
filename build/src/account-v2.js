@@ -1011,13 +1011,13 @@ Alpine.store('nostrStore', {
 
       // Determine kind based on selectedKind
       let kind = this.selectedKind;
-      
+
       // For kind 20/21, validate and determine exact kind
       if (this.selectedKind !== 1) {
         const filesToCheck = files.length > 0 ? files : this.selectedFiles;
         const isImage = filesToCheck.every(f => f.mime && f.mime.startsWith('image/'));
         const isVideo = filesToCheck.every(f => f.mime && f.mime.startsWith('video/'));
-        
+
         if (!(isImage || isVideo)) {
           this.isError = true;
           this.isErrorMessages = ['All files must be images or all must be videos'];
@@ -1025,6 +1025,14 @@ Alpine.store('nostrStore', {
           return;
         }
         kind = isImage ? 20 : 21;
+      }
+
+      // Return error if kind is 21 and we have more than one file
+      if (kind === 21 && this.selectedFiles.length > 1) {
+        this.isError = true;
+        this.isErrorMessages = ['Kind 21 does not support multiple files'];
+        this.isLoading = false;
+        return;
       }
 
       // If mediaIds and note are not provided, use the selected files and note
@@ -1039,7 +1047,7 @@ Alpine.store('nostrStore', {
       this.isLoading = true;
       this.isError = false;
       this.isErrorMessages = [];
-      
+
       // For kind 1, append file URLs to the note content
       // For kind 20/21, the content should only contain description, URLs are in imeta tags
       if (kind === 1) {
@@ -1069,9 +1077,16 @@ Alpine.store('nostrStore', {
           ...imeta,
         ];
       });
-      
+      // If the kind is 21 we need to add title and published_at to the tags
+      if (kind === 21) {
+        this.selectedFiles.forEach(file => {
+          tags.unshift([`published_at`, `${Math.floor(Date.now() / 1000)}`]);
+          tags.unshift([`title`, `${file.title}`]);
+        });
+      }
+
       // For kind 1, append the URL r tags (NIP-94)
-      if (kind === 1) {
+      if (kind === 1 || kind === 21) {
         this.selectedFiles.forEach(file => {
           tags.push([
             'r',
@@ -1079,7 +1094,8 @@ Alpine.store('nostrStore', {
           ]);
         });
       }
-      
+
+
       // Parse for the hashtags and add them to the tags as 't'
       // Regular expression to match hashtags, excluding those in URLs
       const hashtagRegex = /(?<!\w|#)#([\p{L}\p{N}\p{M}\p{Emoji_Presentation}\p{Emoji}]+)/gu;
