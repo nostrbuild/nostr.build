@@ -3612,7 +3612,7 @@ Alpine.store('uppyStore', {
           // Retry on 5xx errors
           return xhr.status >= 500 && xhr.status !== 504 && xhr.status < 600;
         },
-        timeout: 60, // LB timeout
+        timeout: 60 * 1000, // LB timeout
         meta: {
           folderName: '', // Initialize folderName metadata
           folderHierarchy: [], // Initialize folderHierarchy metadata

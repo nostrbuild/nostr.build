@@ -38,7 +38,7 @@
     "@types/alpinejs": "^3.13.11",
     "autoprefixer": "^10.4.21",
     "buffer": "^6.0.3",
-    "cssnano": "^7.1.0",
+    "cssnano": "^7.1.1",
     "esbuild": "0.25.9",
     "parcel": "2.12.0",
     "postcss": "^8.5.6",
