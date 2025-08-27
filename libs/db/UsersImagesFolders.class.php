@@ -237,4 +237,18 @@ class UsersImagesFolders extends DatabaseTable
     // Return the ID of the last folder
     return $folderId;
   }
+
+  public function getFolderNameById(string $usernpub, ?int $folderId): string
+  {
+    if ($folderId === null) {
+      return 'Home: Main Folder';
+    }
+    $stmt = $this->db->prepare("SELECT folder FROM {$this->tableName} WHERE usernpub = ? AND id = ?");
+    $stmt->bind_param("si", $usernpub, $folderId);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $data = $result->fetch_assoc();
+    $stmt->close();
+    return $data ? $data['folder'] : 'Unknown Folder';
+  }
 }

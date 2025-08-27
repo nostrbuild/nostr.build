@@ -114,7 +114,9 @@ class CloudflareUploadWebhook
         throw new Exception("HTTP request failed with code $httpCode: $response");
       }
 
-      return json_decode($response, true) ?? [];
+      $res = json_decode($response, true) ?? [];
+      error_log("Response from webhook: " . json_encode($res, JSON_UNESCAPED_SLASHES) . "\n");
+      return $res;
     } catch (Exception $e) {
       error_log("An error occurred: " . $e->getMessage() . "\n");
       return [];

@@ -44,7 +44,15 @@ class S3Service
       error_log("R2 credentials are not set in the config file.\n");
     }
 
-    $this->r2 = new S3Client($awsConfig['r2']);
+    // Configure R2 with AWS SDK retry configuration for better reliability
+    $r2ConfigWithRetries = array_merge($awsConfig['r2'], [
+      'retries' => [
+        'mode' => 'adaptive',
+        'max_attempts' => 10
+      ]
+    ]);
+
+    $this->r2 = new S3Client($r2ConfigWithRetries);
     $this->r2bucket = $awsConfig['r2']['bucket'];
 
     // If E2 credentials are not defined, stop the function
@@ -57,7 +65,15 @@ class S3Service
       error_log("E2 credentials are not set in the config file.\n");
     }
 
-    $this->e2 = new S3Client($awsConfig['e2']);
+    // Configure E2 with AWS SDK retry configuration for better reliability
+    $e2ConfigWithRetries = array_merge($awsConfig['e2'], [
+      'retries' => [
+        'mode' => 'adaptive',
+        'max_attempts' => 10
+      ]
+    ]);
+
+    $this->e2 = new S3Client($e2ConfigWithRetries);
     $this->e2bucket = $awsConfig['e2']['bucket'];
   }
 
@@ -513,6 +529,314 @@ class S3Service
       'bucket' => $this->e2bucket . $bucketSuffix,
       'objectName' => $objectName
     ];
+  }
+
+  /**
+   * Copy object from one S3-compatible bucket to another (R2 to R2)
+   * Uses multipart copy for large files to avoid timeouts
+   * 
+   * @param string $sourceBucket Source bucket name
+   * @param string $sourceKey Source object key
+   * @param string $destinationKey Destination object key (with proper path structure)
+   * @param string $mimeType MIME type of the file
+   * @param bool $paidAccount Whether this is a professional account upload
+   * @param array $metadata Additional metadata to copy
+   * @return array|false Success status with checksum data or false on failure
+   */
+  public function copyToFinalR2Storage(
+    string $sourceBucket, 
+    string $sourceKey, 
+    string $destinationKey, 
+    string $mimeType, 
+    bool $paidAccount = true, 
+    array $metadata = []
+  ): array|false {
+    try {
+      // Get the correct R2 bucket and object name for final storage
+      $r2BucketAndObjectNames = $this->getR2BucketAndObjectNames($destinationKey, $mimeType, $paidAccount);
+      
+      // First, get the source object size to determine if we need multipart copy
+      $sourceSize = $this->getObjectSize($sourceBucket, $sourceKey);
+      
+      // Use multipart copy for files larger than 200MB or if we can't determine size
+      // This threshold aligns with our dynamic part sizing (min 60MB parts)
+      $useMultipartCopy = ($sourceSize === null || $sourceSize > 200 * 1024 * 1024);
+      
+      if ($useMultipartCopy) {
+        $sourceKeyShort = substr($sourceKey, 0, 10);
+        error_log("Using multipart copy for large file: {$sourceKeyShort} (size: " . ($sourceSize ? formatSizeUnits($sourceSize) : 'unknown') . ")");
+        return $this->multipartCopyObject($sourceBucket, $sourceKey, $r2BucketAndObjectNames, $mimeType, $metadata, $sourceSize);
+      } else {
+        $sourceKeyShort = substr($sourceKey, 0, 10);
+        error_log("Using single copy for small file: {$sourceKeyShort} (size: " . formatSizeUnits($sourceSize) . ")");
+        return $this->singleCopyObject($sourceBucket, $sourceKey, $r2BucketAndObjectNames, $mimeType, $metadata);
+      }
+      
+    } catch (AwsException $e) {
+      error_log("Error copying to final R2 storage: " . $e->getMessage());
+      return false;
+    }
+  }
+
+  /**
+   * Perform a single copy operation for smaller files
+   */
+  private function singleCopyObject(
+    string $sourceBucket,
+    string $sourceKey,
+    array $r2BucketAndObjectNames,
+    string $mimeType,
+    array $metadata
+  ): array|false {
+    $copyParams = [
+      'Bucket' => $r2BucketAndObjectNames['bucket'],
+      'CopySource' => "{$sourceBucket}/{$sourceKey}",
+      'Key' => $r2BucketAndObjectNames['objectName'],
+      'MetadataDirective' => 'REPLACE',
+      'Metadata' => $metadata,
+      'CacheControl' => 'max-age=2592000',
+      'ContentType' => $mimeType,
+      'ACL' => 'private',
+      'StorageClass' => 'STANDARD'
+    ];
+
+    $result = $this->r2->copyObject($copyParams);
+    
+    if ($result['@metadata']['statusCode'] !== 200) {
+      error_log("Failed to copy object to final R2 storage. Status Code: " . $result['@metadata']['statusCode']);
+      return false;
+    }
+
+    $sha256Checksum = $result['ChecksumSHA256'] ?? null;
+    if ($sha256Checksum) {
+      error_log("SHA256 checksum from R2 single copy: " . $sha256Checksum);
+    }
+
+    $sourceKeyShort = substr($sourceKey, 0, 10);
+    $bucketShort = substr($r2BucketAndObjectNames['bucket'], 0, 10);
+    $objectNameShort = substr($r2BucketAndObjectNames['objectName'], 0, 10);
+    
+    error_log("Successfully copied {$sourceKeyShort} to {$bucketShort}/{$objectNameShort}");
+    return [
+      'success' => true,
+      'checksum_sha256' => $sha256Checksum
+    ];
+  }
+
+  /**
+   * Perform a multipart copy operation for larger files
+   */
+  private function multipartCopyObject(
+    string $sourceBucket,
+    string $sourceKey,
+    array $r2BucketAndObjectNames,
+    string $mimeType,
+    array $metadata,
+    ?int $sourceSize
+  ): array|false {
+    try {
+      // Step 1: Initiate multipart upload
+      $createParams = [
+        'Bucket' => $r2BucketAndObjectNames['bucket'],
+        'Key' => $r2BucketAndObjectNames['objectName'],
+        'Metadata' => $metadata,
+        'CacheControl' => 'max-age=2592000',
+        'ContentType' => $mimeType,
+        'ACL' => 'private',
+        'StorageClass' => 'STANDARD'
+      ];
+
+      $createResult = $this->r2->createMultipartUpload($createParams);
+      $uploadId = $createResult['UploadId'];
+      
+      $uploadIdShort = substr($uploadId, 0, 10);
+      error_log("Initiated multipart copy with UploadId: {$uploadIdShort}");
+
+      // Step 2: Calculate part parameters with dynamic sizing
+      $partSize = $this->calculateOptimalPartSize($sourceSize);
+      $totalParts = $sourceSize ? ceil($sourceSize / $partSize) : 1;
+      $parts = [];
+      $batchSize = 30; // Process parts in batches of 30
+
+      error_log("Calculated part size: " . formatSizeUnits($partSize) . " for {$totalParts} total parts");
+
+      // Step 3: Copy parts in batches to avoid overwhelming the service
+      for ($batchStart = 1; $batchStart <= $totalParts; $batchStart += $batchSize) {
+        $batchEnd = min($batchStart + $batchSize - 1, $totalParts);
+        $copyPromises = [];
+        
+        //error_log("Processing batch {$batchStart}-{$batchEnd} of {$totalParts} parts...");
+        
+        // Create promises for this batch
+        for ($partNumber = $batchStart; $partNumber <= $batchEnd; $partNumber++) {
+          $startByte = ($partNumber - 1) * $partSize;
+          $endByte = min($partNumber * $partSize - 1, ($sourceSize ?: $partSize) - 1);
+          
+          $copyPartParams = [
+            'Bucket' => $r2BucketAndObjectNames['bucket'],
+            'Key' => $r2BucketAndObjectNames['objectName'],
+            'PartNumber' => $partNumber,
+            'UploadId' => $uploadId,
+            'CopySource' => "{$sourceBucket}/{$sourceKey}",
+            'CopySourceRange' => "bytes={$startByte}-{$endByte}"
+          ];
+
+          // Create async promise for each part copy
+          $copyPromises[$partNumber] = $this->r2->uploadPartCopyAsync($copyPartParams);
+        }
+
+        // Wait for this batch to complete
+        $batchResults = Promise\Utils::settle($copyPromises)->wait();
+        
+        // Process batch results
+        foreach ($batchResults as $partNumber => $result) {
+          if ($result['state'] === 'fulfilled') {
+            $copyPartResult = $result['value'];
+            $parts[] = [
+              'ETag' => $copyPartResult['CopyPartResult']['ETag'],
+              'PartNumber' => $partNumber
+            ];
+          } else {
+            error_log("Failed to copy part {$partNumber}: " . $result['reason']->getMessage());
+            throw new Exception("Part {$partNumber} copy failed: " . $result['reason']->getMessage());
+          }
+        }
+        
+        // Small delay between batches to be respectful to the service
+        if ($batchEnd < $totalParts) {
+          usleep(100000); // 100ms delay between batches
+        }
+      }
+
+      // Step 4: Complete multipart upload
+      $completeParams = [
+        'Bucket' => $r2BucketAndObjectNames['bucket'],
+        'Key' => $r2BucketAndObjectNames['objectName'],
+        'UploadId' => $uploadId,
+        'MultipartUpload' => [
+          'Parts' => $parts
+        ]
+      ];
+
+      $completeResult = $this->r2->completeMultipartUpload($completeParams);
+      // error_log("Completed multipart upload: " . print_r($completeResult, true));
+
+      // Extract SHA256 checksum if available from R2
+      $sha256Checksum = $completeResult['ChecksumSHA256'] ?? null;
+      if ($sha256Checksum) {
+        error_log("SHA256 checksum from R2 multipart copy: " . $sha256Checksum);
+      }
+
+      $sourceKeyShort = substr($sourceKey, 0, 10);
+      $bucketShort = substr($r2BucketAndObjectNames['bucket'], 0, 10);
+      $objectNameShort = substr($r2BucketAndObjectNames['objectName'], 0, 10);
+      
+      error_log("Successfully completed multipart copy: {$sourceKeyShort} to {$bucketShort}/{$objectNameShort}");
+      return [
+        'success' => true,
+        'checksum_sha256' => $sha256Checksum
+      ];
+
+    } catch (AwsException $e) {
+      error_log("Error in multipart copy: " . $e->getMessage());
+      
+      // Cleanup: Abort the multipart upload if it was initiated
+      if (isset($uploadId)) {
+        try {
+          $this->r2->abortMultipartUpload([
+            'Bucket' => $r2BucketAndObjectNames['bucket'],
+            'Key' => $r2BucketAndObjectNames['objectName'],
+            'UploadId' => $uploadId
+          ]);
+          $uploadIdShort = substr($uploadId, 0, 10);
+          error_log("Aborted failed multipart copy with UploadId: {$uploadIdShort}");
+        } catch (AwsException $abortException) {
+          error_log("Failed to abort multipart copy: " . $abortException->getMessage());
+        }
+      }
+      
+      return false;
+    }
+  }
+
+  /**
+   * Get the size of an object in S3
+   */
+  private function getObjectSize(string $bucket, string $key): ?int {
+    try {
+      $result = $this->r2->headObject([
+        'Bucket' => $bucket,
+        'Key' => $key
+      ]);
+      
+      return (int) $result['ContentLength'];
+    } catch (AwsException $e) {
+      $bucketShort = substr($bucket, 0, 10);
+      $keyShort = substr($key, 0, 10);
+      error_log("Failed to get object size for {$bucketShort}/{$keyShort}: " . substr($e->getMessage(), 0, 10));
+      return null;
+    }
+  }
+
+  /**
+   * Get object metadata from S3 bucket including content length and ETag
+   * 
+   * @param string $bucket Bucket name
+   * @param string $key Object key
+   * @return array|false Object metadata or false on failure
+   */
+  public function getObjectMetadata(string $bucket, string $key)
+  {
+    try {
+      $result = $this->r2->headObject([
+        'Bucket' => $bucket,
+        'Key' => $key
+      ]);
+
+      return [
+        'ContentLength' => $result['ContentLength'] ?? 0,
+        'ContentType' => $result['ContentType'] ?? 'application/octet-stream',
+        'ETag' => trim($result['ETag'] ?? '', '"'), // Remove quotes from ETag
+        'LastModified' => $result['LastModified'] ?? null,
+        'Metadata' => $result['Metadata'] ?? []
+      ];
+    } catch (AwsException $e) {
+      error_log("Error getting object metadata: " . $e->getMessage());
+      return false;
+    }
+  }
+
+  /**
+   * Calculate optimal part size for multipart operations
+   * Starts at 60MiB and grows with file size up to 9000 parts max (4TiB total)
+   * 
+   * @param int|null $fileSize File size in bytes
+   * @return int Part size in bytes
+   */
+  private function calculateOptimalPartSize(?int $fileSize): int
+  {
+    if (!$fileSize) {
+      return 200 * 1024 * 1024; // Default 200MiB
+    }
+
+    $minPartSize = 200 * 1024 * 1024; // 200MiB minimum
+    $maxParts = 9000; // AWS S3 limit is 10,000, use 9000 for safety
+    $maxFileSize = 4 * 1024 * 1024 * 1024 * 1024; // 4TiB
+
+    // Cap file size at 4TiB
+    $fileSize = min($fileSize, $maxFileSize);
+
+    // Calculate part size needed to stay under maxParts
+    $calculatedPartSize = ceil($fileSize / $maxParts);
+
+    // Use the larger of minimum part size or calculated part size
+    $partSize = max($minPartSize, $calculatedPartSize);
+
+    // Ensure part size is reasonable (not larger than 1GiB)
+    $maxPartSize = 5 * 1024 * 1024 * 1024; // 1GiB
+    $partSize = min($partSize, $maxPartSize);
+
+    return (int) $partSize;
   }
 }
 

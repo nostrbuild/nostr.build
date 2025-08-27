@@ -16,10 +16,10 @@
 	<meta name="msapplication-TileColor" content="#9f00a7">
 	<meta name="theme-color" content="#ffffff">
 
-	<script defer src="/scripts/dist/account-v2.js?v=abf3bf8a362c46853c169625d3e5fda8"></script>
+	<script defer src="/scripts/dist/account-v2.js?v=8d88b1d94193a7b6cf4e86645a961462"></script>
 	<link href="/scripts/dist/account-v2.css?v=27ba93e570a70d775737614d6faf6846" rel="stylesheet">
 
-	<link href="/styles/twbuild.css?v=920a0e17db88f82402694db62c66bb24" rel="stylesheet">
+	<link href="/styles/twbuild.css?v=b2580d01f2b473fecd26c7a6f90dc31c" rel="stylesheet">
 
 	<!-- Pre-connect and DNS prefetch -->
 	<link rel="preconnect" href="https://i.nostr.build" crossorigin>
@@ -327,6 +327,7 @@ GAI: $store.GAI,
 profileStore: $store.profileStore,
 nostrStore: $store.nostrStore,
 uppyStore: $store.uppyStore,
+uppyLargeStore: $store.uppyLargeStore,
 urlImportStore: $store.urlImportStore,
 isDraggingOver: false,
 selfDraggable: false,
@@ -1689,7 +1690,24 @@ onDropCB(event) {
 									x-text="uppyStore.mainDialog.isOpen ? 'Hide' : uppyStore.mainDialog.uploadProgress ? 'Uploading' : 'Upload'"></span>
 								<span x-cloak x-show="uppyStore.mainDialog.isLoading && !uppyStore.mainDialog.isOpen"
 									class="text-xs font-semibold text-nbpurple-50 ml-1"
-									x-text="'(' + uppyStore.mainDialog.uploadProgress + ')'"></span>
+									x-text="'(' + (uppyStore.mainDialog.uploadProgress || '0%') + ')'"></span>
+							</button>
+							<!-- Large File Upload button -->
+							<button x-cloak x-show="profileStore.profileInfo.isLargeUploadEligible && profileStore.profileInfo.accountLevel >= 1" 
+								@click="uppyLargeStore.mainDialog.toggle()"
+								type="button"
+								class="ml-3 inline-flex items-center rounded-md bg-nbpurple-600 px-3 py-2 text-xs font-semibold text-nbpurple-50 shadow-sm hover:bg-nbpurple-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-nbpurple-600">
+								<svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"
+									stroke-linecap="round" stroke-linejoin="round" class="size-4">
+									<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+									<polyline points="17,8 12,3 7,8"/>
+									<line x1="12" y1="3" x2="12" y2="15"/>
+								</svg>
+								<span class="hidden sm:inline-block sm:ml-1"
+									x-text="uppyLargeStore.mainDialog.isOpen ? 'Hide' : uppyLargeStore.mainDialog.uploadProgress ? 'Uploading' : 'Large Files'"></span>
+								<span x-cloak x-show="uppyLargeStore.mainDialog.isLoading && !uppyLargeStore.mainDialog.isOpen"
+									class="text-xs font-semibold text-nbpurple-50 ml-1"
+									x-text="'(' + (uppyLargeStore.mainDialog.uploadProgress || '0%') + ')'"></span>
 							</button>
 							<!-- Multi-select button -->
 							<button @click="toggleMultiSelect()" type="button"
@@ -1856,6 +1874,27 @@ onDropCB(event) {
 						</div>
 					</div>
 					<!-- /File upload area -->
+
+					<!-- Large File upload area -->
+					<div x-cloak x-show="uppyLargeStore.mainDialog.isOpen && profileStore.profileInfo.isLargeUploadEligible && profileStore.profileInfo.accountLevel >= 1"
+						class="z-20 sticky top-28 lg:top-12 bg-nbpurple-900/75 py-2 px-4 md:px-4 backdrop-filter backdrop-blur-md max-h-[52svh]">
+						<div class="flex items-center justify-between mb-4">
+							<h3 class="text-lg font-semibold text-nbpurple-100">Large File Upload (>200MiB)</h3>
+							<button @click="uppyLargeStore.mainDialog.close()" 
+								class="text-nbpurple-400 hover:text-nbpurple-200">
+								<svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+									<path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"></path>
+								</svg>
+							</button>
+						</div>
+						
+						<!-- Large File Upload (Uppy) -->
+						<div x-init="uppyLargeStore.instantiateLargeFileUppy($el)" 
+							class="rounded-lg border border-dashed border-nbpurple-50/25 py-1 w-full h-full max-h-[40svh] overflow-y-scroll overflow-visible">
+							<!-- Large File Uppy component will be inserted here -->
+						</div>
+					</div>
+					<!-- /Large File upload area -->
 					<!-- File actions -->
 					<!-- Activity feed content -->
 					<div class="p-4">
@@ -1954,7 +1993,7 @@ onDropCB(event) {
 											}
 										}
 									" :class="{ 'opacity-50 drop-shadow-xl': dragging }" class="relative"
-									x-data="{ showMediaActions: false, dragging: false, scanResults: null }" x-init="
+									x-data="{ showMediaActions: false, dragging: false, scanResults: null, showPopover: false }" x-init="
 									// Add scanResults to the file object
 									file.scanResults = scanResults;
 									const checkStatus = () => {
@@ -2154,7 +2193,8 @@ onDropCB(event) {
 											<div class="w-4/6 overflow-hidden whitespace-nowrap text-ellipsis">
 												<p
 													class="pointer-events-none mt-2 flex text-md font-medium text-nbpurple-300 items-center align-middle">
-													<span :class="{'mr-1': scanResults}"
+													<span :class="{'mr-1': scanResults}" class="cursor-pointer pointer-events-auto"
+														@click="scanResults ? showPopover = !showPopover : null"
 														x-html="scanResults ? getIcon(scanResults.status, 'size-5') : ''"></span>
 													<span
 														:class="{'text-nborange-500 cursor-not-allowed font-bold line-through': scanResults?.status === 'infected'}"
@@ -2218,6 +2258,136 @@ onDropCB(event) {
 													</button>
 												</div>
 												<!-- /Multi-select -->
+											</div>
+											
+											<!-- Scan Results Popover -->
+											<div x-show="showPopover && scanResults" 
+												x-transition:enter="transition ease-out duration-200"
+												x-transition:enter-start="opacity-0 transform scale-95"
+												x-transition:enter-end="opacity-100 transform scale-100"
+												x-transition:leave="transition ease-in duration-150"
+												x-transition:leave-start="opacity-100 transform scale-100"
+												x-transition:leave-end="opacity-0 transform scale-95"
+												@click.away="showPopover = false"
+												x-effect="
+													if (showPopover && scanResults) {
+														$nextTick(() => {
+															const popover = $el;
+															const parentRect = popover.offsetParent.getBoundingClientRect();
+															const gridContainer = popover.closest('ul.grid');
+															const gridRect = gridContainer.getBoundingClientRect();
+															const viewportHeight = window.innerHeight;
+															const popoverWidth = 384; // w-96
+															const popoverHeight = 300; // estimated height
+															
+															// Reset positioning classes
+															popover.classList.remove('left-0', 'right-0', 'left-1/2', '-translate-x-1/2', 'top-full', 'bottom-full', 'mt-2', 'mb-2');
+															
+															// Horizontal positioning - constrain to grid container
+															if (parentRect.left + popoverWidth > gridRect.right) {
+																// Would overflow grid right edge - position to right edge
+																popover.classList.add('right-0');
+															} else if (parentRect.left - popoverWidth/2 < gridRect.left) {
+																// Would overflow grid left edge when centered - force left alignment
+																popover.classList.add('left-0');
+															} else if (parentRect.right - popoverWidth/2 > gridRect.left && parentRect.left + popoverWidth/2 < gridRect.right) {
+																// Can center safely within grid bounds
+																popover.classList.add('left-1/2', '-translate-x-1/2');
+															} else {
+																// Default to left
+																popover.classList.add('left-0');
+															}
+															
+															// Vertical positioning - use viewport for vertical space
+															if (parentRect.bottom + popoverHeight > viewportHeight && parentRect.top - popoverHeight > 0) {
+																// Position above if there's room
+																popover.classList.add('bottom-full', 'mb-2');
+															} else {
+																// Default to below
+																popover.classList.add('top-full', 'mt-2');
+															}
+															
+															// Set up intersection observer to auto-close when 80% hidden
+															setTimeout(() => {
+																const observer = new IntersectionObserver((entries) => {
+																	entries.forEach(entry => {
+																		if (entry.intersectionRatio < 0.2) {
+																			showPopover = false;
+																			observer.disconnect();
+																		}
+																	});
+																}, { threshold: 0.2 });
+																observer.observe(popover);
+																
+																// Cleanup observer when popover is hidden
+																popover.addEventListener('x-transitionend', () => {
+																	if (!showPopover) observer.disconnect();
+																});
+															}, 500); // Delay to allow popover to fully show first
+														});
+													}
+												"
+												class="absolute z-50 w-80 sm:w-96 max-w-[calc(100vw-2rem)] bg-nbpurple-900/95 backdrop-blur-sm border border-nbpurple-600/50 rounded-lg shadow-2xl">
+												
+												<div class="p-5">
+													<div class="flex items-center justify-between pb-3 mb-4 border-b border-nbpurple-600/30">
+														<div class="flex items-center gap-2">
+															<span class="text-nbpurple-300" x-html="getIcon(scanResults?.status || 'unknown', 'size-5')"></span>
+															<span class="font-semibold text-base text-nbpurple-100">Virus Scan Results</span>
+														</div>
+														<button @click="showPopover = false" class="text-nbpurple-400 hover:text-nbpurple-200 p-1 rounded">
+															<svg class="size-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+																<path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+															</svg>
+														</button>
+													</div>
+													
+													<!-- File Info -->
+													<div class="mb-4 p-3 bg-nbpurple-800/40 rounded-lg border border-nbpurple-600/20">
+														<div class="flex items-center gap-3">
+															<span class="text-nbpurple-300" x-html="getIconByMime(file.mime, 'size-5')"></span>
+															<div class="min-w-0 flex-1">
+																<p class="font-medium text-nbpurple-100 truncate" x-text="file.title?.length > 0 ? file.title : file.name"></p>
+																<p class="text-sm text-nbpurple-400" x-text="formatBytes(file.size)"></p>
+															</div>
+														</div>
+													</div>
+													
+													<div class="space-y-4">
+														<!-- Status -->
+														<div class="flex justify-between items-center py-1">
+															<span class="text-nbpurple-300 font-medium">Status:</span>
+															<span class="font-semibold capitalize px-3 py-1.5 rounded-md text-sm"
+																:class="{
+																	'bg-green-900/30 text-green-300 border border-green-600/20': scanResults?.status === 'clean',
+																	'bg-yellow-900/30 text-yellow-300 border border-yellow-600/20': scanResults?.status === 'pending',
+																	'bg-red-900/30 text-red-300 border border-red-600/20': scanResults?.status === 'infected',
+																	'bg-nbpurple-700/50 text-nbpurple-200 border border-nbpurple-600/30': scanResults?.status === 'unknown' || !scanResults?.status
+																}"
+																x-text="scanResults?.status || 'Unknown'"></span>
+														</div>
+														
+														<!-- Message -->
+														<div x-show="scanResults?.message" class="flex justify-between items-start gap-4 py-1">
+															<span class="text-nbpurple-300 font-medium whitespace-nowrap">Message:</span>
+															<span class="font-medium text-nbpurple-100 text-right leading-relaxed break-words" 
+																x-text="scanResults?.message"></span>
+														</div>
+														
+														<!-- Date -->
+														<div x-show="scanResults?.date && scanResults?.status !== 'pending'" class="flex justify-between items-start gap-4 py-1">
+															<span class="text-nbpurple-300 font-medium whitespace-nowrap">Scanned:</span>
+															<span class="font-medium text-nbpurple-100 text-right text-sm leading-relaxed break-words" 
+																x-text="scanResults?.date ? new Date(scanResults.date).toLocaleString() : 'N/A'"></span>
+														</div>
+														
+														<!-- Scanner Version -->
+														<div x-show="scanResults?.version" class="flex justify-between items-center py-1">
+															<span class="text-nbpurple-300 font-medium">Version:</span>
+															<span class="font-mono text-sm bg-nbpurple-800/50 px-2 py-1 rounded text-nbpurple-100 ml-4 break-all" x-text="scanResults?.version"></span>
+														</div>
+													</div>
+												</div>
 											</div>
 										</div>
 									</template>

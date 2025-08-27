@@ -1,6 +1,5 @@
 import Uppy from '@uppy/core';
 import Dashboard from '@uppy/dashboard';
-//import GoldenRetriever from '@uppy/golden-retriever';
 import XHRUpload from '@uppy/xhr-upload';
 //import Audio from '@uppy/audio';
 //import Compressor from '@uppy/compressor';
@@ -236,6 +235,41 @@ window.abbreviateBech32 = (bech32Address) => {
   return typeof bech32Address === 'string' ? `${bech32Address.substring(0, 15)}...${bech32Address.substring(bech32Address.length - 10)}` : '';
 };
 
+
+
+window.isMobile = (opts) => {
+  // From https://github.com/juliangruber/is-mobile/
+  const mobileRE = /(android|bb\d+|meego).+mobile|armv7l|avantgo|bada\/|blackberry|blazer|compal|elaine|fennec|hiptop|iemobile|ip(hone|od)|iris|kindle|lge |maemo|midp|mmp|mobile.+firefox|netfront|opera m(ob|in)i|palm( os)?|phone|p(ixi|re)\/|plucker|pocket|psp|redmi|series[46]0|samsungbrowser.*mobile|symbian|treo|up\.(browser|link)|vodafone|wap|windows (ce|phone)|xda|xiino/i
+  const notMobileRE = /CrOS/
+
+  const tabletRE = /android|ipad|playbook|silk/i
+  if (!opts) opts = {}
+  let ua = opts.ua
+  if (!ua && typeof navigator !== 'undefined') ua = navigator.userAgent
+  if (ua && ua.headers && typeof ua.headers['user-agent'] === 'string') {
+    ua = ua.headers['user-agent']
+  }
+  if (typeof ua !== 'string') return false
+
+  let result =
+    (mobileRE.test(ua) && !notMobileRE.test(ua)) ||
+    (!!opts.tablet && tabletRE.test(ua))
+
+  if (
+    !result &&
+    opts.tablet &&
+    opts.featureDetect &&
+    navigator &&
+    navigator.maxTouchPoints > 1 &&
+    ua.indexOf('Macintosh') !== -1 &&
+    ua.indexOf('Safari') !== -1
+  ) {
+    result = true
+  }
+
+  return result
+}
+
 const captureVideoFrame = (video, scaleFactor, time) => {
   if (scaleFactor == null) {
     scaleFactor = 1;
@@ -318,6 +352,61 @@ window.checkURL = async (url) => {
       return null;
     });
 }
+
+// Multipart API with retry logic for S3 operations
+window.multipartApi = async function(url, options) {
+  const { method, headers = {}, body, signal } = options;
+
+  // Create axios instance with retry configuration
+  const s3ApiFetcher = axios.create({
+    timeout: 60000, // 60 seconds to match your upload timeouts
+    withCredentials: true,
+    headers: {
+      'accept': 'application/json',
+      ...headers
+    },
+    responseType: 'json',
+    maxRedirects: 0,
+    keepalive: true,
+    adapter: ['fetch', 'xhr', 'http']
+  });
+
+  // Configure retries
+  axiosRetry(s3ApiFetcher, {
+    retries: 6,
+    retryDelay: (retryNumber = 0) => {
+      const delayFactor = 300;
+      const delay = 2 ** retryNumber * delayFactor;
+      const randomSum = delay * 0.2 * Math.random();
+      return delay + randomSum;
+    },
+    retryCondition: (error) => {
+      return axiosRetry.isNetworkOrIdempotentRequestError(error) ||
+        axiosRetry.isSafeRequestError(error) ||
+        axiosRetry.isRetryableError(error);
+    }
+  });
+
+  try {
+    // Make the actual request
+    const response = await s3ApiFetcher({
+      method,
+      url,
+      data: body,
+      signal
+    });
+
+    // Match your fetch pattern: extract data from API envelope
+    const responseData = response.data;
+    return responseData.data || responseData;
+  } catch (error) {
+    // Convert axios error to match fetch error pattern
+    if (error.response) {
+      throw new Error('Unsuccessful request', { cause: error.response });
+    }
+    throw error;
+  }
+};
 
 // AlpineJS components and stores
 document.addEventListener('alpine:init', () => {
@@ -605,6 +694,11 @@ Alpine.store('profileStore', {
       return [1, 2, 3, 10, 99].includes(this.accountLevel) &&
         !this.accountExpired;
     },
+    // Large Upload
+    get isLargeUploadEligible() {
+      return [10, 99].includes(this.accountLevel) &&
+        !this.accountExpired && !this.storageOverLimit;
+    },
     allowed(permission) {
       switch (permission) {
         case 'isAdmin':
@@ -641,6 +735,8 @@ Alpine.store('profileStore', {
           return this.isReferralEligible;
         case 'isAnalyticsEligible':
           return this.isAnalyticsEligible;
+        case 'isLargeUploadEligible':
+          return this.isLargeUploadEligible;
         default:
           return false;
       }
@@ -974,25 +1070,25 @@ Alpine.store('nostrStore', {
     },
     getMediaTypeLabel() {
       if (this.selectedFiles.length === 0) return 'Media (Kind 20/21/1222)';
-      
+
       const isImage = this.selectedFiles.every(f => f.mime && f.mime.startsWith('image/'));
       const isVideo = this.selectedFiles.every(f => f.mime && f.mime.startsWith('video/'));
       const isAudio = this.selectedFiles.every(f => f.mime && f.mime.startsWith('audio/'));
-      
+
       if (isImage) return 'Images (Kind 20)';
       if (isVideo) return 'Video (Kind 21)';
       if (isAudio) return 'Voice (Kind 1222)';
-      
+
       return 'Media (Kind 20/21/1222)';
     },
     shouldShowKindSwitch() {
       // Show switch by default when no files are selected
       if (this.selectedFiles.length === 0) return true;
-      
+
       // Show switch only if ALL files are media files (image/video/audio)
       return this.selectedFiles.every(f => f.mime && (
-        f.mime.startsWith('image/') || 
-        f.mime.startsWith('video/') || 
+        f.mime.startsWith('image/') ||
+        f.mime.startsWith('video/') ||
         f.mime.startsWith('audio/')
       ));
     },
@@ -1063,10 +1159,10 @@ Alpine.store('nostrStore', {
         const isImage = filesToCheck.every(f => f.mime && f.mime.startsWith('image/'));
         const isVideo = filesToCheck.every(f => f.mime && f.mime.startsWith('video/'));
         const isAudio = filesToCheck.every(f => f.mime && f.mime.startsWith('audio/'));
-        
+
         // Check that all files are media files (image, video, or audio)
         const hasNonMediaFiles = filesToCheck.some(f => !f.mime || (!f.mime.startsWith('image/') && !f.mime.startsWith('video/') && !f.mime.startsWith('audio/')));
-        
+
         if (hasNonMediaFiles) {
           this.isError = true;
           this.isErrorMessages = ['Media kinds (20/21/1222) only support image, video, or audio files. Use Note (Kind 1) for other file types.'];
@@ -1095,7 +1191,7 @@ Alpine.store('nostrStore', {
       if (typeof callback === 'function') {
         this.callback = callback;
       }
-      
+
       // If mediaIds and note are not provided, use the selected files and note
       if (files.length > 0) {
         console.debug('Using provided files:', files);
@@ -2175,7 +2271,7 @@ Alpine.store('fileStore', {
       const fileStore = Alpine.store('fileStore');
       const menuStore = Alpine.store('menuStore');
       this.editParentFolder = true;
-      this.parentFolderId = menuStore.folders.find(folder => folder.name === menuStore.activeFolder).id;
+      this.parentFolderId = menuStore.folders.find(folder => folder.name === menuStore.activeFolder)?.id || 0;
       fileStore.moveToFolder.selectedFolderName = menuStore.activeFolder;
       fileStore.moveToFolder.destinationFolderId = this.parentFolderId;
       fileStore.moveToFolder.selectedIds = [fileStore.mediaProperties.targetFile.id];
@@ -3313,7 +3409,7 @@ Alpine.store('urlImportStore', {
         }
         console.debug('Import from URL:', data);
         // Is current active folder a home folder?
-        const home = menuStore.folders.find(folder => folder.name === menuStore.activeFolder).id === 0;
+        const home = menuStore.folders.find(folder => folder.name === menuStore.activeFolder)?.id === 0;
         // Update the folder stats
         menuStore.updateFolderStatsFromFile(data, folderName, true);
         // Check if the we are in the same folder as the imported file
@@ -3389,7 +3485,7 @@ Alpine.store('uppyStore', {
     },
     getFilesInFolder(folderName) {
       // Check for default home folder
-      folderName = Alpine.store('menuStore').folders.find(folder => folder.name === folderName).id === 0 ? '' : folderName;
+      folderName = Alpine.store('menuStore').folders?.find(folder => folder.name === folderName)?.id === 0 ? '' : folderName;
       return this.currentFiles.filter(file => file.folder === folderName);
     }
   },
@@ -3546,7 +3642,7 @@ Alpine.store('uppyStore', {
       allowMultipleUploadBatches: false, // Disallow multiple upload batches
       restrictions: {
         maxFileSize: 4096 * 1024 * 1024, // 4 GB
-        maxTotalFileSize: profileStore.profileInfo.storageRemaining,
+        maxTotalFileSize: profileStore.profileInfo?.storageRemaining || 4096 * 1024 * 1024, // Use 4GB fallback
         allowedFileTypes: this.getAllowedFileTypes(),
       },
       //maxTotalFileSize: 150 * 1024 * 1024,
@@ -3556,7 +3652,7 @@ Alpine.store('uppyStore', {
 
         if (fileType !== 'image' && fileType !== 'video' && fileType !== 'audio') {
           if (currentFile.size > 1024 ** 3) {
-            window.__nbUppy.info(`Skipping file ${currentFile.name} because it's too large`, 'error', 500);
+            window.__nbUppy.info(`Skipping file ${currentFile.name || 'Unknown'} because it's too large`, 'error', 500);
             return false; // Exclude the file
           }
         }
@@ -3587,7 +3683,6 @@ Alpine.store('uppyStore', {
         return true; // Include the file
       },
     })
-      //.use(GoldenRetriever)
       .use(Dashboard, {
         target: el,
         inline: true,
@@ -3639,34 +3734,25 @@ Alpine.store('uppyStore', {
         }
       })
       .on('upload-success', (file, response) => {
-        if (Array.isArray(response.body)) {
-          const fileResponse = response.body.find(f => f.id === file.id);
-          if (fileResponse) {
-            window.__nbUppy.setFileMeta(file.id, {
-              name: fileResponse.name,
-              type: fileResponse.type,
-              size: fileResponse.size
-            });
-          }
-        } else {
-          window.__nbUppy.setFileMeta(file.id, {
-            name: response.body.name,
-            type: response.body.type,
-            size: response.body.size
-          });
-        }
-      })
-      .on('upload-success', (file, response) => {
         console.debug('Upload result:', response);
         // Set uploadComplete state for the file
         file.progress.uploadComplete = true;
-        //window.__nbUppy.removeFile(file.id);
+
         const fd = response.body.fileData;
+
+        // Check if we have valid file data
+        if (!fd || !fd.mime) {
+          console.error('Invalid file data received:', fd);
+          // Remove the problematic file from Uppy to prevent rendering issues
+          window.__nbUppy.removeFile(file.id);
+          return;
+        }
+
         console.debug('File uploaded:', fd);
         // Get folderName from uppy file metadata
-        const folderName = JSON.parse(file.meta.folderName);
+        const folderName = JSON.parse(file.meta.folderName || '""');
         // Check if folderName is default home folder
-        const fileFolderName = folderName === '' ? menuStore.folders.find(folder => folder.id === 0).name : folderName;
+        const fileFolderName = folderName === '' ? menuStore.folders?.find(folder => folder.id === 0)?.name || '' : folderName;
         // Update the file stats for the folder
         menuStore.updateFolderStatsFromFile(fd, fileFolderName, true);
         // Preload image variants only with image/* MIME type
@@ -3696,11 +3782,16 @@ Alpine.store('uppyStore', {
           // Remove the file from the currentUploads
           this.mainDialog.removeFile(file.id);
         }
+
+        // Remove the file from Uppy dashboard after successful processing
+        setTimeout(() => {
+          window.__nbUppy.removeFile(file.id);
+        }, 1000); // Small delay to allow user to see success state
       })
       .on('file-added', (file) => {
         // Check if the active folder ID is not 0
         const activeFolder = menuStore.activeFolder;
-        const activeFolderId = menuStore.folders.find(folder => folder.name === activeFolder).id;
+        const activeFolderId = menuStore.folders.find(folder => folder.name === activeFolder)?.id || 0;
         const defaultFolder = activeFolderId === 0 ? '' : activeFolder;
         const noTransform = menuStore.noTransform ?? false;
         console.debug('Active folder (Uppy):', activeFolder, activeFolderId, defaultFolder);
@@ -3771,7 +3862,7 @@ Alpine.store('uppyStore', {
       .on('complete', (result) => {
         // Iterate of the successful uploads and see if any of them have folderName metadata
         // that match menuStore.activeFolder
-        const isInHomeFolder = menuStore.folders.find(folder => folder.name === menuStore.activeFolder).id === 0;
+        const isInHomeFolder = menuStore.folders.find(folder => folder.name === menuStore.activeFolder)?.id === 0;
         const activeFolderMatch = result.successful.some(file => {
           const folderName = JSON.parse(file.meta.folderName);
           return folderName === menuStore.activeFolder || (isInHomeFolder && folderName === '');
@@ -3904,13 +3995,15 @@ Alpine.store('uppyStore', {
     console.debug('Uppy instance created:', el.id);
     // Dynamic note
     Alpine.effect(() => {
-      if (window.__nbUppy) {
+      if (window.__nbUppy && profileStore.profileInfo) {
         // Determine if user has less than 4GB remaining storage
-        let byteLimit = (profileStore.profileInfo.storageRemaining < 4 * 1024 * 1024 * 1024) ?
-          profileStore.profileInfo.storageRemaining : 4 * 1024 * 1024 * 1024;
-        const allowedFileTypes = this.getAllowedFileTypes(profileStore.profileInfo.accountLevel);
+        const storageRemaining = profileStore.profileInfo.storageRemaining || 0;
+        let byteLimit = (storageRemaining < 4 * 1024 * 1024 * 1024) ?
+          storageRemaining : 4 * 1024 * 1024 * 1024;
+        const accountLevel = profileStore.profileInfo.accountLevel || 0;
+        const allowedFileTypes = this.getAllowedFileTypes(accountLevel);
         let note = 'Images, video, audio';
-        switch (profileStore.profileInfo.accountLevel) {
+        switch (accountLevel) {
           case 10:
           case 99:
             note += ', including documents and archives';
@@ -3926,7 +4019,7 @@ Alpine.store('uppyStore', {
         window.__nbUppy.setOptions({
           restrictions: {
             maxFileSize: byteLimit,
-            maxTotalFileSize: profileStore.profileInfo.storageRemaining,
+            maxTotalFileSize: storageRemaining,
             allowedFileTypes: allowedFileTypes,
           },
         });
@@ -3938,6 +4031,574 @@ Alpine.store('uppyStore', {
   },
 });
 
+Alpine.store('uppyLargeStore', {
+  // Array of filepond instances
+  instance: null,
+  // Dialog state
+  mainDialog: {
+    dialogEl: null,
+    isOpen: false,
+    isLoading: false,
+    uploadProgress: null,
+    uploadFolder: '',
+    isError: false,
+    errorMessage: '',
+    callback: null,
+    open(callback) {
+      this.isOpen = true;
+      this.callback = callback;
+    },
+    close(dontCallback) {
+      this.isOpen = false;
+      //this.isLoading = false; // Should be controlled by Uppy
+      this.isError = false;
+      this.errorMessage = '';
+      if (this.callback && !dontCallback) {
+        this.callback();
+      }
+    },
+    toggle() {
+      this.isOpen ? this.close() : this.open();
+    },
+    currentFiles: [],
+    currentFilesById: new Map(),
+    addFile(file) {
+      this.currentFiles.unshift(file);
+      // Update currentFilesById Map
+      if (this.currentFilesById.has(file.id)) {
+        this.currentFilesById.set(file.id, file);
+      } else {
+        this.currentFilesById = new Map([...this.currentFilesById, [file.id, file]]);
+      }
+    },
+    removeFile(fileId) {
+      const index = this.currentFiles.findIndex(f => f.id === fileId);
+      if (index !== -1) {
+        this.currentFiles.splice(index, 1);
+        // Update currentFilesById Map
+        this.currentFilesById.delete(fileId);
+      }
+    },
+    getFileById(fileId) {
+      return this.currentFilesById.get(fileId);
+    },
+    clearFiles() {
+      this.currentFiles = [];
+      this.currentFilesById = new Map();
+    },
+    getFilesInFolder(folderName) {
+      // Check for default home folder
+      folderName = Alpine.store('menuStore').folders?.find(folder => folder.name === folderName)?.id === 0 ? '' : folderName;
+      return this.currentFiles.filter(file => file.folder === folderName);
+    }
+  },
+  getAllowedFileTypes(accountLevel = 0) {
+    // Return allowed file types
+    // Copy of the server-side libs/utils.funcs.php array
+    // This is just for client side convenience, it is still enforced server-side
+
+    const mimeTypesVideo = {
+      'video/mp4': 'mp4',
+      'video/webm': 'webm',
+      'video/ogg': 'ogv',
+      'video/x-msvideo': 'avi',
+      'video/x-ms-wmv': 'wmv',
+      'video/quicktime': 'mov',
+      'video/mpeg': 'mpeg',
+      'video/3gpp': '3gp',
+      'video/3gpp2': '3g2',
+      'video/x-flv': 'flv',
+      'video/x-m4v': 'm4v',
+      'video/x-matroska': 'mkv',
+      'video/x-mpeg2': 'mp2v',
+      'video/x-m4p': 'm4p',
+      'video/mp2t': 'm2ts',
+      'video/MP2T': 'ts',
+      'video/mp2p': 'mp2',
+      'video/x-mxf': 'mxf',
+      'video/x-ms-asf': 'asf',
+      'video/x-ms-wm': 'asf',
+      'video/x-pn-realvideo': 'rm',
+      'video/x-ms-vob': 'vob',
+      'video/x-f4v': 'f4v',
+      'video/x-fli': 'fli',
+      'video/x-m2v': 'm2v',
+      'video/x-ms-wmx': 'wmx',
+      'video/x-ms-wvx': 'wvx',
+      'video/x-sgi-movie': 'movie',
+    };
+
+    const mimeTypesAddonExtra = {
+      'application/zip': 'zip',
+      'application/x-tar': 'tar',
+    };
+
+    // Purist mime types
+
+    // Construct lists of extensions based on account level
+    const extsVideo = Object.values(mimeTypesVideo).map(ext => `.${ext}`);
+    const extsAddonExtra = Object.values(mimeTypesAddonExtra).map(ext => `.${ext}`);
+
+    const mimesVideo = Object.keys(mimeTypesVideo).map(mime => mime);
+    const mimesAddonExtra = Object.keys(mimeTypesAddonExtra).map(mime => mime);
+
+    switch (accountLevel) {
+      case 1:
+      case 10:
+      case 99:
+        console.debug('All file types allowed.');
+        return [...mimesVideo, ...mimesAddonExtra, ...extsAddonExtra, ...extsVideo];
+      default:
+        console.debug('Default file types allowed.');
+        return [];
+    }
+  },
+  instantiateLargeFileUppy(el) {
+    this.mainDialog.dialogEl = el;
+    console.debug('Instantiating Large Files Uppy...');
+    // Stores
+    const menuStore = Alpine.store('menuStore');
+    const fileStore = Alpine.store('fileStore');
+    const profileStore = Alpine.store('profileStore');
+
+    // Externalize Uppy instance to a global to avoid Alpine proxies entirely.
+    // This prevents brand-check errors on native private fields/methods.
+    // Ensure any previous instance is cleaned up if needed.
+    if (window.__nbUppyLarge && typeof window.__nbUppyLarge.destroy === 'function') {
+      try { window.__nbUppyLarge.destroy(); } catch (_) { }
+    }
+    window.__nbUppyLarge = new Uppy({
+      debug: false,
+      autoProceed: true, // Automatically upload files after adding them
+      allowMultipleUploadBatches: true, // Disallow multiple upload batches
+      restrictions: {
+        minFileSize: 200 * 1024 * 1024, // 200MB
+        maxFileSize: null, // No limit
+        maxTotalFileSize: null, // No limit initially
+        allowedFileTypes: this.getAllowedFileTypes(),
+      },
+    })
+      .use(Dashboard, {
+        target: el,
+        inline: true,
+        //trigger: '#open-account-dropzone-button',
+        showLinkToFileUploadResult: false,
+        showProgressDetails: true,
+        note: 'Video and Archives only',
+        fileManagerSelectionType: 'both',
+        proudlyDisplayPoweredByUppy: false,
+        theme: 'dark',
+        closeAfterFinish: false,
+        width: '100%',
+        height: '100%',
+      })
+      .use(AwsS3, {
+        id: 'largeFilesAWSPlugin',
+
+        // Control when to use multipart uploads (default is 100MiB+)
+        shouldUseMultipart(file) {
+          // Use multipart for files larger than 50MiB
+          return file.size > 50 * 1024 * 1024;
+        },
+
+        // Control chunk/part size for multipart uploads
+        getChunkSize(file) {
+          // Detect if mobile phone
+          const isMobile = window?.isMobile() ?? false;
+          const smallChunk = isMobile ? 40 * 1024 * 1024 : 80 * 1024 * 1024;
+          const largeChunk = isMobile ? 80 * 1024 * 1024 : 160 * 1024 * 1024;
+          // Standard part size: 100MiB
+          const maxParts = 9000; // S3 limit
+          const minPartSize = file.size < 4 * 1024 ** 2 * 1024 ? smallChunk : largeChunk;
+
+          // Calculate optimal part size based on file size
+          const calculatedPartSize = Math.floor(file.size / maxParts);
+
+          // Use the larger of: calculated size, minimum size, or standard size
+          const partSize = Math.max(calculatedPartSize, minPartSize);
+
+          console.debug(`File size: ${file.size} bytes, Part size: ${partSize} bytes (${Math.round(partSize / 1024 / 1024)}MiB)`);
+
+          return partSize;
+        },
+
+        // Control parallel upload limit (default is 6)
+        limit: 6, // Increase parallel uploads for better performance
+
+        // Configure retry behavior for failed parts
+        retryDelays: [0, 1000, 3000, 5000], // Retry delays in milliseconds
+
+        async createMultipartUpload(file, signal) {
+          signal?.throwIfAborted()
+
+          const metadata = {}
+
+          Object.keys(file.meta || {}).forEach((key) => {
+            if (file.meta[key] != null) {
+              metadata[key] = file.meta[key].toString()
+            }
+          })
+
+          return await window.multipartApi('/api/v2/s3/multipart', {
+            method: 'POST',
+            headers: {
+              'content-type': 'application/json',
+            },
+            body: JSON.stringify({
+              filename: file.name || 'unnamed_file',
+              type: file.type || 'application/octet-stream',
+              metadata,
+            }),
+            signal,
+          })
+        },
+
+        async abortMultipartUpload(file, { key, uploadId, signal }) {
+          const filename = encodeURIComponent(key)
+          const uploadIdEnc = encodeURIComponent(uploadId)
+          
+          return await window.multipartApi(`/api/v2/s3/multipart/${uploadIdEnc}?key=${filename}`, {
+            method: 'DELETE',
+            signal,
+          })
+        },
+
+        async signPart(file, options) {
+          const { uploadId, key, partNumber, signal } = options
+
+          console.debug('Signing part for upload:', uploadId, key, partNumber)
+
+          signal?.throwIfAborted()
+
+          if (uploadId == null || key == null || partNumber == null) {
+            throw new Error(
+              'Cannot sign without a key, an uploadId, and a partNumber',
+            )
+          }
+
+          const filename = encodeURIComponent(key)
+          const uploadIdEnc = encodeURIComponent(uploadId)
+          
+          return await window.multipartApi(`/api/v2/s3/multipart/${uploadIdEnc}/${partNumber}?key=${filename}`, {
+            method: 'GET',
+            signal,
+          })
+        },
+
+        async listParts(file, { key, uploadId }, signal) {
+          signal?.throwIfAborted()
+
+          const filename = encodeURIComponent(key)
+          
+          return await window.multipartApi(`/api/v2/s3/multipart/${uploadId}?key=${filename}`, {
+            method: 'GET',
+            signal,
+          })
+        },
+
+        async completeMultipartUpload(
+          file,
+          { key, uploadId, parts },
+          signal,
+        ) {
+          signal?.throwIfAborted()
+
+          const filename = encodeURIComponent(key)
+          const uploadIdEnc = encodeURIComponent(uploadId)
+          
+          return await window.multipartApi(`/api/v2/s3/multipart/${uploadIdEnc}/complete?key=${filename}`, {
+            method: 'POST',
+            headers: {
+              'content-type': 'application/json',
+            },
+            body: JSON.stringify({ parts }),
+            signal,
+          })
+        },
+
+      })
+      .on('upload-success', (file, response) => {
+        console.debug('Upload result:', response);
+        // Set uploadComplete state for the file
+        file.progress.uploadComplete = true;
+
+        // For S3 multipart uploads, the response might have fileData in the response body
+        const fd = response.body?.fileData || response.body;
+
+        // Check if we have valid file data
+        if (!fd || !fd.media_type) {
+          console.error('Invalid file data received:', fd);
+          // Remove the problematic file from Uppy to prevent rendering issues
+          window.__nbUppyLarge.removeFile(file.id);
+          return;
+        }
+
+        console.debug('File uploaded:', fd);
+        // Get folderName from uppy file metadata
+        const folderName = JSON.parse(file.meta.folderName || '""');
+        // Check if folderName is default home folder
+        const fileFolderName = folderName === '' ? menuStore.folders?.find(folder => folder.id === 0)?.name || '' : folderName;
+        // Update the file stats for the folder
+        menuStore.updateFolderStatsFromFile(fd, fileFolderName, true);
+        // Inject file into the fileStore files array if activeFolder matches 
+        if (menuStore.activeFolder === fileFolderName) {
+          // Remove the file from the currentUploads
+          this.mainDialog.removeFile(file.id);
+          // Remove the file with file.id from the fileStore.files array
+          fileStore.files = fileStore.files.filter(f => f.id !== file.id);
+          // Inject fd into the fileStore.files array if it doesn't exist
+          if (!fileStore.files.some(f => f.id === fd.id)) {
+            fileStore.injectFile(fd);
+          }
+        } else {
+          // Remove the file from the currentUploads
+          this.mainDialog.removeFile(file.id);
+        }
+
+        // Remove the file from Uppy dashboard after successful processing
+        setTimeout(() => {
+          window.__nbUppyLarge.removeFile(file.id);
+        }, 1000); // Small delay to allow user to see success state
+      })
+      .on('file-added', (file) => {
+        // Check if the active folder ID is not 0
+        const activeFolder = menuStore.activeFolder;
+        const activeFolderId = menuStore.folders.find(folder => folder.name === activeFolder)?.id || 0;
+        const defaultFolder = activeFolderId === 0 ? '' : activeFolder;
+        const noTransform = menuStore.noTransform ?? false;
+        console.debug('Active folder (Uppy):', activeFolder, activeFolderId, defaultFolder);
+        //console.debug('Added file', file);
+        const path = file.data.relativePath ?? file.data.webkitRelativePath;
+        let folderHierarchy = [defaultFolder];
+        let folderName = defaultFolder;
+
+        if (path && activeFolderId === 0) {
+          const folderPath = path.replace(/\\/g, '/'); // Normalize backslashes to forward slashes
+          const folderPathParts = folderPath.split('/').filter(part => part !== '');
+          folderHierarchy = folderPathParts.length > 1 ? folderPathParts.slice(0, -1) : [defaultFolder];
+          folderName = folderHierarchy.length > 0 ? folderHierarchy[folderHierarchy.length - 1] : defaultFolder;
+          this.mainDialog.uploadFolder = folderName;
+          // Add folder to the folder list if not already present
+          const folderExists = menuStore.folders.some(folder => folder.name === folderName);
+          if (!folderExists) {
+            const folder = {
+              id: folderName,
+              name: folderName,
+              icon: folderName.substring(0, 1).toUpperCase(),
+              route: '#',
+              allowDelete: false
+            };
+            // Add the folder to the folders list
+            menuStore.folders.push(folder);
+            // Sort the folders list
+            menuStore.folders = menuStore.folders.sort((a, b) => a.name.localeCompare(b.name));
+          }
+        } else {
+          this.mainDialog.uploadFolder = defaultFolder;
+        }
+        console.debug('Folder name', folderName);
+        console.debug('Folder hierarchy', folderHierarchy);
+        window.__nbUppyLarge.setFileMeta(file.id, {
+          folderName: JSON.stringify(folderName),
+          folderHierarchy: JSON.stringify(folderHierarchy),
+          noTransform: noTransform,
+        });
+        console.debug('File added:', file);
+        const currentFile = {
+          id: file.id,
+          name: file.name,
+          mime: 'uppy/upload',
+          media_type: 'uppy',
+          size: file.size,
+          loaded: false,
+          folder: folderName,
+          uppy: {
+            uploadComplete: false,
+            uploadError: false,
+            errorMessage: '',
+            errorResponse: null,
+            progress: 0,
+            bytesUploaded: 0,
+          },
+        };
+        // Add the file to the currentUploads
+        this.mainDialog.addFile(currentFile);
+        if (folderName === defaultFolder) {
+          fileStore.injectFile(currentFile);
+        }
+      })
+      .on('upload', (data) => {
+        console.debug('Upload started:', data);
+        this.mainDialog.isLoading = true;
+      })
+      .on('complete', (result) => {
+        // Iterate of the successful uploads and see if any of them have folderName metadata
+        // that match menuStore.activeFolder
+        const isInHomeFolder = menuStore.folders.find(folder => folder.name === menuStore.activeFolder)?.id === 0;
+        const activeFolderMatch = result.successful.some(file => {
+          const folderName = JSON.parse(file.meta.folderName);
+          return folderName === menuStore.activeFolder || (isInHomeFolder && folderName === '');
+        });
+        // If the failed upload count is zero, all uploads succeeded
+        if (result.failed.length === 0) {
+          //location.reload(); // reload the page
+          console.debug('Upload complete:', result);
+          // Mark dialog as done!
+          window.__nbUppyLarge.cancelAll();
+          // Close the dialog
+          this.mainDialog.close();
+          // Clear progress
+          this.mainDialog.uploadProgress = null;
+          // Clear currentFiles
+          this.mainDialog.clearFiles();
+        } else {
+          // Remove successful uploads
+          result.successful.forEach(file => {
+            window.__nbUppyLarge.removeFile(file.id);
+            this.mainDialog.removeFile(file.id);
+          });
+          // Open the dialog
+          this.mainDialog.open();
+        }
+        // Refresh the files
+        if (activeFolderMatch) {
+          // We are still in the same folder, so refresh the files
+          console.debug('Refreshing files:', menuStore.activeFolder);
+          fileStore.refreshFoldersAfterFetch = true;
+          fileStore.fetchFiles(menuStore.activeFolder, true);
+        } else {
+          // We are not in the same folder, we may want to preemtively refresh folder list
+          menuStore.fetchFolders();
+        }
+        // Reset the isLoading state
+        this.mainDialog.isLoading = false;
+      })
+      .on('progress', (progress) => {
+        // progress: integer (total progress percentage)
+        this.mainDialog.uploadProgress = progress > 0 ? progress + '%' : null;
+      })
+      .on('upload-progress', (file, progress) => {
+        // Skip progress updates for files that are already marked as complete
+        // This prevents Uppy warnings about setting progress on completed files
+        if (file.progress && file.progress.uploadComplete) {
+          return;
+        }
+
+        // Update the file progress in the fileStore
+        const fileData = this.mainDialog.getFileById(file.id);
+        const fileProgress = progress.bytesUploaded / progress.bytesTotal;
+        if (fileData) {
+          fileData.uppy.progress = Math.round(fileProgress * 100);
+          fileData.uppy.bytesUploaded = progress.bytesUploaded;
+        }
+      })
+      .on('upload-error', (file, error, response) => {
+        console.debug('error with file:', file.id);
+        console.debug('error message:', error);
+        console.debug('error response:', response);
+        // Find the file in the fileStore and mark it as errored
+        const fileData = this.mainDialog.getFileById(file.id);
+        if (fileData) {
+          fileData.uppy.uploadError = true;
+          fileData.uppy.errorMessage = error.message;
+          fileData.uppy.errorResponse = response;
+        }
+        // If we receive a 401 error, it means the user is not authenticated
+        if (response && response.status === 401) {
+          // Redirect to login page
+          console.debug('User is not authenticated, redirecting to login page...');
+          profileStore.unauthenticated = true;
+        }
+      })
+      .on('info-visible', () => {
+        const { info } = window.__nbUppyLarge.getState();
+        // Log the entire info object to see its structure
+        console.debug('Full info object:', info);
+        // According to Uppy docs, info structure should be:
+        // info: {
+        //  isHidden: false,
+        //  type: 'error',
+        //  message: 'Failed to upload',
+        //  details: 'Error description'
+        // }
+        if (info && info.message) {
+          // Build message with only defined parts
+          let infoMessage = info.message;
+          if (info.details) {
+            infoMessage += ` - ${info.details}`;
+          }
+          console.debug(`Info (${info.type || 'unknown'}): ${infoMessage}`);
+        }
+      })
+      .on('file-removed', (file) => {
+        console.debug('File removed:', file);
+        // Remove the file from the fileStore
+        this.mainDialog.removeFile(file.id);
+        // Remove file from the fileStore
+        fileStore.files = fileStore.files.filter(f => f.id !== file.id);
+        // If no more files in uppy reset prgress and close the dialog
+        if (window.__nbUppyLarge.getFiles().length === 0) {
+          this.mainDialog.uploadProgress = null;
+          this.mainDialog.isLoading = false;
+          this.mainDialog.clearFiles();
+        }
+      })
+      .on('upload-retry', (fileId) => {
+        console.debug('Retrying upload:', fileId);
+        // Reset the uploadError state
+        const fileData = this.mainDialog.getFileById(fileId);
+        if (fileData) {
+          fileData.uppy.uploadError = false;
+          fileData.uppy.errorMessage = '';
+          fileData.uppy.errorResponse = null;
+        }
+      })
+      .on('retry-all', () => {
+        console.debug('Retrying all uploads');
+        // Reset the uploadError state for all files
+        this.mainDialog.currentFiles.forEach(file => {
+          file.uppy.uploadError = false;
+          file.uppy.errorMessage = '';
+          file.uppy.errorResponse = null;
+        });
+      })
+      .on('thumbnail:generated', (file, preview) => {
+        // This depends on Dashboard plugin
+        // Update the file preview in the fileStore
+        const fileData = this.mainDialog.getFileById(file.id);
+        if (fileData) {
+          fileData.uppy.preview = preview;
+        }
+      });
+    console.debug('Uppy instance created:', el.id);
+    // Dynamic note
+    Alpine.effect(() => {
+      if (window.__nbUppyLarge && profileStore.profileInfo) {
+        // For large file uploads, set no file size limit (use null instead of 0)
+        const accountLevel = profileStore.profileInfo.accountLevel || 0;
+        const allowedFileTypes = this.getAllowedFileTypes(accountLevel);
+        let note = 'Video and Archives';
+        switch (accountLevel) {
+          default:
+            note += ', including archives';
+            break;
+        }
+        note += `, no limit per file`;
+        window.__nbUppyLarge.setOptions({
+          restrictions: {
+            minFileSize: 200 * 1024 * 1024, // 200 MiB
+            maxFileSize: null, // No limit (null instead of 0)
+            maxTotalFileSize: null, // No limit (null instead of 0)
+            allowedFileTypes: allowedFileTypes,
+          },
+        });
+        window.__nbUppyLarge.getPlugin('Dashboard').setOptions({
+          note: note,
+        });
+      }
+    });
+  },
+});
 
 Alpine.store('GAI', {
   ImageShow: false,
@@ -4028,15 +4689,14 @@ Alpine.store('GAI', {
 // Register an AlpineJS effect to warn users about leaving the page or refreshing when uploading files via uppy or URL import
 Alpine.effect(() => {
   const uppyStore = Alpine.store('uppyStore');
+  const largeFileStore = Alpine.store('uppyLargeStore');
   const urlImportStore = Alpine.store('urlImportStore');
   const GAI = Alpine.store('GAI');
-  const menuStore = Alpine.store('menuStore');
-  const fileStore = Alpine.store('fileStore');
-  const profileStore = Alpine.store('profileStore');
   const isUploading = uppyStore.mainDialog.isLoading;
+  const isLargeFileUploading = largeFileStore.mainDialog.isLoading;
   const isImporting = urlImportStore.isLoading;
   const isGenerating = GAI.ImageLoading;
-  const isUploadingFiles = isUploading || isImporting || isGenerating;
+  const isUploadingFiles = isUploading || isLargeFileUploading || isImporting || isGenerating;
 
   if (isUploadingFiles) {
     window.onbeforeunload = function (e) {
@@ -4048,6 +4708,8 @@ Alpine.effect(() => {
     window.onbeforeunload = null;
   }
 });
+
+
 
 // MUST BE EXECUTED AFTER ALL STORES ARE DEFINED
 Alpine.start();

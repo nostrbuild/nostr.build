@@ -2,6 +2,7 @@
 require_once $_SERVER['DOCUMENT_ROOT'] . '/config.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/MultimediaUpload.class.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/S3Service.class.php';
+require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/S3Multipart.class.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/db/UploadsData.class.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/db/UsersImages.class.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/db/UsersImagesFolders.class.php';
@@ -143,6 +144,13 @@ $container->set('deleteMediaFactory', function () {
   return new DeleteMediaFactory($link, $awsConfig);
 });
 
+// S3 Multipart upload handler
+$container->set('s3Multipart', function () {
+  global $link;
+  global $awsConfig;
+  return new S3Multipart($awsConfig, $link);
+});
+
 
 // Create app
 $app = AppFactory::create();
@@ -198,6 +206,7 @@ require_once __DIR__ . '/routes_account.php'; // Include pro account routes
 require_once __DIR__ . '/routes_btcpay.php'; // Include btcpay routes
 require_once __DIR__ . '/routes_gifs.php'; // Include gif routes
 require_once __DIR__ . '/routes_blossom.php'; // Include blossom routes
+require_once __DIR__ . '/routes_s3.php'; // Include S3 multipart upload routes
 
 $contentLengthMiddleware = new ContentLengthMiddleware();
 $app->add($contentLengthMiddleware);
