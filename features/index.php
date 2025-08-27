@@ -21,7 +21,7 @@ $perm = new Permission();
   <meta name="description" content="A complete and detailed list of nostr.build features with images supporting the nostr social media platform. nostr.build is a cloud media hosting service that is paid in bitcoin and lightning and hosts user images to share." />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-  <link rel="stylesheet" href="/styles/twbuild.css?v=920a0e17db88f82402694db62c66bb24" />
+  <link rel="stylesheet" href="/styles/twbuild.css?v=b2580d01f2b473fecd26c7a6f90dc31c" />
   <link rel="stylesheet" href="/styles/index.css?v=16013407201d48c976a65d9ea88a77a3" />
   <link rel="stylesheet" href="/styles/header.css?v=19cde718a50bd676387bbe7e9e24c639" />
   <link rel="icon" href="https://cdn.nostr.build/assets/01.png" />
@@ -167,38 +167,54 @@ $perm = new Permission();
       }
     }
 
-    /* Ultra-simple static background elements - no animation flicker */
-    .bg-element {
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      background: Black;
+    }
+
+    .blur-container {
       position: absolute;
-      border-radius: 50%;
-      filter: blur(40px);
-      opacity: 0.4;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
       pointer-events: none;
-      will-change: auto;
+      z-index: 0;
+      filter: blur(var(--blur, 12vw));
+      overflow: hidden;
     }
 
-    .bg-element-1 {
-      top: 15%;
-      left: 10%;
-      width: 400px;
-      height: 400px;
-      background: radial-gradient(circle, #884ea4 0%, transparent 70%);
+    .blur-container>* {
+      grid-column: 1 / -1;
+      grid-row: 1 / -1;
     }
 
-    .bg-element-2 {
-      top: 60%;
-      right: 10%;
-      width: 350px;
-      height: 350px;
-      background: radial-gradient(circle, #2edf95 0%, transparent 70%);
+    .shape {
+      margin: 0 auto;
+      aspect-ratio: 1;
+      position: relative;
+      width: var(--width, 100%);
+      top: var(--top, 0);
+      left: var(--left, 0);
+      clip-path: var(--path, polygon(0% 0%, 100% 0%, 100% 100%, 0% 100%));
+      background: var(--background, radial-gradient(circle at 30% 30%, #a770ef 0%, #f6d365 100%), radial-gradient(circle at 70% 70%, #f6d365 0%, #fd6e6a 100%));
+      scale: var(--scale, 1);
+      opacity: var(--opacity, 0.66);
+      mix-blend-mode: difference;
+      rotate: var(--offset, 0deg);
+      animation: turn var(--speed, 16000ms) linear infinite;
     }
 
-    .bg-element-3 {
-      bottom: 20%;
-      left: 20%;
-      width: 300px;
-      height: 300px;
-      background: radial-gradient(circle, #d251d5 0%, transparent 70%);
+    @keyframes turn {
+      to {
+        rotate: calc(var(--offset, 0deg) + 1turn);
+      }
     }
 
     /* Beautiful JS-powered Carousel with Fade Transition */
@@ -274,19 +290,14 @@ $perm = new Permission();
 </head>
 
 <body class="min-h-screen bg-gradient-to-tr from-[#292556] to-[#120a24] overflow-x-hidden">
+  <div class="blur-container" style="--blur:12vw;">
+    <div class="shape" style="--path:polygon(50.9% 37.2%, 43.5% 34.7%, 33.6% 26.1%, 39.2% 10.8%, 26.2% 0.0%, 4.8% 6.4%, 0.0% 30.4%, 20.7% 37.2%, 33.4% 26.3%, 43.2% 34.9%, 45.0% 35.6%, 43.6% 46.4%, 37.8% 59.5%, 21.8% 63.2%, 11.7% 76.1%, 22.9% 91.3%, 47.4% 91.3%, 54.0% 79.0%, 38.0% 59.6%, 43.9% 46.4%, 45.2% 35.5%, 50.9% 37.6%, 56.1% 36.8%, 59.8% 47.6%, 70.3% 61.9%, 87.7% 56.0%, 96.4% 37.4%, 88.6% 15.1%, 63.7% 16.7%, 55.2% 33.6%, 55.9% 36.6%, 50.9% 37.2%);"></div>
+    <div class="shape" style="--path:polygon(50.9% 37.2%, 43.5% 34.7%, 33.6% 26.1%, 39.2% 10.8%, 26.2% 0.0%, 4.8% 6.4%, 0.0% 30.4%, 20.7% 37.2%, 33.4% 26.3%, 43.2% 34.9%, 45.0% 35.6%, 43.6% 46.4%, 37.8% 59.5%, 21.8% 63.2%, 11.7% 76.1%, 22.9% 91.3%, 47.4% 91.3%, 54.0% 79.0%, 38.0% 59.6%, 43.9% 46.4%, 45.2% 35.5%, 50.9% 37.6%, 56.1% 36.8%, 59.8% 47.6%, 70.3% 61.9%, 87.7% 56.0%, 96.4% 37.4%, 88.6% 15.1%, 63.7% 16.7%, 55.2% 33.6%, 55.9% 36.6%, 50.9% 37.2%); --offset:180deg; --speed: 6000ms; --background: linear-gradient( cyan, blue, green, purple, cyan);"></div>
+  </div>
+
   <header class="header relative z-20">
     <?php include $_SERVER['DOCUMENT_ROOT'] . '/components/mainnav.php'; ?>
   </header>
-
-  <!-- Ultra-simple static background -->
-  <div class="fixed inset-0 overflow-hidden pointer-events-none z-0">
-    <div class="absolute inset-0 bg-gradient-to-tr from-[#292556] to-[#120a24]">
-      <!-- Static blurred elements for subtle depth -->
-      <div class="bg-element bg-element-1"></div>
-      <div class="bg-element bg-element-2"></div>
-      <div class="bg-element bg-element-3"></div>
-    </div>
-  </div>
 
   <main class="relative z-10 flex flex-col items-center justify-center w-full">
     <!-- Hero Section -->
@@ -996,12 +1007,12 @@ $perm = new Permission();
               <!-- Router/Network Icon Background -->
               <div class="absolute top-4 right-4 opacity-20">
                 <svg xmlns="http://www.w3.org/2000/svg" width="120" height="120" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="text-[#6366f1]">
-                  <rect width="20" height="8" x="2" y="14" rx="2"/>
-                  <path d="M6.01 18H6"/>
-                  <path d="M10.01 18H10"/>
-                  <path d="M15 10v4"/>
-                  <path d="M17.84 7.17a4 4 0 0 0-5.66 0"/>
-                  <path d="M20.66 4.34a8 8 0 0 0-11.31 0"/>
+                  <rect width="20" height="8" x="2" y="14" rx="2" />
+                  <path d="M6.01 18H6" />
+                  <path d="M10.01 18H10" />
+                  <path d="M15 10v4" />
+                  <path d="M17.84 7.17a4 4 0 0 0-5.66 0" />
+                  <path d="M20.66 4.34a8 8 0 0 0-11.31 0" />
                 </svg>
               </div>
               <!-- Content -->
@@ -1016,47 +1027,48 @@ $perm = new Permission();
                     <div class="text-sm text-[#d0bed8]">Uptime</div>
                   </div>
                   <div class="text-center">
-                    <div class="text-3xl font-bold text-[#6366f1] mb-2">< 100ms</div>
-                    <div class="text-sm text-[#d0bed8]">Response</div>
+                    <div class="text-3xl font-bold text-[#6366f1] mb-2">
+                      < 100ms</div>
+                        <div class="text-sm text-[#d0bed8]">Response</div>
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
           </div>
-        </div>
 
-        <!-- Global CDN Feature -->
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
-          <div class="scroll-reveal lg:order-2">
-            <h3 class="text-4xl font-bold gradient-text mb-6">Lightning-Fast Global CDN</h3>
-            <p class="text-xl text-[#d0bed8] mb-8 leading-relaxed">
-              Your content delivered at the speed of light with our worldwide content delivery network.
-              Backed up across multiple providers for maximum reliability.
-            </p>
-            <div class="space-y-4">
-              <div class="flex items-center">
-                <span class="text-[#dabd55] mr-3">✓</span>
-                <span class="text-[#d0bed8]">Global edge locations</span>
-              </div>
-              <div class="flex items-center">
-                <span class="text-[#dabd55] mr-3">✓</span>
-                <span class="text-[#d0bed8]">Multiple provider backup</span>
-              </div>
-              <div class="flex items-center">
-                <span class="text-[#dabd55] mr-3">✓</span>
-                <span class="text-[#d0bed8]">Optimized compression</span>
+          <!-- Global CDN Feature -->
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+            <div class="scroll-reveal lg:order-2">
+              <h3 class="text-4xl font-bold gradient-text mb-6">Lightning-Fast Global CDN</h3>
+              <p class="text-xl text-[#d0bed8] mb-8 leading-relaxed">
+                Your content delivered at the speed of light with our worldwide content delivery network.
+                Backed up across multiple providers for maximum reliability.
+              </p>
+              <div class="space-y-4">
+                <div class="flex items-center">
+                  <span class="text-[#dabd55] mr-3">✓</span>
+                  <span class="text-[#d0bed8]">Global edge locations</span>
+                </div>
+                <div class="flex items-center">
+                  <span class="text-[#dabd55] mr-3">✓</span>
+                  <span class="text-[#d0bed8]">Multiple provider backup</span>
+                </div>
+                <div class="flex items-center">
+                  <span class="text-[#dabd55] mr-3">✓</span>
+                  <span class="text-[#d0bed8]">Optimized compression</span>
+                </div>
               </div>
             </div>
-          </div>
-          <div class="scroll-reveal lg:order-1">
-            <!-- Placeholder for CDN diagram -->
-            <div class="bg-gradient-to-br from-[#292556] to-[#1e1530] rounded-2xl h-80 border border-[#392f73] overflow-hidden">
-              <!-- 634x317 image of the globe, fill to cover the div https://cdn.nostr.build/assets/fpv2/ww-connect@0.33x.png -->
-              <img src="https://cdn.nostr.build/assets/fpv2/ww-connect@0.33x.png" alt="Global CDN Map" class="w-full h-full object-cover">
+            <div class="scroll-reveal lg:order-1">
+              <!-- Placeholder for CDN diagram -->
+              <div class="bg-gradient-to-br from-[#292556] to-[#1e1530] rounded-2xl h-80 border border-[#392f73] overflow-hidden">
+                <!-- 634x317 image of the globe, fill to cover the div https://cdn.nostr.build/assets/fpv2/ww-connect@0.33x.png -->
+                <img src="https://cdn.nostr.build/assets/fpv2/ww-connect@0.33x.png" alt="Global CDN Map" class="w-full h-full object-cover">
+              </div>
             </div>
           </div>
         </div>
-      </div>
     </section>
 
     <!-- Account Tiers Section -->

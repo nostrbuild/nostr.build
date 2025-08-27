@@ -52,9 +52,22 @@ $e2Config = [
     'use_aws_shared_config_files' => false,
 ];
 
+$r2UploadConfig = [
+    'region'  => $_SERVER['UP_R2_REGION'],
+    'version' => $_SERVER['UP_R2_VERSION'],
+    'endpoint' => $_SERVER['UP_R2_ENDPOINT'],
+    'credentials' => [
+        'key'    => $_SERVER['UP_R2_ACCESS_KEY'],
+        'secret' => $_SERVER['UP_R2_SECRET_KEY'],
+    ],
+    'bucket' => $_SERVER['UP_R2_BUCKET'],
+    'use_aws_shared_config_files' => false,
+];
+
 $awsConfig = [
     'r2' => $r2Config,
     'e2' => $e2Config,
+    'upload' => $r2UploadConfig,
 ];
 
 $btcpayConfig = [
