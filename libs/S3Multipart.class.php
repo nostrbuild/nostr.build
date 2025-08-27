@@ -578,7 +578,7 @@ class S3Multipart
         error_log("Stored multipart upload in database: ID $insertId, filename: {$filenameShort} for user: {$userNpubShort}$folderInfo");
         // Send upload hook
         // We only accept two types now, video or archive, TODO: Update for new types
-        $fileType = str_starts_with($fileData['mime_type'], 'video/') ? 'video' : 'archive';
+        $fileType = str_starts_with($fileData['mimeType'], 'video/') ? 'video' : 'archive';
         $fileTooLarge = $fileData['fileSize'] > 8 * 1024 ** 2 ** 1024; // 
         $doVirusScan = in_array($fileType, ['archive', 'document', 'text', 'other']) && !$fileTooLarge;
         $nameWithoutExtension = pathinfo($fileData['filename'], PATHINFO_FILENAME);
