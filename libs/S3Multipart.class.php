@@ -87,7 +87,7 @@ class S3Multipart
       }
 
       // Generate unique key for the upload
-      $key = $this->generateUploadKey($filename, $userNpub);
+      $key = $this->generateUploadKey($filename, $userNpub, $contentType);
 
       // Create multipart upload
       $result = $this->s3Client->createMultipartUpload([
@@ -365,13 +365,25 @@ class S3Multipart
    * 
    * @param string $filename Original filename
    * @param string $userNpub User's npub
+   * @param string $mimeType MIME type of the file
    * @return string Unique key
    */
-  private function generateUploadKey(string $filename, string $userNpub): string
+  private function generateUploadKey(string $filename, string $userNpub, string $mimeType): string
   {
-    $extension = pathinfo($filename, PATHINFO_EXTENSION);
-    $hash = hash('sha256', $userNpub . time() . random_bytes(16));
-    return "uploads/{$userNpub}/" . $hash . ($extension ? '.' . $extension : '');
+    // Get the correct extension from MIME type using our utils function
+    $accountLevel = (int)$_SESSION['acctlevel'] ?? 0;
+    $allowedMimes = getAllowedMimesArray($accountLevel);
+    $fileExtension = $allowedMimes[$mimeType] ?? null;
+
+    // Fallback to original filename extension if MIME type not found
+    if (!$fileExtension) {
+      $fileExtension = pathinfo($filename, PATHINFO_EXTENSION);
+      error_log("Warning: MIME type '$mimeType' not found in allowed types, using original extension: $fileExtension");
+    }
+
+    $nanoid = getUniqueNanoId();
+    $finalFilename = $fileExtension ? "{$nanoid}." . strtolower($fileExtension) : $nanoid;
+    return "uploads/{$userNpub}/" . $finalFilename;
   }
 
   /**
@@ -473,23 +485,13 @@ class S3Multipart
         throw new Exception("Failed to get object metadata from upload bucket");
       }
 
-      // Generate nanoid-based filename with correct extension
+      // Extract the existing filename from the upload key (reuse the same filename)
       $originalFilename = $uploadInfo['filename'];
-
-      // Get the correct extension from MIME type using our utils function
       $mimeType = $metadata['ContentType'];
-      $accountLevel = (int)$_SESSION['acctlevel'] ?? 0;
-      $allowedMimes = getAllowedMimesArray($accountLevel); // Get MIME type to extension mapping
-      $fileExtension = $allowedMimes[$mimeType] ?? null;
-
-      // Fallback to original filename extension if MIME type not found
-      if (!$fileExtension) {
-        $fileExtension = pathinfo($originalFilename, PATHINFO_EXTENSION);
-        error_log("Warning: MIME type '$mimeType' not found in allowed types, using original extension: $fileExtension");
-      }
-
-      $nanoid = getUniqueNanoId();
-      $newFilename = $fileExtension ? "{$nanoid}." . strtolower($fileExtension) : $nanoid;
+      
+      // Extract filename from the key path (uploads/npub/filename.ext)
+      $keyParts = explode('/', $key);
+      $newFilename = end($keyParts); // Get the last part which is the filename
 
       // Create destination path like "uploads/npub.../filename.ext" 
       $destinationKey = "uploads/{$uploadInfo['userNpub']}/{$newFilename}";
