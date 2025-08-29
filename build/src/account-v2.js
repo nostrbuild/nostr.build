@@ -4204,8 +4204,8 @@ Alpine.store('uppyLargeStore', {
         getChunkSize(file) {
           // Detect if mobile phone
           const isMobile = window?.isMobile() ?? false;
-          const smallChunk = isMobile ? 40 * 1024 * 1024 : 80 * 1024 * 1024;
-          const largeChunk = isMobile ? 80 * 1024 * 1024 : 160 * 1024 * 1024;
+          const smallChunk = isMobile ? 20 * 1024 * 1024 : 80 * 1024 * 1024;
+          const largeChunk = isMobile ? 40 * 1024 * 1024 : 160 * 1024 * 1024;
           // Standard part size: 100MiB
           const maxParts = 9999; // S3 limit
           const minPartSize = file.size < 4 * 1024 ** 3 ? smallChunk : largeChunk;
@@ -4214,7 +4214,7 @@ Alpine.store('uppyLargeStore', {
           const calculatedPartSize = Math.floor(file.size / maxParts);
 
           // Use the larger of: calculated size, minimum size, or standard size
-          const partSize = file.size < smallChunk ?
+          const partSize = file.size <= smallChunk ?
             Math.max((Math.floor(file.size / this.limit), 5 * 1024 ** 2))
             : Math.max(calculatedPartSize, minPartSize);
 
