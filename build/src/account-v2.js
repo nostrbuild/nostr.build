@@ -354,7 +354,7 @@ window.checkURL = async (url) => {
 }
 
 // Multipart API with retry logic for S3 operations
-window.multipartApi = async function(url, options) {
+window.multipartApi = async function (url, options) {
   const { method, headers = {}, body, signal } = options;
 
   // Create axios instance with retry configuration
@@ -696,7 +696,7 @@ Alpine.store('profileStore', {
     },
     // Large Upload
     get isLargeUploadEligible() {
-      return [10, 99].includes(this.accountLevel) &&
+      return [1, 10, 99].includes(this.accountLevel) &&
         !this.accountExpired && !this.storageOverLimit;
     },
     allowed(permission) {
@@ -4172,8 +4172,8 @@ Alpine.store('uppyLargeStore', {
       autoProceed: true, // Automatically upload files after adding them
       allowMultipleUploadBatches: true, // Disallow multiple upload batches
       restrictions: {
-        minFileSize: 200 * 1024 * 1024, // 200MB
-        maxFileSize: null, // No limit
+        minFileSize: 20 * 1024 * 1024, // 10MB
+        maxFileSize: 9999 * 64 * 1024 ** 2, // No limit
         maxTotalFileSize: null, // No limit initially
         allowedFileTypes: this.getAllowedFileTypes(),
       },
@@ -4197,8 +4197,7 @@ Alpine.store('uppyLargeStore', {
 
         // Control when to use multipart uploads (default is 100MiB+)
         shouldUseMultipart(file) {
-          // Use multipart for files larger than 50MiB
-          return file.size > 50 * 1024 * 1024;
+          return true;
         },
 
         // Control chunk/part size for multipart uploads
@@ -4208,14 +4207,16 @@ Alpine.store('uppyLargeStore', {
           const smallChunk = isMobile ? 40 * 1024 * 1024 : 80 * 1024 * 1024;
           const largeChunk = isMobile ? 80 * 1024 * 1024 : 160 * 1024 * 1024;
           // Standard part size: 100MiB
-          const maxParts = 9000; // S3 limit
-          const minPartSize = file.size < 4 * 1024 ** 2 * 1024 ? smallChunk : largeChunk;
+          const maxParts = 9999; // S3 limit
+          const minPartSize = file.size < 4 * 1024 ** 3 ? smallChunk : largeChunk;
 
           // Calculate optimal part size based on file size
           const calculatedPartSize = Math.floor(file.size / maxParts);
 
           // Use the larger of: calculated size, minimum size, or standard size
-          const partSize = Math.max(calculatedPartSize, minPartSize);
+          const partSize = file.size < smallChunk ?
+            Math.max((Math.floor(file.size / this.limit), 5 * 1024 ** 2))
+            : Math.max(calculatedPartSize, minPartSize);
 
           console.debug(`File size: ${file.size} bytes, Part size: ${partSize} bytes (${Math.round(partSize / 1024 / 1024)}MiB)`);
 
@@ -4256,7 +4257,7 @@ Alpine.store('uppyLargeStore', {
         async abortMultipartUpload(file, { key, uploadId, signal }) {
           const filename = encodeURIComponent(key)
           const uploadIdEnc = encodeURIComponent(uploadId)
-          
+
           return await window.multipartApi(`/api/v2/s3/multipart/${uploadIdEnc}?key=${filename}`, {
             method: 'DELETE',
             signal,
@@ -4278,7 +4279,7 @@ Alpine.store('uppyLargeStore', {
 
           const filename = encodeURIComponent(key)
           const uploadIdEnc = encodeURIComponent(uploadId)
-          
+
           return await window.multipartApi(`/api/v2/s3/multipart/${uploadIdEnc}/${partNumber}?key=${filename}`, {
             method: 'GET',
             signal,
@@ -4289,38 +4290,38 @@ Alpine.store('uppyLargeStore', {
           signal?.throwIfAborted()
 
           const filename = encodeURIComponent(key)
-          
+
           try {
             const result = await window.multipartApi(`/api/v2/s3/multipart/${uploadId}?key=${filename}`, {
               method: 'GET',
               signal,
             })
-            
+
             // Check if the response indicates the upload was already completed
             if (result && typeof result === 'object') {
               if (result.completed === true) {
                 console.debug('Multipart upload fully completed, triggering success handler');
-                
+
                 // Only trigger success if the file is FULLY completed (in DB and final storage)
                 const uploadSuccessResponse = {
                   body: {
                     fileData: result.fileData
                   }
                 };
-                
+
                 setTimeout(() => {
                   window.__nbUppyLarge.emit('upload-success', file, uploadSuccessResponse);
                 }, 100);
-                
+
                 // Return empty parts array since upload is complete
                 return [];
               } else if (result.call_completion === true) {
                 console.debug('Server detected S3 upload exists, returning Uppy\'s own parts to trigger completion');
-                
+
                 // Get the parts that Uppy already has in its own state
                 // Uppy maintains these in the file's multipart object
                 const uppyParts = file.multipart?.parts || [];
-                
+
                 if (uppyParts.length === 0) {
                   console.warn('No parts found in Uppy state, creating minimal part list');
                   // Fallback: create a single part representing the whole file
@@ -4333,49 +4334,49 @@ Alpine.store('uppyLargeStore', {
                     }
                   ];
                 }
-                
+
                 // Return Uppy's own parts - this will make Uppy think all parts are uploaded
                 // and it will naturally call completeMultipartUpload()
                 console.debug(`Returning ${uppyParts.length} parts from Uppy's state to trigger completion`);
                 return uppyParts;
               }
             }
-            
+
             // For normal parts listing, return the result as-is
             return result;
-            
+
           } catch (error) {
             console.debug('List parts failed, checking upload status:', error);
-            
+
             // If listing parts fails, check if upload was completed using status endpoint
             try {
               const statusResult = await window.multipartApi(`/api/v2/s3/multipart/${uploadId}/status?key=${filename}`, {
                 method: 'GET',
                 signal,
               });
-              
+
               if (statusResult && statusResult.completed === true) {
                 console.debug('Upload was fully completed via status check, triggering success handler');
-                
+
                 // Only trigger success if the file is FULLY completed
                 const uploadSuccessResponse = {
                   body: {
                     fileData: statusResult.fileData
                   }
                 };
-                
+
                 setTimeout(() => {
                   window.__nbUppyLarge.emit('upload-success', file, uploadSuccessResponse);
                 }, 100);
-                
+
                 // Return empty parts array since upload is complete
                 return [];
               } else if (statusResult && statusResult.call_completion === true) {
                 console.debug('Status check shows S3 upload exists, returning Uppy\'s own parts to trigger completion');
-                
+
                 // Get the parts that Uppy already has in its own state
                 const uppyParts = file.multipart?.parts || [];
-                
+
                 if (uppyParts.length === 0) {
                   console.warn('No parts found in Uppy state via status check, creating minimal part list');
                   // Fallback: create a single part representing the whole file
@@ -4388,16 +4389,16 @@ Alpine.store('uppyLargeStore', {
                     }
                   ];
                 }
-                
+
                 // Return Uppy's own parts - this will make Uppy think all parts are uploaded
                 console.debug(`Status check: Returning ${uppyParts.length} parts from Uppy's state to trigger completion`);
                 return uppyParts;
               }
-              
+
             } catch (statusError) {
               console.debug('Upload status check failed:', statusError);
             }
-            
+
             // Re-throw original error if upload is not completed
             throw error;
           }
@@ -4412,7 +4413,7 @@ Alpine.store('uppyLargeStore', {
 
           const filename = encodeURIComponent(key)
           const uploadIdEnc = encodeURIComponent(uploadId)
-          
+
           return await window.multipartApi(`/api/v2/s3/multipart/${uploadIdEnc}/complete?key=${filename}`, {
             method: 'POST',
             headers: {
@@ -4682,19 +4683,15 @@ Alpine.store('uppyLargeStore', {
     Alpine.effect(() => {
       if (window.__nbUppyLarge && profileStore.profileInfo) {
         // For large file uploads, set no file size limit (use null instead of 0)
+        const absoluteMaxFileSize = 9999 * 64 * 1024 ** 2; // ~625 GiB
         const accountLevel = profileStore.profileInfo.accountLevel || 0;
         const allowedFileTypes = this.getAllowedFileTypes(accountLevel);
         let note = 'Video and Archives';
-        switch (accountLevel) {
-          default:
-            note += ', including archives';
-            break;
-        }
-        note += `, no limit per file`;
+        note += [10, 99].includes(accountLevel) ? `, no limit per file` : ', 6 GiB limit';
         window.__nbUppyLarge.setOptions({
           restrictions: {
-            minFileSize: 200 * 1024 * 1024, // 200 MiB
-            maxFileSize: null, // No limit (null instead of 0)
+            minFileSize: 20 * 1024 * 1024, // 20 MiB
+            maxFileSize: [10, 99].includes(accountLevel) ? absoluteMaxFileSize : 6 * 1024 ** 3, // 6 GiB for free users, no limit for others
             maxTotalFileSize: null, // No limit (null instead of 0)
             allowedFileTypes: allowedFileTypes,
           },

@@ -16,10 +16,10 @@
 	<meta name="msapplication-TileColor" content="#9f00a7">
 	<meta name="theme-color" content="#ffffff">
 
-	<script defer src="/scripts/dist/account-v2.js?v=9798970bbb232615d34cd5f255e14395"></script>
+	<script defer src="/scripts/dist/account-v2.js?v=bcb61f03fb490e2b1c13eeed7ace119e"></script>
 	<link href="/scripts/dist/account-v2.css?v=27ba93e570a70d775737614d6faf6846" rel="stylesheet">
 
-	<link href="/styles/twbuild.css?v=5f6c74c5a8bbb55ad72e3459aa68b277" rel="stylesheet">
+	<link href="/styles/twbuild.css?v=b2580d01f2b473fecd26c7a6f90dc31c" rel="stylesheet">
 
 	<!-- Pre-connect and DNS prefetch -->
 	<link rel="preconnect" href="https://i.nostr.build" crossorigin>
@@ -534,32 +534,38 @@ onDropCB(event) {
 												<li x-cloak x-show="profileStore.profileInfo.nlSubEligible">
 													<div class="flex items-center justify-between">
 														<div class="flex items-center">
-															<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="size-5 text-purple-300 lucide lucide-router-icon lucide-router">
-																<rect width="20" height="8" x="2" y="14" rx="2"/>
-																<path d="M6.01 18H6"/>
-																<path d="M10.01 18H10"/>
-																<path d="M15 10v4"/>
-																<path d="M17.84 7.17a4 4 0 0 0-5.66 0"/>
-																<path d="M20.66 4.34a8 8 0 0 0-11.31 0"/>
+															<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
+																fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+																stroke-linejoin="round"
+																class="size-5 text-purple-300 lucide lucide-router-icon lucide-router">
+																<rect width="20" height="8" x="2" y="14" rx="2" />
+																<path d="M6.01 18H6" />
+																<path d="M10.01 18H10" />
+																<path d="M15 10v4" />
+																<path d="M17.84 7.17a4 4 0 0 0-5.66 0" />
+																<path d="M20.66 4.34a8 8 0 0 0-11.31 0" />
 															</svg>
 															<span class="ml-2 text-sm font-medium text-purple-300">nostr.land Plus</span>
 														</div>
 														<div class="flex items-center gap-2">
 															<!-- Show activation button if eligible but not activated -->
 															<template x-if="profileStore.profileInfo.canActivateNostrLandPlus">
-																<button class="text-xs font-medium bg-purple-600 hover:bg-purple-700 text-white px-2 py-1 rounded-md transition-colors duration-200"
+																<button
+																	class="text-xs font-medium bg-purple-600 hover:bg-purple-700 text-white px-2 py-1 rounded-md transition-colors duration-200"
 																	@click="profileStore.openNlActivationModal()">
 																	Activate
 																</button>
 															</template>
 															<!-- Show manage button if activated -->
 															<template x-if="profileStore.profileInfo.hasNostrLandPlus">
-																<a :href="'https://nostr.land/manage?npub=' + profileStore.profileInfo.npub" 
+																<a :href="'https://nostr.land/manage?npub=' + profileStore.profileInfo.npub"
 																	target="_blank"
 																	class="text-xs font-medium bg-purple-600 hover:bg-purple-700 text-white px-2 py-1 rounded-md transition-colors duration-200 inline-flex items-center gap-1">
 																	Manage
 																	<svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-																		<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
+																		<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+																			d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14">
+																		</path>
 																	</svg>
 																</a>
 															</template>
@@ -568,20 +574,21 @@ onDropCB(event) {
 													<!-- Show subscription details if activated -->
 													<template x-if="profileStore.profileInfo.hasNostrLandPlus">
 														<div class="mt-1 flex items-center justify-between text-xs text-purple-400">
-															<span x-text="'Active until ' + new Date(profileStore.profileInfo.nostrLandExpiresAt).toLocaleDateString()"></span>
-															<span class="text-purple-300 font-medium" 
+															<span
+																x-text="'Active until ' + new Date(profileStore.profileInfo.nostrLandExpiresAt).toLocaleDateString()"></span>
+															<span class="text-purple-300 font-medium"
 																x-text="Math.ceil((new Date(profileStore.profileInfo.nostrLandExpiresAt) - new Date()) / (1000 * 60 * 60 * 24)) + ' days'">
 															</span>
 														</div>
 													</template>
 												</li>
 												<!-- /NostrLand Plus Widget -->
-												
+
 												<!-- Separator -->
 												<li x-cloak x-show="profileStore.profileInfo.nlSubEligible">
 													<div class="border-t border-purple-300/20 my-2"></div>
 												</li>
-												
+
 												<!-- Storage Usage Widget -->
 												<li>
 													<div class="flex items-center justify-between">
@@ -605,7 +612,8 @@ onDropCB(event) {
 												</li>
 												<!-- /Storage Usage Widget -->
 												<!-- User Credits Widget -->
-												<li x-cloak x-show="profileStore.profileInfo.availableCredits > 0 && profileStore.profileInfo.debitedCredits > 0">
+												<li x-cloak
+													x-show="profileStore.profileInfo.availableCredits > 0 && profileStore.profileInfo.debitedCredits > 0">
 													<div class="flex items-center justify-between">
 														<div class="flex items-center">
 															<svg aria-hidden="true" class="size-5 text-nbpurple-300" viewBox="0 0 24 24" fill="none"
@@ -829,9 +837,7 @@ onDropCB(event) {
 													<li x-show="profileStore.profileInfo.allowed(item.allowed)">
 														<a :href="item.route"
 															:class="{ 'bg-nbpurple-800 text-nbpurple-50': menuStore.activeMenu === item.name, 'text-nbpurple-300 hover:text-nbpurple-50 hover:bg-nbpurple-800': menuStore.activeMenu !== item.name }"
-															class="group flex gap-x-3 rounded-md p-2 text-sm leading-6 font-semibold"
-															target="_blank"
-															>
+															class="group flex gap-x-3 rounded-md p-2 text-sm leading-6 font-semibold" target="_blank">
 															<svg aria-hidden="true" class="size-6 shrink-0" fill="none" viewBox="0 0 24 24"
 																stroke-width="1.5" stroke="currentColor" aria-hidden="true" x-html="item.icon"></svg>
 															<span x-text="item.name"></span>
@@ -1693,15 +1699,15 @@ onDropCB(event) {
 									x-text="'(' + (uppyStore.mainDialog.uploadProgress || '0%') + ')'"></span>
 							</button>
 							<!-- Large File Upload button -->
-							<button x-cloak x-show="profileStore.profileInfo.isLargeUploadEligible && profileStore.profileInfo.accountLevel >= 1" 
-								@click="uppyLargeStore.mainDialog.toggle()"
-								type="button"
+							<button x-cloak
+								x-show="profileStore.profileInfo.isLargeUploadEligible && profileStore.profileInfo.accountLevel >= 1"
+								@click="uppyLargeStore.mainDialog.toggle()" type="button"
 								class="ml-3 inline-flex items-center rounded-md bg-nbpurple-600 px-3 py-2 text-xs font-semibold text-nbpurple-50 shadow-sm hover:bg-nbpurple-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-nbpurple-600">
-								<svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"
-									stroke-linecap="round" stroke-linejoin="round" class="size-4">
-									<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-									<polyline points="17,8 12,3 7,8"/>
-									<line x1="12" y1="3" x2="12" y2="15"/>
+								<svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" stroke-linecap="round"
+									stroke-linejoin="round" class="size-4">
+									<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+									<polyline points="17,8 12,3 7,8" />
+									<line x1="12" y1="3" x2="12" y2="15" />
 								</svg>
 								<span class="hidden sm:inline-block sm:ml-1"
 									x-text="uppyLargeStore.mainDialog.isOpen ? 'Hide' : uppyLargeStore.mainDialog.uploadProgress ? 'Uploading' : 'Large Files'"></span>
@@ -1876,20 +1882,22 @@ onDropCB(event) {
 					<!-- /File upload area -->
 
 					<!-- Large File upload area -->
-					<div x-cloak x-show="uppyLargeStore.mainDialog.isOpen && profileStore.profileInfo.isLargeUploadEligible && profileStore.profileInfo.accountLevel >= 1"
+					<div x-cloak
+						x-show="uppyLargeStore.mainDialog.isOpen && profileStore.profileInfo.isLargeUploadEligible && profileStore.profileInfo.accountLevel >= 1"
 						class="z-20 sticky top-28 lg:top-12 bg-nbpurple-900/75 py-2 px-4 md:px-4 backdrop-filter backdrop-blur-md max-h-[52svh]">
 						<div class="flex items-center justify-between mb-4">
-							<h3 class="text-amber-200 font-semibold">Large File Upload (Video and Archives >200MiB) [beta]</h3>
-							<button @click="uppyLargeStore.mainDialog.close()" 
-								class="text-nbpurple-400 hover:text-nbpurple-200">
+							<h3 class="text-nbpurple-200 font-semibold">Large File(s) Upload (Videos and Archives >20MiB) [beta]</h3>
+							<button @click="uppyLargeStore.mainDialog.close()" class="text-nbpurple-400 hover:text-nbpurple-200">
 								<svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-									<path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"></path>
+									<path fill-rule="evenodd"
+										d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+										clip-rule="evenodd"></path>
 								</svg>
 							</button>
 						</div>
-						
+
 						<!-- Large File Upload (Uppy) -->
-						<div x-init="uppyLargeStore.instantiateLargeFileUppy($el)" 
+						<div x-init="uppyLargeStore.instantiateLargeFileUppy($el)"
 							class="rounded-lg border border-dashed border-nbpurple-50/25 py-1 w-full h-full max-h-[40svh] overflow-y-scroll overflow-visible">
 							<!-- Large File Uppy component will be inserted here -->
 						</div>
@@ -2259,16 +2267,14 @@ onDropCB(event) {
 												</div>
 												<!-- /Multi-select -->
 											</div>
-											
+
 											<!-- Scan Results Popover -->
-											<div x-show="showPopover && scanResults" 
-												x-transition:enter="transition ease-out duration-200"
+											<div x-show="showPopover && scanResults" x-transition:enter="transition ease-out duration-200"
 												x-transition:enter-start="opacity-0 transform scale-95"
 												x-transition:enter-end="opacity-100 transform scale-100"
 												x-transition:leave="transition ease-in duration-150"
 												x-transition:leave-start="opacity-100 transform scale-100"
-												x-transition:leave-end="opacity-0 transform scale-95"
-												@click.away="showPopover = false"
+												x-transition:leave-end="opacity-0 transform scale-95" @click.away="showPopover = false"
 												x-effect="
 													if (showPopover && scanResults) {
 														$nextTick(() => {
@@ -2326,65 +2332,69 @@ onDropCB(event) {
 															}, 500); // Delay to allow popover to fully show first
 														});
 													}
-												"
-												class="absolute z-50 w-80 sm:w-96 max-w-[calc(100vw-2rem)] bg-nbpurple-900/95 backdrop-blur-sm border border-nbpurple-600/50 rounded-lg shadow-2xl">
-												
+												" class="absolute z-50 w-80 sm:w-96 max-w-[calc(100vw-2rem)] bg-nbpurple-900/95 backdrop-blur-sm border border-nbpurple-600/50 rounded-lg shadow-2xl">
+
 												<div class="p-5">
 													<div class="flex items-center justify-between pb-3 mb-4 border-b border-nbpurple-600/30">
 														<div class="flex items-center gap-2">
-															<span class="text-nbpurple-300" x-html="getIcon(scanResults?.status || 'unknown', 'size-5')"></span>
+															<span class="text-nbpurple-300"
+																x-html="getIcon(scanResults?.status || 'unknown', 'size-5')"></span>
 															<span class="font-semibold text-base text-nbpurple-100">Virus Scan Results</span>
 														</div>
-														<button @click="showPopover = false" class="text-nbpurple-400 hover:text-nbpurple-200 p-1 rounded">
-															<svg class="size-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+														<button @click="showPopover = false"
+															class="text-nbpurple-400 hover:text-nbpurple-200 p-1 rounded">
+															<svg class="size-4" fill="none" viewBox="0 0 24 24" stroke-width="2"
+																stroke="currentColor">
 																<path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
 															</svg>
 														</button>
 													</div>
-													
+
 													<!-- File Info -->
 													<div class="mb-4 p-3 bg-nbpurple-800/40 rounded-lg border border-nbpurple-600/20">
 														<div class="flex items-center gap-3">
 															<span class="text-nbpurple-300" x-html="getIconByMime(file.mime, 'size-5')"></span>
 															<div class="min-w-0 flex-1">
-																<p class="font-medium text-nbpurple-100 truncate" x-text="file.title?.length > 0 ? file.title : file.name"></p>
+																<p class="font-medium text-nbpurple-100 truncate"
+																	x-text="file.title?.length > 0 ? file.title : file.name"></p>
 																<p class="text-sm text-nbpurple-400" x-text="formatBytes(file.size)"></p>
 															</div>
 														</div>
 													</div>
-													
+
 													<div class="space-y-4">
 														<!-- Status -->
 														<div class="flex justify-between items-center py-1">
 															<span class="text-nbpurple-300 font-medium">Status:</span>
-															<span class="font-semibold capitalize px-3 py-1.5 rounded-md text-sm"
-																:class="{
+															<span class="font-semibold capitalize px-3 py-1.5 rounded-md text-sm" :class="{
 																	'bg-green-900/30 text-green-300 border border-green-600/20': scanResults?.status === 'clean',
 																	'bg-yellow-900/30 text-yellow-300 border border-yellow-600/20': scanResults?.status === 'pending',
 																	'bg-red-900/30 text-red-300 border border-red-600/20': scanResults?.status === 'infected',
 																	'bg-nbpurple-700/50 text-nbpurple-200 border border-nbpurple-600/30': scanResults?.status === 'unknown' || !scanResults?.status
-																}"
-																x-text="scanResults?.status || 'Unknown'"></span>
+																}" x-text="scanResults?.status || 'Unknown'"></span>
 														</div>
-														
+
 														<!-- Message -->
 														<div x-show="scanResults?.message" class="flex justify-between items-start gap-4 py-1">
 															<span class="text-nbpurple-300 font-medium whitespace-nowrap">Message:</span>
-															<span class="font-medium text-nbpurple-100 text-right leading-relaxed break-words" 
+															<span class="font-medium text-nbpurple-100 text-right leading-relaxed break-words"
 																x-text="scanResults?.message"></span>
 														</div>
-														
+
 														<!-- Date -->
-														<div x-show="scanResults?.date && scanResults?.status !== 'pending'" class="flex justify-between items-start gap-4 py-1">
+														<div x-show="scanResults?.date && scanResults?.status !== 'pending'"
+															class="flex justify-between items-start gap-4 py-1">
 															<span class="text-nbpurple-300 font-medium whitespace-nowrap">Scanned:</span>
-															<span class="font-medium text-nbpurple-100 text-right text-sm leading-relaxed break-words" 
+															<span class="font-medium text-nbpurple-100 text-right text-sm leading-relaxed break-words"
 																x-text="scanResults?.date ? new Date(scanResults.date).toLocaleString() : 'N/A'"></span>
 														</div>
-														
+
 														<!-- Scanner Version -->
 														<div x-show="scanResults?.version" class="flex justify-between items-center py-1">
 															<span class="text-nbpurple-300 font-medium">Version:</span>
-															<span class="font-mono text-sm bg-nbpurple-800/50 px-2 py-1 rounded text-nbpurple-100 ml-4 break-all" x-text="scanResults?.version"></span>
+															<span
+																class="font-mono text-sm bg-nbpurple-800/50 px-2 py-1 rounded text-nbpurple-100 ml-4 break-all"
+																x-text="scanResults?.version"></span>
 														</div>
 													</div>
 												</div>
@@ -3545,17 +3555,19 @@ onDropCB(event) {
 														class="block w-full rounded-md border-0 py-1.5 bg-nostrpurple-600 text-nostrpurple-50 shadow-sm ring-1 ring-inset ring-nostrpurple-300 placeholder:text-nostrpurple-400 focus:ring-2 focus:ring-inset focus:ring-nostrpurple-600"></textarea>
 												</div>
 												<!-- Kind selection switch (only show for media files) -->
-												<div class="mt-3 flex items-center justify-center space-x-3" 
-													x-show="nostrStore.share.selectedFiles.length === 0 || nostrStore.share.selectedFiles.every(f => f.mime && (f.mime.startsWith('image/') || f.mime.startsWith('video/') || f.mime.startsWith('audio/')))"
-												>
+												<div class="mt-3 flex items-center justify-center space-x-3"
+													x-show="nostrStore.share.selectedFiles.length === 0 || nostrStore.share.selectedFiles.every(f => f.mime && (f.mime.startsWith('image/') || f.mime.startsWith('video/') || f.mime.startsWith('audio/')))">
 													<span class="text-sm text-nostrpurple-200">Note (Kind 1)</span>
-													<div class="relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-nostrpurple-600 focus:ring-offset-2"
+													<div
+														class="relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-nostrpurple-600 focus:ring-offset-2"
 														:class="nostrStore.share.selectedKind === 1 ? 'bg-nostrpurple-600' : 'bg-nostrpurple-400'"
 														@click="nostrStore.share.selectedKind = nostrStore.share.selectedKind === 1 ? 20 : 1">
-														<span class="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out"
+														<span
+															class="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out"
 															:class="nostrStore.share.selectedKind === 1 ? 'translate-x-0' : 'translate-x-5'"></span>
 													</div>
-													<span class="text-sm text-nostrpurple-200" x-text="nostrStore.share.getMediaTypeLabel()"></span>
+													<span class="text-sm text-nostrpurple-200"
+														x-text="nostrStore.share.getMediaTypeLabel()"></span>
 												</div>
 											</div>
 											<!-- List of selected media -->
@@ -3644,16 +3656,20 @@ onDropCB(event) {
 							class="relative transform overflow-hidden rounded-lg bg-nostrpurple-700 text-left shadow-xl transition-all mb-24 w-full max-w-md">
 							<div class="bg-nostrpurple-700 px-4 pb-4 pt-5">
 								<div class="flex">
-									<div class="mx-auto flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-green-100">
-										<svg class="h-6 w-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+									<div
+										class="mx-auto flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-green-100">
+										<svg class="h-6 w-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+											stroke="currentColor">
 											<path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
 										</svg>
 									</div>
 									<div class="mt-3 text-center sm:ml-4 sm:mt-0 sm:text-left">
-										<h3 class="text-base font-semibold leading-6 text-nostrpurple-50" id="success-modal-title">Media Shared Successfully!</h3>
+										<h3 class="text-base font-semibold leading-6 text-nostrpurple-50" id="success-modal-title">Media
+											Shared Successfully!</h3>
 										<div class="mt-2">
 											<p class="text-sm text-nostrpurple-100">Your media has been published to Nostr successfully.</p>
-											<div x-show="nostrStore.share.publishedEventId && nostrStore.share.publishedEventId.length > 0" class="mt-3 p-2 bg-nostrpurple-800 rounded">
+											<div x-show="nostrStore.share.publishedEventId && nostrStore.share.publishedEventId.length > 0"
+												class="mt-3 p-2 bg-nostrpurple-800 rounded">
 												<p class="text-xs text-nostrpurple-200">
 													<strong>Event ID:</strong>
 												</p>
@@ -4687,17 +4703,19 @@ onDropCB(event) {
 																						class="block w-full rounded-md border-0 py-1.5 bg-nostrpurple-600 text-nostrpurple-50 shadow-sm ring-1 ring-inset ring-nostrpurple-300 placeholder:text-nostrpurple-400 focus:ring-2 focus:ring-inset focus:ring-nostrpurple-600"></textarea>
 																				</div>
 																				<!-- Kind selection switch (only show for media files) -->
-																				<div class="mt-3 flex items-center justify-center space-x-3" 
-													x-show="nostrStore.share.selectedFiles.length === 0 || nostrStore.share.selectedFiles.every(f => f.mime && (f.mime.startsWith('image/') || f.mime.startsWith('video/') || f.mime.startsWith('audio/')))"
-												>
+																				<div class="mt-3 flex items-center justify-center space-x-3"
+																					x-show="nostrStore.share.selectedFiles.length === 0 || nostrStore.share.selectedFiles.every(f => f.mime && (f.mime.startsWith('image/') || f.mime.startsWith('video/') || f.mime.startsWith('audio/')))">
 																					<span class="text-sm text-nostrpurple-200">Note (Kind 1)</span>
-																					<div class="relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-nostrpurple-600 focus:ring-offset-2"
+																					<div
+																						class="relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-nostrpurple-600 focus:ring-offset-2"
 																						:class="nostrStore.share.selectedKind === 1 ? 'bg-nostrpurple-600' : 'bg-nostrpurple-400'"
 																						@click="nostrStore.share.selectedKind = nostrStore.share.selectedKind === 1 ? 20 : 1">
-																						<span class="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out"
+																						<span
+																							class="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out"
 																							:class="nostrStore.share.selectedKind === 1 ? 'translate-x-0' : 'translate-x-5'"></span>
 																					</div>
-																					<span class="text-sm text-nostrpurple-200" x-text="nostrStore.share.getMediaTypeLabel()"></span>
+																					<span class="text-sm text-nostrpurple-200"
+																						x-text="nostrStore.share.getMediaTypeLabel()"></span>
 																				</div>
 																			</div>
 																			<!-- Error message -->
@@ -4873,7 +4891,8 @@ onDropCB(event) {
 										</p>
 										<!-- Link to Full analytics at https://analytics.nostr.build/ -->
 										<p class="text-nbpurple-400 text-center text-sm pt-2">
-											<a :href="'https://analytics.nostr.build/' + profileStore.profileInfo.npub + '/media/' + encodeURIComponent(fileStore.mediaProperties.targetFile?.url)" target="_blank" rel="noopener noreferrer">📊 View Full Analytics</a>
+											<a :href="'https://analytics.nostr.build/' + profileStore.profileInfo.npub + '/media/' + encodeURIComponent(fileStore.mediaProperties.targetFile?.url)"
+												target="_blank" rel="noopener noreferrer">📊 View Full Analytics</a>
 										</p>
 										<!-- /Link to Full analytics -->
 									</div>
@@ -5311,17 +5330,19 @@ onDropCB(event) {
 				x-transition:enter-end="opacity-100 scale-100" x-transition:leave="ease-in duration-200"
 				x-transition:leave-start="opacity-100 scale-100" x-transition:leave-end="opacity-0 scale-95">
 				<div class="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
-					<div @click.outside="profileStore.closeNlActivationModal()" 
+					<div @click.outside="profileStore.closeNlActivationModal()"
 						class="relative transform overflow-hidden rounded-lg bg-nbpurple-800 px-4 pb-4 pt-5 text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg sm:p-6">
 						<div>
 							<div class="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-purple-100">
-								<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-6 w-6 text-purple-600 lucide lucide-router-icon lucide-router">
-									<rect width="20" height="8" x="2" y="14" rx="2"/>
-									<path d="M6.01 18H6"/>
-									<path d="M10.01 18H10"/>
-									<path d="M15 10v4"/>
-									<path d="M17.84 7.17a4 4 0 0 0-5.66 0"/>
-									<path d="M20.66 4.34a8 8 0 0 0-11.31 0"/>
+								<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+									stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+									class="h-6 w-6 text-purple-600 lucide lucide-router-icon lucide-router">
+									<rect width="20" height="8" x="2" y="14" rx="2" />
+									<path d="M6.01 18H6" />
+									<path d="M10.01 18H10" />
+									<path d="M15 10v4" />
+									<path d="M17.84 7.17a4 4 0 0 0-5.66 0" />
+									<path d="M20.66 4.34a8 8 0 0 0-11.31 0" />
 								</svg>
 							</div>
 							<div class="mt-3 text-center sm:mt-5">
@@ -5330,32 +5351,35 @@ onDropCB(event) {
 								</h3>
 								<div class="mt-2">
 									<p class="text-sm text-nbpurple-300">
-										You are about to activate your nostr.land Plus subscription. This will enable premium features and integrations.
+										You are about to activate your nostr.land Plus subscription. This will enable premium features and
+										integrations.
 									</p>
 									<div class="mt-4 p-4 bg-red-900 bg-opacity-50 rounded-md border border-red-700">
 										<p class="text-sm text-red-200 font-medium">
-											⚠️ <strong>Important:</strong> Once activated, you will no longer be eligible for refunds on your current subscription period.
+											⚠️ <strong>Important:</strong> Once activated, you will no longer be eligible for refunds on your
+											current subscription period.
 										</p>
 									</div>
 								</div>
 							</div>
 						</div>
 						<div class="mt-5 sm:mt-6 sm:grid sm:grid-flow-row-dense sm:grid-cols-2 sm:gap-3">
-							<button type="button" 
-								@click="profileStore.activateNostrLandPlus()"
+							<button type="button" @click="profileStore.activateNostrLandPlus()"
 								:disabled="profileStore.nlActivationLoading"
 								class="inline-flex w-full justify-center rounded-md bg-purple-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-purple-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-purple-600 disabled:opacity-50 disabled:cursor-not-allowed sm:col-start-2">
 								<span x-show="!profileStore.nlActivationLoading">Activate Now</span>
 								<span x-show="profileStore.nlActivationLoading" class="flex items-center">
-									<svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+									<svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none"
+										viewBox="0 0 24 24">
 										<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-										<path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+										<path class="opacity-75" fill="currentColor"
+											d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
+										</path>
 									</svg>
 									Activating...
 								</span>
 							</button>
-							<button type="button" 
-								@click="profileStore.closeNlActivationModal()"
+							<button type="button" @click="profileStore.closeNlActivationModal()"
 								:disabled="profileStore.nlActivationLoading"
 								class="mt-3 inline-flex w-full justify-center rounded-md bg-nbpurple-700 px-3 py-2 text-sm font-semibold text-nbpurple-100 shadow-sm ring-1 ring-inset ring-nbpurple-600 hover:bg-nbpurple-600 disabled:opacity-50 disabled:cursor-not-allowed sm:col-start-1 sm:mt-0">
 								Cancel

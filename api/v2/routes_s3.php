@@ -14,12 +14,12 @@ use Slim\Routing\RouteCollectorProxy;
 $perm = new Permission();
 
 $app->group('/s3', function (RouteCollectorProxy $group) {
-  
+
   // Route to create multipart upload
   $group->post('/multipart', function (Request $request, Response $response) {
     $startTime = microtime(true);
     $data = $request->getParsedBody();
-    
+
     // Validate required fields
     if (empty($data['filename']) || empty($data['type'])) {
       $endTime = microtime(true);
@@ -27,7 +27,7 @@ $app->group('/s3', function (RouteCollectorProxy $group) {
       error_log("S3 API: POST /multipart - VALIDATION_ERROR - {$duration}ms");
       return jsonResponse($response, 'error', 'Missing required fields: filename, type', new stdClass(), 400);
     }
-    
+
     try {
       $s3Multipart = $this->get('s3Multipart');
       $result = $s3Multipart->createMultipartUpload(
@@ -36,19 +36,18 @@ $app->group('/s3', function (RouteCollectorProxy $group) {
         $data['metadata'] ?? [],
         $_SESSION['usernpub']
       );
-      
+
       if (!$result) {
         $endTime = microtime(true);
         $duration = round(($endTime - $startTime) * 1000, 2);
         error_log("S3 API: POST /multipart - FAILED - {$duration}ms");
         return jsonResponse($response, 'error', 'Failed to create multipart upload', new stdClass(), 500);
       }
-      
+
       $endTime = microtime(true);
       $duration = round(($endTime - $startTime) * 1000, 2);
       error_log("S3 API: POST /multipart - SUCCESS - {$duration}ms - File: " . substr($data['filename'], 0, 10));
       return jsonResponse($response, 'success', 'Multipart upload created', $result);
-      
     } catch (Exception $e) {
       $endTime = microtime(true);
       $duration = round(($endTime - $startTime) * 1000, 2);
@@ -65,9 +64,9 @@ $app->group('/s3', function (RouteCollectorProxy $group) {
     $partNumber = (int)$args['partNumber'];
     $queryParams = $request->getQueryParams();
     $key = $queryParams['key'] ?? '';
-    
+
     $uploadIdShort = substr($uploadId, 0, 10);
-    
+
     // Validate required fields
     if (empty($uploadId) || empty($key) || $partNumber < 1) {
       $endTime = microtime(true);
@@ -75,7 +74,7 @@ $app->group('/s3', function (RouteCollectorProxy $group) {
       error_log("S3 API: GET /multipart/{$uploadIdShort}/{$partNumber} - VALIDATION_ERROR - {$duration}ms");
       return jsonResponse($response, 'error', 'Missing required parameters: uploadId, key, partNumber', new stdClass(), 400);
     }
-    
+
     try {
       $s3Multipart = $this->get('s3Multipart');
       $result = $s3Multipart->signPart(
@@ -84,19 +83,18 @@ $app->group('/s3', function (RouteCollectorProxy $group) {
         $partNumber,
         $_SESSION['usernpub']
       );
-      
+
       if (!$result) {
         $endTime = microtime(true);
         $duration = round(($endTime - $startTime) * 1000, 2);
         error_log("S3 API: GET /multipart/{$uploadIdShort}/{$partNumber} - FAILED - {$duration}ms");
         return jsonResponse($response, 'error', 'Failed to sign part', new stdClass(), 500);
       }
-      
+
       $endTime = microtime(true);
       $duration = round(($endTime - $startTime) * 1000, 2);
       error_log("S3 API: GET /multipart/{$uploadIdShort}/{$partNumber} - SUCCESS - {$duration}ms");
       return jsonResponse($response, 'success', 'Part signed', $result);
-      
     } catch (Exception $e) {
       $endTime = microtime(true);
       $duration = round(($endTime - $startTime) * 1000, 2);
@@ -113,9 +111,9 @@ $app->group('/s3', function (RouteCollectorProxy $group) {
     $uploadId = $args['uploadId'];
     $queryParams = $request->getQueryParams();
     $key = $queryParams['key'] ?? '';
-    
+
     $uploadIdShort = substr($uploadId, 0, 10);
-    
+
     // Validate required fields
     if (empty($uploadId) || empty($key)) {
       $endTime = microtime(true);
@@ -123,13 +121,13 @@ $app->group('/s3', function (RouteCollectorProxy $group) {
       error_log("S3 API: GET /multipart/{$uploadIdShort}/status - VALIDATION_ERROR - {$duration}ms");
       return jsonResponse($response, 'error', 'Missing required parameters: uploadId, key', new stdClass(), 400);
     }
-    
+
     try {
       $s3Multipart = $this->get('s3Multipart');
-      
+
       // Check comprehensive completion status (database + S3)
       $completionStatus = $s3Multipart->checkForCompletedUpload($key, $_SESSION['usernpub']);
-      
+
       if ($completionStatus) {
         if ($completionStatus['status'] === 'fully_completed') {
           // File is fully completed in database
@@ -160,7 +158,6 @@ $app->group('/s3', function (RouteCollectorProxy $group) {
           'completed' => false
         ]);
       }
-      
     } catch (Exception $e) {
       $endTime = microtime(true);
       $duration = round(($endTime - $startTime) * 1000, 2);
@@ -177,9 +174,9 @@ $app->group('/s3', function (RouteCollectorProxy $group) {
     $uploadId = $args['uploadId'];
     $queryParams = $request->getQueryParams();
     $key = $queryParams['key'] ?? '';
-    
+
     $uploadIdShort = substr($uploadId, 0, 10);
-    
+
     // Validate required fields
     if (empty($uploadId) || empty($key)) {
       $endTime = microtime(true);
@@ -187,7 +184,7 @@ $app->group('/s3', function (RouteCollectorProxy $group) {
       error_log("S3 API: GET /multipart/{$uploadIdShort} - VALIDATION_ERROR - {$duration}ms");
       return jsonResponse($response, 'error', 'Missing required parameters: uploadId, key', new stdClass(), 400);
     }
-    
+
     try {
       $s3Multipart = $this->get('s3Multipart');
       $result = $s3Multipart->listParts(
@@ -195,19 +192,18 @@ $app->group('/s3', function (RouteCollectorProxy $group) {
         $key,
         $_SESSION['usernpub']
       );
-      
+
       if ($result === false) {
         $endTime = microtime(true);
         $duration = round(($endTime - $startTime) * 1000, 2);
         error_log("S3 API: GET /multipart/{$uploadIdShort} - FAILED - {$duration}ms");
         return jsonResponse($response, 'error', 'Failed to list parts', new stdClass(), 500);
       }
-      
+
       $endTime = microtime(true);
       $duration = round(($endTime - $startTime) * 1000, 2);
       error_log("S3 API: GET /multipart/{$uploadIdShort} - SUCCESS - {$duration}ms");
       return jsonResponse($response, 'success', 'Parts listed', $result);
-      
     } catch (Exception $e) {
       $endTime = microtime(true);
       $duration = round(($endTime - $startTime) * 1000, 2);
@@ -225,10 +221,10 @@ $app->group('/s3', function (RouteCollectorProxy $group) {
     $queryParams = $request->getQueryParams();
     $key = $queryParams['key'] ?? '';
     $data = $request->getParsedBody();
-    
+
     $uploadIdShort = substr($uploadId, 0, 10);
     $keyShort = substr($key, 0, 10);
-    
+
     // Validate required fields
     if (empty($uploadId) || empty($key) || empty($data['parts'])) {
       $endTime = microtime(true);
@@ -236,7 +232,7 @@ $app->group('/s3', function (RouteCollectorProxy $group) {
       error_log("S3 API: POST /multipart/{$uploadIdShort}/complete - VALIDATION_ERROR - {$duration}ms");
       return jsonResponse($response, 'error', 'Missing required parameters: uploadId, key, parts', new stdClass(), 400);
     }
-    
+
     try {
       $s3Multipart = $this->get('s3Multipart');
       $result = $s3Multipart->completeMultipartUpload(
@@ -245,19 +241,18 @@ $app->group('/s3', function (RouteCollectorProxy $group) {
         $data['parts'],
         $_SESSION['usernpub']
       );
-      
+
       if (!$result) {
         $endTime = microtime(true);
         $duration = round(($endTime - $startTime) * 1000, 2);
         error_log("S3 API: POST /multipart/{$uploadIdShort}/complete - FAILED - {$duration}ms");
         return jsonResponse($response, 'error', 'Failed to complete multipart upload', new stdClass(), 500);
       }
-      
+
       $endTime = microtime(true);
       $duration = round(($endTime - $startTime) * 1000, 2);
       error_log("S3 API: POST /multipart/{$uploadIdShort}/complete - SUCCESS - {$duration}ms - Key: {$keyShort}");
       return jsonResponse($response, 'success', 'Multipart upload completed', $result);
-      
     } catch (Exception $e) {
       $endTime = microtime(true);
       $duration = round(($endTime - $startTime) * 1000, 2);
@@ -274,10 +269,10 @@ $app->group('/s3', function (RouteCollectorProxy $group) {
     $uploadId = $args['uploadId'];
     $queryParams = $request->getQueryParams();
     $key = $queryParams['key'] ?? '';
-    
+
     $uploadIdShort = substr($uploadId, 0, 10);
     $keyShort = substr($key, 0, 10);
-    
+
     // Validate required fields
     if (empty($uploadId) || empty($key)) {
       $endTime = microtime(true);
@@ -285,7 +280,7 @@ $app->group('/s3', function (RouteCollectorProxy $group) {
       error_log("S3 API: DELETE /multipart/{$uploadIdShort} - VALIDATION_ERROR - {$duration}ms");
       return jsonResponse($response, 'error', 'Missing required parameters: uploadId, key', new stdClass(), 400);
     }
-    
+
     try {
       $s3Multipart = $this->get('s3Multipart');
       $result = $s3Multipart->abortMultipartUpload(
@@ -293,19 +288,18 @@ $app->group('/s3', function (RouteCollectorProxy $group) {
         $key,
         $_SESSION['usernpub']
       );
-      
+
       if (!$result) {
         $endTime = microtime(true);
         $duration = round(($endTime - $startTime) * 1000, 2);
         error_log("S3 API: DELETE /multipart/{$uploadIdShort} - FAILED - {$duration}ms");
         return jsonResponse($response, 'error', 'Failed to abort multipart upload', new stdClass(), 500);
       }
-      
+
       $endTime = microtime(true);
       $duration = round(($endTime - $startTime) * 1000, 2);
       error_log("S3 API: DELETE /multipart/{$uploadIdShort} - SUCCESS - {$duration}ms - Key: {$keyShort}");
       return jsonResponse($response, 'success', 'Multipart upload aborted', new stdClass());
-      
     } catch (Exception $e) {
       $endTime = microtime(true);
       $duration = round(($endTime - $startTime) * 1000, 2);
@@ -315,15 +309,15 @@ $app->group('/s3', function (RouteCollectorProxy $group) {
       return jsonResponse($response, 'error', 'Failed to abort multipart upload', new stdClass(), 500);
     }
   });
-
 })->add(function ($request, $handler) use ($perm) {
   // Authentication middleware - same as account routes
-  if (!$perm->validateLoggedin() || !$perm->validatePermissionsLevelMoreThanOrEqual(10)) {
+  // Creator, Advanced+
+  if (!$perm->validateLoggedin() || !$perm->validatePermissionsLevelAny(1, 10, 99)) {
     error_log('User not authenticated or authorized');
     $response = new Slim\Psr7\Response();
     return jsonResponse($response, 'error', 'User not authenticated or authorized', new stdClass(), 401);
   }
-  
+
   // Check if the user account has expired
   $account = $this->get('accountClass')($_SESSION['usernpub']);
   if ($account->isExpired()) {
@@ -331,7 +325,7 @@ $app->group('/s3', function (RouteCollectorProxy $group) {
     $response = new Slim\Psr7\Response();
     return jsonResponse($response, 'error', 'User account expired', new stdClass(), 401);
   }
-  
+
   error_log('User authenticated and authorized for S3: ' . $_SESSION['usernpub'] . PHP_EOL);
   return $handler->handle($request);
 });
