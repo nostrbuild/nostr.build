@@ -190,32 +190,54 @@ class S3Multipart
         throw new Exception('User does not own this upload');
       }
 
-      // Format parts for AWS
-      $awsParts = [];
-      foreach ($parts as $part) {
-        $awsParts[] = [
-          'ETag' => $part['ETag'],
-          'PartNumber' => (int)$part['PartNumber']
-        ];
+      // Check if object already exists as a completed upload (disconnect scenario)
+      $s3ObjectExists = $this->checkS3ObjectExists($key);
+      
+      if ($s3ObjectExists) {
+        // Object already exists - skip S3 completion, just do copy and DB work
+        $uploadIdShort = substr($uploadId, 0, 10);
+        error_log("S3 object already exists for upload: $uploadIdShort - skipping S3 completion, doing copy+DB only");
+        
+        // Get upload metadata from existing S3 object
+        $uploadInfo = $this->getUploadInfoFromS3($uploadId, $key);
+        
+        if (!$uploadInfo) {
+          error_log("Failed to get upload info from existing S3 object for upload: " . substr($uploadId, 0, 10));
+          return [
+            'error' => 'Failed to retrieve upload information from existing object'
+          ];
+        }
+        
+      } else {
+        // Normal flow - complete the multipart upload first
+        
+        // Format parts for AWS
+        $awsParts = [];
+        foreach ($parts as $part) {
+          $awsParts[] = [
+            'ETag' => $part['ETag'],
+            'PartNumber' => (int)$part['PartNumber']
+          ];
+        }
+
+        // Sort parts by part number
+        usort($awsParts, function ($a, $b) {
+          return $a['PartNumber'] - $b['PartNumber'];
+        });
+
+        // Complete the multipart upload
+        $result = $this->s3Client->completeMultipartUpload([
+          'Bucket' => $this->bucket,
+          'Key' => $key,
+          'UploadId' => $uploadId,
+          'MultipartUpload' => [
+            'Parts' => $awsParts
+          ]
+        ]);
+
+        // Get upload metadata from S3 after completion
+        $uploadInfo = $this->getUploadInfoFromS3($uploadId, $key);
       }
-
-      // Sort parts by part number
-      usort($awsParts, function ($a, $b) {
-        return $a['PartNumber'] - $b['PartNumber'];
-      });
-
-      // Complete the multipart upload
-      $result = $this->s3Client->completeMultipartUpload([
-        'Bucket' => $this->bucket,
-        'Key' => $key,
-        'UploadId' => $uploadId,
-        'MultipartUpload' => [
-          'Parts' => $awsParts
-        ]
-      ]);
-
-      // Get upload metadata from S3 instead of session  
-      $uploadInfo = $this->getUploadInfoFromS3($uploadId, $key);
 
       if (!$uploadInfo) {
         error_log("Failed to get upload info from S3 for upload: " . substr($uploadId, 0, 10));
@@ -271,7 +293,7 @@ class S3Multipart
    * @param string $uploadId Upload ID
    * @param string $key Object key
    * @param string $userNpub User's npub
-   * @return array|false List of parts or false on failure
+   * @return array|false List of parts or false on failure. Returns special array with 'completed' flag if upload was already completed.
    */
   public function listParts(string $uploadId, string $key, string $userNpub)
   {
@@ -280,7 +302,6 @@ class S3Multipart
       if (!$this->validateUserOwnership($uploadId, $userNpub, $key)) {
         throw new Exception('User does not own this upload');
       }
-
 
       // List all parts, handling truncated responses
       $parts = [];
@@ -315,6 +336,32 @@ class S3Multipart
 
       return $parts;
     } catch (AwsException $e) {
+      // Check for NoSuchUpload error - this indicates the upload was likely completed and cleaned up
+      if (strpos($e->getAwsErrorCode(), 'NoSuchUpload') !== false) {
+        $uploadIdShort = substr($uploadId, 0, 10);
+        error_log("Upload not found in S3, checking if already completed: $uploadIdShort");
+        
+        // Check if upload was completed in S3 and/or database
+        $completionStatus = $this->checkForCompletedUpload($key, $userNpub);
+        if ($completionStatus) {
+          if ($completionStatus['status'] === 'fully_completed') {
+            // File is fully completed - return file data
+            return [
+              'completed' => true,
+              'fileData' => $completionStatus
+            ];
+          } elseif ($completionStatus['status'] === 's3_completed_needs_processing') {
+            // S3 object exists but needs processing - tell client to call completion
+            error_log("S3 object exists but not processed for upload: $uploadIdShort - instructing client to call completion");
+            return [
+              'call_completion' => true,
+              'key' => $completionStatus['key'],
+              'uploadInfo' => $completionStatus['uploadInfo']
+            ];
+          }
+        }
+      }
+      
       error_log('AWS Error listing parts: ' . $e->getMessage());
       return false;
     } catch (Exception $e) {
@@ -433,7 +480,7 @@ class S3Multipart
   /**
    * Get upload info from S3 metadata (replaces session storage)
    * 
-   * @param string $uploadId Upload ID
+   * @param string $uploadId Upload ID (not used but kept for API compatibility)
    * @param string $key Object key  
    * @return array|false Upload info matching original session structure
    */
@@ -452,14 +499,14 @@ class S3Multipart
 
       // Extract user npub from key path as fallback
       $pathParts = explode('/', $key);
-      $userNpub = (count($pathParts) >= 3 && $pathParts[0] === 'uploads') ? $pathParts[1] : '';
+      $userNpubFromPath = (count($pathParts) >= 3 && $pathParts[0] === 'uploads') ? $pathParts[1] : '';
 
       // Reconstruct the original session structure
       return [
         'key' => $key,
         'filename' => $metadata['original-filename'] ?? basename($key),
         'contentType' => $objectMetadata['ContentType'] ?? 'application/octet-stream',
-        'userNpub' => $metadata['user-npub'] ?? $userNpub,
+        'userNpub' => $metadata['user-npub'] ?? $userNpubFromPath,
         'metadata' => isset($metadata['metadata']) ? json_decode($metadata['metadata'], true) : [],
         'createdAt' => isset($metadata['upload-time']) ? (int)$metadata['upload-time'] : time()
       ];
@@ -699,4 +746,97 @@ class S3Multipart
     // For now, return empty string
     return $this->usersImagesFolders->getFolderNameById($this->userNpub, $folderId);
   }
+
+  /**
+   * Check if object exists in S3 upload bucket
+   * 
+   * @param string $key Object key
+   * @return bool True if object exists
+   */
+  private function checkS3ObjectExists(string $key): bool
+  {
+    try {
+      $this->s3Client->headObject([
+        'Bucket' => $this->bucket,
+        'Key' => $key
+      ]);
+      return true;
+    } catch (AwsException $e) {
+      if ($e->getAwsErrorCode() === 'NotFound') {
+        return false;
+      }
+      // Re-throw other AWS errors
+      throw $e;
+    }
+  }
+
+  /**
+   * Check completion status with comprehensive S3 and database validation
+   * 
+   * @param string $key Object key
+   * @param string $userNpub User's npub
+   * @return array Completion status with action needed
+   */
+  public function checkForCompletedUpload(string $key, string $userNpub): ?array
+  {
+    try {
+      // Extract filename from key (uploads/npub/filename.ext -> filename.ext)
+      $filename = basename($key);
+      $filenameShort = substr($filename, 0, 10);
+      $userNpubShort = substr($userNpub, 0, 10);
+      
+      // Step 1: Check if file exists in database (fully completed)
+      $dbFile = $this->usersImages->findByFilenameAndUser($filename, $userNpub);
+      
+      if ($dbFile) {
+        error_log("Found completed multipart upload in database: {$filenameShort} for user: {$userNpubShort}");
+        
+        // Return file data - fully completed
+        return [
+          'status' => 'fully_completed',
+          'id' => (string)$dbFile['id'],
+          'name' => $dbFile['image'],
+          'title' => $dbFile['title'] ?? $dbFile['image'],
+          'description' => $dbFile['description'] ?? '',
+          'mime' => $dbFile['mime_type'],
+          'media_type' => explode('/', $dbFile['mime_type'])[0],
+          'size' => (int)$dbFile['file_size'],
+          'width' => (int)($dbFile['media_width'] ?? 0),
+          'height' => (int)($dbFile['media_height'] ?? 0),
+          'url' => $this->generateCdnUrl($dbFile['image'], $dbFile['mime_type']),
+          'folder' => $dbFile['folder_id'] ? $this->getFolderName($dbFile['folder_id']) : '',
+          'created_at' => $dbFile['created_at'] ?? date('Y-m-d H:i:s'),
+          'flag' => (int)$dbFile['flag'],
+          'blurhash' => $dbFile['blurhash'],
+          'associated_notes' => $dbFile['associated_notes'] ?? ''
+        ];
+      }
+      
+      // Step 2: Check if object exists in S3 upload bucket (uploaded but not processed)
+      if ($this->checkS3ObjectExists($key)) {
+        error_log("Found completed S3 object but not in database: {$filenameShort} for user: {$userNpubShort} - triggering re-completion");
+        
+        // Get upload info from S3 metadata to prepare for re-completion
+        $uploadInfo = $this->getUploadInfoFromS3('', $key); // uploadId not needed for this call
+        
+        if ($uploadInfo) {
+          // Return status indicating we need to re-trigger completion
+          return [
+            'status' => 's3_completed_needs_processing',
+            'key' => $key,
+            'uploadInfo' => $uploadInfo,
+            'filename' => $filename
+          ];
+        }
+      }
+      
+      // Step 3: Neither in DB nor S3 - truly not completed
+      return null;
+      
+    } catch (Exception $e) {
+      error_log('Error checking for completed upload: ' . $e->getMessage());
+      return null;
+    }
+  }
+
 }

@@ -107,6 +107,70 @@ $app->group('/s3', function (RouteCollectorProxy $group) {
     }
   });
 
+  // Route to check upload status (for completed uploads) (GET)
+  $group->get('/multipart/{uploadId}/status', function (Request $request, Response $response, array $args) {
+    $startTime = microtime(true);
+    $uploadId = $args['uploadId'];
+    $queryParams = $request->getQueryParams();
+    $key = $queryParams['key'] ?? '';
+    
+    $uploadIdShort = substr($uploadId, 0, 10);
+    
+    // Validate required fields
+    if (empty($uploadId) || empty($key)) {
+      $endTime = microtime(true);
+      $duration = round(($endTime - $startTime) * 1000, 2);
+      error_log("S3 API: GET /multipart/{$uploadIdShort}/status - VALIDATION_ERROR - {$duration}ms");
+      return jsonResponse($response, 'error', 'Missing required parameters: uploadId, key', new stdClass(), 400);
+    }
+    
+    try {
+      $s3Multipart = $this->get('s3Multipart');
+      
+      // Check comprehensive completion status (database + S3)
+      $completionStatus = $s3Multipart->checkForCompletedUpload($key, $_SESSION['usernpub']);
+      
+      if ($completionStatus) {
+        if ($completionStatus['status'] === 'fully_completed') {
+          // File is fully completed in database
+          $endTime = microtime(true);
+          $duration = round(($endTime - $startTime) * 1000, 2);
+          error_log("S3 API: GET /multipart/{$uploadIdShort}/status - FULLY_COMPLETED - {$duration}ms");
+          return jsonResponse($response, 'success', 'Upload fully completed', [
+            'completed' => true,
+            'fileData' => $completionStatus
+          ]);
+        } elseif ($completionStatus['status'] === 's3_completed_needs_processing') {
+          // S3 object exists but needs processing - instruct client to call completion
+          $endTime = microtime(true);
+          $duration = round(($endTime - $startTime) * 1000, 2);
+          error_log("S3 API: GET /multipart/{$uploadIdShort}/status - CALL_COMPLETION - {$duration}ms");
+          return jsonResponse($response, 'success', 'Upload exists in S3, call completion', [
+            'call_completion' => true,
+            'key' => $completionStatus['key'],
+            'uploadInfo' => $completionStatus['uploadInfo']
+          ]);
+        }
+      } else {
+        // Not completed at all
+        $endTime = microtime(true);
+        $duration = round(($endTime - $startTime) * 1000, 2);
+        error_log("S3 API: GET /multipart/{$uploadIdShort}/status - NOT_COMPLETED - {$duration}ms");
+        return jsonResponse($response, 'success', 'Upload not completed', [
+          'completed' => false
+        ]);
+      }
+      
+    } catch (Exception $e) {
+      $endTime = microtime(true);
+      $duration = round(($endTime - $startTime) * 1000, 2);
+      $errorShort = substr($e->getMessage(), 0, 50);
+      error_log("S3 API: GET /multipart/{$uploadIdShort}/status - EXCEPTION - {$duration}ms - Error: {$errorShort}");
+      error_log('S3 multipart status check error: ' . $e->getMessage());
+      return jsonResponse($response, 'error', 'Failed to check upload status', new stdClass(), 500);
+    }
+  });
+
   // Route to list uploaded parts (GET)
   $group->get('/multipart/{uploadId}', function (Request $request, Response $response, array $args) {
     $startTime = microtime(true);

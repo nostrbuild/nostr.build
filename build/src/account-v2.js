@@ -4290,10 +4290,117 @@ Alpine.store('uppyLargeStore', {
 
           const filename = encodeURIComponent(key)
           
-          return await window.multipartApi(`/api/v2/s3/multipart/${uploadId}?key=${filename}`, {
-            method: 'GET',
-            signal,
-          })
+          try {
+            const result = await window.multipartApi(`/api/v2/s3/multipart/${uploadId}?key=${filename}`, {
+              method: 'GET',
+              signal,
+            })
+            
+            // Check if the response indicates the upload was already completed
+            if (result && typeof result === 'object') {
+              if (result.completed === true) {
+                console.debug('Multipart upload fully completed, triggering success handler');
+                
+                // Only trigger success if the file is FULLY completed (in DB and final storage)
+                const uploadSuccessResponse = {
+                  body: {
+                    fileData: result.fileData
+                  }
+                };
+                
+                setTimeout(() => {
+                  window.__nbUppyLarge.emit('upload-success', file, uploadSuccessResponse);
+                }, 100);
+                
+                // Return empty parts array since upload is complete
+                return [];
+              } else if (result.call_completion === true) {
+                console.debug('Server detected S3 upload exists, returning Uppy\'s own parts to trigger completion');
+                
+                // Get the parts that Uppy already has in its own state
+                // Uppy maintains these in the file's multipart object
+                const uppyParts = file.multipart?.parts || [];
+                
+                if (uppyParts.length === 0) {
+                  console.warn('No parts found in Uppy state, creating minimal part list');
+                  // Fallback: create a single part representing the whole file
+                  return [
+                    {
+                      PartNumber: 1,
+                      ETag: '"recovered-upload-part"',
+                      Size: file.size || 0,
+                      LastModified: new Date().toISOString()
+                    }
+                  ];
+                }
+                
+                // Return Uppy's own parts - this will make Uppy think all parts are uploaded
+                // and it will naturally call completeMultipartUpload()
+                console.debug(`Returning ${uppyParts.length} parts from Uppy's state to trigger completion`);
+                return uppyParts;
+              }
+            }
+            
+            // For normal parts listing, return the result as-is
+            return result;
+            
+          } catch (error) {
+            console.debug('List parts failed, checking upload status:', error);
+            
+            // If listing parts fails, check if upload was completed using status endpoint
+            try {
+              const statusResult = await window.multipartApi(`/api/v2/s3/multipart/${uploadId}/status?key=${filename}`, {
+                method: 'GET',
+                signal,
+              });
+              
+              if (statusResult && statusResult.completed === true) {
+                console.debug('Upload was fully completed via status check, triggering success handler');
+                
+                // Only trigger success if the file is FULLY completed
+                const uploadSuccessResponse = {
+                  body: {
+                    fileData: statusResult.fileData
+                  }
+                };
+                
+                setTimeout(() => {
+                  window.__nbUppyLarge.emit('upload-success', file, uploadSuccessResponse);
+                }, 100);
+                
+                // Return empty parts array since upload is complete
+                return [];
+              } else if (statusResult && statusResult.call_completion === true) {
+                console.debug('Status check shows S3 upload exists, returning Uppy\'s own parts to trigger completion');
+                
+                // Get the parts that Uppy already has in its own state
+                const uppyParts = file.multipart?.parts || [];
+                
+                if (uppyParts.length === 0) {
+                  console.warn('No parts found in Uppy state via status check, creating minimal part list');
+                  // Fallback: create a single part representing the whole file
+                  return [
+                    {
+                      PartNumber: 1,
+                      ETag: '"recovered-status-upload-part"',
+                      Size: file.size || 0,
+                      LastModified: new Date().toISOString()
+                    }
+                  ];
+                }
+                
+                // Return Uppy's own parts - this will make Uppy think all parts are uploaded
+                console.debug(`Status check: Returning ${uppyParts.length} parts from Uppy's state to trigger completion`);
+                return uppyParts;
+              }
+              
+            } catch (statusError) {
+              console.debug('Upload status check failed:', statusError);
+            }
+            
+            // Re-throw original error if upload is not completed
+            throw error;
+          }
         },
 
         async completeMultipartUpload(

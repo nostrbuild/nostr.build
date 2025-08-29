@@ -178,4 +178,47 @@ class UsersImages extends DatabaseTable
       throw $e;
     }
   }
+
+  /**
+   * Find a completed file by filename and user npub (for multipart upload completion check)
+   * 
+   * @param string $filename The filename to search for
+   * @param string $usernpub User's npub
+   * @return array|null File data if found, null if not found
+   */
+  public function findByFilenameAndUser(string $filename, string $usernpub): ?array
+  {
+    $sql = "
+    SELECT 
+        ui.*,
+        (SELECT GROUP_CONCAT(CONCAT(uni.note_id, ':', UNIX_TIMESTAMP(unn.created_at)))
+         FROM users_nostr_images uni
+         LEFT JOIN users_nostr_notes unn ON uni.note_id = unn.note_id
+         WHERE uni.image_id = ui.id) AS associated_notes
+    FROM {$this->tableName} ui
+    WHERE ui.image = ?
+      AND ui.usernpub = ?
+    ORDER BY ui.created_at DESC
+    LIMIT 1
+    ";
+
+    try {
+      $stmt = $this->db->prepare($sql);
+      $stmt->bind_param('ss', $filename, $usernpub);
+      $stmt->execute();
+      $result = $stmt->get_result();
+
+      if ($result === false) {
+        throw new Exception("Error: " . $this->db->error);
+      }
+
+      $file = $result->fetch_assoc();
+      $stmt->close();
+
+      return $file ?: null;
+    } catch (Exception $e) {
+      error_log("Exception finding file by filename: " . $e->getMessage());
+      throw $e;
+    }
+  }
 }
