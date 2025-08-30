@@ -4515,7 +4515,7 @@ Alpine.store('uppyLargeStore', {
         const currentFile = {
           id: file.id,
           name: file.name,
-          mime: 'uppy/upload',
+          mime: 'uppy/upload-lg',
           media_type: 'uppy',
           size: file.size,
           loaded: false,

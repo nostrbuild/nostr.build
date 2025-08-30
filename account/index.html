@@ -16,7 +16,7 @@
 	<meta name="msapplication-TileColor" content="#9f00a7">
 	<meta name="theme-color" content="#ffffff">
 
-	<script defer src="/scripts/dist/account-v2.js?v=e9868a2230103026c97978f8e9bcaa05"></script>
+	<script defer src="/scripts/dist/account-v2.js?v=f736c9bd6500cf91f8732fc507a9472f"></script>
 	<link href="/scripts/dist/account-v2.css?v=27ba93e570a70d775737614d6faf6846" rel="stylesheet">
 
 	<link href="/styles/twbuild.css?v=b2580d01f2b473fecd26c7a6f90dc31c" rel="stylesheet">
@@ -2415,7 +2415,7 @@ onDropCB(event) {
 											</div>
 											<div>
 												<!-- Uppy Upload Cancel -->
-												<button x-show="!file.uppy.uploadError" @click="uppyStore.instance.removeFile(file.id)"
+												<button x-show="!file.uppy.uploadError" @click="file.mime === 'uppy/upload-lg' ? window.__nbUppyLarge.removeFile(file.id) : window.__nbUppy.removeFile(file.id)"
 													type="button"
 													class="mt-2 px-2 py-1 bg-nbpurple-600 text-nbpurple-50 rounded-md hover:bg-nbpurple-700 focus:outline-none focus:ring-2 focus:ring-nbpurple-500"
 													aria-label="Cancel upload">
@@ -2424,7 +2424,7 @@ onDropCB(event) {
 													</svg>
 												</button>
 												<!-- Uppy Upload Retry -->
-												<button x-show="file.uppy.uploadError" @click="uppyStore.instance.retryUpload(file.id)"
+												<button x-show="file.uppy.uploadError" @click="file.mime === 'uppy/upload-lg' ? window.__nbUppyLarge.retryUpload(file.id) : window.__nbUppy.retryUpload(file.id)"
 													type="button"
 													class="mt-2 px-2 py-1 bg-nbpurple-600 text-nbpurple-50 rounded-md hover:bg-nbpurple-700 focus:outline-none focus:ring-2 focus:ring-nbpurple-500"
 													aria-label="Retry upload">
