@@ -78,7 +78,7 @@ class S3Service
   }
 
   // Upload a file to S3
-  public function uploadToS3($sourcePath, $destinationPath, $sha256 = '', $npub = '', bool $paidAccount = false): bool
+  public function uploadToS3($sourcePath, $destinationPath, $sha256 = '', $npub = '', bool $paidAccount = false, bool $uploadToE2 = false): bool
   {
     $maxRetries = 3;
     $mimeType = mime_content_type($sourcePath);
@@ -177,8 +177,11 @@ class S3Service
 
     $uploadPromises = [
       $attemptUpload($this->r2, $r2Options, $maxRetries),
-      $attemptUpload($this->e2, $e2Options, $maxRetries)
     ];
+
+    if ($uploadToE2) {
+      $uploadPromises[] = $attemptUpload($this->e2, $e2Options, $maxRetries);
+    }
 
     try {
       $results = Promise\Utils::settle($uploadPromises)->wait();
