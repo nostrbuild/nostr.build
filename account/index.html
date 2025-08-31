@@ -19,7 +19,7 @@
 	<script defer src="/scripts/dist/account-v2.js?v=f736c9bd6500cf91f8732fc507a9472f"></script>
 	<link href="/scripts/dist/account-v2.css?v=27ba93e570a70d775737614d6faf6846" rel="stylesheet">
 
-	<link href="/styles/twbuild.css?v=b2580d01f2b473fecd26c7a6f90dc31c" rel="stylesheet">
+	<link href="/styles/twbuild.css?v=137deecf9f0fcc73b6edb31efe30f0ac" rel="stylesheet">
 
 	<!-- Pre-connect and DNS prefetch -->
 	<link rel="preconnect" href="https://i.nostr.build" crossorigin>
@@ -1728,7 +1728,7 @@ onDropCB(event) {
 									<path stroke-linecap="round" stroke-linejoin="round"
 										d="m9.75 9.75 4.5 4.5m0-4.5-4.5 4.5M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
 								</svg>
-								<span class="hidden xs:inline-block xs:ml-1" x-text="multiSelect ? 'Cancel' : 'Select'"></span>
+								<span class="hidden sm:inline-block sm:ml-1" x-text="multiSelect ? 'Cancel' : 'Select'"></span>
 							</button>
 							<!-- Filter button -->
 							<div class="relative inline-block text-left">
@@ -1742,9 +1742,9 @@ onDropCB(event) {
 											stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
 											<polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
 										</svg>
-										<span class="hidden xs:inline-block xs:ml-1"
+										<span class="hidden sm:inline-block sm:ml-1"
 											x-text="fileStore.filters[fileStore.currentFilter]?.name ?? fileStore.filters.all.name"></span>
-										<span class="xs:ml-1"
+										<span class="sm:ml-1"
 											x-html="fileStore.filters[fileStore.currentFilter]?.icon ?? fileStore.filters.all.icon"></span>
 									</button>
 								</div>
