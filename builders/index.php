@@ -59,6 +59,14 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/config.php';
 					<img src="https://i.nostr.build/am9Q.jpg" alt="Dont_₿elieve_the_Hype image" />
 				</figure>
 			</a>
+			<a href="https://nostr.build/" target="_blank">
+				<figure class="builder_card">
+					<div class="card_header">
+						<figcaption class="card_title">nostr.build</figcaption>
+					</div>
+					<img src="https://cdn.nostr.build/assets/builders/nostrbuild.png" alt="nostrbuild image" />
+				</figure>
+			</a>
 			<a href="https://www.btcsessions.ca/" target="_blank">
 				<figure class="builder_card">
 					<div class="card_header">
@@ -83,12 +91,12 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/config.php';
 					<img src="https://us-southeast-1.linodeobjects.com/dufflepud/uploads/b2a7ef93-fa12-469b-bf3d-0f2654cab346.jpg" alt="hodlbod image" />
 				</figure>
 			</a>
-			<a href="https://primal.net" target="_blank">
+			<a href="https://nostr.build" target="_blank">
 				<figure class="builder_card">
 					<div class="card_header">
-						<figcaption class="card_title">Miljan</figcaption>
+						<figcaption class="card_title">Fishcake</figcaption>
 					</div>
-					<img src="https://m.primal.net/HGGp.png" alt="miljan image" />
+					<img src="https://cdn.nostr.build/assets/builders/fishcake.png" alt="fishcake image" />
 				</figure>
 			</a>
 			<a href="https://jeffg.fyi/" target="_blank">
@@ -104,7 +112,7 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/config.php';
 					<div class="card_header">
 						<figcaption class="card_title">Semisol</figcaption>
 					</div>
-					<img src="https://i.nostrimg.com/prank-enthusiast-willingly.gif" alt="semisol image" />
+					<img src="https://i.nostr.build/dfgglqH2rW33d5hx.jpg" alt="semisol image" />
 				</figure>
 			</a>
 			<a href="https://github.com/SeedSigner/seedsigner" target="_blank">
@@ -145,14 +153,6 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/config.php';
 						<figcaption class="card_title">fiatjaf</figcaption>
 					</div>
 					<img src="https://cdn.nostr.build/assets/builders/fiatjaf.png" alt="fiatjaf image" />
-				</figure>
-			</a>
-			<a href="https://coinkite.com" target="_blank">
-				<figure class="builder_card">
-					<div class="card_header">
-						<figcaption class="card_title">NVK</figcaption>
-					</div>
-					<img src="https://cdn.nostr.build/assets/builders/nvk.png" alt="nvk image" />
 				</figure>
 			</a>
 			<a href="https://iris.to/sirius" target="_blank">
@@ -243,14 +243,6 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/config.php';
 					<img src="https://cdn.nostr.build/assets/builders/henry.png" alt="henry image" />
 				</figure>
 			</a>
-			<a href="https://nostr.build/" target="_blank">
-				<figure class="builder_card">
-					<div class="card_header">
-						<figcaption class="card_title">nostr.build</figcaption>
-					</div>
-					<img src="https://cdn.nostr.build/assets/builders/nostrbuild.png" alt="nostrbuild image" />
-				</figure>
-			</a>
 			<a href="https://eden.nostr.land" target="_blank">
 				<figure class="builder_card">
 					<div class="card_header">
@@ -259,36 +251,12 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/config.php';
 					<img src="https://cdn.nostr.build/assets/builders/cameri.png" alt="cameri image" />
 				</figure>
 			</a>
-			<a href="https://nostr.build" target="_blank">
-				<figure class="builder_card">
-					<div class="card_header">
-						<figcaption class="card_title">Fishcake</figcaption>
-					</div>
-					<img src="https://cdn.nostr.build/assets/builders/fishcake.png" alt="fishcake image" />
-				</figure>
-			</a>
-			<a href="https://github.com/ng5jr/nostr.build" target="_blank">
-				<figure class="builder_card">
-					<div class="card_header">
-						<figcaption class="card_title">Ro₿erto</figcaption>
-					</div>
-					<img src="https://cdn.nostr.build/assets/builders/roberto.png" alt="roberto image" />
-				</figure>
-			</a>
-			<a href="https://github.com/ng5jr/nostr.build" target="_blank">
-				<figure class="builder_card">
-					<div class="card_header">
-						<figcaption class="card_title">nahuelg5</figcaption>
-					</div>
-					<img src="https://cdn.nostr.build/assets/builders/nahuelg5.png" alt="nahuelg5 image" />
-				</figure>
-			</a>
-			<a href="https://github.com/ng5jr/nostr.build" target="_blank">
+			<a href="https://github.com/SamSamskies" target="_blank">
 				<figure class="builder_card">
 					<div class="card_header">
 						<figcaption class="card_title">Samsamskies</figcaption>
 					</div>
-					<img src="https://cdn.nostr.build/assets/builders/samsamskies.png" alt="roberto image" />
+					<img src="https://cdn.nostr.build/assets/builders/samsamskies.png" alt="samsamskies image" />
 				</figure>
 			</a>
 			<a href="https://walletscrutiny.com/" target="_blank">
@@ -313,14 +281,6 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/config.php';
 						<figcaption class="card_title">Gigi</figcaption>
 					</div>
 					<img src="https://cdn.nostr.build/assets/builders/gigi.png" alt="gigi image" />
-				</figure>
-			</a>
-			<a href="https://nostr.report/" target="_blank">
-				<figure class="builder_card">
-					<div class="card_header">
-						<figcaption class="card_title">The Nostr Report</figcaption>
-					</div>
-					<img src="https://cdn.nostr.build/assets/builders/nostrreport.gif" alt="nostrreport image" />
 				</figure>
 			</a>
 			<a href="https://pablof7z.com/" target="_blank">
@@ -355,7 +315,7 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/config.php';
 					<img src="https://cdn.nostr.build/assets/builders/jason.png" alt="jason image" />
 				</figure>
 			</a>
-			<a href="https://nostrland.com" target="_blank">
+			<a href="https://zapwall.store" target="_blank">
 				<figure class="builder_card">
 					<div class="card_header">
 						<figcaption class="card_title">Karnage</figcaption>
@@ -401,6 +361,14 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/config.php';
 						<figcaption class="card_title">Rockstar</figcaption>
 					</div>
 					<img src="https://cdn.nostr.build/assets/builders/rockstar.png" alt="rockstar image" />
+				</figure>
+			</a>
+			<a href="https://primal.net" target="_blank">
+				<figure class="builder_card">
+					<div class="card_header">
+						<figcaption class="card_title">miljan</figcaption>
+					</div>
+					<img src="https://m.primal.net/HGGp.png" alt="miljan image" />
 				</figure>
 			</a>
 			<a href="https://lightning.store" target="_blank">

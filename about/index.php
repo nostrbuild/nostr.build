@@ -90,20 +90,8 @@ $perm = new Permission();
       artists and memes<br />
       - Profile picture uploader that properly shrinks, crops and puts your PP
       in a hidden folder<br />
-      - API (NIP96 and Proprietary) for all nostr applications, projects and developers<br /><br />
-
-      nostr.build was recently honored to be part of the first wave of nostr
-      devs to receive a grant from the <a class="ref_link" href="https://opensats.org/blog/nostr-grants-july-2023">OpenSats public charity</a> focused on
-      Bitcoin and Nostr projects. Although this will help greatly with
-      R&D, new projects, growth and overages, the goal is to keep nostr.build
-      ‘self-sustainable’ through account earnings.<br /><br />
-      ** People often ask, “how do you cover costs for free services?"<br>
+      - API (NIP96 and Proprietary) for all nostr applications, projects and developers
     </p>
-
-    <figure class="img_container double_img">
-      <a href="https://opensats.org/blog/nostr-grants-july-2023" target="_blank"><img class="about_img img_horizontal" src="https://cdn.nostr.build/assets/about/opensats.png" alt="opensats grant" height="80" /></a>
-      <a href="https://github.com/nostrbuild/nostr.build" target="_blank"><img class="about_img img_horizontal" src="https://cdn.nostr.build/assets/about/githublogo.png" alt="GitHub" height="80" /></a>
-    </figure>
     <h3 id="accounts">Accounts</h3>
     <section class="paragraph para_square">
       <a href="/plans/"><img class="about_img img_square" src="https://cdn.nostr.build/assets/primo_nostr.png" alt="nostr.build account logo" width="80" /></a>
