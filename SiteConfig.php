@@ -184,7 +184,7 @@ class SiteConfig
   ];
 
   const PURIST_PER_FILE_UPLOAD_LIMIT = 450 * 1024 * 1024; // 450MB in bytes, up to blossom limit
-  const FREE_UPLOAD_LIMIT = 50 * 1024 * 1024; // 50MB in bytes, up to blossom limit
+  const FREE_UPLOAD_LIMIT = 20 * 1024 * 1024; // 20MB in bytes, up to blossom limit
 
   public static function getHost($mediaType)
   {
