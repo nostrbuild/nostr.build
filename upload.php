@@ -1,4 +1,9 @@
 <?php
+// Exit script immediatly, returning Forbidden status
+if (!defined('ALLOW_ACCESS')) {
+	http_response_code(403);
+	exit;
+}
 // Include config and session files
 require_once $_SERVER['DOCUMENT_ROOT'] . '/config.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/MultimediaUpload.class.php';
