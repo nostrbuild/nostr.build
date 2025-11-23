@@ -176,7 +176,7 @@ SVG;
 	<link rel="stylesheet" href="/styles/header.css?v=19cde718a50bd676387bbe7e9e24c639" />
 
 	<script defer src="/scripts/index.js?v=abf530d138a8108c6b6adc0f21969f55"></script>
-	
+
 	<!--
 	<script defer src="https://unpkg.com/magic-snowflakes/dist/snowflakes.min.js"></script>
 	<script>
@@ -207,15 +207,15 @@ SVG;
 			</div>
 		</div>
 
-		<?php if (!$perm->validateLoggedin()): ?>
-			<div class="drag-area">
-				<div class="drag-area_header">
-					<h2 class="drag-area_title text-white">Log in to upload media</h2>
-					<p class="drag-area_subtitle text-white">Log in to upload media. You can upload images, videos, and audio files.</p>
-					<a href="/login/" class="upload_button">Log in</a>
-				</div>
+		<div class="drag-area">
+			<div class="drag-area_header">
+				<h2 class="drag-area_title text-white">Create an account or log into your existing account to upload media</h2>
+				<a href="/login/" class="upload_button">Log in</a>
+				<a href="/plans/" class="upload_button">Plans</a>
+				<a href="/features/" class="upload_button">Features</a>
 			</div>
-		<?php else: ?>
+		</div>
+		<?php if (false): ?>
 			<div class="drag-area">
 
 				<div class="drag-area_loading hidden_element">
