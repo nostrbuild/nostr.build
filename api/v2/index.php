@@ -13,6 +13,10 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/GifBrowser.class.php';
 // Delete media class
 require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/DeleteMedia.class.php';
 
+// Blacklist and Rejected
+require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/db/BlacklistTable.class.php';
+require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/db/RejectedFilesTable.class.php';
+
 use DI\Container;
 use Slim\Factory\AppFactory;
 use Slim\Middleware\ContentLengthMiddleware;
@@ -79,6 +83,17 @@ $container->set('gifBrowser', function () {
 $container->set('uploadsData', function () {
   global $link;
   return new UploadsData($link);
+});
+
+// Setup BlacklistTable
+$container->set('blacklistTable', function () {
+  global $link;
+  return new BlacklistTable($link);
+});
+// Setup RejectedFilesTable
+$container->set('rejectedFilesTable', function () {
+  global $link;
+  return new RejectedFilesTable($link);
 });
 
 
@@ -204,6 +219,7 @@ require_once __DIR__ . '/routes_nip96.php'; // Include nip96 upload routes
 require_once __DIR__ . '/routes_uppy.php'; // Include uppy upload routes
 require_once __DIR__ . '/routes_account.php'; // Include pro account routes
 require_once __DIR__ . '/routes_btcpay.php'; // Include btcpay routes
+require_once __DIR__ . '/routes_banned.php'; // Include btcpay routes
 require_once __DIR__ . '/routes_gifs.php'; // Include gif routes
 require_once __DIR__ . '/routes_blossom.php'; // Include blossom routes
 require_once __DIR__ . '/routes_s3.php'; // Include S3 multipart upload routes
