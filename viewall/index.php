@@ -13,7 +13,7 @@ global $link;
 $perm = new Permission();
 
 // Check if the user is not logged in, if not then redirect him to login page
-if (!$perm->validatePermissionsLevelAny(1, 2, 3, 4, 10) && !$perm->hasPrivilege('canModerate') && !$perm->isAdmin()) {
+if (!$perm->isAdmin()) {
 	header("location: /login");
 	$link->close(); // CLOSE MYSQL LINK
 	exit;
@@ -28,22 +28,22 @@ $view_type = isset($_GET['k']) && in_array($_GET['k'], $allowed_views) ? $_GET['
 
 switch ($view_type) {
 	case 'gif':
-		$perpage = 0;
-		$sql = "SELECT * FROM uploads_data WHERE approval_status = 'approved' AND file_extension = 'gif' AND type = 'picture' ORDER BY upload_date DESC LIMIT ?";
+		$perpage = 100;
+		$sql = "SELECT * FROM uploads_data WHERE approval_status = 'approved' AND file_extension = 'gif' AND type = 'picture' ORDER BY upload_date DESC LIMIT ? OFFSET ?";
 		break;
 	case 'vid':
-		$perpage = 0;
-		$sql = "SELECT * FROM uploads_data WHERE approval_status='approved' AND type='video' ORDER BY upload_date DESC LIMIT ?";
+		$perpage = 20;
+		$sql = "SELECT * FROM uploads_data WHERE approval_status='approved' AND type='video' ORDER BY upload_date DESC LIMIT ? OFFSET ?";
 		break;
 	default:
-		$perpage = 0;
-		$sql = "SELECT * FROM uploads_data WHERE approval_status = 'approved' AND file_extension IN ('jpg', 'jpeg', 'png', 'webp') AND type = 'picture' ORDER BY upload_date DESC LIMIT ?";
+		$perpage = 100;
+		$sql = "SELECT * FROM uploads_data WHERE approval_status = 'approved' AND file_extension IN ('jpg', 'jpeg', 'png', 'webp') AND type = 'picture' ORDER BY upload_date DESC LIMIT ? OFFSET ?";
 		break;
 }
 $start = $page * $perpage;
 $end = $perpage + 1; // Add one to see if there are more pages
 $stmt = $link->prepare($sql);
-$stmt->bind_param('i', $end);
+$stmt->bind_param('ii', $end, $start);
 $stmt->execute();
 $result = $stmt->get_result();
 $morePages = $result->num_rows > $perpage ? true : false;
