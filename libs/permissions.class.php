@@ -32,7 +32,7 @@ class Permission
     $this->isLoggedIn = isset($_SESSION["loggedin"]) && $_SESSION["loggedin"] === true;
     $this->userLevel = $this->isLoggedIn ? $_SESSION["acctlevel"] : null;
     $this->accFlags = $this->isLoggedIn && isset($_SESSION["accflags"]) ? $_SESSION["accflags"] : null;
-    $this->planExpired = $this->isLoggedIn && isset($_SESSION["planexpired"]) ? $_SESSION["planexpired"] : null;
+    $this->planExpired = $this->isLoggedIn && isset($_SESSION["planexpired"]) ? $_SESSION["planexpired"] : true;
     if ($this->isLoggedIn && !empty($_SESSION["usernpub"])) {
       // Set or update the cookie to expire in 1 hour
       $userNpub = $_SESSION["usernpub"];
@@ -67,6 +67,11 @@ class Permission
   function validatePermissionsLevelLessThanOrEqual($requiredLevel)
   {
     return $this->isLoggedIn && $this->userLevel <= $requiredLevel;
+  }
+
+  function isPlanExpired()
+  {
+    return $this->planExpired;
   }
 
   function getUserLevel()

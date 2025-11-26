@@ -207,15 +207,7 @@ SVG;
 			</div>
 		</div>
 
-		<div class="drag-area">
-			<div class="drag-area_header">
-				<h2 class="drag-area_title text-white">Create an account or log into your existing account to upload media</h2>
-				<a href="/login/" class="upload_button">Log in</a>
-				<a href="/plans/" class="upload_button">Plans</a>
-				<a href="/features/" class="upload_button">Features</a>
-			</div>
-		</div>
-		<?php if (false): ?>
+		<?php if ($perm->validatePermissionsLevelAny(1, 2, 10, 99) && !$perm->isPlanExpired()): ?>
 			<div class="drag-area">
 
 				<div class="drag-area_loading hidden_element">
@@ -283,6 +275,15 @@ SVG;
 					</form>
 				</div>
 
+			</div>
+		<?php else: ?>
+			<div class="drag-area">
+				<div class="drag-area_header">
+					<h2 class="drag-area_title text-white">Create an account or log into your existing account to upload media</h2>
+					<a href="/login/" class="upload_button">Log in</a>
+					<a href="/plans/" class="upload_button">Plans</a>
+					<a href="/features/" class="upload_button">Features</a>
+				</div>
 			</div>
 		<?php endif; ?>
 

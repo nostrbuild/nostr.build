@@ -180,6 +180,7 @@ class Account
     $_SESSION['allow_npub_login'] = $this->account['allow_npub_login'] ?? 0;
     $_SESSION['addon_storage'] = $this->account['addon_storage'] ?? 0;
     $_SESSION['referral_code'] = $this->account['referral_code'] ?? '';
+    $_SESSION['planexpired'] = $this->getRemainingSubscriptionDays() === 0 ? true : false;
 
     $accFlags = json_decode($this->account['accflags'] ?? '{}', true);
     if (json_last_error() === JSON_ERROR_NONE) {

@@ -1,12 +1,9 @@
 <?php
-// Exit script immediatly, returning Forbidden status
-if (!defined('ALLOW_ACCESS')) {
-	http_response_code(403);
-	exit;
-}
+
 // Include config and session files
 require_once $_SERVER['DOCUMENT_ROOT'] . '/config.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/MultimediaUpload.class.php';
+require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/permissions.class.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/S3Service.class.php';
 
 // TODO: THIS WILL BE GONE IN THE FUTURE RELEASES
@@ -16,6 +13,15 @@ $stats = $uploadsData->getStats();
 
 $total_files = $stats['total_files'];
 $total_size_gb = round($stats['total_size'] / (1024 * 1024 * 1024), 2); // Convert bytes to GB
+
+// Instantiate permissions class
+$perm = new Permission();
+
+// Exit script immediatly, returning Forbidden status
+if (!$perm->validatePermissionsLevelAny(1, 2, 10, 99) || $perm->isPlanExpired()) {
+	http_response_code(403);
+	exit;
+}
 
 ?>
 <!DOCTYPE html>
