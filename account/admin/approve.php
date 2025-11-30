@@ -698,6 +698,81 @@ if (isset($_POST['searchFile'])) {
           }
         });
       }
+
+      // Hover autoplay for grid videos: play on mouseenter, pause on mouseleave
+      (function() {
+        const setupVideo = (video) => {
+          if (!video || video.dataset.hoverAutoplayInitialized) return;
+          video.dataset.hoverAutoplayInitialized = '1';
+
+          // remember original muted state so we can restore it
+          video.dataset.originalMuted = video.muted ? '1' : '0';
+
+          let hovered = false;
+
+          const overlay = video.parentElement && video.parentElement.querySelector && video.parentElement.querySelector('.media-play-overlay');
+
+          const startPlay = () => {
+            try {
+              if (video.paused) {
+                // Ensure muted while autoplaying to satisfy browser autoplay policies
+                if (!video.muted) {
+                  video.muted = true;
+                  video.dataset._tempMuted = '1';
+                }
+                const p = video.play();
+                if (p && typeof p.catch === 'function') p.catch(() => {});
+              }
+            } catch (e) { /* ignore play errors */ }
+            // hide overlay if present
+            try { if (overlay) overlay.style.opacity = '0'; } catch (e) {}
+          };
+
+          const stopPlay = () => {
+            try {
+              if (!video.paused) video.pause();
+              // restore muted state if we temporarily muted it
+              if (video.dataset._tempMuted) {
+                video.muted = (video.dataset.originalMuted === '1');
+                delete video.dataset._tempMuted;
+              }
+            } catch (e) { /* ignore pause errors */ }
+            // show overlay again
+            try { if (overlay) overlay.style.opacity = ''; } catch (e) {}
+          };
+
+          video.addEventListener('mouseenter', function() {
+            hovered = true;
+            startPlay();
+          });
+
+          video.addEventListener('mouseleave', function() {
+            hovered = false;
+            stopPlay();
+          });
+
+          // On touch devices, pause on touch to avoid accidental plays
+          video.addEventListener('touchstart', function() { stopPlay(); }, { passive: true });
+        };
+
+        // Initialize existing videos inside media previews
+        document.querySelectorAll('.media-preview video').forEach(setupVideo);
+
+        // Watch for dynamically added videos (e.g. AJAX / infinite load)
+        const observer = new MutationObserver((mutations) => {
+          for (const m of mutations) {
+            for (const node of m.addedNodes) {
+              if (node.nodeType !== 1) continue;
+              if (node.matches && node.matches('video')) {
+                setupVideo(node);
+              }
+              const vids = node.querySelectorAll && node.querySelectorAll('video');
+              if (vids && vids.length) vids.forEach(setupVideo);
+            }
+          }
+        });
+        observer.observe(document.body, { childList: true, subtree: true });
+      })();
     });
   </script>
 </head>
@@ -1063,7 +1138,7 @@ if (isset($_POST['searchFile'])) {
                   <source src="<?= htmlspecialchars($thumb, ENT_QUOTES) ?>" type="video/mp4"
                           onerror="this.parentElement.parentElement.classList.add('media-loaded');">
                 </video>
-                <div class="absolute inset-0 flex items-center justify-center bg-black bg-opacity-30 pointer-events-none">
+                <div class="absolute inset-0 flex items-center justify-center bg-black bg-opacity-30 pointer-events-none media-play-overlay" style="transition: opacity 160ms linear;">
                   <svg class="w-12 h-12 text-white opacity-80" fill="currentColor" viewBox="0 0 20 20">
                     <path d="M6.3 2.841A1.5 1.5 0 004 4.11V15.89a1.5 1.5 0 002.3 1.269l9.344-5.89a1.5 1.5 0 000-2.538L6.3 2.84z"/>
                   </svg>
