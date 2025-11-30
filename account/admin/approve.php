@@ -38,7 +38,7 @@ if (isset($_POST['searchFile'])) {
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>nostr.build - Admin Moderation</title>
-  <link rel="stylesheet" href="/styles/twbuild.css?v=80ad617ccd175291d88d275638e5cb40">
+  <link rel="stylesheet" href="/styles/twbuild.css?v=55c61227cf93fa645c958b626ab16209">
   <link rel="icon" href="https://cdn.nostr.build/assets/primo_nostr.png">
   <style>
     [x-cloak] { display: none !important; }
@@ -724,8 +724,8 @@ if (isset($_POST['searchFile'])) {
                 if (p && typeof p.catch === 'function') p.catch(() => {});
               }
             } catch (e) { /* ignore play errors */ }
-            // hide overlay if present
-            try { if (overlay) overlay.style.opacity = '0'; } catch (e) {}
+            // hide overlay if present (tailwind opacity utility)
+            try { if (overlay) overlay.classList.add('opacity-0'); } catch (e) {}
           };
 
           const stopPlay = () => {
@@ -737,8 +737,8 @@ if (isset($_POST['searchFile'])) {
                 delete video.dataset._tempMuted;
               }
             } catch (e) { /* ignore pause errors */ }
-            // show overlay again
-            try { if (overlay) overlay.style.opacity = ''; } catch (e) {}
+            // show overlay again (remove opacity-0)
+            try { if (overlay) overlay.classList.remove('opacity-0'); } catch (e) {}
           };
 
           video.addEventListener('mouseenter', function() {
@@ -763,21 +763,204 @@ if (isset($_POST['searchFile'])) {
           for (const m of mutations) {
             for (const node of m.addedNodes) {
               if (node.nodeType !== 1) continue;
-              if (node.matches && node.matches('video')) {
-                setupVideo(node);
+
+              // If a media-preview element was added, initialize any video inside it
+              if (node.matches && node.matches('.media-preview')) {
+                const vids = node.querySelectorAll && node.querySelectorAll('video');
+                if (vids && vids.length) vids.forEach(v => setupVideo(v));
+                continue;
               }
+
+              // If a video node was added, only initialize it when it's inside a .media-preview
+              if (node.matches && node.matches('video')) {
+                if (node.closest && node.closest('.media-preview')) setupVideo(node);
+                continue;
+              }
+
+              // For other added subtrees, only initialize videos that are inside .media-preview
               const vids = node.querySelectorAll && node.querySelectorAll('video');
-              if (vids && vids.length) vids.forEach(setupVideo);
+              if (vids && vids.length) {
+                vids.forEach(v => {
+                  if (v.closest && v.closest('.media-preview')) setupVideo(v);
+                });
+              }
             }
           }
         });
         observer.observe(document.body, { childList: true, subtree: true });
       })();
+
+      // Image hover zoom (2x) - pop out of container while preserving aspect ratio
+      (function() {
+        const setupImage = (img) => {
+          if (!img || img.dataset.zoomInit) return;
+          img.dataset.zoomInit = '1';
+
+          const preview = img.closest('.media-preview');
+          if (!preview) return;
+
+          let touchPrevent = false;
+
+          const enter = (e) => {
+            try {
+              // Walk up from preview and make any overflow-hidden ancestors visible so
+              // the zoomed image can escape the card. Save previous values to data attributes
+              const ancestors = [];
+              let node = preview;
+              while (node && node !== document.body) {
+                const prevOverflow = node.style.overflow || '';
+                const prevZ = node.style.zIndex || '';
+                node.dataset._oldOverflow = prevOverflow;
+                node.dataset._oldZ = prevZ;
+                // set visible and raise stacking context
+                node.style.overflow = 'visible';
+                node.style.zIndex = '40';
+                ancestors.push(node);
+                node = node.parentElement;
+              }
+              // store ancestors so we can restore them on leave
+              img.dataset._zoomAncestors = ancestors.map(n => {
+                // use a simple identifier: store an attribute on the element
+                const id = 'zoom_' + Math.random().toString(36).slice(2,9);
+                n.dataset._zoomId = id;
+                return id;
+              }).join(' ');
+
+              // Save previous inline styles so we can restore them
+              img.dataset._oldTransform = img.style.transform || '';
+              img.dataset._oldTransformOrigin = img.style.transformOrigin || '';
+              img.dataset._oldObjectFit = img.style.objectFit || '';
+              img.dataset._oldBoxShadow = img.style.boxShadow || '';
+              img.dataset._oldCursor = img.style.cursor || '';
+
+              // Scale the image, set transform-origin to bottom so bottom edge stays aligned,
+              // and translate slightly upward so the zoom appears popped out above the card.
+              img.style.transformOrigin = '50% 100%'; // bottom center
+              img.style.transform = 'translateY(-8px) scale(2)';
+              img.style.zIndex = '50';
+              img.style.boxShadow = '0 12px 36px rgba(0,0,0,0.6)';
+              img.style.objectFit = 'contain';
+              img.style.cursor = 'zoom-out';
+            } catch (err) { /* ignore */ }
+          };
+
+          const leave = (e) => {
+            try {
+              // restore image appearance from saved values
+              img.style.transform = img.dataset._oldTransform || '';
+              img.style.transformOrigin = img.dataset._oldTransformOrigin || '';
+              img.style.zIndex = '';
+              img.style.boxShadow = img.dataset._oldBoxShadow || '';
+              img.style.objectFit = img.dataset._oldObjectFit || '';
+              img.style.cursor = img.dataset._oldCursor || 'zoom-in';
+              delete img.dataset._oldTransform;
+              delete img.dataset._oldTransformOrigin;
+              delete img.dataset._oldObjectFit;
+              delete img.dataset._oldBoxShadow;
+              delete img.dataset._oldCursor;
+
+              // restore ancestor overflow and zIndex from saved data attributes
+              let node = preview;
+              while (node && node !== document.body) {
+                if (node.dataset && typeof node.dataset._oldOverflow !== 'undefined') {
+                  node.style.overflow = node.dataset._oldOverflow;
+                  delete node.dataset._oldOverflow;
+                }
+                if (node.dataset && typeof node.dataset._oldZ !== 'undefined') {
+                  node.style.zIndex = node.dataset._oldZ;
+                  delete node.dataset._oldZ;
+                }
+                if (node.dataset && node.dataset._zoomId) delete node.dataset._zoomId;
+                node = node.parentElement;
+              }
+              delete img.dataset._zoomAncestors;
+            } catch (err) { /* ignore */ }
+          };
+
+          img.addEventListener('mouseenter', enter);
+          img.addEventListener('mouseleave', leave);
+
+          // Support keyboard focus (accessible zoom with focus/blur)
+          img.setAttribute('tabindex', '0');
+          img.addEventListener('focus', enter);
+          img.addEventListener('blur', leave);
+
+          // Touch: treat touchstart as a cancellation of hover zoom to avoid accidental zooms
+          img.addEventListener('touchstart', function() {
+            touchPrevent = true;
+            leave();
+          }, { passive: true });
+        };
+
+        // Initialize existing images
+        document.querySelectorAll('.media-preview img.media-zoom-img').forEach(setupImage);
+
+        // Observe added nodes for images
+        const imgObserver = new MutationObserver((mutations) => {
+          for (const m of mutations) {
+            for (const node of m.addedNodes) {
+              if (node.nodeType !== 1) continue;
+              if (node.matches && node.matches('img.media-zoom-img')) setupImage(node);
+              const imgs = node.querySelectorAll && node.querySelectorAll('img.media-zoom-img');
+              if (imgs && imgs.length) imgs.forEach(setupImage);
+            }
+          }
+        });
+        imgObserver.observe(document.body, { childList: true, subtree: true });
+      })();
+
+      // Show a global loading overlay immediately when clicking an npub link
+      function showGlobalLoading(npub) {
+        const overlay = document.getElementById('globalLoadingOverlay');
+        if (!overlay) return;
+        overlay.classList.remove('hidden');
+        // Add flex layout only when showing to avoid CSS conflict with 'hidden'
+        overlay.classList.add('flex', 'items-center', 'justify-center', 'flex-col', 'gap-4');
+
+        const msg = document.getElementById('globalLoadingMessage');
+        if (msg) {
+          if (npub) {
+            msg.textContent = `Loading user's (${npub}) media...`;
+          } else {
+            msg.textContent = 'Loading user media...';
+          }
+        }
+      }
+
+      document.addEventListener('click', function(e) {
+        try {
+          const anchor = e.target.closest && e.target.closest('a[href*="?npub="]');
+          if (!anchor) return;
+
+          // Only show overlay for normal left-click navigation (not ctrl/cmd/shift clicks or middle-click)
+          if (e.defaultPrevented) return;
+          if (e.button !== 0) return; // only left click
+          if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+
+          // Extract npub param from the link (anchor.href is fully resolved by browser)
+          try {
+            const url = new URL(anchor.href);
+            const npub = url.searchParams.get('npub');
+            showGlobalLoading(npub);
+          } catch (err) {
+            showGlobalLoading();
+          }
+
+          // Let the navigation proceed normally
+        } catch (err) {
+          // ignore
+        }
+      });
     });
   </script>
 </head>
 
 <body class="min-h-screen bg-gradient-to-br from-[#292556] to-[#120a24] text-gray-100">
+  <!-- Global Loading Overlay (Tailwind only; hidden by default). Shown when clicking an npub link. -->
+  <div id="globalLoadingOverlay" class="hidden fixed inset-0 bg-black bg-opacity-90 z-50" aria-hidden="true">
+    <div class="w-16 h-16 border-4 border-gray-500 border-t-purple-400 rounded-full animate-spin" role="status" aria-label="Loading"></div>
+    <div id="globalLoadingMessage" class="text-gray-200 text-sm text-center mt-2">Loading user media...</div>
+  </div>
   <!-- Media Modal -->
   <div id="mediaModal" class="hidden">
     <div class="fixed inset-0 bg-black bg-opacity-90 z-50 flex items-center justify-center p-4" onclick="closeMediaModal()">
@@ -838,7 +1021,7 @@ if (isset($_POST['searchFile'])) {
         <h3 id="progressTitle" class="text-xl font-bold text-purple-300 mb-4">Processing...</h3>
         <div class="mb-4">
           <div class="h-2 bg-purple-500/20 rounded-full overflow-hidden">
-            <div id="progressBarFill" class="h-full bg-purple-500 rounded-full transition-all duration-300" style="width: 0%"></div>
+            <div id="progressBarFill" class="h-full bg-purple-500 rounded-full transition-all duration-300 w-0"></div>
           </div>
         </div>
         <p id="progressText" class="text-gray-300 text-center mb-2">Starting...</p>
@@ -1113,22 +1296,21 @@ if (isset($_POST['searchFile'])) {
              data-status="<?= htmlspecialchars($approval_status) ?>">
           <div class="media-card">
             <!-- Media Preview -->
-            <div class="media-preview w-full bg-gray-900/50 relative overflow-hidden cursor-pointer"
-                 style="min-height: 150px; min-width: 150px; padding-bottom: 100%;"
-                 data-media-url="<?= htmlspecialchars($mediaUrl) ?>"
-                 data-media-type="<?= $media_type ?>">
+              <div class="media-preview w-full bg-gray-900/50 relative overflow-hidden cursor-pointer min-h-[150px] min-w-[150px] pb-[100%]"
+                data-media-url="<?= htmlspecialchars($mediaUrl) ?>"
+                data-media-type="<?= $media_type ?>">
               <!-- Loading Spinner -->
               <div class="media-loading absolute inset-0 flex items-center justify-center bg-[#110a1f]/90 z-10">
                 <div class="w-10 h-10 border-4 border-purple-500/30 border-t-purple-500 rounded-full animate-spin"></div>
               </div>
 
               <?php if ($media_type === 'image'): ?>
-                <img src="<?= htmlspecialchars($thumb, ENT_QUOTES) ?>"
-                     alt="<?= htmlspecialchars($filename, ENT_QUOTES) ?>"
-                     class="absolute inset-0 w-full h-full object-cover"
-                     loading="lazy"
-                     onload="this.parentElement.classList.add('media-loaded')"
-                     onerror="this.parentElement.classList.add('media-loaded')">
+                 <img src="<?= htmlspecialchars($thumb, ENT_QUOTES) ?>"
+                   alt="<?= htmlspecialchars($filename, ENT_QUOTES) ?>"
+                   class="absolute inset-0 w-full h-full object-cover transform transition-transform duration-200 ease-in-out will-change-transform cursor-zoom-in media-zoom-img"
+                   loading="lazy"
+                   onload="this.parentElement.classList.add('media-loaded')"
+                   onerror="this.parentElement.classList.add('media-loaded')">
               <?php elseif ($media_type === 'video'): ?>
                 <video class="absolute inset-0 w-full h-full object-cover"
                        preload="metadata"
@@ -1138,7 +1320,7 @@ if (isset($_POST['searchFile'])) {
                   <source src="<?= htmlspecialchars($thumb, ENT_QUOTES) ?>" type="video/mp4"
                           onerror="this.parentElement.parentElement.classList.add('media-loaded');">
                 </video>
-                <div class="absolute inset-0 flex items-center justify-center bg-black bg-opacity-30 pointer-events-none media-play-overlay" style="transition: opacity 160ms linear;">
+                <div class="absolute inset-0 flex items-center justify-center bg-black bg-opacity-30 pointer-events-none media-play-overlay transition-opacity duration-150 opacity-100">
                   <svg class="w-12 h-12 text-white opacity-80" fill="currentColor" viewBox="0 0 20 20">
                     <path d="M6.3 2.841A1.5 1.5 0 004 4.11V15.89a1.5 1.5 0 002.3 1.269l9.344-5.89a1.5 1.5 0 000-2.538L6.3 2.84z"/>
                   </svg>
