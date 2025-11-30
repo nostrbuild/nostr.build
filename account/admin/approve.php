@@ -38,7 +38,7 @@ if (isset($_POST['searchFile'])) {
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>nostr.build - Admin Moderation</title>
-  <link rel="stylesheet" href="/styles/twbuild.css?v=55c61227cf93fa645c958b626ab16209">
+  <link rel="stylesheet" href="/styles/twbuild.css?v=8dfdbbbae3690c5b1ef80b8cd7fd7221">
   <link rel="icon" href="https://cdn.nostr.build/assets/primo_nostr.png">
   <style>
     [x-cloak] { display: none !important; }
@@ -951,6 +951,39 @@ if (isset($_POST['searchFile'])) {
           // ignore
         }
       });
+
+      // Highlight other media by the same user (npub) when hovering a media card.
+      function setHighlightForNpub(npub, enable) {
+        if (!npub) return;
+        // Use a single pass over .media-item elements to avoid attribute selector escaping issues
+        const items = document.querySelectorAll('.media-item');
+        items.forEach(it => {
+          try {
+            if (it.dataset && it.dataset.usernpub === npub) {
+              if (enable) {
+                it.classList.add('ring-4', 'ring-yellow-400');
+              } else {
+                it.classList.remove('ring-4', 'ring-yellow-400');
+              }
+            }
+          } catch (err) {
+            // ignore
+          }
+        });
+      }
+
+      // Attach pointer events to each media-item (pointerenter/pointerleave do not bubble)
+      const mediaItems = document.querySelectorAll('.media-item');
+      mediaItems.forEach(item => {
+        item.addEventListener('pointerenter', function() {
+          const npub = item.dataset.usernpub;
+          if (npub) setHighlightForNpub(npub, true);
+        });
+        item.addEventListener('pointerleave', function() {
+          const npub = item.dataset.usernpub;
+          if (npub) setHighlightForNpub(npub, false);
+        });
+      });
     });
   </script>
 </head>
@@ -1291,9 +1324,10 @@ if (isset($_POST['searchFile'])) {
         }
         ?>
 
-        <div class="media-item bg-[#1a1433] border border-purple-500/30 rounded-lg overflow-hidden hover:border-purple-500 transition-all duration-300"
+            <div class="media-item bg-[#1a1433] border border-purple-500/30 rounded-lg overflow-hidden hover:border-purple-500 transition-shadow duration-150"
              data-id="<?= $row['id'] ?>"
-             data-status="<?= htmlspecialchars($approval_status) ?>">
+             data-status="<?= htmlspecialchars($approval_status) ?>"
+             data-usernpub="<?= htmlspecialchars($usernpub, ENT_QUOTES) ?>">
           <div class="media-card">
             <!-- Media Preview -->
               <div class="media-preview w-full bg-gray-900/50 relative overflow-hidden cursor-pointer min-h-[150px] min-w-[150px] pb-[100%]"
