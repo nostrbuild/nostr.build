@@ -21,7 +21,7 @@ $perm = new Permission();
   <meta name="description" content="A complete and detailed list of nostr.build features with images supporting the nostr social media platform. nostr.build is a cloud media hosting service that is paid in bitcoin and lightning and hosts user images to share." />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-  <link rel="stylesheet" href="/styles/twbuild.css?v=80ad617ccd175291d88d275638e5cb40" />
+  <link rel="stylesheet" href="/styles/twbuild.css?v=8dfdbbbae3690c5b1ef80b8cd7fd7221" />
   <link rel="stylesheet" href="/styles/index.css?v=16013407201d48c976a65d9ea88a77a3" />
   <link rel="stylesheet" href="/styles/header.css?v=19cde718a50bd676387bbe7e9e24c639" />
   <link rel="icon" href="https://cdn.nostr.build/assets/01.png" />
