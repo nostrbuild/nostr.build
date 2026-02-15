@@ -16,7 +16,7 @@
 	<meta name="msapplication-TileColor" content="#9f00a7">
 	<meta name="theme-color" content="#ffffff">
 
-	<script defer src="/scripts/dist/account-v2.js?v=8c8c2efa4ff0ce08a74832bad74024c8"></script>
+	<script defer src="/scripts/dist/account-v2.js?v=7962c628e48b6e8a54496d8a9dbb0631"></script>
 	<link href="/scripts/dist/account-v2.css?v=27ba93e570a70d775737614d6faf6846" rel="stylesheet">
 
 	<link href="/styles/twbuild.css?v=0f010f60a4bfc5c17a883fc9e48a45de" rel="stylesheet">
@@ -349,6 +349,21 @@ onDropCB(event) {
 	event.preventDefault();
 	event.stopPropagation();
 	this.isDraggingOver = false;
+},
+openSmartUpload() {
+	this.uppyLargeStore.mainDialog.close();
+	this.uppyStore.mainDialog.open();
+},
+toggleSmartUpload() {
+	if (this.uppyStore.mainDialog.isOpen || this.uppyLargeStore.mainDialog.isOpen) {
+		this.closeUploadDialogs();
+		return;
+	}
+	this.openSmartUpload();
+},
+closeUploadDialogs() {
+	this.uppyStore.mainDialog.close();
+	this.uppyLargeStore.mainDialog.close();
 },
 }" x-init="if (!menuStore.foldersFetched) await menuStore.fetchFolders(); $watch('showToast', value => {
 	if (value) {
@@ -1681,11 +1696,11 @@ onDropCB(event) {
 							</p>
 						</div>
 						<div class="flex ml-4 mt-0 transition-all">
-							<!-- Upload button -->
-							<button x-cloak x-show="profileStore.profileInfo.isUploadEligible" @click="uppyStore.mainDialog.toggle()"
-								type="button"
-								class="ml-3 inline-flex items-center rounded-md bg-nbpurple-600 px-3 py-2 text-xs font-semibold text-nbpurple-50 shadow-sm hover:bg-nbpurple-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-nbpurple-600">
-								<svg x-show="true" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"
+							<button x-cloak x-show="profileStore.profileInfo.isUploadEligible"
+								@click="toggleSmartUpload()" type="button"
+								class="ml-3 inline-flex items-center rounded-md bg-nbpurple-600 px-3 py-2 text-xs font-semibold text-nbpurple-50 shadow-sm hover:bg-nbpurple-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-nbpurple-600"
+								:title="(uppyStore.mainDialog.isLoading || uppyLargeStore.mainDialog.isLoading) ? 'Uploading…' : ((uppyStore.mainDialog.isOpen || uppyLargeStore.mainDialog.isOpen) ? 'Hide Upload' : 'Upload')">
+								<svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"
 									stroke-linecap="round" stroke-linejoin="round" class="size-4">
 									<path
 										d="M10.3 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v10l-3.1-3.1a2 2 0 0 0-2.814.014L6 21" />
@@ -1694,27 +1709,10 @@ onDropCB(event) {
 									<circle cx="9" cy="9" r="2" />
 								</svg>
 								<span class="hidden sm:inline-block sm:ml-1"
-									x-text="uppyStore.mainDialog.isOpen ? 'Hide' : uppyStore.mainDialog.uploadProgress ? 'Uploading' : 'Upload'"></span>
-								<span x-cloak x-show="uppyStore.mainDialog.isLoading && !uppyStore.mainDialog.isOpen"
+									x-text="(uppyStore.mainDialog.isLoading || uppyLargeStore.mainDialog.isLoading) ? 'Uploading' : ((uppyStore.mainDialog.isOpen || uppyLargeStore.mainDialog.isOpen) ? 'Hide' : 'Upload')"></span>
+								<span x-cloak x-show="(uppyStore.mainDialog.isLoading || uppyLargeStore.mainDialog.isLoading)"
 									class="text-xs font-semibold text-nbpurple-50 ml-1"
-									x-text="'(' + (uppyStore.mainDialog.uploadProgress || '0%') + ')'"></span>
-							</button>
-							<!-- Large File Upload button -->
-							<button x-cloak
-								x-show="profileStore.profileInfo.isLargeUploadEligible && profileStore.profileInfo.accountLevel >= 1"
-								@click="uppyLargeStore.mainDialog.toggle()" type="button"
-								class="ml-3 inline-flex items-center rounded-md bg-nbpurple-600 px-3 py-2 text-xs font-semibold text-nbpurple-50 shadow-sm hover:bg-nbpurple-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-nbpurple-600">
-								<svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" stroke-linecap="round"
-									stroke-linejoin="round" class="size-4">
-									<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-									<polyline points="17,8 12,3 7,8" />
-									<line x1="12" y1="3" x2="12" y2="15" />
-								</svg>
-								<span class="hidden sm:inline-block sm:ml-1"
-									x-text="uppyLargeStore.mainDialog.isOpen ? 'Hide' : uppyLargeStore.mainDialog.uploadProgress ? 'Uploading' : 'Large Files'"></span>
-								<span x-cloak x-show="uppyLargeStore.mainDialog.isLoading && !uppyLargeStore.mainDialog.isOpen"
-									class="text-xs font-semibold text-nbpurple-50 ml-1"
-									x-text="'(' + (uppyLargeStore.mainDialog.uploadProgress || '0%') + ')'"></span>
+									x-text="'(' + (uppyStore.mainDialog.uploadProgress || uppyLargeStore.mainDialog.uploadProgress || '0%') + ')'" ></span>
 							</button>
 							<!-- Multi-select button -->
 							<button @click="toggleMultiSelect()" type="button"
@@ -1735,7 +1733,7 @@ onDropCB(event) {
 							<div class="relative inline-block text-left">
 								<div>
 									<button
-										@click="fileStore.filterMenuOpen = !fileStore.filterMenuOpen; uppyStore.mainDialog.isOpen = false"
+										@click="fileStore.filterMenuOpen = !fileStore.filterMenuOpen; closeUploadDialogs()"
 										type="button" :class="fileStore.currentFilter === 'all' ? 'bg-nbpurple-600' : 'bg-nborange-700'"
 										class="ml-3 inline-flex items-center rounded-md px-3 py-2 text-xs font-semibold text-nbpurple-50 shadow-sm hover:bg-nbpurple-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-nbpurple-600"
 										id="filter-button" aria-expanded="true" aria-haspopup="true">
@@ -1770,7 +1768,7 @@ onDropCB(event) {
 							<!-- Zoom button -->
 							<div class="relative inline-block text-left" x-data="{ zoomMenuOpen: false }">
 								<div>
-									<button @click="zoomMenuOpen = !zoomMenuOpen; uppyStore.mainDialog.isOpen = false" type="button"
+									<button @click="zoomMenuOpen = !zoomMenuOpen; closeUploadDialogs()" type="button"
 										:class="zoom === 1 ? 'bg-nbpurple-600' : 'bg-nborange-700'"
 										class="ml-3 inline-flex items-center rounded-md px-3 py-2 text-xs font-semibold text-nbpurple-50 shadow-sm hover:bg-nbpurple-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-nbpurple-600"
 										id="zoom-button" aria-expanded="true" aria-haspopup="true">
@@ -1952,7 +1950,7 @@ onDropCB(event) {
 									</div>
 			-->
 									<!-- Empty state -->
-									<div x-init="uppyStore.mainDialog.open()" class="mt-2 text-center">
+									<div x-init="openSmartUpload()" class="mt-2 text-center">
 										<p class="text-nbpurple-200 text-2xl">No media found in this folder.</p>
 									</div>
 								</li>

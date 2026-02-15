@@ -242,7 +242,9 @@ Alpine.store('menuStore', {
     }
     const fileStore = Alpine.store('fileStore');
     const uppyStore = Alpine.store('uppyStore');
+    const uppyLargeStore = Alpine.store('uppyLargeStore');
     uppyStore.mainDialog.close();
+    uppyLargeStore.mainDialog.close();
     fileStore.files = [];
     this.activeFolder = folderName;
     this.activeFolderObj = this.getFolderObjByName(folderName) || {};

@@ -14,6 +14,7 @@ const formatBytes = (...args) => window.formatBytes(...args);
 Alpine.store('uppyStore', {
   instance: null,
   mainDialog: createUppyDialogState(),
+  largeFileThresholdBytes: 20 * 1024 * 1024,
   getAllowedFileTypes(accountLevel = 0) {
     const mimeTypesImages = {
       'image/jpeg': 'jpg',
@@ -137,6 +138,57 @@ Alpine.store('uppyStore', {
       default:
         console.debug('Default file types allowed.');
         return [...mimesImages, ...mimesAudio, ...mimesVideo];
+    }
+  },
+  isFileEligibleForLargeUploader(file, accountLevel = 0) {
+    const uppyLargeStore = Alpine.store('uppyLargeStore');
+    if (!uppyLargeStore || typeof uppyLargeStore.getAllowedFileTypes !== 'function') {
+      return false;
+    }
+
+    const allowed = uppyLargeStore.getAllowedFileTypes(accountLevel) || [];
+    const fileType = (file?.type || '').toLowerCase();
+    const fileName = (file?.name || '').toLowerCase();
+    const fileExt = fileName.includes('.') ? `.${fileName.split('.').pop()}` : '';
+
+    return allowed.includes(fileType) || (!!fileExt && allowed.includes(fileExt));
+  },
+  routeFileToLargeUploader(file, profileStore) {
+    const uppyLargeStore = Alpine.store('uppyLargeStore');
+    if (!uppyLargeStore || !window.__nbUppyLarge || typeof window.__nbUppyLarge.addFile !== 'function') {
+      return false;
+    }
+
+    const accountLevel = profileStore.profileInfo?.accountLevel || 0;
+    const isLargeEligible = Boolean(profileStore.profileInfo?.isLargeUploadEligible) && accountLevel >= 1;
+    if (!isLargeEligible) {
+      return false;
+    }
+
+    if (!this.isFileEligibleForLargeUploader(file, accountLevel)) {
+      return false;
+    }
+
+    if ((file?.size || 0) < this.largeFileThresholdBytes) {
+      return false;
+    }
+
+    try {
+      window.__nbUppyLarge.addFile({
+        name: file.name,
+        type: file.type,
+        data: file.data,
+        source: 'Local',
+      });
+      window.__nbUppy.info(`Routed ${file.name || 'file'} to Large Files uploader`, 'info', 2500);
+      uppyLargeStore.mainDialog.open();
+      this.mainDialog.close(true);
+      return true;
+    } catch (error) {
+      if (!String(error?.message || '').includes('already exists')) {
+        console.error('Error routing file to large uploader:', error);
+      }
+      return false;
     }
   },
   instantiateUppy(el, dropTarget, onDropCallback, onDragOverCallback, onDragLeaveCallback) {
@@ -327,6 +379,14 @@ Alpine.store('uppyStore', {
         }, 1000);
       })
       .on('file-added', (file) => {
+        if (this.routeFileToLargeUploader(file, profileStore)) {
+          try {
+            window.__nbUppy.removeFile(file.id);
+          } catch (_) {
+          }
+          return;
+        }
+
         const activeFolder = menuStore.activeFolder;
         const activeFolderId = menuStore.folders.find(folder => folder.name === activeFolder)?.id || 0;
         const defaultFolder = activeFolderId === 0 ? '' : activeFolder;
