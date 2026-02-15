@@ -16,10 +16,10 @@
 	<meta name="msapplication-TileColor" content="#9f00a7">
 	<meta name="theme-color" content="#ffffff">
 
-	<script defer src="/scripts/dist/account-v2.js?v=a31b37a1f49b7e1c94b554411bd846a9"></script>
+	<script defer src="/scripts/dist/account-v2.js?v=8c8c2efa4ff0ce08a74832bad74024c8"></script>
 	<link href="/scripts/dist/account-v2.css?v=27ba93e570a70d775737614d6faf6846" rel="stylesheet">
 
-	<link href="/styles/twbuild.css?v=f91e4585cd75dbbd69528c141b203795" rel="stylesheet">
+	<link href="/styles/twbuild.css?v=0f010f60a4bfc5c17a883fc9e48a45de" rel="stylesheet">
 
 	<!-- Pre-connect and DNS prefetch -->
 	<link rel="preconnect" href="https://i.nostr.build" crossorigin>
@@ -331,6 +331,7 @@ uppyLargeStore: $store.uppyLargeStore,
 urlImportStore: $store.urlImportStore,
 isDraggingOver: false,
 selfDraggable: false,
+dragImageMoveHandler: null,
 dragOverCB(event) {
 	if (this.selfDraggable) return;
 	event.preventDefault();
@@ -1961,6 +1962,10 @@ onDropCB(event) {
 										dragging = false;
 										const dragImage = document.getElementById('drag-image');
 										if (dragImage) dragImage.remove();
+										if (dragImageMoveHandler) {
+											document.removeEventListener('dragover', dragImageMoveHandler);
+											dragImageMoveHandler = null;
+										}
 										selfDraggable = false;
 										" x-on:dragstart.self="
 										selfDraggable = true;
@@ -1986,15 +1991,18 @@ onDropCB(event) {
 													
 													document.body.appendChild(dragImage);
 													
-													const updateDragImagePosition = (e) => {
+													if (dragImageMoveHandler) {
+														document.removeEventListener('dragover', dragImageMoveHandler);
+													}
+													dragImageMoveHandler = (e) => {
 														const offsetX = 12; // Adjust the horizontal offset
 														const offsetY = 12; // Adjust the vertical offset
 														dragImage.style.left = (e.clientX - offsetX) + 'px';
 														dragImage.style.top = (e.clientY - offsetY) + 'px';
 													};
 													
-													updateDragImagePosition(event);
-													document.addEventListener('dragover', updateDragImagePosition);
+													dragImageMoveHandler(event);
+													document.addEventListener('dragover', dragImageMoveHandler);
 													
 													event.dataTransfer.setDragImage(new Image(), 0, 0);
 												}
