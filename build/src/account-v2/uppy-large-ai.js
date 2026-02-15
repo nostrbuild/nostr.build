@@ -78,7 +78,7 @@ Alpine.store('uppyLargeStore', {
       autoProceed: true,
       allowMultipleUploadBatches: true,
       restrictions: {
-        minFileSize: 20 * 1024 * 1024,
+        minFileSize: 40 * 1024 * 1024,
         maxFileSize: 9999 * 64 * 1024 ** 2,
         maxTotalFileSize: null,
         allowedFileTypes: this.getAllowedFileTypes(),
@@ -104,8 +104,8 @@ Alpine.store('uppyLargeStore', {
         },
         getChunkSize(file) {
           const isMobile = window?.isMobile() ?? false;
-          const smallChunk = isMobile ? 20 * 1024 * 1024 : 80 * 1024 * 1024;
-          const largeChunk = isMobile ? 40 * 1024 * 1024 : 160 * 1024 * 1024;
+          const smallChunk = isMobile ? 40 * 1024 * 1024 : 80 * 1024 * 1024;
+          const largeChunk = isMobile ? 80 * 1024 * 1024 : 160 * 1024 * 1024;
           const maxParts = 9999;
           const minPartSize = file.size < 4 * 1024 ** 3 ? smallChunk : largeChunk;
           const calculatedPartSize = Math.floor(file.size / maxParts);
@@ -496,7 +496,7 @@ Alpine.store('uppyLargeStore', {
         note += [10, 99].includes(accountLevel) ? `, no limit per file` : ', 6 GiB limit';
         window.__nbUppyLarge.setOptions({
           restrictions: {
-            minFileSize: 20 * 1024 * 1024,
+            minFileSize: 40 * 1024 * 1024,
             maxFileSize: [10, 99].includes(accountLevel) ? absoluteMaxFileSize : 6 * 1024 ** 3,
             maxTotalFileSize: null,
             allowedFileTypes: allowedFileTypes,

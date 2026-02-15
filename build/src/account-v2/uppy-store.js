@@ -14,7 +14,7 @@ const formatBytes = (...args) => window.formatBytes(...args);
 Alpine.store('uppyStore', {
   instance: null,
   mainDialog: createUppyDialogState(),
-  largeFileThresholdBytes: 20 * 1024 * 1024,
+  largeFileThresholdBytes: 40 * 1024 * 1024,
   getAllowedFileTypes(accountLevel = 0) {
     const mimeTypesImages = {
       'image/jpeg': 'jpg',
