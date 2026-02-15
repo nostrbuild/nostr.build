@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en"
+<html lang="en" data-site-theme="purple"
 	class="h-full bg-gradient-to-tr from-nbpurple-950 to-nbpurple-800 bg-fixed bg-no-repeat bg-cover antialiased">
 
 <head>
@@ -14,12 +14,119 @@
 	<link rel="manifest" href="/site.webmanifest">
 	<link rel="mask-icon" href="/safari-pinned-tab.svg" color="#5bbad5">
 	<meta name="msapplication-TileColor" content="#9f00a7">
-	<meta name="theme-color" content="#ffffff">
+	<meta name="theme-color" content="#1f1848">
+
+	<script>
+		(() => {
+			const THEME_KEY = 'nb:site-theme';
+			const FALLBACK_THEME = 'purple';
+			const ALLOWED_THEMES = new Set(['purple', 'mono']);
+			const THEME_META_COLORS = {
+				purple: '#1f1848',
+				mono: '#000000',
+			};
+
+			const updateThemeMetaColor = (theme) => {
+				const themeMeta = document.querySelector('meta[name="theme-color"]');
+				if (themeMeta) {
+					themeMeta.setAttribute('content', THEME_META_COLORS[theme] || THEME_META_COLORS[FALLBACK_THEME]);
+				}
+			};
+
+			const applyTheme = (theme) => {
+				const nextTheme = ALLOWED_THEMES.has(theme) ? theme : FALLBACK_THEME;
+				document.documentElement.setAttribute('data-site-theme', nextTheme);
+				updateThemeMetaColor(nextTheme);
+				return nextTheme;
+			};
+
+			let storedTheme = FALLBACK_THEME;
+			try {
+				const localTheme = window.localStorage.getItem(THEME_KEY);
+				if (ALLOWED_THEMES.has(localTheme)) {
+					storedTheme = localTheme;
+				}
+			} catch (_error) {
+				storedTheme = FALLBACK_THEME;
+			}
+
+			const activeTheme = applyTheme(storedTheme);
+
+			window.NBTheme = {
+				key: THEME_KEY,
+				allowed: ALLOWED_THEMES,
+				fallback: FALLBACK_THEME,
+				get() {
+					return document.documentElement.getAttribute('data-site-theme') || FALLBACK_THEME;
+				},
+				set(theme) {
+					const nextTheme = applyTheme(theme);
+					try {
+						window.localStorage.setItem(THEME_KEY, nextTheme);
+					} catch (_error) {
+						/* localStorage unavailable */
+					}
+					return nextTheme;
+				},
+				bindSelect(selectEl) {
+					if (!selectEl) {
+						return;
+					}
+					selectEl.value = this.get();
+					selectEl.addEventListener('change', (event) => {
+						this.set(event.target.value);
+					});
+				},
+				bindToggle(toggleEl) {
+					if (!toggleEl) {
+						return;
+					}
+
+					const purpleIcon = toggleEl.querySelector('[data-theme-icon="purple"]');
+					const monoIcon = toggleEl.querySelector('[data-theme-icon="mono"]');
+
+					const render = (theme) => {
+						const isMono = theme === 'mono';
+						toggleEl.setAttribute('data-theme-active', theme);
+						toggleEl.setAttribute('aria-pressed', String(isMono));
+						toggleEl.setAttribute('title', isMono ? 'Switch to Purple theme' : 'Switch to Black & White theme');
+						toggleEl.setAttribute('aria-label', isMono ? 'Switch to Purple theme' : 'Switch to Black & White theme');
+						if (purpleIcon) {
+							purpleIcon.classList.toggle('hidden', !isMono);
+						}
+						if (monoIcon) {
+							monoIcon.classList.toggle('hidden', isMono);
+						}
+					};
+
+					render(this.get());
+					toggleEl.addEventListener('click', () => {
+						const nextTheme = this.get() === 'mono' ? 'purple' : 'mono';
+						render(this.set(nextTheme));
+					});
+
+					window.addEventListener('storage', (event) => {
+						if (event.key === THEME_KEY && ALLOWED_THEMES.has(event.newValue)) {
+							render(event.newValue);
+						}
+					});
+				},
+			};
+
+			window.addEventListener('storage', (event) => {
+				if (event.key === THEME_KEY && ALLOWED_THEMES.has(event.newValue)) {
+					applyTheme(event.newValue);
+				}
+			});
+
+			window.NBTheme.set(activeTheme);
+		})();
+	</script>
 
 	<script defer src="/scripts/dist/account-v2.js?v=7a2e587b1214b67becf979a917661794"></script>
 	<link href="/scripts/dist/account-v2.css?v=27ba93e570a70d775737614d6faf6846" rel="stylesheet">
 
-	<link href="/styles/twbuild.css?v=0f010f60a4bfc5c17a883fc9e48a45de" rel="stylesheet">
+	<link href="/styles/twbuild.css?v=4ee367a4dd824586298a53a20eb6113f" rel="stylesheet">
 
 	<!-- Pre-connect and DNS prefetch -->
 	<link rel="preconnect" href="https://i.nostr.build" crossorigin>
@@ -27,6 +134,20 @@
 	<link rel="preconnect" href="https://cdn.nostr.build" crossorigin>
 
 	<style>
+		:root {
+			--mono-50: #f5f5f5;
+			--mono-100: #e5e5e5;
+			--mono-200: #d4d4d4;
+			--mono-300: #a3a3a3;
+			--mono-400: #737373;
+			--mono-500: #525252;
+			--mono-600: #404040;
+			--mono-700: #262626;
+			--mono-800: #171717;
+			--mono-900: #0a0a0a;
+			--mono-950: #000000;
+		}
+
 		[x-cloak] {
 			display: none !important;
 		}
@@ -313,6 +434,687 @@
 			background-color: transparent;
 			box-shadow: 0 1px 1px #0003, 0 1px 2px #0003, 0 2px 3px #00000014;
 		}
+
+		[data-site-theme='mono'] .uppy-is-drag-over::after {
+			background-color: rgb(23 23 23 / 0.85);
+			border: 0.1rem dashed var(--mono-100);
+			color: var(--mono-50);
+			background-image: none;
+		}
+
+		[data-site-theme='mono'] [data-uppy-theme=dark] .uppy-ProviderBrowser-viewType--list,
+		[data-site-theme='mono'] [data-uppy-theme=dark] .uppy-DashboardContent-panelBody,
+		[data-site-theme='mono'] [data-uppy-theme=dark] .uppy-Dashboard-serviceMsg,
+		[data-site-theme='mono'] [data-uppy-theme=dark] .uppy-Size--md.uppy-Dashboard--modal .uppy-Dashboard-inner,
+		[data-site-theme='mono'] [data-uppy-theme=dark] .uppy-Dashboard-fileCard,
+		[data-site-theme='mono'] [data-uppy-theme=dark] .uppy-Dashboard-fileCard .uppy-Dashboard-fileCard-preview,
+		[data-site-theme='mono'] [data-uppy-theme=dark] .uppy-Dashboard-fileCard .uppy-Dashboard-fileCard-info,
+		[data-site-theme='mono'] [data-uppy-theme=dark] .uppy-Dashboard-fileCard .uppy-Dashboard-fileCard-actions,
+		[data-site-theme='mono'] [data-uppy-theme=dark] .uppy-StatusBar:not([aria-hidden=true]).is-waiting {
+			background-color: var(--mono-900);
+		}
+
+		[data-site-theme='mono'] [data-uppy-theme=dark] .uppy-ProviderBrowser-viewType--list li.uppy-ProviderBrowserItem,
+		[data-site-theme='mono'] [data-uppy-theme=dark] .uppy-ProviderBrowser-breadcrumbs,
+		[data-site-theme='mono'] [data-uppy-theme=dark] .uppy-ProviderBrowser-breadcrumbs button,
+		[data-site-theme='mono'] [data-uppy-theme=dark] .uppy-Provider-breadcrumbsIcon,
+		[data-site-theme='mono'] [data-uppy-theme=dark] .uppy-Provider-breadcrumbsIcon svg,
+		[data-site-theme='mono'] [data-uppy-theme=dark] .uppy-Dashboard-serviceMsg-title,
+		[data-site-theme='mono'] [data-uppy-theme=dark] .uppy-StatusBar-serviceMsg,
+		[data-site-theme='mono'] [data-uppy-theme=dark] .uppy-DashboardContent-title,
+		[data-site-theme='mono'] [data-uppy-theme=dark] .uppy-DashboardTab-btn,
+		[data-site-theme='mono'] [data-uppy-theme=dark] .uppy-Dashboard-Item-action:hover,
+		[data-site-theme='mono'] [data-uppy-theme=dark] .uppy-Dashboard-AddFiles-title {
+			color: var(--mono-50);
+		}
+
+		[data-site-theme='mono'] [data-uppy-theme=dark] .uppy-Provider-authTitle,
+		[data-site-theme='mono'] [data-uppy-theme=dark] .uppy-Dashboard-note,
+		[data-site-theme='mono'] [data-uppy-theme=dark] .uppy-Dashboard-Item-action {
+			color: var(--mono-300);
+		}
+
+		[data-site-theme='mono'] [data-uppy-theme=dark] .uppy-ProviderBrowser-viewType--grid li.uppy-ProviderBrowserItem--noPreview .uppy-ProviderBrowserItem-inner,
+		[data-site-theme='mono'] [data-uppy-theme=dark] .uppy-ProviderBrowser-viewType--unsplash li.uppy-ProviderBrowserItem--noPreview .uppy-ProviderBrowserItem-inner {
+			background-color: var(--mono-500);
+		}
+
+		[data-site-theme='mono'] [data-uppy-theme=dark] .uppy-ProviderBrowser-viewType--grid li.uppy-ProviderBrowserItem--noPreview svg,
+		[data-site-theme='mono'] [data-uppy-theme=dark] .uppy-ProviderBrowser-viewType--unsplash li.uppy-ProviderBrowserItem--noPreview svg {
+			fill: var(--mono-100);
+		}
+
+		[data-site-theme='mono'] [data-uppy-theme=dark] .uppy-ProviderBrowser-viewType--grid .uppy-ProviderBrowserItem-inner,
+		[data-site-theme='mono'] [data-uppy-theme=dark] .uppy-ProviderBrowser-viewType--unsplash .uppy-ProviderBrowserItem-inner,
+		[data-site-theme='mono'] [data-uppy-theme=dark] .uppy-Dashboard-Item-previewLink:focus,
+		[data-site-theme='mono'] [data-uppy-theme=dark] .uppy-Dashboard-Item-action:focus {
+			box-shadow: 0 0 0 3px var(--mono-300);
+		}
+
+		[data-site-theme='mono'] [data-uppy-theme=dark] .uppy-ProviderBrowser-viewType--list .uppy-ProviderBrowserItem-checkbox:focus {
+			border-color: var(--mono-300);
+			box-shadow: 0 0 0 3px var(--mono-400);
+		}
+
+		[data-site-theme='mono'] [data-uppy-theme=dark] .uppy-ProviderBrowser-userLogout:focus,
+		[data-site-theme='mono'] [data-uppy-theme=dark] .uppy-ProviderBrowser-breadcrumbs button:focus,
+		[data-site-theme='mono'] [data-uppy-theme=dark] .uppy-DashboardContent-back:focus,
+		[data-site-theme='mono'] [data-uppy-theme=dark] .uppy-DashboardContent-addMore:focus,
+		[data-site-theme='mono'] [data-uppy-theme=dark] .uppy-DashboardTab-btn:hover,
+		[data-site-theme='mono'] [data-uppy-theme=dark] .uppy-Dashboard-Item-action--remove:hover {
+			background-color: var(--mono-700);
+			color: var(--mono-50);
+		}
+
+		[data-site-theme='mono'] [data-uppy-theme=dark] .uppy-DashboardTab-btn:active,
+		[data-site-theme='mono'] [data-uppy-theme=dark] .uppy-DashboardTab-btn:focus,
+		[data-site-theme='mono'] [data-uppy-theme=dark] .uppy-ProviderBrowser-breadcrumbs button:hover,
+		[data-site-theme='mono'] [data-uppy-theme=dark] .uppy-ProviderBrowser-breadcrumbs button:focus {
+			background-color: var(--mono-800);
+			color: var(--mono-50);
+		}
+
+		[data-site-theme='mono'] [data-uppy-theme=dark] .uppy-Dashboard-serviceMsg,
+		[data-site-theme='mono'] [data-uppy-theme=dark] .uppy-Dashboard-fileCard .uppy-Dashboard-fileCard-preview,
+		[data-site-theme='mono'] [data-uppy-theme=dark] .uppy-Dashboard-fileCard .uppy-Dashboard-fileCard-actions,
+		[data-site-theme='mono'] [data-uppy-theme=dark] .uppy-DashboardTab,
+		[data-site-theme='mono'] [data-uppy-theme=dark] .uppy-StatusBar:not([aria-hidden=true]).is-waiting,
+		[data-site-theme='mono'] [data-uppy-theme=dark] .uppy-DashboardContent-bar {
+			border-color: rgb(212 212 212 / 0.35);
+		}
+
+		[data-site-theme='mono'] [data-uppy-theme=dark] .uppy-Dashboard-browse:hover,
+		[data-site-theme='mono'] [data-uppy-theme=dark] .uppy-Dashboard-browse:focus {
+			border-bottom-color: var(--mono-200);
+		}
+
+		[data-site-theme='mono'] [data-uppy-theme=dark] .uppy-Dashboard-fileCard {
+			box-shadow: 0 0 0 2px rgb(212 212 212 / 0.35);
+		}
+
+		[data-site-theme='mono'] [data-uppy-theme=dark] .uppy-Dashboard-Item-action--remove,
+		[data-site-theme='mono'] [data-uppy-theme=dark] .uppy-Dashboard-serviceMsg-actionBtn--disabled {
+			color: var(--mono-500);
+		}
+
+		[data-site-theme='mono'] [data-uppy-theme=dark].uppy-Dashboard-dropFilesHereHint,
+		[data-site-theme='mono'] .uppy-Dashboard-dropFilesHereHint,
+		[data-site-theme='mono'] [data-uppy-theme=dark] .uppy-Dashboard-dropFilesHereHint {
+			color: var(--mono-200);
+			border-color: var(--mono-300);
+		}
+
+		[data-site-theme='mono'] .uppy-StatusBar.is-complete .uppy-StatusBar-progress {
+			background-color: var(--mono-400);
+		}
+
+		[data-site-theme='mono'] [data-uppy-theme=dark] .uppy-ImageCropper .cropper-view-box {
+			background: repeating-conic-gradient(var(--mono-900) 0% 25%, var(--mono-800) 0% 50%) 50%/16px 16px;
+		}
+
+		[data-site-theme='mono'] [data-uppy-theme=dark] .uppy-ImageCropper .cropper-modal {
+			opacity: 0.7;
+			background-color: var(--mono-900);
+		}
+
+		html[data-site-theme='mono'].from-nbpurple-950,
+		[data-site-theme='mono'] .from-nbpurple-950 {
+			--tw-gradient-from: rgb(0 0 0 / 1) var(--tw-gradient-from-position);
+			--tw-gradient-to: rgb(0 0 0 / 0) var(--tw-gradient-to-position);
+			--tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to);
+		}
+
+		html[data-site-theme='mono'].to-nbpurple-800,
+		[data-site-theme='mono'] .to-nbpurple-800 {
+			--tw-gradient-to: rgb(23 23 23 / 1) var(--tw-gradient-to-position);
+		}
+
+		html[data-site-theme='mono'].bg-gradient-to-tr {
+			background-image: linear-gradient(to top right, var(--tw-gradient-stops));
+		}
+
+		html[data-site-theme='mono'] {
+			background-color: var(--mono-950);
+		}
+
+		html[data-site-theme='mono'] body {
+			background-color: transparent;
+		}
+
+		html[data-site-theme='mono'] .main-menu,
+		html[data-site-theme='mono'] .sticky.top-0,
+		html[data-site-theme='mono'] aside,
+		html[data-site-theme='mono'] .fixed.inset-0.bg-nbpurple-900\/80 {
+			background-color: var(--mono-900);
+		}
+
+		[data-site-theme='mono'] .bg-nbpurple-50,
+		[data-site-theme='mono'] .bg-purple-100 {
+			background-color: var(--mono-50);
+		}
+
+		[data-site-theme='mono'] .bg-nbpurple-100 {
+			background-color: var(--mono-100);
+		}
+
+		[data-site-theme='mono'] .bg-nbpurple-200 {
+			background-color: var(--mono-200);
+		}
+
+		[data-site-theme='mono'] .bg-nbpurple-300 {
+			background-color: var(--mono-300);
+		}
+
+		[data-site-theme='mono'] .bg-nbpurple-500 {
+			background-color: var(--mono-500);
+		}
+
+		[data-site-theme='mono'] .bg-nbpurple-600,
+		[data-site-theme='mono'] .bg-purple-600 {
+			background-color: var(--mono-600);
+		}
+
+		[data-site-theme='mono'] .bg-nbpurple-700 {
+			background-color: var(--mono-700);
+		}
+
+		[data-site-theme='mono'] .bg-nbpurple-800 {
+			background-color: var(--mono-800);
+		}
+
+		[data-site-theme='mono'] .bg-nbpurple-900 {
+			background-color: var(--mono-900);
+		}
+
+		[data-site-theme='mono'] .bg-nbpurple-600\/10 {
+			background-color: rgb(64 64 64 / 0.1);
+		}
+
+		[data-site-theme='mono'] .bg-nbpurple-600\/50,
+		[data-site-theme='mono'] .disabled\:bg-nbpurple-600\/50:disabled {
+			background-color: rgb(64 64 64 / 0.5);
+		}
+
+		[data-site-theme='mono'] .bg-nbpurple-700\/50 {
+			background-color: rgb(38 38 38 / 0.5);
+		}
+
+		[data-site-theme='mono'] .bg-nbpurple-800\/40 {
+			background-color: rgb(23 23 23 / 0.4);
+		}
+
+		[data-site-theme='mono'] .bg-nbpurple-800\/50 {
+			background-color: rgb(23 23 23 / 0.5);
+		}
+
+		[data-site-theme='mono'] .bg-nbpurple-900\/10 {
+			background-color: rgb(10 10 10 / 0.1);
+		}
+
+		[data-site-theme='mono'] .bg-nbpurple-900\/75 {
+			background-color: rgb(10 10 10 / 0.75);
+		}
+
+		[data-site-theme='mono'] .bg-nbpurple-900\/80 {
+			background-color: rgb(10 10 10 / 0.8);
+		}
+
+		[data-site-theme='mono'] .bg-nbpurple-900\/95 {
+			background-color: rgb(10 10 10 / 0.95);
+		}
+
+		[data-site-theme='mono'] .bg-nbpurple-950\/85 {
+			background-color: rgb(0 0 0 / 0.85);
+		}
+
+		[data-site-theme='mono'] .text-nbpurple-50,
+		[data-site-theme='mono'] .group-hover\:text-nbpurple-50:hover,
+		[data-site-theme='mono'] .hover\:text-nbpurple-50:hover {
+			color: var(--mono-50);
+		}
+
+		[data-site-theme='mono'] .text-nbpurple-100,
+		[data-site-theme='mono'] .hover\:text-nbpurple-100:hover {
+			color: var(--mono-100);
+		}
+
+		[data-site-theme='mono'] .text-nbpurple-200,
+		[data-site-theme='mono'] .hover\:text-nbpurple-200:hover {
+			color: var(--mono-200);
+		}
+
+		[data-site-theme='mono'] .text-nbpurple-300,
+		[data-site-theme='mono'] .text-purple-300,
+		[data-site-theme='mono'] .hover\:text-nbpurple-900:hover {
+			color: var(--mono-300);
+		}
+
+		[data-site-theme='mono'] .text-nbpurple-400,
+		[data-site-theme='mono'] .text-purple-400 {
+			color: var(--mono-400);
+		}
+
+		[data-site-theme='mono'] .text-nbpurple-500,
+		[data-site-theme='mono'] .text-purple-600,
+		[data-site-theme='mono'] .hover\:text-nbpurple-500:hover {
+			color: var(--mono-500);
+		}
+
+		[data-site-theme='mono'] .text-nbpurple-600 {
+			color: var(--mono-600);
+		}
+
+		[data-site-theme='mono'] .text-nbpurple-700 {
+			color: var(--mono-700);
+		}
+
+		[data-site-theme='mono'] .text-nbpurple-800 {
+			color: var(--mono-800);
+		}
+
+		[data-site-theme='mono'] .text-nbpurple-900 {
+			color: var(--mono-900);
+		}
+
+		[data-site-theme='mono'] .text-nbpurple-950 {
+			color: var(--mono-950);
+		}
+
+		[data-site-theme='mono'] .border-nbpurple-50\/5 {
+			border-color: rgb(245 245 245 / 0.05);
+		}
+
+		[data-site-theme='mono'] .border-nbpurple-50\/25 {
+			border-color: rgb(245 245 245 / 0.25);
+		}
+
+		[data-site-theme='mono'] .border-nbpurple-200 {
+			border-color: var(--mono-200);
+		}
+
+		[data-site-theme='mono'] .border-nbpurple-300,
+		[data-site-theme='mono'] .focus\:border-nbpurple-300:focus,
+		[data-site-theme='mono'] .focus-within\:border-nbpurple-500:focus-within {
+			border-color: var(--mono-300);
+		}
+
+		[data-site-theme='mono'] .border-nbpurple-500 {
+			border-color: var(--mono-500);
+		}
+
+		[data-site-theme='mono'] .border-nbpurple-600 {
+			border-color: var(--mono-600);
+		}
+
+		[data-site-theme='mono'] .border-nbpurple-700 {
+			border-color: var(--mono-700);
+		}
+
+		[data-site-theme='mono'] .border-nbpurple-600\/20,
+		[data-site-theme='mono'] .border-purple-300\/20 {
+			border-color: rgb(64 64 64 / 0.2);
+		}
+
+		[data-site-theme='mono'] .border-nbpurple-600\/30 {
+			border-color: rgb(64 64 64 / 0.3);
+		}
+
+		[data-site-theme='mono'] .border-nbpurple-600\/50 {
+			border-color: rgb(64 64 64 / 0.5);
+		}
+
+		[data-site-theme='mono'] .ring-nbpurple-50 {
+			--tw-ring-color: var(--mono-50);
+		}
+
+		[data-site-theme='mono'] .ring-nbpurple-50\/10 {
+			--tw-ring-color: rgb(245 245 245 / 0.1);
+		}
+
+		[data-site-theme='mono'] .ring-nbpurple-50\/5 {
+			--tw-ring-color: rgb(245 245 245 / 0.05);
+		}
+
+		[data-site-theme='mono'] .ring-nbpurple-200,
+		[data-site-theme='mono'] .focus\:ring-nbpurple-200:focus {
+			--tw-ring-color: var(--mono-200);
+		}
+
+		[data-site-theme='mono'] .ring-nbpurple-300 {
+			--tw-ring-color: var(--mono-300);
+		}
+
+		[data-site-theme='mono'] .ring-nbpurple-400 {
+			--tw-ring-color: var(--mono-400);
+		}
+
+		[data-site-theme='mono'] .ring-nbpurple-500,
+		[data-site-theme='mono'] .focus\:ring-nbpurple-500:focus,
+		[data-site-theme='mono'] .focus-within\:ring-nbpurple-500:focus-within {
+			--tw-ring-color: var(--mono-500);
+		}
+
+		[data-site-theme='mono'] .ring-nbpurple-600,
+		[data-site-theme='mono'] .focus\:ring-nbpurple-600:focus,
+		[data-site-theme='mono'] .focus-visible\:outline-nbpurple-600:focus-visible,
+		[data-site-theme='mono'] .focus-visible\:outline-purple-600:focus-visible {
+			--tw-ring-color: var(--mono-600);
+			outline-color: var(--mono-600);
+		}
+
+		[data-site-theme='mono'] .ring-nbpurple-700\/10 {
+			--tw-ring-color: rgb(38 38 38 / 0.1);
+		}
+
+		[data-site-theme='mono'] .ring-nbpurple-900 {
+			--tw-ring-color: var(--mono-900);
+		}
+
+		[data-site-theme='mono'] .ring-nbpurple-950,
+		[data-site-theme='mono'] .lg\:border-nbpurple-950\/5 {
+			--tw-ring-color: var(--mono-950);
+			border-color: rgb(0 0 0 / 0.05);
+		}
+
+		[data-site-theme='mono'] .focus\:ring-nbpurple-50:focus {
+			--tw-ring-color: var(--mono-50);
+		}
+
+		[data-site-theme='mono'] .focus\:ring-nbpurple-500\/10:focus {
+			--tw-ring-color: rgb(82 82 82 / 0.1);
+		}
+
+		[data-site-theme='mono'] .focus\:ring-offset-nbpurple-50:focus,
+		[data-site-theme='mono'] .focus\:ring-offset-nbpurple-100:focus,
+		[data-site-theme='mono'] .focus-within\:ring-offset-nbpurple-100:focus-within {
+			--tw-ring-offset-color: var(--mono-100);
+		}
+
+		[data-site-theme='mono'] .placeholder\:text-nbpurple-300::placeholder {
+			color: var(--mono-300);
+		}
+
+		[data-site-theme='mono'] .placeholder\:text-nbpurple-400::placeholder {
+			color: var(--mono-400);
+		}
+
+		[data-site-theme='mono'] .divide-nbpurple-200> :not([hidden])~ :not([hidden]),
+		[data-site-theme='mono'] .sm\:divide-nbpurple-200> :not([hidden])~ :not([hidden]) {
+			border-color: var(--mono-200);
+		}
+
+		[data-site-theme='mono'] .divide-nbpurple-700> :not([hidden])~ :not([hidden]) {
+			border-color: var(--mono-700);
+		}
+
+		[data-site-theme='mono'] .hover\:bg-nbpurple-50:hover {
+			background-color: var(--mono-50);
+		}
+
+		[data-site-theme='mono'] .hover\:bg-nbpurple-200:hover {
+			background-color: var(--mono-200);
+		}
+
+		[data-site-theme='mono'] .hover\:bg-nbpurple-400:hover,
+		[data-site-theme='mono'] .disabled\:hover\:bg-nbpurple-400:hover:disabled {
+			background-color: var(--mono-400);
+		}
+
+		[data-site-theme='mono'] .hover\:bg-nbpurple-500:hover,
+		[data-site-theme='mono'] .hover\:bg-purple-500:hover {
+			background-color: var(--mono-500);
+		}
+
+		[data-site-theme='mono'] .hover\:bg-nbpurple-500\/50:hover {
+			background-color: rgb(82 82 82 / 0.5);
+		}
+
+		[data-site-theme='mono'] .hover\:bg-nbpurple-600:hover,
+		[data-site-theme='mono'] .hover\:bg-purple-700:hover {
+			background-color: var(--mono-600);
+		}
+
+		[data-site-theme='mono'] .hover\:bg-nbpurple-700:hover {
+			background-color: var(--mono-700);
+		}
+
+		[data-site-theme='mono'] .hover\:bg-nbpurple-700\/10:hover {
+			background-color: rgb(38 38 38 / 0.1);
+		}
+
+		[data-site-theme='mono'] .hover\:bg-nbpurple-800:hover {
+			background-color: var(--mono-800);
+		}
+
+		[data-site-theme='mono'] .disabled\:bg-nbpurple-400:disabled {
+			background-color: var(--mono-400);
+		}
+
+		[data-site-theme='mono'] svg.nb-logo-mark {
+			filter: grayscale(1);
+		}
+
+		[data-site-theme='mono'] .bg-darknborange-600,
+		[data-site-theme='mono'] .bg-nborange-700,
+		[data-site-theme='mono'] .bg-orange-500,
+		[data-site-theme='mono'] .bg-red-600,
+		[data-site-theme='mono'] .bg-red-700,
+		[data-site-theme='mono'] .bg-red-900,
+		[data-site-theme='mono'] .bg-green-900\/30,
+		[data-site-theme='mono'] .bg-yellow-900\/30,
+		[data-site-theme='mono'] .bg-red-900\/30,
+		[data-site-theme='mono'] .bg-nostrpurple-700,
+		[data-site-theme='mono'] .bg-nostrpurple-800 {
+			background-color: var(--mono-800);
+		}
+
+		[data-site-theme='mono'] .bg-green-100,
+		[data-site-theme='mono'] .bg-red-100,
+		[data-site-theme='mono'] .bg-red-200,
+		[data-site-theme='mono'] .bg-nostrpurple-100,
+		[data-site-theme='mono'] .bg-nostrpurple-200,
+		[data-site-theme='mono'] .bg-nostrpurple-300,
+		[data-site-theme='mono'] .bg-nostrpurple-400,
+		[data-site-theme='mono'] .bg-nostrpurple-500,
+		[data-site-theme='mono'] .bg-nostrpurple-600,
+		[data-site-theme='mono'] .bg-red-500 {
+			background-color: var(--mono-600);
+		}
+
+		[data-site-theme='mono'] .bg-white\/5 {
+			background-color: rgb(255 255 255 / 0.05);
+		}
+
+		[data-site-theme='mono'] .text-white,
+		[data-site-theme='mono'] .text-red-50,
+		[data-site-theme='mono'] .text-red-100,
+		[data-site-theme='mono'] .text-red-200,
+		[data-site-theme='mono'] .text-red-300,
+		[data-site-theme='mono'] .text-green-300,
+		[data-site-theme='mono'] .text-yellow-300,
+		[data-site-theme='mono'] .text-orange-300,
+		[data-site-theme='mono'] .text-orange-400,
+		[data-site-theme='mono'] .text-blue-200,
+		[data-site-theme='mono'] .text-nostrpurple-50,
+		[data-site-theme='mono'] .text-nostrpurple-100,
+		[data-site-theme='mono'] .text-nostrpurple-200 {
+			color: var(--mono-100);
+		}
+
+		[data-site-theme='mono'] .text-red-600,
+		[data-site-theme='mono'] .text-red-700,
+		[data-site-theme='mono'] .text-green-600,
+		[data-site-theme='mono'] .text-nborange-500,
+		[data-site-theme='mono'] .text-nostrpurple-700,
+		[data-site-theme='mono'] .text-nostrpurple-900 {
+			color: var(--mono-300);
+		}
+
+		[data-site-theme='mono'] .group-hover\:text-nostrpurple-100:hover,
+		[data-site-theme='mono'] .group-hover\:text-nostrpurple-200:hover {
+			color: var(--mono-100);
+		}
+
+		[data-site-theme='mono'] .hover\:bg-darknborange-400:hover,
+		[data-site-theme='mono'] .hover\:bg-red-500:hover,
+		[data-site-theme='mono'] .hover\:bg-nostrpurple-500:hover {
+			background-color: var(--mono-600);
+		}
+
+		[data-site-theme='mono'] .hover\:bg-nostrpurple-200:hover,
+		[data-site-theme='mono'] .hover\:bg-nostrpurple-400:hover {
+			background-color: var(--mono-700);
+		}
+
+		[data-site-theme='mono'] .disabled\:bg-red-600\/50:disabled {
+			background-color: rgb(64 64 64 / 0.5);
+		}
+
+		[data-site-theme='mono'] .disabled\:bg-nostrpurple-200:disabled,
+		[data-site-theme='mono'] .disabled\:bg-nostrpurple-300:disabled {
+			background-color: var(--mono-600);
+		}
+
+		[data-site-theme='mono'] .border-red-400,
+		[data-site-theme='mono'] .border-red-700,
+		[data-site-theme='mono'] .border-green-600\/20,
+		[data-site-theme='mono'] .border-yellow-600\/20,
+		[data-site-theme='mono'] .border-red-600\/20 {
+			border-color: rgb(163 163 163 / 0.35);
+		}
+
+		[data-site-theme='mono'] .ring-red-300,
+		[data-site-theme='mono'] .ring-yellow-400\/20,
+		[data-site-theme='mono'] .ring-red-700\/10,
+		[data-site-theme='mono'] .ring-nostrpurple-200\/10,
+		[data-site-theme='mono'] .ring-nostrpurple-300,
+		[data-site-theme='mono'] .ring-nostrpurple-400,
+		[data-site-theme='mono'] .ring-nostrpurple-50,
+		[data-site-theme='mono'] .ring-white\/10 {
+			--tw-ring-color: rgb(163 163 163 / 0.35);
+		}
+
+		[data-site-theme='mono'] .focus\:ring-red-500:focus,
+		[data-site-theme='mono'] .focus\:ring-nostrpurple-300:focus,
+		[data-site-theme='mono'] .focus\:ring-nostrpurple-500:focus,
+		[data-site-theme='mono'] .focus\:ring-nostrpurple-600:focus {
+			--tw-ring-color: var(--mono-500);
+		}
+
+		[data-site-theme='mono'] .focus-visible\:outline-red-600:focus-visible {
+			outline-color: var(--mono-500);
+		}
+
+		[data-site-theme='mono'] .placeholder\:text-nostrpurple-400::placeholder {
+			color: var(--mono-400);
+		}
+
+		[data-site-theme='mono'] .fill-red-500,
+		[data-site-theme='mono'] .fill-nostrpurple-500 {
+			fill: var(--mono-400);
+		}
+
+		[data-site-theme='mono'] .hover\:shadow-nostrpurple-100:hover {
+			--tw-shadow-color: rgb(163 163 163 / 0.4);
+			--tw-shadow: 0 10px 15px -3px var(--tw-shadow-color), 0 4px 6px -4px var(--tw-shadow-color);
+			box-shadow: var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow);
+		}
+
+		[data-site-theme='mono'] .bg-darknborange-400,
+		[data-site-theme='mono'] .bg-green-900,
+		[data-site-theme='mono'] .bg-yellow-900 {
+			background-color: var(--mono-700);
+		}
+
+		[data-site-theme='mono'] .border-green-600,
+		[data-site-theme='mono'] .border-red-600,
+		[data-site-theme='mono'] .border-yellow-600 {
+			border-color: var(--mono-500);
+		}
+
+		[data-site-theme='mono'] .ring-nostrpurple-200,
+		[data-site-theme='mono'] .ring-nostrpurple-500,
+		[data-site-theme='mono'] .ring-nostrpurple-600,
+		[data-site-theme='mono'] .ring-red-500,
+		[data-site-theme='mono'] .ring-red-700,
+		[data-site-theme='mono'] .ring-yellow-400 {
+			--tw-ring-color: var(--mono-500);
+		}
+
+		[data-site-theme='mono'] .outline-red-600 {
+			outline-color: var(--mono-500);
+		}
+
+		[data-site-theme='mono'] .text-nostrpurple-400 {
+			color: var(--mono-300);
+		}
+
+		[data-site-theme='mono'] .shadow-nostrpurple-100 {
+			--tw-shadow-color: rgb(163 163 163 / 0.4);
+			--tw-shadow: 0 1px 2px 0 var(--tw-shadow-color);
+			box-shadow: var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow);
+		}
+
+		/* Keep Tailwind bg-opacity utilities working in mono mode */
+		[data-site-theme='mono'] .bg-nbpurple-50,
+		[data-site-theme='mono'] .bg-purple-100 {
+			background-color: rgb(245 245 245 / var(--tw-bg-opacity, 1));
+		}
+
+		[data-site-theme='mono'] .bg-nbpurple-100 {
+			background-color: rgb(229 229 229 / var(--tw-bg-opacity, 1));
+		}
+
+		[data-site-theme='mono'] .bg-nbpurple-200 {
+			background-color: rgb(212 212 212 / var(--tw-bg-opacity, 1));
+		}
+
+		[data-site-theme='mono'] .bg-nbpurple-300 {
+			background-color: rgb(163 163 163 / var(--tw-bg-opacity, 1));
+		}
+
+		[data-site-theme='mono'] .bg-nbpurple-500,
+		[data-site-theme='mono'] .bg-nostrpurple-100,
+		[data-site-theme='mono'] .bg-red-100,
+		[data-site-theme='mono'] .bg-green-100,
+		[data-site-theme='mono'] .bg-nostrpurple-200,
+		[data-site-theme='mono'] .bg-red-200,
+		[data-site-theme='mono'] .bg-nostrpurple-300,
+		[data-site-theme='mono'] .bg-nostrpurple-400,
+		[data-site-theme='mono'] .bg-nostrpurple-500,
+		[data-site-theme='mono'] .bg-nostrpurple-600,
+		[data-site-theme='mono'] .bg-red-500,
+		[data-site-theme='mono'] .bg-purple-600,
+		[data-site-theme='mono'] .bg-darknborange-400,
+		[data-site-theme='mono'] .bg-darknborange-600,
+		[data-site-theme='mono'] .bg-nborange-700,
+		[data-site-theme='mono'] .bg-orange-500,
+		[data-site-theme='mono'] .bg-red-600,
+		[data-site-theme='mono'] .bg-red-700,
+		[data-site-theme='mono'] .bg-red-900,
+		[data-site-theme='mono'] .bg-nostrpurple-700,
+		[data-site-theme='mono'] .bg-nostrpurple-800,
+		[data-site-theme='mono'] .bg-green-900,
+		[data-site-theme='mono'] .bg-yellow-900,
+		[data-site-theme='mono'] .bg-nbpurple-600,
+		[data-site-theme='mono'] .bg-nbpurple-700,
+		[data-site-theme='mono'] .bg-nbpurple-800,
+		[data-site-theme='mono'] .bg-nbpurple-900 {
+			background-color: rgb(23 23 23 / var(--tw-bg-opacity, 1));
+		}
+
+		[data-site-theme='mono'] .bg-nbpurple-600 {
+			background-color: rgb(64 64 64 / var(--tw-bg-opacity, 1));
+		}
+
+		[data-site-theme='mono'] .bg-nbpurple-700 {
+			background-color: rgb(38 38 38 / var(--tw-bg-opacity, 1));
+		}
+
+		[data-site-theme='mono'] .bg-nbpurple-800,
+		[data-site-theme='mono'] .bg-nbpurple-900 {
+			background-color: rgb(23 23 23 / var(--tw-bg-opacity, 1));
+		}
 	</style>
 
 </head>
@@ -436,9 +1238,9 @@ closeUploadDialogs() {
 							@click.outside="menuStore.mobileMenuOpen = false; menuStore.disableDeleteFolderButtons()"
 							@keydown.escape="menuStore.mobileMenuOpen = false; menuStore.disableDeleteFolderButtons()">
 							<div class="flex h-16 shrink-0 items-center -mb-5">
-								<svg class="h-8 w-auto" id="a" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 33.4 39">
+								<svg class="h-8 w-auto nb-logo-mark" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 33.4 39">
 									<defs>
-										<linearGradient id="b" x1="8.25" y1="-326.6" x2="8.25" y2="-297.6"
+										<linearGradient id="b-mobile-logo" x1="8.25" y1="-326.6" x2="8.25" y2="-297.6"
 											gradientTransform="translate(0 336.6)" gradientUnits="userSpaceOnUse">
 											<stop offset="0" stop-color="#9b4399" />
 											<stop offset="1" stop-color="#3d1e56" />
@@ -454,7 +1256,7 @@ closeUploadDialogs() {
 									<path d="M16.7 0 .1 9.8l16.6 9.7 16.5-9.7L16.7 0Z" style="fill:#70429a;stroke-width:0" />
 									<path class="e"
 										d="m16.7 1.7-4.6 2.6v10.8l4.6 2.7 4.6-2.7V9.7l4.5-2.6-9.1-5.4Zm-3 6.3c-1.23-.11-1.13-1.98.1-2 1.3 0 1.27 2.09 0 2m6.8 1.3L16.8 7l3.8-2.3L24.3 7l-3.7 2.3Z" />
-									<path d="M0 10v19.3L16.5 39V19.7L0 10Z" style="fill:url(#b);stroke-width:0" />
+									<path d="M0 10v19.3L16.5 39V19.7L0 10Z" style="fill:url(#b-mobile-logo);stroke-width:0" />
 									<path class="e"
 										d="m14.4 35.2-3-1.8v-.9L5.1 21.8l-.8-.4v8L2 28.1V13.8l3 1.7v1l6.2 10.7.8.4v-8l2.3 1.3.1 14.3Z" />
 									<path d="M16.8 19.7V39l16.6-9.7V10l-16.6 9.7Z" style="stroke-width:0;fill:#3d1e56" />
@@ -868,7 +1670,7 @@ closeUploadDialogs() {
 												<div x-data="{AdminSubMenuExpand: false}" class="-mx-2 space-y-1 mt-1">
 													<button @click.throttle="AdminSubMenuExpand = !AdminSubMenuExpand" type="button"
 														class="text-nbpurple-300 hover:text-nbpurple-50 hover:bg-nbpurple-800 flex items-center w-full text-left rounded-md p-2 gap-x-3 text-sm leading-6 font-semibold"
-														aria-controls="sub-menu-admin" aria-expanded="AdminSubMenuExpand">
+														aria-controls="sub-menu-admin" :aria-expanded="AdminSubMenuExpand.toString()">
 														<svg class="h-6 w-6 shrink-0 text-nbpurple-400" viewBox="0 0 24 24" fill="none"
 															stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
 															<path stroke-linecap="round" stroke-linejoin="round"
@@ -883,7 +1685,7 @@ closeUploadDialogs() {
 																clip-rule="evenodd" />
 														</svg>
 													</button>
-													<ul x-cloak x-show="AdminSubMenuExpand" class="mt-1 px-2" id="sub-menu-ai">
+													<ul x-cloak x-show="AdminSubMenuExpand" class="mt-1 px-2" id="sub-menu-admin">
 														<template x-for="item in menuStore.adminMenuItems" :key="item.name">
 															<li x-show="profileStore.profileInfo.allowed(item.allowed)">
 																<a @click="window.location.href = item.route" :href="item.route"
@@ -1083,9 +1885,9 @@ closeUploadDialogs() {
 				<div
 					class="main-menu flex grow flex-col gap-y-5 overflow-y-auto bg-nbpurple-900/10 px-6 ring-1 ring-nbpurple-50/5">
 					<div class="flex h-16 shrink-0 items-center -mb-5">
-						<svg class="h-8 w-auto" id="a" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 33.4 39">
+						<svg class="h-8 w-auto nb-logo-mark" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 33.4 39">
 							<defs>
-								<linearGradient id="b" x1="8.25" y1="-326.6" x2="8.25" y2="-297.6"
+								<linearGradient id="b-desktop-logo" x1="8.25" y1="-326.6" x2="8.25" y2="-297.6"
 									gradientTransform="translate(0 336.6)" gradientUnits="userSpaceOnUse">
 									<stop offset="0" stop-color="#9b4399" />
 									<stop offset="1" stop-color="#3d1e56" />
@@ -1101,7 +1903,7 @@ closeUploadDialogs() {
 							<path d="M16.7 0 .1 9.8l16.6 9.7 16.5-9.7L16.7 0Z" style="fill:#70429a;stroke-width:0" />
 							<path class="e"
 								d="m16.7 1.7-4.6 2.6v10.8l4.6 2.7 4.6-2.7V9.7l4.5-2.6-9.1-5.4Zm-3 6.3c-1.23-.11-1.13-1.98.1-2 1.3 0 1.27 2.09 0 2m6.8 1.3L16.8 7l3.8-2.3L24.3 7l-3.7 2.3Z" />
-							<path d="M0 10v19.3L16.5 39V19.7L0 10Z" style="fill:url(#b);stroke-width:0" />
+							<path d="M0 10v19.3L16.5 39V19.7L0 10Z" style="fill:url(#b-desktop-logo);stroke-width:0" />
 							<path class="e"
 								d="m14.4 35.2-3-1.8v-.9L5.1 21.8l-.8-.4v8L2 28.1V13.8l3 1.7v1l6.2 10.7.8.4v-8l2.3 1.3.1 14.3Z" />
 							<path d="M16.8 19.7V39l16.6-9.7V10l-16.6 9.7Z" style="stroke-width:0;fill:#3d1e56" />
@@ -1157,6 +1959,22 @@ closeUploadDialogs() {
 					</div>
 					<!-- notification bell -->
 					<div class="flex items-center gap-x-4 relative">
+						<div class="flex items-center gap-x-2">
+							<button id="theme-toggle" type="button"
+								class="inline-flex items-center justify-center rounded-md bg-nbpurple-800 text-nbpurple-100 p-1.5 ring-1 ring-inset ring-nbpurple-600 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-nbpurple-500"
+								aria-label="Switch theme" title="Switch theme" aria-pressed="false">
+								<svg data-theme-icon="purple" class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+									stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+									<circle cx="12" cy="12" r="4"></circle>
+									<path d="M12 2v2.2M12 19.8V22M4.93 4.93l1.56 1.56M17.51 17.51l1.56 1.56M2 12h2.2M19.8 12H22M4.93 19.07l1.56-1.56M17.51 6.49l1.56-1.56"></path>
+								</svg>
+								<svg data-theme-icon="mono" class="size-5 hidden" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+									stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+									<path d="M21 12.79A9 9 0 1 1 11.21 3a7 7 0 0 0 9.79 9.79z"></path>
+								</svg>
+								<span class="sr-only">Toggle theme</span>
+							</button>
+						</div>
 						<!-- Credits Menu Button // TBD
 						<button type="button"
 							class="inline-flex items-center gap-x-1.5 rounded-md px-2.5 py-1.5 text-nbpurple-50 hover:text-nbpurple-500 bg-darknborange-600 hover:bg-darknborange-400 text-xs font-semibold"
@@ -1303,7 +2121,11 @@ closeUploadDialogs() {
 														</div>
 														<button type="button"
 															class="inline-flex items-center rounded-l-none rounded-r-md bg-nbpurple-600 p-2 hover:bg-nbpurple-700 focus:outline-none focus:ring-2 focus:ring-nbpurple-600 focus:ring-offset-2 focus:ring-offset-nbpurple-50"
-															aria-haspopup="listbox" aria-expanded="true" aria-labelledby="listbox-label"
+															aria-haspopup="listbox" :aria-expanded="styleMenuOpen.toString()" aria-labelledby="listbox-label-style"
+															@keydown.down.prevent="{ const enabled = styleOptions.filter(option => !option.disabled); if (!enabled.length) return; const currentIndex = enabled.findIndex(option => option.value === stylePreset); const next = enabled[(currentIndex + 1 + enabled.length) % enabled.length]; stylePreset = next.value; selectedStyleTitle = next.title; styleMenuOpen = true; }"
+															@keydown.up.prevent="{ const enabled = styleOptions.filter(option => !option.disabled); if (!enabled.length) return; const currentIndex = enabled.findIndex(option => option.value === stylePreset); const next = enabled[(currentIndex - 1 + enabled.length) % enabled.length]; stylePreset = next.value; selectedStyleTitle = next.title; styleMenuOpen = true; }"
+															@keydown.enter.prevent="styleMenuOpen = !styleMenuOpen"
+															@keydown.escape.prevent="styleMenuOpen = false"
 															@click="styleMenuOpen = !styleMenuOpen">
 															<span class="sr-only">Change style preset</span>
 															<svg class="h-5 w-5 text-nbpurple-50" viewBox="0 0 20 20" fill="currentColor"
@@ -1320,13 +2142,13 @@ closeUploadDialogs() {
 														x-transition:leave-end="opacity-0"
 														class="absolute left-0 z-30 mt-2 sm:w-96 w-[90dvw] max-h-96 overflow-y-scroll origin-top-left divide-y divide-nbpurple-200 rounded-md bg-nbpurple-500 shadow-lg ring-1 ring-nbpurple-900 ring-opacity-5 focus:outline-none"
 														tabindex="-1" role="listbox" aria-labelledby="listbox-label-style"
-														aria-activedescendant="listbox-option-0">
+														aria-activedescendant="style-listbox-option-0">
 														<template x-for="(option, index) in styleOptions" :key="option.value">
 															<li :class="{
 																				'bg-nbpurple-600 cursor-pointer': stylePreset === option.value,
 																				'text-nbpurple-200 cursor-not-allowed': option.disabled,
 																				'hover:bg-nbpurple-700 text-nbpurple-50 cursor-pointer': !option.disabled
-																			}" class="select-none p-4 text-sm" :id="'listbox-option-' + index" role="option"
+																			}" class="select-none p-4 text-sm" :id="'style-listbox-option-' + index" role="option"
 																@click="if (!option.disabled) { stylePreset = option.value; selectedStyleTitle = option.title; styleMenuOpen = false; }">
 																<div class="flex flex-col">
 																	<div class="flex justify-between">
@@ -1382,8 +2204,12 @@ closeUploadDialogs() {
 															</div>
 															<button type="button"
 																class="inline-flex items-center rounded-l-none rounded-r-md bg-nbpurple-600 p-2 hover:bg-nbpurple-700 focus:outline-none focus:ring-2 focus:ring-nbpurple-600 focus:ring-offset-2 focus:ring-offset-nbpurple-50"
-																aria-haspopup="listbox" aria-expanded="true"
+																aria-haspopup="listbox" :aria-expanded="aspectRatioMenuOpen.toString()"
 																aria-labelledby="listbox-label-aspect-ratio"
+																@keydown.down.prevent="{ const enabled = aspectRatioOptions.filter(option => !option.disabled); if (!enabled.length) return; const currentIndex = enabled.findIndex(option => option.value === aspectRatio); const next = enabled[(currentIndex + 1 + enabled.length) % enabled.length]; aspectRatio = next.value; selectedAspectRatioTitle = next.title; aspectRatioMenuOpen = true; }"
+																@keydown.up.prevent="{ const enabled = aspectRatioOptions.filter(option => !option.disabled); if (!enabled.length) return; const currentIndex = enabled.findIndex(option => option.value === aspectRatio); const next = enabled[(currentIndex - 1 + enabled.length) % enabled.length]; aspectRatio = next.value; selectedAspectRatioTitle = next.title; aspectRatioMenuOpen = true; }"
+																@keydown.enter.prevent="aspectRatioMenuOpen = !aspectRatioMenuOpen"
+																@keydown.escape.prevent="aspectRatioMenuOpen = false"
 																@click="aspectRatioMenuOpen = !aspectRatioMenuOpen">
 																<span class="sr-only">Change aspect ratio</span>
 																<svg class="h-5 w-5 text-nbpurple-50" viewBox="0 0 20 20" fill="currentColor"
@@ -1403,7 +2229,7 @@ closeUploadDialogs() {
 																												'bg-nbpurple-600 cursor-pointer': aspectRatio === option.value,
 																												'text-nbpurple-200 cursor-not-allowed': option.disabled,
 																												'hover:bg-nbpurple-700 text-nbpurple-50 cursor-pointer': !option.disabled
-																										}" class="select-none p-4 text-sm" :id="'listbox-option-' + index" role="option"
+																										}" class="select-none p-4 text-sm" :id="'aspect-listbox-option-' + index" role="option"
 																	@click="if (!option.disabled) { aspectRatio = option.value; selectedAspectRatioTitle = option.title; aspectRatioMenuOpen = false; }">
 																	<div class="flex justify-between">
 																		<p class="font-normal" x-text="option.title"></p>
@@ -1440,7 +2266,7 @@ closeUploadDialogs() {
 																			{ value: '@cf/black-forest-labs/flux-1-schnell', title: 'FLUX.1 [schnell]', description: '12B parameter model for text-to-image generation.', disabled: !profileStore.profileInfo.isFluxSchnellEligible },
 																	]
 																}">
-												<label id="listbox-label" class="sr-only">Change generative model</label>
+												<label id="listbox-label-model" class="sr-only">Change generative model</label>
 												<div class="relative">
 													<div class="inline-flex divide-x divide-nbpurple-700 rounded-md shadow-sm">
 														<div
@@ -1454,7 +2280,11 @@ closeUploadDialogs() {
 														</div>
 														<button type="button"
 															class="inline-flex items-center rounded-l-none rounded-r-md bg-nbpurple-600 p-2 hover:bg-nbpurple-700 focus:outline-none focus:ring-2 focus:ring-nbpurple-600 focus:ring-offset-2 focus:ring-offset-nbpurple-50"
-															aria-haspopup="listbox" aria-expanded="true" aria-labelledby="listbox-label"
+															aria-haspopup="listbox" :aria-expanded="modelMenuOpen.toString()" aria-labelledby="listbox-label-model"
+															@keydown.down.prevent="{ const enabled = modelOptions.filter(option => !option.disabled); if (!enabled.length) return; const currentIndex = enabled.findIndex(option => option.value === selectedModel); const next = enabled[(currentIndex + 1 + enabled.length) % enabled.length]; selectedModel = next.value; selectedModelTitle = next.title; modelMenuOpen = true; }"
+															@keydown.up.prevent="{ const enabled = modelOptions.filter(option => !option.disabled); if (!enabled.length) return; const currentIndex = enabled.findIndex(option => option.value === selectedModel); const next = enabled[(currentIndex - 1 + enabled.length) % enabled.length]; selectedModel = next.value; selectedModelTitle = next.title; modelMenuOpen = true; }"
+															@keydown.enter.prevent="modelMenuOpen = !modelMenuOpen"
+															@keydown.escape.prevent="modelMenuOpen = false"
 															@click="modelMenuOpen = !modelMenuOpen">
 															<span class="sr-only">Change generative model</span>
 															<svg class="h-5 w-5 text-nbpurple-50" viewBox="0 0 20 20" fill="currentColor"
@@ -1470,14 +2300,14 @@ closeUploadDialogs() {
 														x-transition:leave="transition ease-in duration-100" x-transition:leave-start="opacity-100"
 														x-transition:leave-end="opacity-0"
 														class="absolute left-0 z-30 mt-2 sm:w-96 w-[90dvw] max-h-96 overflow-y-scroll origin-top-left divide-y divide-nbpurple-200 rounded-md bg-nbpurple-500 shadow-lg ring-1 ring-nbpurple-900 ring-opacity-5 focus:outline-none"
-														tabindex="-1" role="listbox" aria-labelledby="listbox-label"
-														aria-activedescendant="listbox-option-0">
+														tabindex="-1" role="listbox" aria-labelledby="listbox-label-model"
+														aria-activedescendant="model-listbox-option-0">
 														<template x-for="(option, index) in modelOptions" :key="option.value">
 															<li :class="{
 																					'bg-nbpurple-600 cursor-pointer': selectedModel === option.value,
 																					'text-nbpurple-200 cursor-not-allowed': option.disabled,
 																					'hover:bg-nbpurple-700 text-nbpurple-50 cursor-pointer': !option.disabled
-																				}" class="select-none p-4 text-sm" :id="'listbox-option-' + index" role="option"
+																				}" class="select-none p-4 text-sm" :id="'model-listbox-option-' + index" role="option"
 																@click="if (!option.disabled) { selectedModel = option.value; selectedModelTitle = option.title; modelMenuOpen = false; }">
 																<div class="flex flex-col">
 																	<div class="flex justify-between">
@@ -1734,9 +2564,12 @@ closeUploadDialogs() {
 								<div>
 									<button
 										@click="fileStore.filterMenuOpen = !fileStore.filterMenuOpen; closeUploadDialogs()"
+										@keydown.down.prevent="fileStore.filterMenuOpen = true; $nextTick(() => { const firstItem = $el.closest('.relative').querySelector('[role=menu] [role=menuitem]'); if (firstItem) firstItem.focus(); })"
+										@keydown.up.prevent="fileStore.filterMenuOpen = true; $nextTick(() => { const items = Array.from($el.closest('.relative').querySelectorAll('[role=menu] [role=menuitem]')); const lastItem = items[items.length - 1]; if (lastItem) lastItem.focus(); })"
+										@keydown.escape.prevent="fileStore.filterMenuOpen = false"
 										type="button" :class="fileStore.currentFilter === 'all' ? 'bg-nbpurple-600' : 'bg-nborange-700'"
 										class="ml-3 inline-flex items-center rounded-md px-3 py-2 text-xs font-semibold text-nbpurple-50 shadow-sm hover:bg-nbpurple-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-nbpurple-600"
-										id="filter-button" aria-expanded="true" aria-haspopup="true">
+										id="filter-button" :aria-expanded="fileStore.filterMenuOpen.toString()" aria-haspopup="true">
 										<svg class="hidden md:inline-block size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor"
 											stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
 											<polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
@@ -1748,6 +2581,7 @@ closeUploadDialogs() {
 									</button>
 								</div>
 								<div x-cloak x-show="fileStore.filterMenuOpen" @click.away="fileStore.filterMenuOpen = false"
+									@keydown.escape.stop.prevent="fileStore.filterMenuOpen = false"
 									class="absolute right-0 z-[21] mt-2 w-56 origin-top-right rounded-md bg-nbpurple-500 shadow-lg ring-1 ring-nbpurple-950 ring-opacity-5 focus:outline-none"
 									role="menu" aria-orientation="vertical" aria-labelledby="filter-button" tabindex="-1">
 									<div class="py-1" role="none">
@@ -1769,9 +2603,12 @@ closeUploadDialogs() {
 							<div class="relative inline-block text-left" x-data="{ zoomMenuOpen: false }">
 								<div>
 									<button @click="zoomMenuOpen = !zoomMenuOpen; closeUploadDialogs()" type="button"
+										@keydown.down.prevent="zoomMenuOpen = true; $nextTick(() => { const firstItem = $el.closest('.relative').querySelector('[role=menu] [role=menuitem]'); if (firstItem) firstItem.focus(); })"
+										@keydown.up.prevent="zoomMenuOpen = true; $nextTick(() => { const items = Array.from($el.closest('.relative').querySelectorAll('[role=menu] [role=menuitem]')); const lastItem = items[items.length - 1]; if (lastItem) lastItem.focus(); })"
+										@keydown.escape.prevent="zoomMenuOpen = false"
 										:class="zoom === 1 ? 'bg-nbpurple-600' : 'bg-nborange-700'"
 										class="ml-3 inline-flex items-center rounded-md px-3 py-2 text-xs font-semibold text-nbpurple-50 shadow-sm hover:bg-nbpurple-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-nbpurple-600"
-										id="zoom-button" aria-expanded="true" aria-haspopup="true">
+										id="zoom-button" :aria-expanded="zoomMenuOpen.toString()" aria-haspopup="true">
 										<svg class="inline-block size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor"
 											stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
 											<rect width="7" height="7" x="3" y="3" rx="1" />
@@ -1782,8 +2619,9 @@ closeUploadDialogs() {
 									</button>
 								</div>
 								<div x-cloak x-show="zoomMenuOpen" @click.away="zoomMenuOpen = false"
+									@keydown.escape.stop.prevent="zoomMenuOpen = false"
 									class="absolute right-0 z-[21] mt-2 w-56 origin-top-right rounded-md bg-nbpurple-500 shadow-lg ring-1 ring-nbpurple-950 ring-opacity-5 focus:outline-none"
-									role="menu" aria-orientation="vertical" aria-labelledby="filter-button" tabindex="-1">
+									role="menu" aria-orientation="vertical" aria-labelledby="zoom-button" tabindex="-1">
 									<div class="py-1" role="none">
 										<template
 											x-for="zoomLevel in [{name: 'Large', level: 0},{name: 'Normal', level: 1},{name: 'Small', level: 2},{name:'X-Small', level: 3}]"
@@ -2007,7 +2845,35 @@ closeUploadDialogs() {
 											}
 										}
 									" :class="{ 'opacity-50 drop-shadow-xl': dragging }" class="relative"
-									x-data="{ showMediaActions: false, dragging: false, scanResults: null, showPopover: false }" x-init="
+									x-data="{ 
+										showMediaActions: false, 
+										dragging: false, 
+										scanResults: null, 
+										showPopover: false,
+										scanPopoverAbove: false,
+										scanPopoverAlign: 'right',
+										placeScanPopover() {
+											if (window.innerWidth < 640) return;
+											this.$nextTick(() => {
+												const popover = this.$refs.scanPopover;
+												const anchor = this.$refs.scanPopoverAnchor;
+												if (!popover || !anchor) return;
+
+												const viewportPadding = 16;
+												const popoverRect = popover.getBoundingClientRect();
+												const anchorRect = anchor.getBoundingClientRect();
+
+												const canFitRightAligned = anchorRect.right - popoverRect.width >= viewportPadding;
+												const canFitLeftAligned = anchorRect.left + popoverRect.width <= (window.innerWidth - viewportPadding);
+												this.scanPopoverAlign = (!canFitRightAligned && canFitLeftAligned) ? 'left' : 'right';
+
+												const estimatedHeight = Math.min(popover.scrollHeight || popoverRect.height, Math.floor(window.innerHeight * 0.75));
+												const spaceBelow = window.innerHeight - anchorRect.bottom - 12;
+												const spaceAbove = anchorRect.top - 12;
+												this.scanPopoverAbove = spaceBelow < Math.min(estimatedHeight, 420) && spaceAbove > spaceBelow;
+											});
+										}
+									}" x-init="
 									// Add scanResults to the file object
 									file.scanResults = scanResults;
 									const checkStatus = () => {
@@ -2207,7 +3073,7 @@ closeUploadDialogs() {
 											<div class="w-4/6 overflow-hidden whitespace-nowrap text-ellipsis">
 												<p
 													class="pointer-events-none mt-2 flex text-md font-medium text-nbpurple-300 items-center align-middle">
-													<span :class="{'mr-1': scanResults}" class="cursor-pointer pointer-events-auto"
+													<span :class="{'mr-1': scanResults}" class="cursor-pointer pointer-events-auto" x-ref="scanPopoverAnchor"
 														@click="scanResults ? showPopover = !showPopover : null"
 														x-html="scanResults ? getIcon(scanResults.status, 'size-5') : ''"></span>
 													<span
@@ -2275,70 +3141,23 @@ closeUploadDialogs() {
 											</div>
 
 											<!-- Scan Results Popover -->
+											<div x-show="showPopover && scanResults" x-cloak x-transition.opacity class="fixed inset-0 z-40 bg-black/40 sm:hidden"
+												@click="showPopover = false" aria-hidden="true"></div>
 											<div x-show="showPopover && scanResults" x-transition:enter="transition ease-out duration-200"
 												x-transition:enter-start="opacity-0 transform scale-95"
 												x-transition:enter-end="opacity-100 transform scale-100"
 												x-transition:leave="transition ease-in duration-150"
 												x-transition:leave-start="opacity-100 transform scale-100"
 												x-transition:leave-end="opacity-0 transform scale-95" @click.away="showPopover = false"
-												x-effect="
-													if (showPopover && scanResults) {
-														$nextTick(() => {
-															const popover = $el;
-															const parentRect = popover.offsetParent.getBoundingClientRect();
-															const gridContainer = popover.closest('ul.grid');
-															const gridRect = gridContainer.getBoundingClientRect();
-															const viewportHeight = window.innerHeight;
-															const popoverWidth = 384; // w-96
-															const popoverHeight = 300; // estimated height
-															
-															// Reset positioning classes
-															popover.classList.remove('left-0', 'right-0', 'left-1/2', '-translate-x-1/2', 'top-full', 'bottom-full', 'mt-2', 'mb-2');
-															
-															// Horizontal positioning - constrain to grid container
-															if (parentRect.left + popoverWidth > gridRect.right) {
-																// Would overflow grid right edge - position to right edge
-																popover.classList.add('right-0');
-															} else if (parentRect.left - popoverWidth/2 < gridRect.left) {
-																// Would overflow grid left edge when centered - force left alignment
-																popover.classList.add('left-0');
-															} else if (parentRect.right - popoverWidth/2 > gridRect.left && parentRect.left + popoverWidth/2 < gridRect.right) {
-																// Can center safely within grid bounds
-																popover.classList.add('left-1/2', '-translate-x-1/2');
-															} else {
-																// Default to left
-																popover.classList.add('left-0');
-															}
-															
-															// Vertical positioning - use viewport for vertical space
-															if (parentRect.bottom + popoverHeight > viewportHeight && parentRect.top - popoverHeight > 0) {
-																// Position above if there's room
-																popover.classList.add('bottom-full', 'mb-2');
-															} else {
-																// Default to below
-																popover.classList.add('top-full', 'mt-2');
-															}
-															
-															// Set up intersection observer to auto-close when 80% hidden
-															setTimeout(() => {
-																const observer = new IntersectionObserver((entries) => {
-																	entries.forEach(entry => {
-																		if (entry.intersectionRatio < 0.2) {
-																			showPopover = false;
-																			observer.disconnect();
-																		}
-																	});
-																}, { threshold: 0.2 });
-																observer.observe(popover);
-																
-																// Cleanup observer when popover is hidden
-																popover.addEventListener('x-transitionend', () => {
-																	if (!showPopover) observer.disconnect();
-																});
-															}, 500); // Delay to allow popover to fully show first
-														});
-													}
-												" class="absolute z-50 w-80 sm:w-96 max-w-[calc(100vw-2rem)] bg-nbpurple-900/95 backdrop-blur-sm border border-nbpurple-600/50 rounded-lg shadow-2xl">
+												x-effect="if (showPopover && scanResults) placeScanPopover()"
+												@resize.window="if (showPopover && scanResults) placeScanPopover()"
+												@keydown.escape.window="showPopover = false"
+												x-ref="scanPopover"
+												:class="[
+													scanPopoverAlign === 'left' ? 'sm:left-0 sm:right-auto' : 'sm:right-0 sm:left-auto',
+													scanPopoverAbove ? 'sm:bottom-full sm:mb-2 sm:top-auto sm:mt-0' : 'sm:top-full sm:mt-2 sm:bottom-auto sm:mb-0'
+												]"
+												class="fixed inset-x-4 top-16 bottom-4 z-50 overflow-y-auto sm:absolute sm:inset-x-auto sm:max-h-[75vh] w-auto sm:w-96 max-w-[calc(100vw-2rem)] bg-nbpurple-900/95 backdrop-blur-sm border border-nbpurple-600/50 rounded-lg shadow-2xl">
 
 												<div class="p-5">
 													<div class="flex items-center justify-between pb-3 mb-4 border-b border-nbpurple-600/30">
@@ -2531,7 +3350,7 @@ closeUploadDialogs() {
 		</div>
 
 		<!-- Delete confirmation window -->
-		<div x-cloak class="relative z-50" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+		<div x-cloak class="relative z-50" aria-labelledby="delete-confirmation-modal-title" role="dialog" aria-modal="true">
 			<div x-show="fileStore.deleteConfirmation.isOpen" x-transition:enter="ease-out duration-300"
 				x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100"
 				x-transition:leave="ease-in duration-200" x-transition:leave-start="opacity-100"
@@ -2558,7 +3377,7 @@ closeUploadDialogs() {
 									</svg>
 								</div>
 								<div class="mt-3 text-center sm:ml-4 sm:mt-0 sm:text-left">
-									<h3 class="text-base font-semibold leading-6 text-nbpurple-50" id="modal-title">Confirm Delete</h3>
+									<h3 class="text-base font-semibold leading-6 text-nbpurple-50" id="delete-confirmation-modal-title">Confirm Delete</h3>
 									<div class="mt-2">
 										<p class="text-sm text-nbpurple-100">
 											Are you sure you want to delete the selected <span class="font-bold"
@@ -2639,7 +3458,7 @@ closeUploadDialogs() {
 
 		<!-- Share window -->
 		<template x-if="profileStore.profileInfo.isShareEligible">
-			<div x-cloak class="relative z-50" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+			<div x-cloak class="relative z-50" aria-labelledby="share-media-modal-title" role="dialog" aria-modal="true">
 				<div x-show="fileStore.shareMedia.isOpen" x-transition:enter="ease-out duration-300"
 					x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100"
 					x-transition:leave="ease-in duration-200" x-transition:leave-start="opacity-100"
@@ -2667,7 +3486,7 @@ closeUploadDialogs() {
 										</svg>
 									</div>
 									<div class="mt-3 text-center sm:ml-4 sm:mt-0 sm:text-left">
-										<h3 class="text-base font-semibold leading-6 text-nbpurple-50" id="modal-title">Share Media</h3>
+										<h3 class="text-base font-semibold leading-6 text-nbpurple-50" id="share-media-modal-title">Share Media</h3>
 										<div class="mt-2">
 											<!-- List of selected media -->
 											<div class="flex items-center justify-center">
@@ -2788,7 +3607,7 @@ closeUploadDialogs() {
 		</template>
 
 		<!-- Move to folder modal -->
-		<div x-cloak class="relative z-50" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+		<div x-cloak class="relative z-50" aria-labelledby="move-to-folder-modal-title" role="dialog" aria-modal="true">
 			<!-- Background overlay -->
 			<div x-show="fileStore.moveToFolder.isOpen" x-transition:enter="ease-out duration-300"
 				x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100"
@@ -2806,6 +3625,7 @@ closeUploadDialogs() {
 					<div @click.outside="!fileStore.moveToFolder.isLoading && fileStore.moveToFolder.close(true)"
 						@keydown.escape="!fileStore.moveToFolder.isLoading && fileStore.moveToFolder.close(true)"
 						class="relative transform overflow-hidden rounded-lg bg-nbpurple-700 text-left shadow-xl transition-all min-h-[50vh] max-h-[80vh] my-8 mb-24 w-full sm:max-w-lg flex flex-col">
+						<h3 id="move-to-folder-modal-title" class="sr-only">Move media to folder</h3>
 						<div class="bg-nbpurple-700 px-4 pt-5 pb-4 sm:p-6 sm:pb-4 overflow-y-auto flex-grow">
 							<!-- List of selected media -->
 							<div class="flex items-center justify-center">
@@ -2842,9 +3662,14 @@ closeUploadDialogs() {
 											<input id="combobox" type="text" x-model="fileStore.moveToFolder.selectedFolderName"
 												@input="fileStore.moveToFolder.searchTerm = $event.target.value; fileStore.moveToFolder.isDropdownOpen = true"
 												@click="fileStore.moveToFolder.toggleDropdown()"
+												@keydown.down.prevent="{ const folders = menuStore.folders.filter(f => f.name.toLowerCase().includes(fileStore.moveToFolder.searchTerm.toLowerCase())); if (!folders.length) return; fileStore.moveToFolder.isDropdownOpen = true; const currentIndex = folders.findIndex(folder => folder.id === fileStore.moveToFolder.hoveredFolder); const next = folders[(currentIndex + 1 + folders.length) % folders.length]; fileStore.moveToFolder.hoveredFolder = next.id; }"
+												@keydown.up.prevent="{ const folders = menuStore.folders.filter(f => f.name.toLowerCase().includes(fileStore.moveToFolder.searchTerm.toLowerCase())); if (!folders.length) return; fileStore.moveToFolder.isDropdownOpen = true; const currentIndex = folders.findIndex(folder => folder.id === fileStore.moveToFolder.hoveredFolder); const next = folders[(currentIndex - 1 + folders.length) % folders.length]; fileStore.moveToFolder.hoveredFolder = next.id; }"
+												@keydown.enter.prevent="{ const folders = menuStore.folders.filter(f => f.name.toLowerCase().includes(fileStore.moveToFolder.searchTerm.toLowerCase())); if (!folders.length) return; const activeId = fileStore.moveToFolder.hoveredFolder ?? folders[0].id; const selectedFolder = folders.find(folder => folder.id === activeId) || folders[0]; fileStore.moveToFolder.destinationFolderId = selectedFolder.id; fileStore.moveToFolder.selectedFolderName = selectedFolder.name; fileStore.moveToFolder.isDropdownOpen = false; fileStore.moveToFolder.searchTerm = ''; }"
+												@keydown.escape.prevent="fileStore.moveToFolder.isDropdownOpen = false"
 												@click.away="fileStore.moveToFolder.isDropdownOpen = false"
 												class="w-full rounded-md border-0 bg-nbpurple-50 py-1.5 pl-3 pr-12 text-nbpurple-900 shadow-sm ring-1 ring-inset ring-nbpurple-300 focus:ring-2 focus:ring-inset focus:ring-nbpurple-600 sm:text-sm sm:leading-6"
-												role="combobox" aria-controls="options"
+												role="combobox" aria-controls="move-folder-options"
+												:aria-activedescendant="fileStore.moveToFolder.hoveredFolder ? 'move-folder-option-' + fileStore.moveToFolder.hoveredFolder : null"
 												:aria-expanded="fileStore.moveToFolder.isDropdownOpen.toString()">
 											<button type="button" @click.stop="fileStore.moveToFolder.toggleDropdown()"
 												class="absolute inset-y-0 right-0 flex items-center rounded-r-md px-2 focus:outline-none">
@@ -2857,12 +3682,13 @@ closeUploadDialogs() {
 											</button>
 											<ul x-show="fileStore.moveToFolder.isDropdownOpen"
 												@click.away="fileStore.moveToFolder.isDropdownOpen = false"
+												@keydown.escape.stop.prevent="fileStore.moveToFolder.isDropdownOpen = false"
 												class="absolute z-10 mt-1 max-h-40 w-full overflow-auto rounded-md bg-nbpurple-50 py-1 text-base shadow-lg ring-1 ring-nbpurple-950 ring-opacity-5 focus:outline-none sm:text-sm"
-												id="options" role="listbox">
+												id="move-folder-options" role="listbox">
 												<template
 													x-for="folder in menuStore.folders.filter(f => f.name.toLowerCase().includes(fileStore.moveToFolder.searchTerm.toLowerCase()))">
 													<li class="relative cursor-default select-none py-2 pl-3 pr-9 text-nbpurple-900"
-														:id="'option-' + folder.id" role="option"
+														:id="'move-folder-option-' + folder.id" role="option"
 														@click="fileStore.moveToFolder.destinationFolderId = folder.id; fileStore.moveToFolder.selectedFolderName = folder.name; fileStore.moveToFolder.isDropdownOpen = false; fileStore.moveToFolder.searchTerm = ''"
 														@mouseenter="fileStore.moveToFolder.hoveredFolder = folder.id"
 														@mouseleave="fileStore.moveToFolder.hoveredFolder = null"
@@ -2997,7 +3823,7 @@ closeUploadDialogs() {
 			x-transition:enter="transition-opacity ease-linear duration-300" x-transition:enter-start="opacity-0"
 			x-transition:enter-end="opacity-100" x-transition:leave="transition-opacity ease-linear duration-300"
 			x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0"
-			class="fixed z-50 inset-0 overflow-y-auto bg-black" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+			class="fixed z-50 inset-0 overflow-y-auto bg-black" aria-label="Media viewer" role="dialog" aria-modal="true">
 			<div x-data="{ 
 			startX: null,
 			startY: null,
@@ -3430,7 +4256,7 @@ closeUploadDialogs() {
 		</div>
 
 		<!-- Folder deletion confirmation modal -->
-		<div x-cloak class="relative z-50" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+		<div x-cloak class="relative z-50" aria-labelledby="folder-delete-modal-title" role="dialog" aria-modal="true">
 			<div x-show="menuStore.showDeleteFolderModal" x-transition:enter="ease-out duration-300"
 				x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100"
 				x-transition:leave="ease-in duration-200" x-transition:leave-start="opacity-100"
@@ -3457,7 +4283,7 @@ closeUploadDialogs() {
 									</svg>
 								</div>
 								<div class="mt-3 text-center sm:ml-4 sm:mt-0 sm:text-left">
-									<h3 class="text-base font-semibold leading-6 text-nbpurple-50" id="modal-title">Confirm Delete</h3>
+									<h3 class="text-base font-semibold leading-6 text-nbpurple-50" id="folder-delete-modal-title">Confirm Delete</h3>
 									<div class="mt-2">
 										<p class="text-sm text-nbpurple-100">
 											Are you sure you want to delete the selected <span class="font-bold"
@@ -3500,7 +4326,7 @@ closeUploadDialogs() {
 
 		<!-- Nostr Share modal -->
 		<template x-if="profileStore.profileInfo.isNostrShareEligible">
-			<div x-cloak class="relative z-50" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+			<div x-cloak class="relative z-50" aria-labelledby="nostr-share-modal-title" role="dialog" aria-modal="true">
 				<div x-show="nostrStore.share.isOpen" x-transition:enter="ease-out duration-300"
 					x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100"
 					x-transition:leave="ease-in duration-200" x-transition:leave-start="opacity-100"
@@ -3530,7 +4356,7 @@ closeUploadDialogs() {
 										</svg>
 									</div>
 									<div class="w-full mt-3 text-center">
-										<h3 class="text-base font-semibold leading-6 text-nbpurple-50" id="modal-title">Share to Nostr</h3>
+										<h3 class="text-base font-semibold leading-6 text-nbpurple-50" id="nostr-share-modal-title">Share to Nostr</h3>
 										<div class="mt-2">
 											<!-- Profile -->
 											<div class="group block flex-shrink-0">
@@ -3555,9 +4381,9 @@ closeUploadDialogs() {
 											</div>
 											<!-- /Profile -->
 											<div class="w-full">
-												<label for="nostr-comment" class="sr-only">Add your note</label>
+												<label for="nostr-comment-share" class="sr-only">Add your note</label>
 												<div class="mt-2">
-													<textarea x-model="nostrStore.share.note" rows="4" name="nostr-comment" id="nostr-comment"
+													<textarea x-model="nostrStore.share.note" rows="4" name="nostr-comment" id="nostr-comment-share"
 														class="block w-full rounded-md border-0 py-1.5 bg-nostrpurple-600 text-nostrpurple-50 shadow-sm ring-1 ring-inset ring-nostrpurple-300 placeholder:text-nostrpurple-400 focus:ring-2 focus:ring-inset focus:ring-nostrpurple-600"></textarea>
 												</div>
 												<!-- Kind selection switch (only show for media files) -->
@@ -3700,7 +4526,7 @@ closeUploadDialogs() {
 		</template>
 
 		<!-- Logout confirmation modal -->
-		<div x-show="logoutScreen" x-cloak class="relative z-50" aria-labelledby="modal-title" role="dialog"
+		<div x-show="logoutScreen" x-cloak class="relative z-50" aria-labelledby="logout-modal-title" role="dialog"
 			aria-modal="true">
 			<div x-show="logoutScreen" x-transition:enter="ease-out duration-300" x-transition:enter-start="opacity-0"
 				x-transition:enter-end="opacity-100" x-transition:leave="ease-in duration-200"
@@ -3725,7 +4551,7 @@ closeUploadDialogs() {
 								</svg>
 							</div>
 							<div class="mt-3 text-center sm:ml-4 sm:mt-0 sm:text-left">
-								<h3 class="text-base font-semibold leading-6 text-nbpurple-50" id="modal-title">Logout</h3>
+								<h3 class="text-base font-semibold leading-6 text-nbpurple-50" id="logout-modal-title">Logout</h3>
 								<div class="mt-2">
 									<p class="text-sm text-nbpurple-100">Are you sure you want to logout?</p>
 								</div>
@@ -4090,7 +4916,7 @@ closeUploadDialogs() {
 													</svg>
 												</div>
 												<div class="mt-3 text-center">
-													<h3 class="text-base font-semibold leading-6 text-nbpurple-50" id="modal-title">Delete
+													<h3 class="text-base font-semibold leading-6 text-nbpurple-50" id="delete-nostr-note-title">Delete
 														Nostr Note
 													</h3>
 													<div class="mt-2 text-center">
@@ -4191,9 +5017,14 @@ closeUploadDialogs() {
 																		x-model="fileStore.moveToFolder.selectedFolderName"
 																		@input="fileStore.moveToFolder.searchTerm = $event.target.value; fileStore.moveToFolder.isDropdownOpen = true"
 																		@click="fileStore.moveToFolder.toggleDropdown()"
+																		@keydown.down.prevent="{ const folders = menuStore.folders.filter(f => f.name.toLowerCase().includes(fileStore.moveToFolder.searchTerm.toLowerCase())); if (!folders.length) return; fileStore.moveToFolder.isDropdownOpen = true; const currentIndex = folders.findIndex(folder => folder.id === fileStore.moveToFolder.hoveredFolder); const next = folders[(currentIndex + 1 + folders.length) % folders.length]; fileStore.moveToFolder.hoveredFolder = next.id; }"
+																		@keydown.up.prevent="{ const folders = menuStore.folders.filter(f => f.name.toLowerCase().includes(fileStore.moveToFolder.searchTerm.toLowerCase())); if (!folders.length) return; fileStore.moveToFolder.isDropdownOpen = true; const currentIndex = folders.findIndex(folder => folder.id === fileStore.moveToFolder.hoveredFolder); const next = folders[(currentIndex - 1 + folders.length) % folders.length]; fileStore.moveToFolder.hoveredFolder = next.id; }"
+																		@keydown.enter.prevent="{ const folders = menuStore.folders.filter(f => f.name.toLowerCase().includes(fileStore.moveToFolder.searchTerm.toLowerCase())); if (!folders.length) return; const activeId = fileStore.moveToFolder.hoveredFolder ?? folders[0].id; const selectedFolder = folders.find(folder => folder.id === activeId) || folders[0]; fileStore.moveToFolder.destinationFolderId = selectedFolder.id; fileStore.moveToFolder.selectedFolderName = selectedFolder.name; fileStore.moveToFolder.isDropdownOpen = false; fileStore.moveToFolder.searchTerm = ''; }"
+																		@keydown.escape.prevent="fileStore.moveToFolder.isDropdownOpen = false"
 																		@click.away="fileStore.moveToFolder.isDropdownOpen = false"
 																		class="w-full rounded-md border-0 bg-nbpurple-50 py-1.5 pl-3 pr-12 text-nbpurple-900 shadow-sm ring-1 ring-inset ring-nbpurple-300 focus:ring-2 focus:ring-inset focus:ring-nbpurple-600 sm:text-sm sm:leading-6"
-																		role="pf-combobox" aria-controls="options"
+																		role="combobox" aria-controls="pf-options"
+																		:aria-activedescendant="fileStore.moveToFolder.hoveredFolder ? 'pf-option-' + fileStore.moveToFolder.hoveredFolder : null"
 																		:aria-expanded="fileStore.moveToFolder.isDropdownOpen.toString()">
 																	<button type="button" @click.stop="fileStore.moveToFolder.toggleDropdown()"
 																		class="absolute inset-y-0 right-0 flex items-center rounded-r-md px-2 focus:outline-none">
@@ -4206,12 +5037,13 @@ closeUploadDialogs() {
 																	</button>
 																	<ul x-show="fileStore.moveToFolder.isDropdownOpen"
 																		@click.away="fileStore.moveToFolder.isDropdownOpen = false"
+																		@keydown.escape.stop.prevent="fileStore.moveToFolder.isDropdownOpen = false"
 																		class="absolute z-10 mt-1 max-h-40 w-full overflow-auto rounded-md bg-nbpurple-50 py-1 text-base shadow-lg ring-1 ring-nbpurple-950 ring-opacity-5 focus:outline-none sm:text-sm"
-																		id="options" role="listbox">
+																		id="pf-options" role="listbox">
 																		<template
 																			x-for="folder in menuStore.folders.filter(f => f.name.toLowerCase().includes(fileStore.moveToFolder.searchTerm.toLowerCase()))">
 																			<li class="relative cursor-default select-none py-2 pl-3 pr-9 text-nbpurple-900"
-																				:id="'option-' + folder.id" role="option"
+																				:id="'pf-option-' + folder.id" role="option"
 																				@click="fileStore.moveToFolder.destinationFolderId = folder.id; fileStore.moveToFolder.selectedFolderName = folder.name; fileStore.moveToFolder.isDropdownOpen = false; fileStore.moveToFolder.searchTerm = ''"
 																				@mouseenter="fileStore.moveToFolder.hoveredFolder = folder.id"
 																				@mouseleave="fileStore.moveToFolder.hoveredFolder = null"
@@ -4702,10 +5534,10 @@ closeUploadDialogs() {
 																			</div>
 																			<!-- /Profile -->
 																			<div class="w-full">
-																				<label for="nostr-comment" class="sr-only">Add your note</label>
+																				<label for="nostr-comment-slideover" class="sr-only">Add your note</label>
 																				<div class="mt-2">
 																					<textarea x-model="nostrStore.share.note" rows="4" name="nostr-comment"
-																						id="nostr-comment"
+																						id="nostr-comment-slideover"
 																						class="block w-full rounded-md border-0 py-1.5 bg-nostrpurple-600 text-nostrpurple-50 shadow-sm ring-1 ring-inset ring-nostrpurple-300 placeholder:text-nostrpurple-400 focus:ring-2 focus:ring-inset focus:ring-nostrpurple-600"></textarea>
 																				</div>
 																				<!-- Kind selection switch (only show for media files) -->
@@ -4803,8 +5635,11 @@ closeUploadDialogs() {
 												<!-- Dropdown Button -->
 												<div class="relative block w-full">
 													<button @click="open = !open" type="button"
+														@keydown.down.prevent="open = true; $nextTick(() => { const firstItem = $el.closest('.relative').querySelector('[role=menu] button'); if (firstItem) firstItem.focus(); })"
+														@keydown.up.prevent="open = true; $nextTick(() => { const items = Array.from($el.closest('.relative').querySelectorAll('[role=menu] button')); const lastItem = items[items.length - 1]; if (lastItem) lastItem.focus(); })"
+														@keydown.escape.prevent="open = false"
 														class="relative inline-flex justify-between items-center w-full min-w-36 rounded-md bg-nbpurple-800 px-3 py-2 text-xs font-medium text-nbpurple-50 ring-1 ring-inset ring-nbpurple-500 hover:bg-nbpurple-700 focus:z-10"
-														id="option-menu-button" aria-expanded="true" aria-haspopup="true">
+														id="option-menu-button" :aria-expanded="open.toString()" aria-haspopup="true">
 														<span x-text="selectedOption"></span> <!-- Display selected option -->
 														<svg class="h-5 w-5 ml-2" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
 															<path fill-rule="evenodd"
@@ -4814,7 +5649,7 @@ closeUploadDialogs() {
 													</button>
 
 													<!-- Dropdown Menu -->
-													<div x-show="open" @click.away="open = false"
+													<div x-show="open" @click.away="open = false" @keydown.escape.stop.prevent="open = false"
 														x-transition:enter="transition ease-out duration-100"
 														x-transition:enter-start="transform opacity-0 scale-95"
 														x-transition:enter-end="transform opacity-100 scale-100"
@@ -4944,7 +5779,7 @@ closeUploadDialogs() {
 													</svg>
 												</div>
 												<div class="mt-3 text-center">
-													<h3 class="text-base font-semibold leading-6 text-nbpurple-50" id="modal-title">Delete
+													<h3 class="text-base font-semibold leading-6 text-nbpurple-50" id="delete-media-title">Delete
 														Media
 													</h3>
 													<div class="mt-2">
@@ -5213,12 +6048,17 @@ closeUploadDialogs() {
 													}
 												}" class="space-y-2 px-4 sm:grid sm:grid-cols-3 sm:gap-4 sm:space-y-0 sm:px-6 sm:py-5">
 											<div>
-												<label id="listbox-label" for="wallet"
+												<label id="listbox-label-default-folder" for="default-folder-selector"
 													class="block text-sm font-medium leading-6 text-nbpurple-200 sm:mt-1.5">Default Folder</label>
 											</div>
 											<div class="relative sm:col-span-2">
-												<button type="button" @click="open = !open" :aria-expanded="open" aria-haspopup="listbox"
-													aria-labelledby="listbox-label"
+												<button id="default-folder-selector" type="button" @click="open = !open"
+													@keydown.down.prevent="{ const folders = menuStore.folders || []; if (!folders.length) return; const currentIndex = folders.findIndex(folder => selected && folder.id === selected.id); const next = folders[(currentIndex + 1 + folders.length) % folders.length]; selected = next; setDefaultFolder(next); open = true; }"
+													@keydown.up.prevent="{ const folders = menuStore.folders || []; if (!folders.length) return; const currentIndex = folders.findIndex(folder => selected && folder.id === selected.id); const next = folders[(currentIndex - 1 + folders.length) % folders.length]; selected = next; setDefaultFolder(next); open = true; }"
+													@keydown.enter.prevent="open = !open"
+													@keydown.escape.prevent="open = false"
+													:aria-expanded="open.toString()" aria-haspopup="listbox"
+													aria-labelledby="listbox-label-default-folder"
 													class="relative w-full cursor-default rounded-md bg-nbpurple-600 text-nbpurple-100 py-1.5 pl-3 pr-10 text-left shadow-sm ring-1 ring-inset ring-nbpurple-300 focus:outline-none focus:ring-2 focus:ring-nbpurple-600 sm:text-sm sm:leading-6">
 													<span class="block truncate"
 														x-text="selected ? selected.name : 'Select default folder'"></span>
@@ -5233,10 +6073,10 @@ closeUploadDialogs() {
 												</button>
 												<ul x-show="open" @click.outside="open = false"
 													class="absolute z-10 mt-1 max-h-60 w-full overflow-auto rounded-md bg-nbpurple-600 py-1 text-base shadow-lg ring-1 ring-nbpurple-950 ring-opacity-5 focus:outline-none sm:text-sm"
-													tabindex="-1" role="listbox" aria-labelledby="listbox-label"
-													:aria-activedescendant="selected ? 'listbox-option-' + selected.id : null">
+													tabindex="-1" role="listbox" aria-labelledby="listbox-label-default-folder"
+													:aria-activedescendant="selected ? 'default-folder-option-' + selected.id : null">
 													<template x-for="folder in menuStore.folders" :key="folder.id">
-														<li :id="'listbox-option-' + folder.id" role="option"
+														<li :id="'default-folder-option-' + folder.id" role="option"
 															@click="setDefaultFolder(folder); open = false;"
 															:class="{ 'bg-nbpurple-700 text-nbpurple-50': folder === selected, 'text-nbpurple-200': folder !== selected }"
 															class="hover:bg-nbpurple-700 relative cursor-default select-none py-2 pl-3 pr-9">
@@ -5303,7 +6143,7 @@ closeUploadDialogs() {
 													</div>
 												</div>
 												<button
-													:diabled="profileStore.dialogLoading || !$refs.currentPassword?.value || !$refs.newPassword || !$refs.confirmPassword "
+													:disabled="profileStore.dialogLoading || !$refs.currentPassword?.value || !$refs.newPassword || !$refs.confirmPassword "
 													type="button"
 													class="rounded-md bg-nbpurple-200 px-3 py-2 text-sm font-semibold text-nbpurple-900 shadow-sm ring-1 ring-inset ring-nbpurple-300 hover:bg-nbpurple-50"
 													@click.throttle.250ms="await profileStore.updatePassword($refs.currentPassword, $refs.newPassword, $refs.confirmPassword)">
@@ -5414,6 +6254,9 @@ closeUploadDialogs() {
 
 	<script type="module" src="https://cdn.jsdelivr.net/npm/player.style/sutro/+esm"></script>
 	<script type="module" src="https://cdn.jsdelivr.net/npm/player.style/sutro-audio/+esm"></script>
+	<script>
+		window.NBTheme?.bindToggle(document.getElementById('theme-toggle'));
+	</script>
 </body>
 
 </html>
