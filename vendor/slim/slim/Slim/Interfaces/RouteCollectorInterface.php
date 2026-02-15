@@ -95,9 +95,9 @@ interface RouteCollectorInterface
     /**
      * Add route
      *
-     * @param string[]        $methods Array of HTTP methods
-     * @param string          $pattern The route pattern
-     * @param callable|string $handler The route callable
+     * @param string[] $methods Array of HTTP methods
+     * @param string $pattern The route pattern
+     * @param callable|array{class-string, string}|string $handler The route callable
      */
     public function map(array $methods, string $pattern, $handler): RouteInterface;
 }

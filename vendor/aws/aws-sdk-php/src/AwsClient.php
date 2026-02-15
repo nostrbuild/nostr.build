@@ -272,7 +272,7 @@ class AwsClient implements AwsClientInterface
         if ($this->isUseEndpointV2()) {
             $this->addEndpointV2Middleware();
         }
-        $this->addAuthSelectionMiddleware($config);
+        $this->addAuthSelectionMiddleware($config['config']);
 
         if (!is_null($this->api->getMetadata('awsQueryCompatible'))) {
             $this->addQueryCompatibleInputMiddleware($this->api);
@@ -568,8 +568,14 @@ class AwsClient implements AwsClientInterface
             $aliases = \Aws\load_compiled_json($file);
             $serviceId = $this->api->getServiceId();
             $version = $this->getApi()->getApiVersion();
-            if (!empty($aliases['operations'][$serviceId][$version])) {
-                $this->aliases = array_flip($aliases['operations'][$serviceId][$version]);
+            $serviceAliases = null;
+
+            if (!is_null($serviceId) && isset($aliases['operations'][$serviceId])) {
+                $serviceAliases = $aliases['operations'][$serviceId];
+            }
+
+            if ($serviceAliases && isset($serviceAliases[$version])) {
+                $this->aliases = array_flip($serviceAliases[$version]);
             }
         }
     }

@@ -22,7 +22,7 @@ class AbstractClient
     /** @var ClientInterface */
     private $httpClient;
 
-    public function __construct(string $baseUrl, string $apiKey, ClientInterface $client = null)
+    public function __construct(string $baseUrl, string $apiKey, ?ClientInterface $client = null)
     {
         $this->baseUrl = rtrim($baseUrl, '/');
         $this->apiKey = $apiKey;

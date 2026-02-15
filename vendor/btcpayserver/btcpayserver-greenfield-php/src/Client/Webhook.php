@@ -238,7 +238,7 @@ class Webhook extends AbstractClient
         if ($requestBody && $btcpaySigHeader) {
             $expectedHeader = 'sha256=' . hash_hmac('sha256', $requestBody, $secret);
 
-            if ($expectedHeader === $btcpaySigHeader) {
+            if (hash_equals($expectedHeader, $btcpaySigHeader)) {
                 return true;
             }
         }

@@ -75,7 +75,7 @@ class Route implements RouteInterface, RequestHandlerInterface
     /**
      * Route arguments parameters
      *
-     * @var string[]
+     * @var array<string, string>
      */
     protected array $savedArguments = [];
 
@@ -91,7 +91,7 @@ class Route implements RouteInterface, RequestHandlerInterface
     /**
      * Route callable
      *
-     * @var callable|string
+     * @var callable|array{class-string, string}|string
      */
     protected $callable;
 
@@ -107,15 +107,15 @@ class Route implements RouteInterface, RequestHandlerInterface
     protected bool $groupMiddlewareAppended = false;
 
     /**
-     * @param string[]                         $methods    The route HTTP methods
-     * @param string                           $pattern    The route pattern
-     * @param callable|string                  $callable   The route callable
-     * @param ResponseFactoryInterface         $responseFactory
-     * @param CallableResolverInterface        $callableResolver
-     * @param TContainerInterface              $container
+     * @param string[] $methods The route HTTP methods
+     * @param string $pattern The route pattern
+     * @param callable|array{class-string, string}|string $callable The route callable
+     * @param ResponseFactoryInterface $responseFactory
+     * @param CallableResolverInterface $callableResolver
+     * @param TContainerInterface $container
      * @param InvocationStrategyInterface|null $invocationStrategy
-     * @param RouteGroupInterface[]            $groups     The parent route groups
-     * @param int                              $identifier The route identifier
+     * @param RouteGroupInterface[] $groups The parent route groups
+     * @param int $identifier The route identifier
      */
     public function __construct(
         array $methods,
@@ -348,7 +348,6 @@ class Route implements RouteInterface, RequestHandlerInterface
         }
         $strategy = $this->invocationStrategy;
 
-        /** @var string[] $strategyImplements */
         $strategyImplements = class_implements($strategy);
 
         if (

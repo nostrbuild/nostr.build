@@ -25,9 +25,9 @@ use Slim\Interfaces\RouteParserInterface;
 use function array_pop;
 use function dirname;
 use function file_exists;
-use function sprintf;
 use function is_readable;
 use function is_writable;
+use function sprintf;
 
 /**
  * RouteCollector is used to collect routes and route groups
@@ -253,7 +253,7 @@ class RouteCollector implements RouteCollectorInterface
      */
     protected function createProxy(string $pattern): RouteCollectorProxyInterface
     {
-        /** @var RouteCollectorProxyInterface<TContainerInterface> */
+        /** @var RouteCollectorProxy<TContainerInterface> */
         return new RouteCollectorProxy(
             $this->responseFactory,
             $this->callableResolver,
@@ -282,8 +282,8 @@ class RouteCollector implements RouteCollectorInterface
     }
 
     /**
-     * @param string[]        $methods
-     * @param callable|string $callable
+     * @param string[] $methods
+     * @param callable|array{class-string, string}|string $callable
      */
     protected function createRoute(array $methods, string $pattern, $callable): RouteInterface
     {

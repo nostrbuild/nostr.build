@@ -97,7 +97,7 @@ class StoreRate extends AbstractClient
 
     public function getRates(
         string $storeId,
-        array $currencyPairs = null
+        ?array $currencyPairs = null
     ): StoreRateList {
         $url = $this->getApiUrl() . 'stores/' . urlencode($storeId) . '/rates?';
         $headers = $this->getRequestHeaders();

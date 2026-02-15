@@ -244,6 +244,7 @@ class PullPayment extends AbstractClient
                 'destination' => $destination,
                 'amount' => $amount->__toString(),
                 'paymentMethod' => $paymentMethod,
+                'payoutMethodId' => $paymentMethod, // BTCPay 2.0.0 compatibilty
             ],
             JSON_THROW_ON_ERROR
         );

@@ -2,47 +2,27 @@
 
 /*
  * This file is part of Respect/Stringifier.
- *
- * (c) Henrique Moody <henriquemoody@gmail.com>
- *
- * For the full copyright and license information, please view the "LICENSE.md"
- * file that was distributed with this source code.
+ * Copyright (c) Henrique Moody <henriquemoody@gmail.com>
+ * SPDX-License-Identifier: MIT
  */
 
 declare(strict_types=1);
 
 namespace Respect\Stringifier\Stringifiers;
 
-use function is_object;
-use function method_exists;
 use Respect\Stringifier\Stringifier;
 
-/**
- * Converts a object that implements the __toString() magic method into a string.
- *
- * @author Henrique Moody <henriquemoody@gmail.com>
- */
+use function is_object;
+use function method_exists;
+
 final class StringableObjectStringifier implements Stringifier
 {
-    /**
-     * @var Stringifier
-     */
-    private $stringifier;
-
-    /**
-     * Initializes the stringifier.
-     *
-     * @param Stringifier $stringifier
-     */
-    public function __construct(Stringifier $stringifier)
-    {
-        $this->stringifier = $stringifier;
+    public function __construct(
+        private readonly Stringifier $stringifier
+    ) {
     }
 
-    /**
-     * {@inheritdoc}
-     */
-    public function stringify($raw, int $depth): ?string
+    public function stringify(mixed $raw, int $depth): ?string
     {
         if (!is_object($raw)) {
             return null;

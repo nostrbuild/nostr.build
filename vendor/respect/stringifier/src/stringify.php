@@ -2,11 +2,8 @@
 
 /*
  * This file is part of Respect/Stringifier.
- *
- * (c) Henrique Moody <henriquemoody@gmail.com>
- *
- * For the full copyright and license information, please view the "LICENSE.md"
- * file that was distributed with this source code.
+ * Copyright (c) Henrique Moody <henriquemoody@gmail.com>
+ * SPDX-License-Identifier: MIT
  */
 
 declare(strict_types=1);
@@ -15,11 +12,11 @@ namespace Respect\Stringifier;
 
 use Respect\Stringifier\Stringifiers\ClusterStringifier;
 
-function stringify($value): string
+function stringify(mixed $value): string
 {
     static $stringifier;
 
-    if (null === $stringifier) {
+    if ($stringifier === null) {
         $stringifier = ClusterStringifier::createDefault();
     }
 

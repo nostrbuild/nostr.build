@@ -2,48 +2,28 @@
 
 /*
  * This file is part of Respect/Stringifier.
- *
- * (c) Henrique Moody <henriquemoody@gmail.com>
- *
- * For the full copyright and license information, please view the "LICENSE.md"
- * file that was distributed with this source code.
+ * Copyright (c) Henrique Moody <henriquemoody@gmail.com>
+ * SPDX-License-Identifier: MIT
  */
 
 declare(strict_types=1);
 
 namespace Respect\Stringifier\Stringifiers;
 
-use function is_float;
-use function is_nan;
 use Respect\Stringifier\Quoter;
 use Respect\Stringifier\Stringifier;
 
-/**
- * Converts a NaN value into a string.
- *
- * @author Henrique Moody <henriquemoody@gmail.com>
- */
+use function is_float;
+use function is_nan;
+
 final class NanStringifier implements Stringifier
 {
-    /**
-     * @var Quoter
-     */
-    private $quoter;
-
-    /**
-     * Initializes the stringifier.
-     *
-     * @param Quoter $quoter
-     */
-    public function __construct(Quoter $quoter)
-    {
-        $this->quoter = $quoter;
+    public function __construct(
+        private readonly Quoter $quoter
+    ) {
     }
 
-    /**
-     * {@inheritdoc}
-     */
-    public function stringify($raw, int $depth): ?string
+    public function stringify(mixed $raw, int $depth): ?string
     {
         if (!is_float($raw)) {
             return null;

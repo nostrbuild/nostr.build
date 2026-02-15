@@ -10,6 +10,8 @@ use BTCPayServer\Result\StorePaymentMethodLightningNetwork as ResultStorePayment
  * Handles a stores LightningNetwork payment methods.
  *
  * @see https://docs.btcpayserver.org/API/Greenfield/v1/#tag/Store-Payment-Methods-(Lightning-Network)
+ *
+ * @deprecated with BTCPay 2.0. Use \BTCPayServer\Client\StorePaymentMethod->getPaymentMethods() instead.
  */
 class StorePaymentMethodLightningNetwork extends AbstractStorePaymentMethodClient
 {

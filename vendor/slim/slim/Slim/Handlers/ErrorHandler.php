@@ -189,6 +189,7 @@ class ErrorHandler implements ErrorHandlerInterface
                 }
             }
 
+            // @phpstan-ignore-next-line
             if (is_string($current)) {
                 return $current;
             }
@@ -259,11 +260,15 @@ class ErrorHandler implements ErrorHandlerInterface
     protected function writeToErrorLog(): void
     {
         $renderer = $this->callableResolver->resolve($this->logErrorRenderer);
+
+        /** @var string $error */
         $error = $renderer($this->exception, $this->logErrorDetails);
+
         if ($this->logErrorRenderer === PlainTextErrorRenderer::class && !$this->displayErrorDetails) {
             $error .= "\nTips: To display error details in HTTP response ";
             $error .= 'set "displayErrorDetails" to true in the ErrorHandler constructor.';
         }
+
         $this->logError($error);
     }
 

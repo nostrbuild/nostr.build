@@ -2,11 +2,8 @@
 
 /*
  * This file is part of Respect/Stringifier.
- *
- * (c) Henrique Moody <henriquemoody@gmail.com>
- *
- * For the full copyright and license information, please view the "LICENSE.md"
- * file that was distributed with this source code.
+ * Copyright (c) Henrique Moody <henriquemoody@gmail.com>
+ * SPDX-License-Identifier: MIT
  */
 
 declare(strict_types=1);
@@ -14,51 +11,21 @@ declare(strict_types=1);
 namespace Respect\Stringifier\Stringifiers;
 
 use DateTimeInterface;
-use function get_class;
-use function sprintf;
 use Respect\Stringifier\Quoter;
 use Respect\Stringifier\Stringifier;
 
-/**
- * Converts an instance of DateTimeInterface into a string.
- *
- * @author Henrique Moody <henriquemoody@gmail.com>
- */
+use function sprintf;
+
 final class DateTimeStringifier implements Stringifier
 {
-    /**
-     * @var Stringifier
-     */
-    private $stringifier;
-
-    /**
-     * @var Quoter
-     */
-    private $quoter;
-
-    /**
-     * @var string
-     */
-    private $format;
-
-    /**
-     * Initializes the stringifier.
-     *
-     * @param Stringifier $stringifier
-     * @param Quoter $quoter
-     * @param string $format
-     */
-    public function __construct(Stringifier $stringifier, Quoter $quoter, string $format)
-    {
-        $this->stringifier = $stringifier;
-        $this->quoter = $quoter;
-        $this->format = $format;
+    public function __construct(
+        private readonly Stringifier $stringifier,
+        private readonly Quoter $quoter,
+        private readonly string $format
+    ) {
     }
 
-    /**
-     * {@inheritdoc}
-     */
-    public function stringify($raw, int $depth): ?string
+    public function stringify(mixed $raw, int $depth): ?string
     {
         if (!$raw instanceof DateTimeInterface) {
             return null;
@@ -67,7 +34,7 @@ final class DateTimeStringifier implements Stringifier
         return $this->quoter->quote(
             sprintf(
                 '[date-time] (%s: %s)',
-                get_class($raw),
+                $raw::class,
                 $this->stringifier->stringify($raw->format($this->format), $depth + 1)
             ),
             $depth

@@ -51,6 +51,9 @@ class Process implements \IteratorAggregate
     public const ITER_SKIP_OUT = 4;     // Use this flag to skip STDOUT while iterating
     public const ITER_SKIP_ERR = 8;     // Use this flag to skip STDERR while iterating
 
+    /**
+     * @var \Closure('out'|'err', string):bool|null
+     */
     private ?\Closure $callback = null;
     private array|string $commandline;
     private ?string $cwd;
@@ -197,12 +200,12 @@ class Process implements \IteratorAggregate
         return $process;
     }
 
-    public function __sleep(): array
+    public function __serialize(): array
     {
         throw new \BadMethodCallException('Cannot serialize '.__CLASS__);
     }
 
-    public function __wakeup(): void
+    public function __unserialize(array $data): void
     {
         throw new \BadMethodCallException('Cannot unserialize '.__CLASS__);
     }
@@ -231,8 +234,8 @@ class Process implements \IteratorAggregate
      * The STDOUT and STDERR are also available after the process is finished
      * via the getOutput() and getErrorOutput() methods.
      *
-     * @param callable|null $callback A PHP callback to run whenever there is some
-     *                                output available on STDOUT or STDERR
+     * @param (callable('out'|'err', string):void)|null $callback A PHP callback to run whenever there is some
+     *                                                            output available on STDOUT or STDERR
      *
      * @return int The exit status code
      *
@@ -257,9 +260,17 @@ class Process implements \IteratorAggregate
      * This is identical to run() except that an exception is thrown if the process
      * exits with a non-zero exit code.
      *
+     * @param (callable('out'|'err', string):void)|null $callback A PHP callback to run whenever there is some
+     *                                                            output available on STDOUT or STDERR
+     *
      * @return $this
      *
-     * @throws ProcessFailedException if the process didn't terminate successfully
+     * @throws ProcessFailedException   When process didn't terminate successfully
+     * @throws RuntimeException         When process can't be launched
+     * @throws RuntimeException         When process is already running
+     * @throws ProcessTimedOutException When process timed out
+     * @throws ProcessSignaledException When process stopped after receiving signal
+     * @throws LogicException           In case a callback is provided and output has been disabled
      *
      * @final
      */
@@ -284,8 +295,8 @@ class Process implements \IteratorAggregate
      * the output in real-time while writing the standard input to the process.
      * It allows to have feedback from the independent process during execution.
      *
-     * @param callable|null $callback A PHP callback to run whenever there is some
-     *                                output available on STDOUT or STDERR
+     * @param (callable('out'|'err', string):void)|null $callback A PHP callback to run whenever there is some
+     *                                                            output available on STDOUT or STDERR
      *
      * @throws ProcessStartFailedException When process can't be launched
      * @throws RuntimeException            When process is already running
@@ -332,7 +343,7 @@ class Process implements \IteratorAggregate
 
         $envPairs = [];
         foreach ($env as $k => $v) {
-            if (false !== $v && false === \in_array($k, ['argc', 'argv', 'ARGC', 'ARGV'], true)) {
+            if (false !== $v && !\in_array($k = (string) $k, ['', 'argc', 'argv', 'ARGC', 'ARGV'], true) && !str_contains($k, '=') && !str_contains($k, "\0")) {
                 $envPairs[] = $k.'='.$v;
             }
         }
@@ -395,8 +406,8 @@ class Process implements \IteratorAggregate
      *
      * Be warned that the process is cloned before being started.
      *
-     * @param callable|null $callback A PHP callback to run whenever there is some
-     *                                output available on STDOUT or STDERR
+     * @param (callable('out'|'err', string):void)|null $callback A PHP callback to run whenever there is some
+     *                                                            output available on STDOUT or STDERR
      *
      * @throws ProcessStartFailedException When process can't be launched
      * @throws RuntimeException            When process is already running
@@ -424,7 +435,8 @@ class Process implements \IteratorAggregate
      * from the output in real-time while writing the standard input to the process.
      * It allows to have feedback from the independent process during execution.
      *
-     * @param callable|null $callback A valid PHP callback
+     * @param (callable('out'|'err', string):void)|null $callback A PHP callback to run whenever there is some
+     *                                                            output available on STDOUT or STDERR
      *
      * @return int The exitcode of the process
      *
@@ -470,6 +482,9 @@ class Process implements \IteratorAggregate
      * The callback receives the type of output (out or err) and some bytes
      * from the output in real-time while writing the standard input to the process.
      * It allows to have feedback from the independent process during execution.
+     *
+     * @param (callable('out'|'err', string):bool)|null $callback A PHP callback to run whenever there is some
+     *                                                            output available on STDOUT or STDERR
      *
      * @throws RuntimeException         When process timed out
      * @throws LogicException           When process is not yet started
@@ -1291,7 +1306,9 @@ class Process implements \IteratorAggregate
      * The callbacks adds all occurred output to the specific buffer and calls
      * the user callback (if present) with the received output.
      *
-     * @param callable|null $callback The user defined PHP callback
+     * @param callable('out'|'err', string)|null $callback
+     *
+     * @return \Closure('out'|'err', string):bool
      */
     protected function buildCallback(?callable $callback = null): \Closure
     {
@@ -1299,14 +1316,11 @@ class Process implements \IteratorAggregate
             return fn ($type, $data): bool => null !== $callback && $callback($type, $data);
         }
 
-        $out = self::OUT;
-
-        return function ($type, $data) use ($callback, $out): bool {
-            if ($out == $type) {
-                $this->addOutput($data);
-            } else {
-                $this->addErrorOutput($data);
-            }
+        return function ($type, $data) use ($callback): bool {
+            match ($type) {
+                self::OUT => $this->addOutput($data),
+                self::ERR => $this->addErrorOutput($data),
+            };
 
             return null !== $callback && $callback($type, $data);
         };
@@ -1633,7 +1647,7 @@ class Process implements \IteratorAggregate
         if (str_contains($argument, "\0")) {
             $argument = str_replace("\0", '?', $argument);
         }
-        if (!preg_match('/[()%!^"<>&|\s]/', $argument)) {
+        if (!preg_match('/[()%!^"<>&|\s[\]=;*?\'$]/', $argument)) {
             return $argument;
         }
         $argument = preg_replace('/(\\\\+)$/', '$1$1', $argument);

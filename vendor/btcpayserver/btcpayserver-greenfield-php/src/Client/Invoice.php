@@ -118,8 +118,8 @@ class Invoice extends AbstractClient
 
     public function getAllInvoices(
         string $storeId,
-        int $take = null,
-        int $skip = null
+        ?int $take = null,
+        ?int $skip = null
     ): InvoiceList {
         return $this->getAllInvoicesWithFilter($storeId, null, null, null, null, null, $take, $skip);
     }
@@ -127,8 +127,8 @@ class Invoice extends AbstractClient
     public function getInvoicesByOrderIds(
         string $storeId,
         array $orderIds,
-        int $take = null,
-        int $skip = null
+        ?int $take = null,
+        ?int $skip = null
     ): InvoiceList {
         return $this->getAllInvoicesWithFilter($storeId, $orderIds, null, null, null, null, $take, $skip);
     }
@@ -136,8 +136,8 @@ class Invoice extends AbstractClient
     public function getInvoicesByText(
         string $storeId,
         string $text,
-        int $take = null,
-        int $skip = null
+        ?int $take = null,
+        ?int $skip = null
     ): InvoiceList {
         return $this->getAllInvoicesWithFilter($storeId, null, $text, null, null, null, $take, $skip);
     }
@@ -145,8 +145,8 @@ class Invoice extends AbstractClient
     public function getInvoicesByStatus(
         string $storeId,
         array $status,
-        int $take = null,
-        int $skip = null
+        ?int $take = null,
+        ?int $skip = null
     ): InvoiceList {
         return $this->getAllInvoicesWithFilter($storeId, null, null, $status, null, null, $take, $skip);
     }
@@ -154,8 +154,8 @@ class Invoice extends AbstractClient
     public function getInvoicesByStartDate(
         string $storeId,
         int $startDate,
-        int $take = null,
-        int $skip = null
+        ?int $take = null,
+        ?int $skip = null
     ): InvoiceList {
         return $this->getAllInvoicesWithFilter($storeId, null, null, null, $startDate, null, $take, $skip);
     }
@@ -163,8 +163,8 @@ class Invoice extends AbstractClient
     public function getInvoicesByEndDate(
         string $storeId,
         int $endDate,
-        int $take = null,
-        int $skip = null
+        ?int $take = null,
+        ?int $skip = null
     ): InvoiceList {
         return $this->getAllInvoicesWithFilter($storeId, null, null, null, null, $endDate, $take, $skip);
     }
@@ -174,13 +174,13 @@ class Invoice extends AbstractClient
      */
     public function getAllInvoicesWithFilter(
         string $storeId,
-        array $filterByOrderIds = null,
-        string $filterByText = null,
-        array $filterByStatus = null,
-        int $filterByStartDate = null,
-        int $filterByEndDate = null,
-        int $take = null,
-        int $skip = null
+        ?array $filterByOrderIds = null,
+        ?string $filterByText = null,
+        ?array $filterByStatus = null,
+        ?int $filterByStartDate = null,
+        ?int $filterByEndDate = null,
+        ?int $take = null,
+        ?int $skip = null
     ): InvoiceList {
         $url = $this->getApiUrl() . 'stores/' . urlencode($storeId) . '/invoices?';
         if ($filterByOrderIds !== null) {

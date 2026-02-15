@@ -87,7 +87,7 @@ final class LanguageCode extends AbstractEnvelope
         ['bn', 'ben'], // Bengali
         ['', 'ber'], // Berber languages
         ['', 'bho'], // Bhojpuri
-        ['', 'bih'], // Bihari languages
+        ['bh', 'bih'], // Bihari languages
         ['', 'bik'], // Bikol
         ['', 'bin'], // Bini; Edo
         ['bi', 'bis'], // Bislama
@@ -143,7 +143,7 @@ final class LanguageCode extends AbstractEnvelope
         ['', 'day'], // Land Dayak languages
         ['', 'del'], // Delaware
         ['', 'den'], // Slave (Athapascan)
-        ['', 'dgr'], // Tlicho; Dogrib
+        ['', 'dgr'], // Dogrib
         ['', 'din'], // Dinka
         ['dv', 'div'], // Divehi; Dhivehi; Maldivian
         ['', 'doi'], // Dogri
