@@ -6,8 +6,6 @@
   "browserslist": "> 0.5%, last 2 versions, not dead",
   "scripts": {
     "clean": "rm -r ../scripts/dist",
-    "watch": "parcel watch",
-    "build:parcel": "parcel build --detailed-report 10 src/*.js && npx tailwindcss -o ../styles/twbuild.css --minify && npm run update-versions",
     "build": "esbuild src/*.js --bundle --minify --outdir=../scripts/dist --format=esm --target=es2020 && npx tailwindcss -o ../styles/twbuild.css --minify && npm run update-versions",
     "postinstall": "node fix-imports.js",
     "update-versions": "/usr/bin/env python3 bump_css_js_version.py"
