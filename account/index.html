@@ -2817,16 +2817,16 @@ closeUploadDialogs() {
 													const dragImage = document.createElement('div');
 													dragImage.id = 'drag-image';
 													dragImage.classList.add('w-24', 'h-24', 'object-cover', 'text-nbpurple-50', 'bg-nbpurple-600', 'z-50', 'fixed', 'pointer-events-none', 'opacity-85', 'drop-shadow-xl', 'rounded-lg', 'overflow-hidden', 'cursor-grabbing');
-													
+
 													const svgClone = visibleSvg.cloneNode(true);
 													svgClone.removeAttribute('x-show');
 													svgClone.removeAttribute('hidden');
 													svgClone.removeAttribute('class');
 													svgClone.classList.add('w-24', 'h-24');
 													dragImage.appendChild(svgClone);
-													
+
 													document.body.appendChild(dragImage);
-													
+
 													if (dragImageMoveHandler) {
 														document.removeEventListener('dragover', dragImageMoveHandler);
 													}
@@ -2836,19 +2836,19 @@ closeUploadDialogs() {
 														dragImage.style.left = (e.clientX - offsetX) + 'px';
 														dragImage.style.top = (e.clientY - offsetY) + 'px';
 													};
-													
+
 													dragImageMoveHandler(event);
 													document.addEventListener('dragover', dragImageMoveHandler);
-													
+
 													event.dataTransfer.setDragImage(new Image(), 0, 0);
 												}
 											}
 										}
 									" :class="{ 'opacity-50 drop-shadow-xl': dragging }" class="relative"
-									x-data="{ 
-										showMediaActions: false, 
-										dragging: false, 
-										scanResults: null, 
+									x-data="{
+										showMediaActions: false,
+										dragging: false,
+										scanResults: null,
 										showPopover: false,
 										scanPopoverAbove: false,
 										scanPopoverAlign: 'right',
@@ -3002,9 +3002,9 @@ closeUploadDialogs() {
 													fileStore.checkAndSetPoster(file, $el).then(validPoster => {
 														$el.src = file.url;
 														if(!validPoster) $el.load();
-													});	
+													});
 												}
-												
+
 												if (file.loadMore && !fileStore.loading && !fileStore.loadingMoreFiles) {
 													fileStore.loadMoreFiles();
 												}
@@ -3824,7 +3824,7 @@ closeUploadDialogs() {
 			x-transition:enter-end="opacity-100" x-transition:leave="transition-opacity ease-linear duration-300"
 			x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0"
 			class="fixed z-50 inset-0 overflow-y-auto bg-black" aria-label="Media viewer" role="dialog" aria-modal="true">
-			<div x-data="{ 
+			<div x-data="{
 			startX: null,
 			startY: null,
 			showControls: false,
@@ -3927,7 +3927,7 @@ closeUploadDialogs() {
 							if (this.scrollTimeout) {
 									clearTimeout(this.scrollTimeout);
 							}
-							
+
 							this.scrollTimeout = setTimeout(async () => {
 									if (event.deltaY < 0) {
 											await fileStore.closeModal();
@@ -4137,7 +4137,7 @@ closeUploadDialogs() {
 				</div>
 				<!-- Controls -->
 				<!-- Media actions -->
-				<div x-data="{ 
+				<div x-data="{
 					currentFile: null,
 					updateCurrentFile() {
 							// If modalFile is set, update currentFile
@@ -4585,7 +4585,7 @@ closeUploadDialogs() {
 			touchEndY: 0,
 			touchStartTime: 0,
 			touchEndTime: 0,
-			handleSwipe() { 
+			handleSwipe() {
 				const deltaX = this.touchEndX - this.touchStartX;
 				const deltaY = Math.abs(this.touchEndY - this.touchStartY);
 				const timeDelta = this.touchEndTime - this.touchStartTime;
@@ -5620,7 +5620,7 @@ closeUploadDialogs() {
 												const shouldRender = fileStore.mediaProperties.currentTab === 'stats'
 													&& profileStore.profileInfo.isAnalyticsEligible
 													&& fileStore.mediaProperties.targetFile?.id;
-								
+
 												if (shouldRender) {
 													this.renderChart();
 												} else {
@@ -5851,12 +5851,12 @@ closeUploadDialogs() {
 									<div class="bg-nbpurple-500 px-4 py-6 sm:px-6">
 										<div class="flex items-start justify-between space-x-3">
 											<div class="space-y-1">
-												<h2 class="text-base font-semibold leading-6 text-nbpurple-950" id="slide-over-title">Update
+												<h2 class="text-base font-semibold leading-6 text-nbpurple-50" id="slide-over-title">Update
 													Profile</h2>
-												<p class="text-sm text-nbpurple-100">Update your profile information below.</p>
+												<p class="text-sm text-nbpurple-200">Update your profile information below.</p>
 											</div>
 											<div class="flex h-7 items-center">
-												<button type="button" class="relative text-nbpurple-700 hover:text-nbpurple-900"
+												<button type="button" class="relative text-nbpurple-200 hover:text-nbpurple-50"
 													@click="profileStore.closeDialog()">
 													<span class="absolute -inset-2.5"></span>
 													<span class="sr-only">Close panel</span>
@@ -6040,8 +6040,8 @@ closeUploadDialogs() {
 										<!-- Default Folder -->
 										<div
 											x-effect="selected = menuStore.getFolderObjByName(profileStore.profileInfo.defaultFolder) || menuStore.folders.find(folder => folder.id === 0)"
-											x-data="{ 
-													open: false, 
+											x-data="{
+													open: false,
 													selected: {},
 													setDefaultFolder(folder) {
 														profileStore.profileInfo.defaultFolder = folder.id === 0 ? '' : folder.name;

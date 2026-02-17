@@ -286,7 +286,7 @@ function getAndStoreSDCoreGeneratedImage(string $prompt, string $negativePrompt 
 	// Close the cURL handle
 	curl_close($ch);
 
-	// Get response headers: 
+	// Get response headers:
 	/* x-sd-finish-reason, x-sd-seed, x-sd-available-balance, x-sd-debited, x-sd-transaction-id */
 	// Get the response headers
 	error_log("SD Core Image generation response headers: " . json_encode($customHeaders));
@@ -521,7 +521,12 @@ function getAccountData(): array
 		$account = new Account($_SESSION['usernpub'], $link);
 	}
 	$info = $account->getAccountInfo(); // Use getAccountInfo() instead of getAccount() to get enhanced data
-	$credits = getSDUserCredits();
+	try {
+		$credits = getSDUserCredits();
+	} catch (Exception $e) {
+		error_log("Credits API unavailable: " . $e->getMessage());
+		$credits = ['available' => 0, 'debited' => 0, 'credited' => 0];
+	}
 	$data = [
 		"userId" => $info['id'],
 		"name" => $info['nym'],
@@ -1236,7 +1241,7 @@ if (isset($_GET["action"])) {
 		}
 	} elseif ($_POST['action'] === 'activate_nostrland_plus') {
 		error_log("Activating NostrLand Plus subscription");
-		
+
 		// Check if account is eligible for NostrLand Plus
 		if (!$account->isAccountNostrLandPlusEligible()) {
 			http_response_code(403);
@@ -1255,7 +1260,7 @@ if (isset($_GET["action"])) {
 			require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/NostrLand.class.php';
 			$nostrLand = new NostrLand($_SESSION['usernpub'], $link);
 			$result = $nostrLand->activateSubscription();
-			
+
 			if ($result === null) {
 				http_response_code(400);
 				echo json_encode(array("error" => "Unable to activate NostrLand Plus. Please try again later."));
@@ -1264,7 +1269,7 @@ if (isset($_GET["action"])) {
 
 			// Refresh account data to get updated info
 			$refreshedData = getAccountData();
-			
+
 			http_response_code(200);
 			echo json_encode(array(
 				"success" => true,
