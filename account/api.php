@@ -272,7 +272,7 @@ function getAndStoreSDCoreGeneratedImage(string $prompt, string $negativePrompt 
 	// Check for cURL errors
 	if ($response === false) {
 		$error = curl_error($ch);
-		curl_close($ch);
+		$ch = null;
 		throw new Exception("cURL request failed: {$error}");
 	}
 
@@ -284,7 +284,7 @@ function getAndStoreSDCoreGeneratedImage(string $prompt, string $negativePrompt 
 	}
 
 	// Close the cURL handle
-	curl_close($ch);
+	$ch = null;
 
 	// Get response headers: 
 	/* x-sd-finish-reason, x-sd-seed, x-sd-available-balance, x-sd-debited, x-sd-transaction-id */
@@ -376,20 +376,20 @@ function getAndStoreAIGeneratedImage(string $model, string $prompt, string $titl
 
 	// Execute the cURL request
 	$response = curl_exec($ch);
+	$httpCode = curl_getinfo($ch, CURLINFO_RESPONSE_CODE);
+	$contentType = curl_getinfo($ch, CURLINFO_CONTENT_TYPE);
 
 	// Check for cURL errors
 	if ($response === false) {
 		$error = curl_error($ch);
-		curl_close($ch);
+		$ch = null;
 		throw new Exception("cURL request failed: {$error}");
 	}
 
 	// Close the cURL handle
-	curl_close($ch);
+	$ch = null;
 
 	// Depending on the returned HTTP status code, handle the response
-	$httpCode = curl_getinfo($ch, CURLINFO_RESPONSE_CODE);
-	$contentType = curl_getinfo($ch, CURLINFO_CONTENT_TYPE);
 	if ($httpCode !== 200 && $contentType === 'application/json') {
 		$responseJson = json_decode($response, true);
 		throw new Exception("AI Image generation failed: HTTP {$httpCode} - {$responseJson['message']}");
@@ -583,11 +583,11 @@ function getMediaStats(string $mediaId, string $period, string $interval, string
 	// Check for cURL errors
 	if ($response === false) {
 		$error = curl_error($ch);
-		curl_close($ch);
+		$ch = null;
 		return json_encode(array("error" => "cURL request failed: {$error}"));
 	}
 	// Close the cURL handle
-	curl_close($ch);
+	$ch = null;
 	// Return the response
 	return $response;
 }

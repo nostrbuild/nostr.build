@@ -464,7 +464,7 @@ class NCMECReportHandler
 
     if ($data === false) {
       $error_msg = curl_error($ch);
-      curl_close($ch);
+      $ch = null;
       throw new Exception('CURL error: ' . $error_msg);
     }
 
@@ -479,7 +479,7 @@ class NCMECReportHandler
       $mimeType = trim($matches[1]);
     }
 
-    curl_close($ch);
+    $ch = null;
 
     return [
       'binaryData' => $body,
@@ -923,7 +923,7 @@ class NcmecReport
     $curlError = curl_error($ch);
 
     // Always close the cURL handle
-    curl_close($ch);
+    $ch = null;
 
     // Clean up temporary file if it was created
     if (isset($tempFile)) {

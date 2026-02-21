@@ -45,11 +45,11 @@ class CloudflareUploadWebhook
     ?string $fileOriginalUrl = null,
     ?string $uploadNpub = null,
     ?string $uploadedFileInfo = null,
-    ?string $orginalSha256Hash = null, // NIP-96
+    ?string $orginalSha256Hash = null, // NIP-96 (kept for compatibility)
     ?string $currentSha256Hash = null, // Blossom
     bool $doVirusScan = false
   ): void {
-    $uploadTime = $uploadTime ?? time();  // Set default value if null
+    $uploadTime = $uploadTime ?? time();
 
     $this->payload = [
       'fileHash' => $fileHash,
@@ -102,13 +102,13 @@ class CloudflareUploadWebhook
       if ($response === false) {
         $errorCode = curl_errno($ch);
         $errorMessage = curl_error($ch);
-        curl_close($ch);  // Always close the handle
+        $ch = null;
         throw new Exception("cURL error ({$errorCode}): {$errorMessage}");
       }
 
       $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
 
-      curl_close($ch);  // Always close the handle
+      $ch = null;
 
       if ($httpCode != 200) {
         throw new Exception("HTTP request failed with code $httpCode: $response");

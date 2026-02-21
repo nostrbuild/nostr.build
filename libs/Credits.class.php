@@ -294,7 +294,7 @@ class Credits
     // Check for cURL errors
     if ($response === false) {
       $error = curl_error($ch);
-      curl_close($ch);
+      $ch = null;
       throw new Exception("cURL request failed: {$error}");
     }
     // Depending on the returned HTTP status code, handle the response
@@ -303,7 +303,7 @@ class Credits
       throw new Exception("Unexpected HTTP code: HTTP {$httpCode}");
     }
     // Close the cURL handle
-    curl_close($ch);
+    $ch = null;
 
     return json_decode($response, true);
   }

@@ -55,7 +55,7 @@ class NostrClient
       $response = curl_exec($ch);
       $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
 
-      curl_close($ch);
+      $ch = null;
 
       if ($httpCode >= 200 && $httpCode < 300) {
         return json_decode($response, true);
@@ -131,10 +131,11 @@ class NostrClient
 
     // Execute cURL and close
     $response = curl_exec($ch);
-    curl_close($ch);
+    $curlErrNo = curl_errno($ch);
+    $ch = null;
 
     // Handle cURL errors
-    if ($response === false || curl_errno($ch) !== CURLE_OK) {
+    if ($response === false || $curlErrNo !== CURLE_OK) {
       error_log("Error fetching account data from Nostr API");
       return [];
     }

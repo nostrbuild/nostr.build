@@ -241,10 +241,11 @@ class Account
 
     // Execute cURL and close
     $response = curl_exec($ch);
-    curl_close($ch);
+    $curlErrNo = curl_errno($ch);
+    $ch = null;
 
     // Handle cURL errors
-    if ($response === false || curl_errno($ch) !== CURLE_OK) {
+    if ($response === false || $curlErrNo !== CURLE_OK) {
       error_log("Error fetching account data from Nostr API");
       return;
     }

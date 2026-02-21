@@ -14,13 +14,12 @@ class BlossomFrontEndAPI
 {
   private $baseApiUrl;
   private $apiKey;
+
   /**
-   * Constructor for the Credits class.
+  * Constructor for the BlossomFrontEndAPI client.
    *
-   * @param string $userNpub The user's public key in Nostr.
    * @param string $baseApiUrl The base URL for the API.
    * @param string $apiKey The API key for authentication.
-   * @param mysqli $db The MySQLi database connection object.
    */
   public function __construct(string $baseApiUrl, string $apiKey)
   {
@@ -70,7 +69,7 @@ class BlossomFrontEndAPI
   public function updateAccount(string $npub, array $data): bool
   {
     $url = "{$this->baseApiUrl}/update/{$npub}";
-    // Create JSON body with $data
+    // Create JSON body from account data.
     $body = json_encode($data);
     error_log("Body: {$body}");
     $response = $this->fetchRequest($url, 'PATCH', $body);
@@ -80,7 +79,6 @@ class BlossomFrontEndAPI
   private function fetchRequest(string $url, string $method = 'GET', ?string $body = null): array
   {
     error_log("Fetching request: {$url}");
-    // Fetch the request
     // Initialize cURL
     $ch = curl_init($url);
     // Set curl method
@@ -100,13 +98,13 @@ class BlossomFrontEndAPI
     // Check for cURL errors
     if ($response === false) {
       $error = curl_error($ch);
-      curl_close($ch);
+      $ch = null;
       throw new Exception("cURL request failed: {$error}");
     }
     // Depending on the returned HTTP status code, handle the response
     $httpCode = curl_getinfo($ch, CURLINFO_RESPONSE_CODE);
     // Close the cURL handle
-    curl_close($ch);
+    $ch = null;
 
     $returnVal = [
       'status' => $httpCode,

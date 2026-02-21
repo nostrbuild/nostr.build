@@ -157,10 +157,10 @@ class PhotoDNA
     curl_setopt($curl, CURLOPT_TIMEOUT, 20);
 
     $resp = curl_exec($curl);
-    // Close request
-    curl_close($curl);
-    // Response status code
     $status_code = curl_getinfo($curl, CURLINFO_HTTP_CODE);
+    $curl_error = curl_error($curl);
+    // Close request
+    $curl = null;
     // Throw if status code is not 200
     if ($status_code !== 200) {
       error_log("Error occurred while scanning image with PhotoDNA: " . $status_code);
@@ -169,7 +169,7 @@ class PhotoDNA
 
     // Check for errors
     if ($resp === false) {
-      error_log("Error occurred while scanning image with PhotoDNA: " . curl_error($curl));
+      error_log("Error occurred while scanning image with PhotoDNA: " . $curl_error);
       throw new Exception("Error occurred while scanning image with PhotoDNA", 3004);
     }
     $json_resp = json_decode($resp, true, 512, JSON_THROW_ON_ERROR);

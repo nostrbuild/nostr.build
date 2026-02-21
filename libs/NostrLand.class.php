@@ -189,7 +189,7 @@ class NostrLand
     $response = curl_exec($ch);
     $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
     $curlError = curl_error($ch);
-    curl_close($ch);
+    $ch = null;
 
     error_log('[NostrLand] submitPayload response http=' . $httpCode . ' len=' . (is_string($response) ? strlen($response) : 0));
     
