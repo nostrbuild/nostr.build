@@ -2,8 +2,8 @@
 require_once $_SERVER['DOCUMENT_ROOT'] . "/libs/utils.funcs.php";
 
 /**
- * Summary of GifConverter
- * Converts a video file to a gif using ffmpeg, it will scale and crop the video to a square gif.
+ * Converts media to GIF using ffmpeg/gifsicle.
+ * It scales and crops output to a square GIF.
  * Example usage:
  * try {
  *     $gifConverter = new GifConverter();
@@ -24,44 +24,44 @@ require_once $_SERVER['DOCUMENT_ROOT'] . "/libs/utils.funcs.php";
 class GifConverter
 {
   /**
-   * Summary of ffmpegPath
+    * Path to ffmpeg binary.
    * @var string
    */
   private $ffmpegPath = "/usr/local/bin/ffmpeg";
   /**
-   * Summary of ffprobePath
+    * Path to ffprobe binary.
    * @var string
    */
   private $ffprobePath = "/usr/local/bin/ffprobe";
   private $gifsiclePath = "/usr/bin/gifsicle";
   /**
-   * Summary of cropWidth
+    * Output crop width.
    * @var int
    */
   private $cropWidth = 150;
   /**
-   * Summary of cropHeight
+    * Output crop height.
    * @var int
    */
   private $cropHeight = 150;
   /**
-   * Summary of gifFPS
+    * Output GIF frame rate.
    * @var int
    */
   private $gifFPS = 12;
   /**
-   * Summary of gifDuration
+    * Output GIF duration in seconds.
    * @var int
    */
   private $gifDuration = 10;
   /**
-   * Summary of tempFile
+    * Temporary output file path.
    * @var 
    */
   private $tempFile;
 
   /**
-   * Summary of maxGifWidth
+    * Maximum GIF width.
    * @var int
    */
   private $maxGifWidth = 360;
@@ -69,7 +69,7 @@ class GifConverter
 
 
   /**
-   * Summary of __construct
+    * Initialize converter.
    */
   public function __construct()
   {
@@ -77,7 +77,7 @@ class GifConverter
   }
 
   /**
-   * Summary of setFfmpegPath
+    * Set ffmpeg binary path.
    * @param mixed $path
    * @return GifConverter
    */
@@ -88,8 +88,8 @@ class GifConverter
   }
 
   /**
-   * Summary of ffprobePath
-   * @param string $ffprobePath Summary of ffprobePath
+    * Set ffprobe binary path.
+    * @param string $ffprobePath
    * @return self
    */
   public function setFfprobePath($ffprobePath): self
@@ -99,7 +99,7 @@ class GifConverter
   }
 
   /**
-   * Summary of setCropParameters
+    * Set crop and GIF generation parameters.
    * @param mixed $width
    * @param mixed $height
    * @param mixed $gifDuration
@@ -116,7 +116,7 @@ class GifConverter
   }
 
   /**
-   * Summary of convertToGif
+    * Convert input media to GIF.
    * @param mixed $inputFile
    * @throws \Exception
    * @return string
@@ -143,7 +143,7 @@ class GifConverter
   }
 
   /**
-   * Summary of downsizeGif
+    * Optimize and downsize GIF output.
    * @param mixed $inputFile
    * @throws \Exception
    * @return string
@@ -167,8 +167,8 @@ class GifConverter
   }
 
   /**
-   * Summary of maxGifWidth
-   * @param int $maxGifWidth Summary of maxGifWidth
+    * Set maximum GIF width.
+    * @param int $maxGifWidth
    * @return self
    */
   public function setMaxGifWidth($maxGifWidth): self
@@ -178,8 +178,8 @@ class GifConverter
   }
 
   /**
-   * Summary of maxGifHeight
-   * @param int $maxGifHeight Summary of maxGifHeight
+    * Set maximum GIF height.
+    * @param int $maxGifHeight
    * @return self
    */
   public function setMaxGifHeight($maxGifHeight): self
@@ -189,7 +189,7 @@ class GifConverter
   }
 
   /**
-   * Summary of __destruct
+    * Destructor.
    */
   function __destruct()
   {

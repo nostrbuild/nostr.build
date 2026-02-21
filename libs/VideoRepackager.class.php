@@ -5,38 +5,38 @@ require_once $_SERVER['DOCUMENT_ROOT'] . "/libs/VideoTranscoding.class.php";
 class VideoRepackager
 {
   /**
-   * Summary of ffmpegPath
+    * Path to ffmpeg binary.
    * @var string
    */
   private $ffmpegPath = "/usr/local/bin/ffmpeg";
   /**
-   * Summary of ffprobePath
+    * Path to ffprobe binary.
    * @var string
    */
   private $ffprobePath = "/usr/local/bin/ffprobe";
   /**
-   * Summary of tempFile
+    * Temporary output file path.
    * @var 
    */
   private $tempFile;
   /**
-   * Summary of videoInfoClass
+    * Video metadata helper instance.
    * @var 
    */
   private $videoInfoClass;
   /**
-   * Summary of fideoFile
+    * Source video file path.
    * @var 
    */
   private $videoFile;
   /**
-   * Summary of timeout
+    * Repackaging timeout in seconds.
    * @var 
    */
   private $timeout;
 
   /**
-   * Summary of maxGifWidth
+    * Maximum GIF width (legacy config, currently unused).
    * @var int
    */
   private $maxGifWidth = 500;
@@ -44,7 +44,7 @@ class VideoRepackager
 
 
   /**
-   * Summary of __construct
+    * Initialize repackager.
    */
   public function __construct(string $videoFile)
   {
@@ -58,9 +58,9 @@ class VideoRepackager
   }
 
   /**
-   * Summary of setFfmpegPath
+    * Set ffmpeg binary path.
    * @param mixed $path
-   * @return GifConverter
+    * @return self
    */
   public function setFfmpegPath($path): self
   {
@@ -69,8 +69,8 @@ class VideoRepackager
   }
 
   /**
-   * Summary of ffprobePath
-   * @param string $ffprobePath Summary of ffprobePath
+    * Set ffprobe binary path.
+    * @param string $ffprobePath
    * @return self
    */
   public function setFfprobePath($ffprobePath): self
@@ -80,7 +80,7 @@ class VideoRepackager
   }
 
   /**
-   * Summary of convertToGif
+    * Convert input to GIF (legacy method retained as comment block).
    * @param mixed $inputFile
    * @throws \Exception
    * @return string
@@ -163,7 +163,7 @@ class VideoRepackager
 
 
   /**
-   * Summary of __destruct
+    * Destructor.
    */
   function __destruct() {}
 }
