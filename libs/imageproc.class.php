@@ -6,11 +6,8 @@ use Spatie\ImageOptimizer\Image;
 use Spatie\ImageOptimizer\Optimizers\Cwebp;
 use Spatie\ImageOptimizer\Optimizers\Gifsicle;
 use Spatie\ImageOptimizer\Optimizers\Jpegoptim;
-use Spatie\ImageOptimizer\Optimizers\Optipng;
-use Spatie\ImageOptimizer\Optimizers\Pngquant;
 use Spatie\ImageOptimizer\Optimizers\Svgo;
 use kornrunner\Blurhash\Blurhash;
-use Respect\Validation\Rules\Length;
 
 class Oxipng extends Spatie\ImageOptimizer\Optimizers\BaseOptimizer
 {
@@ -64,7 +61,7 @@ $animatedExtensions = [
  * 
 $imageProcessor = new ImageProcessor($imagePath);
 $imageProcessor->fixImageOrientation()
-    ->cropSquare() // Optinally crop square for profile pictures
+  ->cropSquare() // Optionally crop square for profile pictures
     ->resizeImage(1024, 1024)
     ->reduceQuality(75)
     ->stripImageMetadata()
@@ -75,37 +72,37 @@ $metadata = $imageProcessor->getImageMetadata();
 $imageblurhash = $imageProcessor->calculateBlurhash();
  */
 /**
- * Summary of ImageProcessor
+ * Handles image transformations, metadata stripping, optimization, and blurhash generation.
  */
 class ImageProcessor
 {
   /**
-   * Summary of heifConverter
+    * Path to `heif-convert` binary.
    * @var string
    */
   private $heifConverter = "/usr/bin/heif-convert";
   /**
-   * Summary of imagick
+    * Imagick instance for current image.
    * @var 
    */
   private $imagick;
   /**
-   * Summary of isSaved
+    * Indicates whether current in-memory image changes are persisted.
    * @var 
    */
   private $isSaved = false;
   /**
-   * Summary of imagePath
+    * Absolute path to current image file.
    * @var 
    */
   private $imagePath;
   /**
-   * Summary of supportedFormats
+    * Cached list of formats supported by Imagick.
    * @var 
    */
   private static $supportedFormats;
   /**
-   * Summary of isOversize
+    * Indicates whether image exceeds oversized dimensions threshold.
    * @var bool indicates if the image is oversize
    */
   private $isOversize = false;
@@ -117,12 +114,25 @@ class ImageProcessor
    */
   public function __construct($imagePath)
   {
+    if (!class_exists('Imagick')) {
+      throw new RuntimeException('Imagick extension is required for image processing');
+    }
+
+    if (!is_string($imagePath) || $imagePath === '') {
+      throw new InvalidArgumentException('Image path must be a non-empty string');
+    }
+
     if (!file_exists($imagePath)) {
       throw new InvalidArgumentException("File does not exist: $imagePath");
     }
 
-    $this->imagePath = $imagePath;
-    $this->imagick = new Imagick(realpath($imagePath));
+    $resolvedPath = realpath($imagePath);
+    if ($resolvedPath === false) {
+      throw new InvalidArgumentException("Unable to resolve image path: $imagePath");
+    }
+
+    $this->imagePath = $resolvedPath;
+    $this->imagick = new Imagick($resolvedPath);
     $width = $this->imagick->getImageWidth();
     $height = $this->imagick->getImageHeight();
     $this->isOversize = $width > 4096 || $height > 4096;
@@ -147,7 +157,7 @@ class ImageProcessor
     if (self::$supportedFormats === null) {
       self::$supportedFormats = Imagick::queryFormats();
     }
-    return in_array(strtoupper($format), self::$supportedFormats);
+    return in_array(strtoupper((string)$format), self::$supportedFormats, true);
   }
 
   /**
@@ -160,6 +170,8 @@ class ImageProcessor
     if ($this->isOversize) {
       return $this;
     }
+    $quality = (int)$quality;
+    $quality = max(1, min(100, $quality));
     $this->imagick->setImageCompressionQuality($quality);
 
     // the image quality is changed, we should unset saved flag
@@ -236,10 +248,6 @@ class ImageProcessor
     $currentWidth = $this->imagick->getImageWidth();
     $currentHeight = $this->imagick->getImageHeight();
 
-    error_log("Image format: $imageFormat" . PHP_EOL);
-    error_log("Current width: $currentWidth" . PHP_EOL);
-    error_log("Current height: $currentHeight" . PHP_EOL);
-
     // Check if the image format is GIF and do nothing
     if ($imageFormat === 'gif') {
       return $this;
@@ -285,8 +293,8 @@ class ImageProcessor
         $min = min($width, $height);
 
         // calculate coordinates for a centered square crop
-        $x = ($width - $min) / 2;
-        $y = ($height - $min) / 2;
+        $x = (int)(($width - $min) / 2);
+        $y = (int)(($height - $min) / 2);
 
         // crop the image
         $frame->cropImage($min, $min, $x, $y);
@@ -320,7 +328,9 @@ class ImageProcessor
         exec($command, $output, $returnCode);
         if ($returnCode === 0) {
           // Delete the original HEIC/HEIF image
-          unlink($this->imagePath);
+          if (is_file($this->imagePath)) {
+            unlink($this->imagePath);
+          }
           // Rename the converted image to the original image name
           rename($this->imagePath . ".jpg", $this->imagePath);
           // Cleanup other files produced by heif-convert
@@ -328,7 +338,9 @@ class ImageProcessor
           $glob = glob($pathInfo['dirname'] . '/' . $pathInfo['filename'] . '-*');
           foreach ($glob as $file) {
             if ($file !== $this->imagePath) {
-              unlink($file);
+              if (is_file($file)) {
+                unlink($file);
+              }
             }
           }
           // Reinitialize Imagick after converting
@@ -353,10 +365,8 @@ class ImageProcessor
   {
     $imageFormat = strtolower($this->imagick->getImageFormat());
 
-    error_log("Image format: $imageFormat" . PHP_EOL);
     // Check if the image format is already JPEG
     if ($imageFormat === 'jpeg') {
-      error_log("Image is already JPEG, not converting." . PHP_EOL);
       return $this;
     }
 
@@ -396,10 +406,8 @@ class ImageProcessor
   {
     $imageFormat = strtolower($this->imagick->getImageFormat());
 
-    error_log("Image format: $imageFormat" . PHP_EOL);
     // Check if the image format is TIFF
     if ($imageFormat !== 'tiff') {
-      error_log("Image is not TIFF, not converting." . PHP_EOL);
       return $this;
     }
 
@@ -430,7 +438,6 @@ class ImageProcessor
     // Do nothing for formats that don't support metadata
     $imageFormat = strtolower($this->imagick->getImageFormat());
     if ($imageFormat !== 'jpeg' && $imageFormat !== 'heic' && $imageFormat !== 'heif' && $imageFormat !== 'webp' && $imageFormat !== 'tiff') {
-      error_log("Image format: $imageFormat does not support metadata stripping" . PHP_EOL);
       return $this;
     }
     // Save the ICC profile if one exists
@@ -439,7 +446,6 @@ class ImageProcessor
       $iccProfile = $this->imagick->getImageProfile('icc');
     } catch (Exception $e) {
       // No ICC profile, do nothing
-      error_log($e->getMessage() . PHP_EOL);
     }
 
     // Save the Exif ColorSpace property if one exists
@@ -451,14 +457,12 @@ class ImageProcessor
       }
     } catch (Exception $e) {
       // No Exif ColorSpace property, do nothing
-      error_log($e->getMessage() . PHP_EOL);
     }
 
     // Strip all profiles and comments
     try {
       $this->imagick->stripImage();
       $this->imagick->profileImage('*', null);
-      error_log("Image metadata stripped" . PHP_EOL);
     } catch (Exception $e) {
       error_log($e->getMessage() . PHP_EOL);
     }
@@ -596,7 +600,7 @@ class ImageProcessor
     }
 
     if (!$this->isSaved) {
-      throw new RuntimeException("Please call save() method before optimizeImage");
+      throw new RuntimeException("Please call save() method before optimiseImage");
     }
     $jpegQuality = '--max=85';
     $pngQuality = '--quality=100';
@@ -646,7 +650,6 @@ class ImageProcessor
 
     // Protect agains timeout exception
     try {
-      error_log("Optimizing image: $this->imagePath" . PHP_EOL);
       $optimizerChain->setTimeout(60) // Set 60 seconds timeout
         ->optimize($this->imagePath);
     } catch (Exception $e) {
@@ -739,7 +742,11 @@ class ImageProcessor
     if ($this->isSaved || $force) {
       $this->imagick->clear();
       $this->imagick->destroy();
-      $this->imagick = new Imagick(realpath($this->imagePath));
+      $resolvedPath = realpath($this->imagePath);
+      if ($resolvedPath === false) {
+        throw new RuntimeException("Unable to reinitialize Imagick: file path is no longer valid ({$this->imagePath})");
+      }
+      $this->imagick = new Imagick($resolvedPath);
     }
   }
 
@@ -748,7 +755,9 @@ class ImageProcessor
    */
   public function __destruct()
   {
-    $this->imagick->clear();
-    $this->imagick->destroy();
+    if ($this->imagick instanceof Imagick) {
+      $this->imagick->clear();
+      $this->imagick->destroy();
+    }
   }
 }
