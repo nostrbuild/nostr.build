@@ -113,7 +113,7 @@ $perm = new Permission();
       - <font color="#D3D3D3">Large Video Support:</font> upload videos up to account sizes 10/30/100GB<br />
       - <font color="#D3D3D3">Delete:</font> your media after posted by clicking the checkbox<br />
       - <font color="#D3D3D3">Private Folders:</font> Click on ‘New Folder’ in the left menu bar, name your folder and click Create<br />
-      - <font color="#D3D3D3">Backup on S3:</font> Content is backed up on seperate providers, S3 amnd Cloudflare<br />
+      - <font color="#D3D3D3">Backup on S3:</font> Content is backed up on seperate providers, S3 and Cloudflare<br />
       - <font color="#D3D3D3">View All:</font> over 1.5million images, GIFs and videos can be seen from all free media ever uploaded<br />
       - <font color="#D3D3D3">Creators Page:</font> lets you make your media publically available on the popular <a class="ref_link" href="https://nostr.build/creators/" target="_blank">nostr.build Creators page</a><br />
       - <font color="#D3D3D3">AI Enhanced Search (coming soon):</font> search any free media ever uploaded to nostr.build with AI enhanced labels and keywords<br />
