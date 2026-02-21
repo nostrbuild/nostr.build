@@ -20,8 +20,10 @@ $perm = new Permission();
   <meta name="keywords" content="features, media hosting, cloud, decentralized, primal, nostr, damus image uploader, image link, snort.social, astril.ninja, image, uploader, media upload, damus pictures, video uploader,nostr repository " />
   <meta name="description" content="A complete and detailed list of nostr.build features with images supporting the nostr social media platform. nostr.build is a cloud media hosting service that is paid in bitcoin and lightning and hosts user images to share." />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="preconnect" href="https://cdn.nostr.build" crossorigin />
+  <link rel="preconnect" href="https://v.nostr.build" crossorigin />
 
-  <link rel="stylesheet" href="/styles/twbuild.css?v=4ee367a4dd824586298a53a20eb6113f" />
+  <link rel="stylesheet" href="/styles/twbuild.css?v=3c1d198a5a36993c27ef137bf456eb46" />
   <link rel="stylesheet" href="/styles/index.css?v=16013407201d48c976a65d9ea88a77a3" />
   <link rel="stylesheet" href="/styles/header.css?v=19cde718a50bd676387bbe7e9e24c639" />
   <link rel="icon" href="https://cdn.nostr.build/assets/01.png" />
@@ -283,6 +285,134 @@ $perm = new Permission();
     .navigation_header {
       z-index: 25 !important;
       position: relative;
+    }
+
+    :root {
+      color-scheme: dark;
+    }
+
+    main>section {
+      content-visibility: auto;
+      contain-intrinsic-size: 900px;
+    }
+
+    img,
+    video {
+      max-width: 100%;
+      height: auto;
+    }
+
+    a:focus-visible,
+    button:focus-visible {
+      outline: 2px solid #2edf95;
+      outline-offset: 2px;
+      border-radius: 8px;
+    }
+
+    .comparison-table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 760px;
+    }
+
+    .comparison-table th,
+    .comparison-table td {
+      border-bottom: 1px solid rgba(208, 190, 216, 0.2);
+      padding: 0.9rem 1rem;
+      text-align: center;
+      color: #d0bed8;
+    }
+
+    .comparison-table th:first-child,
+    .comparison-table td:first-child {
+      text-align: left;
+      color: #fff;
+      font-weight: 600;
+    }
+
+    .comparison-table thead th {
+      color: #fff;
+      font-weight: 700;
+      background: rgba(41, 37, 86, 0.55);
+    }
+
+    .comparison-table .yes {
+      color: #2edf95;
+      font-weight: 700;
+    }
+
+    .comparison-table .no {
+      color: #a58ead;
+    }
+
+    .capability-copy {
+      max-width: 66ch;
+      line-height: 1.7;
+    }
+
+    @media (max-width: 768px) {
+      html {
+        scroll-padding-top: 1rem;
+      }
+
+      .capability-title {
+        font-size: 2rem !important;
+        line-height: 1.2 !important;
+      }
+
+      .capability-copy {
+        max-width: 100%;
+        line-height: 1.65;
+      }
+
+      .feature-card:hover {
+        transform: translate3d(0, 0, 0);
+      }
+
+      .text-shadow-custom {
+        text-shadow: 0px 2px 20px rgba(159, 108, 209, 0.4);
+      }
+    }
+
+    @media (max-width: 390px) {
+      main>section {
+        padding-top: 3.5rem !important;
+        padding-bottom: 3.5rem !important;
+      }
+
+      main h1 {
+        font-size: clamp(2.25rem, 11vw, 2.75rem) !important;
+        line-height: 1.05 !important;
+      }
+
+      main h2 {
+        font-size: clamp(1.75rem, 9vw, 2.1rem) !important;
+        line-height: 1.15 !important;
+      }
+
+      main h3 {
+        font-size: clamp(1.4rem, 7.5vw, 1.75rem) !important;
+        line-height: 1.2 !important;
+      }
+
+      main p.text-xl {
+        font-size: 1rem !important;
+        line-height: 1.6 !important;
+      }
+
+      .feature-card {
+        padding: 1.25rem !important;
+      }
+
+      .grid.gap-16 {
+        gap: 2rem !important;
+      }
+
+      .capability-title {
+        font-size: 1.65rem !important;
+        line-height: 1.2 !important;
+      }
+
     }
   </style>
 
@@ -652,7 +782,9 @@ $perm = new Permission();
               <a href="/plans/" class="inline-block px-8 py-4 bg-gradient-to-r from-[#884ea4] to-[#292556] text-white font-semibold rounded-xl hover:shadow-lg transform hover:-translate-y-1 transition-all duration-300 text-lg">
                 Choose Your Plan
               </a>
-              <span class="text-[#a58ead] text-lg">or</span>
+              <a href="#plan-comparison" class="inline-block px-8 py-4 bg-[#1e1530] border border-[#392f73] text-[#d0bed8] font-semibold rounded-xl hover:border-[#884ea4] hover:text-white transition-all duration-300 text-lg">
+                See Plan Comparison
+              </a>
               <a href="#advanced-capabilities" class="inline-block px-8 py-4 bg-transparent border-2 border-[#884ea4] text-[#884ea4] font-semibold rounded-xl hover:bg-[#884ea4] hover:text-white transition-all duration-300 text-lg">
                 Learn More Features
               </a>
@@ -662,9 +794,103 @@ $perm = new Permission();
       </div>
     </section>
 
+    <section id="plan-comparison" class="py-20 px-4 w-full">
+      <div class="max-w-7xl mx-auto">
+        <div class="text-center mb-12 scroll-reveal">
+          <h2 class="text-4xl md:text-6xl font-bold gradient-text mb-6">Plan Comparison</h2>
+          <p class="text-xl text-[#a58ead] max-w-3xl mx-auto">
+            Pick the right tier quickly with a side-by-side view of core capabilities.
+          </p>
+        </div>
+
+        <div class="feature-card rounded-3xl p-4 md:p-8 scroll-reveal border border-[#392f73]">
+          <div class="overflow-x-auto">
+            <table class="comparison-table" aria-label="nostr.build plan comparison">
+              <thead>
+                <tr>
+                  <th>Feature</th>
+                  <th>Purist</th>
+                  <th>Professional</th>
+                  <th>Creator</th>
+                  <th>Advanced</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>Private Storage</td>
+                  <td><?= SiteConfig::STORAGE_LIMITS[Plans::PURIST]['message'] ?></td>
+                  <td><?= SiteConfig::STORAGE_LIMITS[Plans::PROFESSIONAL]['message'] ?></td>
+                  <td><?= SiteConfig::STORAGE_LIMITS[Plans::CREATOR]['message'] ?></td>
+                  <td><?= SiteConfig::STORAGE_LIMITS[Plans::ADVANCED]['message'] ?></td>
+                </tr>
+                <tr>
+                  <td>Large File Uploads</td>
+                  <td class="yes">✓</td>
+                  <td class="yes">✓</td>
+                  <td class="yes">✓</td>
+                  <td class="yes">✓</td>
+                </tr>
+                <tr>
+                  <td>PDF + SVG Support</td>
+                  <td class="no">—</td>
+                  <td class="yes">✓</td>
+                  <td class="yes">✓</td>
+                  <td class="yes">✓</td>
+                </tr>
+                <tr>
+                  <td>ZIP Support</td>
+                  <td class="no">—</td>
+                  <td class="no">—</td>
+                  <td class="yes">✓</td>
+                  <td class="yes">✓</td>
+                </tr>
+                <tr>
+                  <td>AI Studio Access</td>
+                  <td class="no">—</td>
+                  <td class="yes">✓</td>
+                  <td class="yes">✓</td>
+                  <td class="yes">✓</td>
+                </tr>
+                <tr>
+                  <td>Creator Showcase Page</td>
+                  <td class="no">—</td>
+                  <td class="no">—</td>
+                  <td class="yes">✓</td>
+                  <td class="yes">✓</td>
+                </tr>
+                <tr>
+                  <td>nostr.land Plus Access</td>
+                  <td class="no">—</td>
+                  <td class="no">—</td>
+                  <td class="yes">✓</td>
+                  <td class="yes">✓</td>
+                </tr>
+                <tr>
+                  <td>Support Level</td>
+                  <td>Standard</td>
+                  <td>Standard</td>
+                  <td>Priority</td>
+                  <td>White-Glove</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="mt-8 flex flex-col sm:flex-row gap-4 items-center justify-center">
+            <a href="/plans/" class="inline-block px-8 py-4 bg-gradient-to-r from-[#884ea4] to-[#292556] text-white font-semibold rounded-xl hover:shadow-lg transform hover:-translate-y-1 transition-all duration-300">
+              Choose Your Plan
+            </a>
+            <a href="#built-for-every-creator" class="inline-block px-8 py-4 bg-transparent border-2 border-[#884ea4] text-[#884ea4] font-semibold rounded-xl hover:bg-[#884ea4] hover:text-white transition-all duration-300">
+              Find Your Best Fit
+            </a>
+          </div>
+        </div>
+      </div>
+    </section>
+
 
     <!-- Advanced Features Showcase -->
-    <section id="advanced-capabilities" class="py-20 px-4">
+    <section id="advanced-capabilities" class="py-20 px-4 w-full">
       <div class="max-w-7xl mx-auto">
         <div class="text-center mb-16 scroll-reveal">
           <h2 class="text-4xl md:text-6xl font-bold gradient-text mb-6">Capabilities</h2>
@@ -676,8 +902,8 @@ $perm = new Permission();
         <!-- Media Management Portal Feature -->
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center mb-20">
           <div class="scroll-reveal">
-            <h3 class="text-4xl font-bold gradient-text mb-6">Media Management Portal</h3>
-            <p class="text-xl text-[#d0bed8] mb-8 leading-relaxed">
+            <h3 class="text-4xl font-bold gradient-text mb-6 capability-title">Media Management Portal</h3>
+            <p class="text-xl text-[#d0bed8] mb-8 leading-relaxed capability-copy">
               Professional media organization in your own private portal. Drag & drop files, create folders, bulk operations, and complete control over your content library. See the full interface in action.
             </p>
             <div class="space-y-4">
@@ -697,7 +923,7 @@ $perm = new Permission();
           </div>
           <div class="scroll-reveal">
             <div class="bg-gradient-to-br from-[#292556] to-[#1e1530] rounded-2xl border border-[#392f73] overflow-hidden">
-              <video class="w-full h-auto"
+              <video class="w-full h-auto" preload="metadata"
                 autoplay loop muted playsinline>
                 <source src="https://v.nostr.build/o7Kcp0r1c0LgRR9G.mp4" type="video/mp4">
                 Your browser does not support the video tag.
@@ -709,11 +935,11 @@ $perm = new Permission();
         <!-- AI Studio Feature -->
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center mb-20">
           <div class="scroll-reveal lg:order-2">
-            <h3 class="text-4xl font-bold gradient-text mb-6">AI Studio</h3>
-            <p class="text-xl text-[#d0bed8] mb-8 leading-relaxed">
+            <h3 class="text-4xl font-bold gradient-text mb-6 capability-title">AI Studio</h3>
+            <p class="text-xl text-[#d0bed8] mb-8 leading-relaxed capability-copy">
               Create stunning images with multiple AI models including SDXL-Lightning, Stable Diffusion, and Flux.1.
               Unlike ChatGPT/DALL-E, Discord/Midjourney, or X/Grok2 that lock you into a single model, we give you choice and flexibility.
-              <a href="https://cdn.nostr.build/assets/images/nb_aistudio_compete01.pdf" target="_blank" class="text-[#884ea4] hover:text-[#a58ead] transition-colors duration-200 underline">
+              <a href="https://cdn.nostr.build/assets/images/nb_aistudio_compete01.pdf" target="_blank" rel="noopener noreferrer" aria-label="Open AI Studio comparison PDF in a new tab" class="text-[#884ea4] hover:text-[#a58ead] transition-colors duration-200 underline">
                 See our competitive comparison here.
               </a>
             </p>
@@ -738,13 +964,13 @@ $perm = new Permission();
               <div class="carousel-track relative w-full h-full" id="aiStudioCarousel">
                 <!-- AI Studio images -->
                 <div class="carousel-slide w-full h-full active">
-                  <img src="https://cdn.nostr.build/assets/fpv2/ai1.png" alt="AI Studio Interface" class="w-full h-full object-cover">
+                  <img src="https://cdn.nostr.build/assets/fpv2/ai1.png" alt="AI Studio Interface" class="w-full h-full object-cover" loading="lazy" decoding="async">
                 </div>
                 <div class="carousel-slide w-full h-full">
-                  <img src="https://cdn.nostr.build/assets/fpv2/ai2.png" alt="AI Model Selection" class="w-full h-full object-cover">
+                  <img src="https://cdn.nostr.build/assets/fpv2/ai2.png" alt="AI Model Selection" class="w-full h-full object-cover" loading="lazy" decoding="async">
                 </div>
                 <div class="carousel-slide w-full h-full">
-                  <img src="https://cdn.nostr.build/assets/fpv2/ai3.png" alt="AI Generated Results" class="w-full h-full object-cover">
+                  <img src="https://cdn.nostr.build/assets/fpv2/ai3.png" alt="AI Generated Results" class="w-full h-full object-cover" loading="lazy" decoding="async">
                 </div>
               </div>
               <!-- Subtle fade overlays for polish -->
@@ -757,8 +983,8 @@ $perm = new Permission();
         <!-- Media Analytics Feature -->
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center mb-20">
           <div class="scroll-reveal">
-            <h3 class="text-4xl font-bold gradient-text mb-6">Advanced Analytics & Insights</h3>
-            <p class="text-xl text-[#d0bed8] mb-8 leading-relaxed">
+            <h3 class="text-4xl font-bold gradient-text mb-6 capability-title">Advanced Analytics & Insights</h3>
+            <p class="text-xl text-[#d0bed8] mb-8 leading-relaxed capability-copy">
               Understand your audience like never before. Track engagement patterns, content performance, and audience demographics to create content that truly resonates. Make data-driven decisions to grow your reach and maximize impact.
             </p>
             <div class="space-y-4">
@@ -786,25 +1012,25 @@ $perm = new Permission();
               <div class="carousel-track relative w-full h-full" id="analyticsCarousel">
                 <!-- Analytics images -->
                 <div class="carousel-slide w-full h-full active">
-                  <img src="https://cdn.nostr.build/assets/fpv2/an-byref.png" alt="Analytics by Reference" class="w-full h-full object-cover">
+                  <img src="https://cdn.nostr.build/assets/fpv2/an-byref.png" alt="Analytics by Reference" class="w-full h-full object-cover" loading="lazy" decoding="async">
                 </div>
                 <div class="carousel-slide w-full h-full">
-                  <img src="https://cdn.nostr.build/assets/fpv2/an-dayofweek.png" alt="Analytics by Day of Week" class="w-full h-full object-cover">
+                  <img src="https://cdn.nostr.build/assets/fpv2/an-dayofweek.png" alt="Analytics by Day of Week" class="w-full h-full object-cover" loading="lazy" decoding="async">
                 </div>
                 <div class="carousel-slide w-full h-full">
-                  <img src="https://cdn.nostr.build/assets/fpv2/an-hourofday.png" alt="Analytics by Hour of Day" class="w-full h-full object-cover">
+                  <img src="https://cdn.nostr.build/assets/fpv2/an-hourofday.png" alt="Analytics by Hour of Day" class="w-full h-full object-cover" loading="lazy" decoding="async">
                 </div>
                 <div class="carousel-slide w-full h-full">
-                  <img src="https://cdn.nostr.build/assets/fpv2/an-map.png" alt="Analytics Map View" class="w-full h-full object-cover">
+                  <img src="https://cdn.nostr.build/assets/fpv2/an-map.png" alt="Analytics Map View" class="w-full h-full object-cover" loading="lazy" decoding="async">
                 </div>
                 <div class="carousel-slide w-full h-full">
-                  <img src="https://cdn.nostr.build/assets/fpv2/an-ts-country.png" alt="Analytics by Country Timeline" class="w-full h-full object-cover">
+                  <img src="https://cdn.nostr.build/assets/fpv2/an-ts-country.png" alt="Analytics by Country Timeline" class="w-full h-full object-cover" loading="lazy" decoding="async">
                 </div>
                 <div class="carousel-slide w-full h-full">
-                  <img src="https://cdn.nostr.build/assets/fpv2/an-ts.png" alt="Analytics Timeline" class="w-full h-full object-cover">
+                  <img src="https://cdn.nostr.build/assets/fpv2/an-ts.png" alt="Analytics Timeline" class="w-full h-full object-cover" loading="lazy" decoding="async">
                 </div>
                 <div class="carousel-slide w-full h-full">
-                  <img src="https://cdn.nostr.build/assets/fpv2/an-wd.png" alt="Analytics Weekly Data" class="w-full h-full object-cover">
+                  <img src="https://cdn.nostr.build/assets/fpv2/an-wd.png" alt="Analytics Weekly Data" class="w-full h-full object-cover" loading="lazy" decoding="async">
                 </div>
               </div>
               <!-- Subtle fade overlays for polish -->
@@ -817,8 +1043,8 @@ $perm = new Permission();
         <!-- Blossom Protocol Support -->
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center mb-20">
           <div class="scroll-reveal lg:order-2">
-            <h3 class="text-4xl font-bold gradient-text mb-6">Blossom Protocol Integration</h3>
-            <p class="text-xl text-[#d0bed8] mb-8 leading-relaxed">
+            <h3 class="text-4xl font-bold gradient-text mb-6 capability-title">Blossom Protocol Integration</h3>
+            <p class="text-xl text-[#d0bed8] mb-8 leading-relaxed capability-copy">
               Native support for the cutting-edge Blossom protocol - the future of decentralized media storage.
               Each user gets their own dedicated server domain with cryptographic authentication and seamless integration across the Nostr ecosystem.
             </p>
@@ -843,8 +1069,8 @@ $perm = new Permission();
           </div>
           <div class="scroll-reveal lg:order-1">
             <!-- Placeholder for Blossom protocol visualization -->
-            <div class="bg-gradient-to-br from-[#292556] to-[#1e1530] rounded-2xl h-80 border border-[#392f73] overflow-hidden">
-              <img src="https://cdn.nostr.build/assets/images/blossom01.png" alt="Blossom Protocol Visualization" class="w-full h-full object-cover">
+            <div class="bg-gradient-to-br from-[#292556] to-[#1e1530] rounded-2xl h-96 border border-[#392f73] overflow-hidden">
+              <img src="https://cdn.nostr.build/assets/images/blossom01.png" alt="Blossom Protocol Visualization" class="w-full h-full object-cover" loading="lazy" decoding="async">
             </div>
           </div>
         </div>
@@ -852,8 +1078,8 @@ $perm = new Permission();
         <!-- Native Client Integration -->
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center mb-20">
           <div class="scroll-reveal">
-            <h3 class="text-4xl font-bold gradient-text mb-6">Native Client Integration</h3>
-            <p class="text-xl text-[#d0bed8] mb-8 leading-relaxed">
+            <h3 class="text-4xl font-bold gradient-text mb-6 capability-title">Native Client Integration</h3>
+            <p class="text-xl text-[#d0bed8] mb-8 leading-relaxed capability-copy">
               Seamlessly integrated into the most popular Nostr clients. No setup required - just start sharing your content directly from your favorite apps. Your media works everywhere in the Nostr ecosystem.
             </p>
             <div class="space-y-4">
@@ -881,8 +1107,8 @@ $perm = new Permission();
           </div>
           <div class="scroll-reveal">
             <!-- Native clients showcase -->
-            <div class="bg-gradient-to-br from-[#292556] to-[#1e1530] rounded-2xl h-80 border border-[#392f73] overflow-hidden flex items-center justify-center">
-              <img src="https://cdn.nostr.build/assets/fpv2/clogos.png" alt="Global CDN Map" class="w-full h-full object-cover">
+            <div class="bg-gradient-to-br from-[#292556] to-[#1e1530] rounded-2xl h-96 border border-[#392f73] overflow-hidden flex items-center justify-center">
+              <img src="https://cdn.nostr.build/assets/fpv2/clogos.png" alt="Global CDN Map" class="w-full h-full object-cover" loading="lazy" decoding="async">
             </div>
           </div>
         </div>
@@ -890,8 +1116,8 @@ $perm = new Permission();
         <!-- Share Direct to Nostr Feature -->
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center mb-20">
           <div class="scroll-reveal lg:order-2">
-            <h3 class="text-4xl font-bold gradient-text mb-6">Share Direct to Nostr</h3>
-            <p class="text-xl text-[#d0bed8] mb-8 leading-relaxed">
+            <h3 class="text-4xl font-bold gradient-text mb-6 capability-title">Share Direct to Nostr</h3>
+            <p class="text-xl text-[#d0bed8] mb-8 leading-relaxed capability-copy">
               Upload or create media and share it directly to Nostr with or without a note - no other client needed!
               This tighter integration takes nostr.build steps closer to becoming a true Nostr client.
             </p>
@@ -912,7 +1138,7 @@ $perm = new Permission();
           </div>
           <div class="scroll-reveal lg:order-1">
             <div class="bg-gradient-to-br from-[#292556] to-[#1e1530] rounded-2xl h-96 border border-[#392f73] overflow-hidden">
-              <video class="w-full h-full object-cover rounded-lg"
+              <video class="w-full h-full object-cover rounded-lg" preload="metadata"
                 autoplay loop muted playsinline>
                 <source src="https://cdn.nostr.build/assets/images/share_to_nostr01.mp4" type="video/mp4">
                 Your browser does not support the video tag.
@@ -924,11 +1150,11 @@ $perm = new Permission();
         <!-- Creator Showcase Feature -->
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center mb-20">
           <div class="scroll-reveal">
-            <h3 class="text-4xl font-bold gradient-text mb-6">Creator Showcase Pages</h3>
+            <h3 class="text-4xl font-bold gradient-text mb-6 capability-title">Creator Showcase Pages</h3>
             <div class="inline-block px-3 py-1 bg-gradient-to-r from-[#d251d5] to-[#f78533] text-white text-sm font-semibold rounded-full mb-4">
               Creator & Advanced Plans
             </div>
-            <p class="text-xl text-[#d0bed8] mb-8 leading-relaxed">
+            <p class="text-xl text-[#d0bed8] mb-8 leading-relaxed capability-copy">
               Host your own professional creator page on the nostr.build domain. Showcase your portfolio, build your brand, and make it easy for fans to discover, follow, and support your work.
             </p>
             <div class="space-y-4">
@@ -948,7 +1174,7 @@ $perm = new Permission();
           </div>
           <div class="scroll-reveal">
             <div class="bg-gradient-to-br from-[#292556] to-[#1e1530] rounded-2xl h-96 border border-[#392f73] overflow-hidden">
-              <video class="w-full h-full object-cover rounded-lg"
+              <video class="w-full h-full object-cover rounded-lg" preload="metadata"
                 autoplay loop muted playsinline>
                 <source src="https://cdn.nostr.build/assets/images/creators11.mp4" type="video/mp4">
                 Your browser does not support the video tag.
@@ -960,11 +1186,11 @@ $perm = new Permission();
         <!-- nostr.land Plus Integration Feature -->
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center mb-20">
           <div class="scroll-reveal lg:order-2">
-            <h3 class="text-4xl font-bold gradient-text mb-6">nostr.land Plus Integration</h3>
+            <h3 class="text-4xl font-bold gradient-text mb-6 capability-title">nostr.land Plus Integration</h3>
             <div class="inline-block px-3 py-1 bg-gradient-to-r from-[#d251d5] to-[#f78533] text-white text-sm font-semibold rounded-full mb-4">
               Creator & Advanced Plans
             </div>
-            <p class="text-xl text-[#d0bed8] mb-8 leading-relaxed">
+            <p class="text-xl text-[#d0bed8] mb-8 leading-relaxed capability-copy">
               Get premium access to nostr.land, the leading Nostr relay service. Think of it as upgrading your internet connection for Nostr - faster loading, better reliability, and enhanced privacy.
             </p>
             <div class="space-y-4">
@@ -994,7 +1220,7 @@ $perm = new Permission();
               </div>
             </div>
             <div class="mt-8">
-              <a href="https://nostr.land" target="_blank" class="inline-flex items-center px-6 py-3 bg-gradient-to-r from-[#6366f1] to-[#8b5cf6] text-white font-semibold rounded-lg hover:from-[#5856eb] hover:to-[#7c3aed] transition-all duration-300">
+              <a href="https://nostr.land" target="_blank" rel="noopener noreferrer" aria-label="Open nostr.land in a new tab" class="inline-flex items-center px-6 py-3 bg-gradient-to-r from-[#6366f1] to-[#8b5cf6] text-white font-semibold rounded-lg hover:from-[#5856eb] hover:to-[#7c3aed] transition-all duration-300">
                 Learn more about nostr.land
                 <svg class="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
@@ -1004,7 +1230,6 @@ $perm = new Permission();
           </div>
           <div class="scroll-reveal lg:order-1">
             <div class="bg-gradient-to-br from-[#292556] to-[#1e1530] rounded-2xl p-8 border border-[#392f73] relative overflow-hidden">
-              <!-- Router/Network Icon Background -->
               <div class="absolute top-4 right-4 opacity-20">
                 <svg xmlns="http://www.w3.org/2000/svg" width="120" height="120" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="text-[#6366f1]">
                   <rect width="20" height="8" x="2" y="14" rx="2" />
@@ -1015,7 +1240,6 @@ $perm = new Permission();
                   <path d="M20.66 4.34a8 8 0 0 0-11.31 0" />
                 </svg>
               </div>
-              <!-- Content -->
               <div class="relative z-10">
                 <h4 class="text-2xl font-bold text-white mb-4">Premium Nostr Experience</h4>
                 <p class="text-[#d0bed8] mb-6">
@@ -1027,45 +1251,41 @@ $perm = new Permission();
                     <div class="text-sm text-[#d0bed8]">Uptime</div>
                   </div>
                   <div class="text-center">
-                    <div class="text-3xl font-bold text-[#6366f1] mb-2">
-                      < 100ms</div>
-                        <div class="text-sm text-[#d0bed8]">Response</div>
-                    </div>
+                    <div class="text-3xl font-bold text-[#6366f1] mb-2">&lt; 100ms</div>
+                    <div class="text-sm text-[#d0bed8]">Response</div>
                   </div>
                 </div>
               </div>
             </div>
           </div>
+        </div>
 
-          <!-- Global CDN Feature -->
-          <div class="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
-            <div class="scroll-reveal lg:order-2">
-              <h3 class="text-4xl font-bold gradient-text mb-6">Lightning-Fast Global CDN</h3>
-              <p class="text-xl text-[#d0bed8] mb-8 leading-relaxed">
-                Your content delivered at the speed of light with our worldwide content delivery network.
-                Backed up across multiple providers for maximum reliability.
-              </p>
-              <div class="space-y-4">
-                <div class="flex items-center">
-                  <span class="text-[#dabd55] mr-3">✓</span>
-                  <span class="text-[#d0bed8]">Global edge locations</span>
-                </div>
-                <div class="flex items-center">
-                  <span class="text-[#dabd55] mr-3">✓</span>
-                  <span class="text-[#d0bed8]">Multiple provider backup</span>
-                </div>
-                <div class="flex items-center">
-                  <span class="text-[#dabd55] mr-3">✓</span>
-                  <span class="text-[#d0bed8]">Optimized compression</span>
-                </div>
+        <!-- Global CDN Feature -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center mb-20">
+          <div class="scroll-reveal lg:order-1">
+            <h3 class="text-4xl font-bold gradient-text mb-6 capability-title">Lightning-Fast Global CDN</h3>
+            <p class="text-xl text-[#d0bed8] mb-8 leading-relaxed capability-copy">
+              Your content delivered at the speed of light with our worldwide content delivery network.
+              Backed up across multiple providers for maximum reliability.
+            </p>
+            <div class="space-y-4">
+              <div class="flex items-center">
+                <span class="text-[#dabd55] mr-3">✓</span>
+                <span class="text-[#d0bed8]">Global edge locations</span>
+              </div>
+              <div class="flex items-center">
+                <span class="text-[#dabd55] mr-3">✓</span>
+                <span class="text-[#d0bed8]">Multiple provider backup</span>
+              </div>
+              <div class="flex items-center">
+                <span class="text-[#dabd55] mr-3">✓</span>
+                <span class="text-[#d0bed8]">Optimized compression</span>
               </div>
             </div>
-            <div class="scroll-reveal lg:order-1">
-              <!-- Placeholder for CDN diagram -->
-              <div class="bg-gradient-to-br from-[#292556] to-[#1e1530] rounded-2xl h-80 border border-[#392f73] overflow-hidden">
-                <!-- 634x317 image of the globe, fill to cover the div https://cdn.nostr.build/assets/fpv2/ww-connect@0.33x.png -->
-                <img src="https://cdn.nostr.build/assets/fpv2/ww-connect@0.33x.png" alt="Global CDN Map" class="w-full h-full object-cover">
-              </div>
+          </div>
+          <div class="scroll-reveal lg:order-2">
+            <div class="bg-gradient-to-br from-[#292556] to-[#1e1530] rounded-2xl h-96 border border-[#392f73] overflow-hidden">
+              <img src="https://cdn.nostr.build/assets/fpv2/ww-connect@0.33x.png" alt="Global CDN Map" class="w-full h-full object-cover" loading="lazy" decoding="async">
             </div>
           </div>
         </div>
@@ -1270,7 +1490,7 @@ $perm = new Permission();
     </section>
 
     <!-- Reliability & Trust Section -->
-    <section class="py-20 px-4 w-full">
+    <section id="reliability-trust" class="py-20 px-4 w-full">
       <div class="max-w-7xl mx-auto">
         <div class="text-center mb-16 scroll-reveal">
           <h2 class="text-4xl md:text-6xl font-bold gradient-text mb-6">Built to Last, Built to Scale</h2>
@@ -1349,16 +1569,59 @@ $perm = new Permission();
       </div>
     </section>
 
-    <!-- CTA Section -->
     <section class="py-20 px-4 w-full">
+      <div class="max-w-7xl mx-auto">
+        <div class="text-center mb-12 scroll-reveal">
+          <h2 class="text-4xl md:text-5xl font-bold gradient-text mb-6">Proof You Can Trust</h2>
+          <p class="text-xl text-[#a58ead] max-w-3xl mx-auto">
+            Built for reliability, privacy, and creator growth — with no lock-in.
+          </p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div class="feature-card rounded-2xl p-6 scroll-reveal text-center">
+            <p class="text-[#2edf95] font-semibold mb-2">Always On</p>
+            <p class="text-white font-bold mb-1">24/7 Monitoring</p>
+            <p class="text-[#d0bed8] text-sm">Continuous monitoring and rapid incident response.</p>
+          </div>
+          <div class="feature-card rounded-2xl p-6 scroll-reveal text-center">
+            <p class="text-[#884ea4] font-semibold mb-2">Privacy First</p>
+            <p class="text-white font-bold mb-1">No Ads, No Profiling</p>
+            <p class="text-[#d0bed8] text-sm">User-funded platform where your data is not the product.</p>
+          </div>
+          <div class="feature-card rounded-2xl p-6 scroll-reveal text-center">
+            <p class="text-[#f78533] font-semibold mb-2">Built to Last</p>
+            <p class="text-white font-bold mb-1">1-Year Grace Period</p>
+            <p class="text-[#d0bed8] text-sm">Content remains accessible even after plan expiration.</p>
+          </div>
+          <div class="feature-card rounded-2xl p-6 scroll-reveal text-center">
+            <p class="text-[#dabd55] font-semibold mb-2">Global Delivery</p>
+            <p class="text-white font-bold mb-1">CDN + Backups</p>
+            <p class="text-[#d0bed8] text-sm">Fast delivery and redundancy across providers and regions.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- CTA Section -->
+    <section id="final-cta" class="py-20 px-4 w-full">
       <div class="max-w-4xl mx-auto text-center scroll-reveal">
         <h2 class="text-4xl md:text-6xl font-bold gradient-text pb-5 mb-8">Ready to Get Started?</h2>
         <p class="text-xl text-[#a58ead] mb-12 max-w-2xl mx-auto">
           Join thousands of creators who trust nostr.build for their media hosting needs
         </p>
-        <div class="flex justify-center">
+        <div class="flex flex-wrap gap-3 justify-center mb-10">
+          <span class="px-3 py-1 rounded-full bg-[#1e1530] border border-[#392f73] text-[#d0bed8] text-sm">No vendor lock-in</span>
+          <span class="px-3 py-1 rounded-full bg-[#1e1530] border border-[#392f73] text-[#d0bed8] text-sm">1-year grace period</span>
+          <span class="px-3 py-1 rounded-full bg-[#1e1530] border border-[#392f73] text-[#d0bed8] text-sm">No ads / no tracking</span>
+          <span class="px-3 py-1 rounded-full bg-[#1e1530] border border-[#392f73] text-[#d0bed8] text-sm">Bitcoin + Lightning</span>
+        </div>
+        <div class="flex flex-col sm:flex-row gap-4 justify-center">
           <a href="/plans/" class="inline-block px-12 py-4 bg-gradient-to-r from-[#884ea4] to-[#292556] text-white font-semibold rounded-xl hover:shadow-lg transform hover:-translate-y-1 transition-all duration-300 text-lg">
             Choose Your Plan
+          </a>
+          <a href="#plan-comparison" class="inline-block px-12 py-4 bg-transparent border-2 border-[#884ea4] text-[#884ea4] font-semibold rounded-xl hover:bg-[#884ea4] hover:text-white transition-all duration-300 text-lg">
+            Compare Plans
           </a>
         </div>
       </div>
@@ -1371,207 +1634,85 @@ $perm = new Permission();
   </footer>
 
   <script>
-    // Simple and clean scroll animations - no complex background management
     const observerOptions = {
       threshold: 0.15,
       rootMargin: '100px 0px -100px 0px'
     };
 
-    const observer = new IntersectionObserver((entries) => {
-      entries.forEach(entry => {
-        if (entry.isIntersecting) {
+    function initScrollReveal() {
+      const observer = new IntersectionObserver((entries, revealObserver) => {
+        entries.forEach((entry) => {
+          if (!entry.isIntersecting) return;
           entry.target.classList.add('revealed');
-        } else {
-          entry.target.classList.remove('revealed');
-        }
-      });
-    }, observerOptions);
-
-    // Beautiful Analytics Carousel with Fade Effect
-    function initAnalyticsCarousel() {
-      const carousel = document.getElementById('analyticsCarousel');
-      const container = carousel?.closest('.carousel-container');
-
-      if (!carousel || !container) return;
-
-      const slides = carousel.querySelectorAll('.carousel-slide');
-      const totalSlides = slides.length;
-      let currentSlide = 0;
-      let isPlaying = true;
-      let intervalId = null;
-
-      // Check for reduced motion preference
-      const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-
-      if (prefersReducedMotion) {
-        // Show first slide only for reduced motion
-        slides.forEach((slide, index) => {
-          if (index === 0) {
-            slide.classList.add('active');
-          } else {
-            slide.classList.remove('active');
-          }
+          revealObserver.unobserve(entry.target);
         });
-        return;
-      }
+      }, observerOptions);
 
-      function goToSlide(slideIndex) {
-        // Ensure we stay within bounds
-        if (slideIndex >= totalSlides) {
-          slideIndex = 0;
-        } else if (slideIndex < 0) {
-          slideIndex = totalSlides - 1;
-        }
-
-        // Remove active class from current slide
-        slides[currentSlide].classList.remove('active');
-
-        // Update current slide and add active class
-        currentSlide = slideIndex;
-        slides[currentSlide].classList.add('active');
-      }
-
-      function nextSlide() {
-        if (!isPlaying) return;
-        goToSlide(currentSlide + 1);
-      }
-
-      function startCarousel() {
-        if (intervalId) clearInterval(intervalId);
-
-        // 1.5s fade transition + 3.5s display = 5 seconds total per slide
-        intervalId = setInterval(nextSlide, 5000);
-      }
-
-      function stopCarousel() {
-        if (intervalId) {
-          clearInterval(intervalId);
-          intervalId = null;
-        }
-      }
-
-      // Pause on hover, resume on leave
-      container.addEventListener('mouseenter', () => {
-        isPlaying = false;
-        stopCarousel();
-      });
-
-      container.addEventListener('mouseleave', () => {
-        isPlaying = true;
-        startCarousel();
-      });
-
-      // Handle visibility change (pause when tab is hidden)
-      document.addEventListener('visibilitychange', () => {
-        if (document.hidden) {
-          stopCarousel();
-        } else if (isPlaying) {
-          startCarousel();
-        }
-      });
-
-      // Start the carousel
-      startCarousel();
+      document.querySelectorAll('.scroll-reveal').forEach((el) => observer.observe(el));
     }
 
-    // Beautiful AI Studio Carousel with Fade Effect
-    function initAIStudioCarousel() {
-      const carousel = document.getElementById('aiStudioCarousel');
+    function initCarousel(carouselId) {
+      const carousel = document.getElementById(carouselId);
       const container = carousel?.closest('.carousel-container');
-
       if (!carousel || !container) return;
 
-      const slides = carousel.querySelectorAll('.carousel-slide');
-      const totalSlides = slides.length;
+      const slides = Array.from(carousel.querySelectorAll('.carousel-slide'));
+      if (slides.length <= 1) return;
+
+      const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
       let currentSlide = 0;
-      let isPlaying = true;
+      let isHoverPaused = false;
       let intervalId = null;
 
-      // Check for reduced motion preference
-      const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      const goToSlide = (slideIndex) => {
+        const nextSlide = (slideIndex + slides.length) % slides.length;
+        slides[currentSlide].classList.remove('active');
+        currentSlide = nextSlide;
+        slides[currentSlide].classList.add('active');
+      };
+
+      const stop = () => {
+        if (!intervalId) return;
+        clearInterval(intervalId);
+        intervalId = null;
+      };
+
+      const start = () => {
+        if (prefersReducedMotion || isHoverPaused || document.hidden || intervalId) return;
+        intervalId = setInterval(() => goToSlide(currentSlide + 1), 5000);
+      };
 
       if (prefersReducedMotion) {
-        // Show first slide only for reduced motion
-        slides.forEach((slide, index) => {
-          if (index === 0) {
-            slide.classList.add('active');
-          } else {
-            slide.classList.remove('active');
-          }
-        });
+        slides.forEach((slide, index) => slide.classList.toggle('active', index === 0));
         return;
       }
 
-      function goToSlide(slideIndex) {
-        // Ensure we stay within bounds
-        if (slideIndex >= totalSlides) {
-          slideIndex = 0;
-        } else if (slideIndex < 0) {
-          slideIndex = totalSlides - 1;
-        }
-
-        // Remove active class from current slide
-        slides[currentSlide].classList.remove('active');
-
-        // Update current slide and add active class
-        currentSlide = slideIndex;
-        slides[currentSlide].classList.add('active');
-      }
-
-      function nextSlide() {
-        if (!isPlaying) return;
-        goToSlide(currentSlide + 1);
-      }
-
-      function startCarousel() {
-        if (intervalId) clearInterval(intervalId);
-
-        // 1.5s fade transition + 3.5s display = 5 seconds total per slide
-        intervalId = setInterval(nextSlide, 5000);
-      }
-
-      function stopCarousel() {
-        if (intervalId) {
-          clearInterval(intervalId);
-          intervalId = null;
-        }
-      }
-
-      // Pause on hover, resume on leave
       container.addEventListener('mouseenter', () => {
-        isPlaying = false;
-        stopCarousel();
+        isHoverPaused = true;
+        stop();
       });
 
       container.addEventListener('mouseleave', () => {
-        isPlaying = true;
-        startCarousel();
+        isHoverPaused = false;
+        start();
       });
 
-      // Handle visibility change (pause when tab is hidden)
       document.addEventListener('visibilitychange', () => {
         if (document.hidden) {
-          stopCarousel();
-        } else if (isPlaying) {
-          startCarousel();
+          stop();
+          return;
         }
+        start();
       });
 
-      // Start the carousel
-      startCarousel();
+      start();
     }
 
     // Initialize when DOM is ready
     document.addEventListener('DOMContentLoaded', () => {
-      // Observe scroll-reveal elements
-      const scrollElements = document.querySelectorAll('.scroll-reveal');
-      scrollElements.forEach(el => observer.observe(el));
-
-      // Initialize the analytics carousel
-      initAnalyticsCarousel();
-
-      // Initialize the AI Studio carousel
-      initAIStudioCarousel();
+      initScrollReveal();
+      initCarousel('analyticsCarousel');
+      initCarousel('aiStudioCarousel');
 
       // Smooth scrolling for anchor links
       document.querySelectorAll('a[href^="#"]').forEach(anchor => {
