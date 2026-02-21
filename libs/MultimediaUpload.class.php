@@ -27,7 +27,7 @@ require_once $_SERVER['DOCUMENT_ROOT'] . "/vendor/autoload.php";
  * 3) [if free] get file's sha256 hash (we want to fingerprint original uploads)
  * 4) Perform image processing (resize, compress, etc.), pro upload only optimization, profile pic resize and crop
  * 5) Store file in database (filename, metadata, file size, type)
- * 6) [PRO] Generate a new filename from the database ID [perform a database tranasction to ensure consistency]
+ * 6) [PRO] Generate a new filename from the database ID [perform a database transaction to ensure consistency]
  * 7) Upload file to S3
  * Example usage of the class:
  * $upload = new MultimediaUpload($link, $s3Service);
@@ -48,9 +48,9 @@ class MultimediaUpload
    */
   protected $db; // Instance of the mysqli class used to instantiate this table classes, e.g., UploadsData, UsersImages
   /**
-   * The structure of the array for proccessed files:
+  * The structure of the array for processed files:
    *     [{ /* data about the file, or empty object in case of an error * /
-   *      'fileName' => <name of the file with extention>,
+  *      'fileName' => <name of the file with extension>,
    *      'url' => <url of the file>,
    *      'thumbnail' => <url of the thumbnail of the file>,
    *      'blurhash' => <blurhash of the file>,
@@ -59,7 +59,7 @@ class MultimediaUpload
    *      'mime' => <mime type of the file>,
    *      'size' => <size of the file in bytes>,
    *      'metadata' => <metadata of the file>, // Metadata may include EXIF data, etc.
-   *      'dimentions' => { // Dimentions are only available for images, may add for videos later
+  *      'dimensions' => { // Dimensions are only available for images, may add for videos later
    *       'width' => <width of the file in pixels>,
    *       'height' => <height of the file in pixels>,
    *      },
@@ -74,7 +74,7 @@ class MultimediaUpload
    *      ...
    *     ]
    */
-  protected $filesArray; // The $_FILES reconstructed array
+  protected $filesArray = []; // The $_FILES reconstructed array
   /**
    * Summary of uploadedFiles
    * @var array
@@ -84,7 +84,7 @@ class MultimediaUpload
    * Summary of file
    * @var 
    */
-  protected $file; // Used for temporary storage of the current file in the loop
+  protected $file = []; // Used for temporary storage of the current file in the loop
   /**
    * Summary of uploadsData
    * @var 
@@ -138,7 +138,7 @@ class MultimediaUpload
    * Summary of apiClient
    * @var 
    */
-  protected $apiClient;
+  protected $apiClient = null;
   /**
    * Summary of gifConverter
    * @var 
@@ -158,31 +158,38 @@ class MultimediaUpload
    * Summary of formParams
    * @var 
    */
-  protected $formParams;
+  protected $formParams = [];
   /**
    * Summary of uppyMetadata
    * @var 
    * (
-   * [relativePath] => <relative path> // filder/file.jpg
+  * [relativePath] => <relative path> // folder/file.jpg
    * [name] => <file name> // file.jpg
    * [type] => <mime type> // image/jpeg
    * [folderName] => <folder name> // folder
    * [folderHierarchy] => <list of folders> // ['folder', 'subfolder']
    * )
    */
-  protected $uppyMetadata;
+  protected $uppyMetadata = [];
 
   /**
    * Summary of defaultFolderName
    * @var
    */
-  protected $defaultFolderName;
+  protected $defaultFolderName = '';
   /**
    * Indicates whether the multimedia upload should undergo any transformation.
    *
    * @var bool $no_transform
    */
-  protected $no_transform;
+  protected $no_transform = false;
+
+  /**
+   * Tracks temp files created by this class only.
+   *
+   * @var array<string, bool>
+   */
+  protected $managedTempFiles = [];
 
   /**
    * Summary of __construct
@@ -221,14 +228,66 @@ class MultimediaUpload
    */
   public function __destruct()
   {
-    // Delete the temporary files
-    if (is_array($this->filesArray)) {
-      foreach ($this->filesArray as $file) {
-        if (file_exists($file['tmp_name'])) {
-          unlink($file['tmp_name']);
-        }
+    $this->cleanupManagedTempFiles();
+  }
+
+  protected function registerTempFile(string $path): void
+  {
+    if ($path !== '') {
+      $this->managedTempFiles[$path] = true;
+    }
+  }
+
+  protected function releaseTempFile(string $path): void
+  {
+    if ($path !== '' && isset($this->managedTempFiles[$path])) {
+      unset($this->managedTempFiles[$path]);
+    }
+  }
+
+  protected function cleanupManagedTempFiles(): void
+  {
+    foreach (array_keys($this->managedTempFiles) as $path) {
+      if (is_string($path) && $path !== '' && is_file($path)) {
+        @unlink($path);
+      }
+      unset($this->managedTempFiles[$path]);
+    }
+  }
+
+  protected function trackRawFilesTempPaths(array $files): void
+  {
+    foreach ($files as $file) {
+      if (!is_array($file)) {
+        continue;
+      }
+      $tmpName = $file['tmp_name'] ?? '';
+      if (is_string($tmpName) && $tmpName !== '' && is_file($tmpName)) {
+        $this->registerTempFile($tmpName);
       }
     }
+  }
+
+  protected function replaceCurrentTempFile(string $newPath, bool $deleteOld = true): void
+  {
+    $oldPath = is_array($this->file) ? (string)($this->file['tmp_name'] ?? '') : '';
+
+    if ($oldPath !== '' && $oldPath !== $newPath) {
+      if ($deleteOld && is_file($oldPath)) {
+        @unlink($oldPath);
+      }
+      $this->releaseTempFile($oldPath);
+    }
+
+    $this->file['tmp_name'] = $newPath;
+    if ($newPath !== '' && is_file($newPath)) {
+      $this->registerTempFile($newPath);
+    }
+  }
+
+  protected function releaseCurlHandle(&$ch): void
+  {
+    $ch = null;
   }
 
   /**
@@ -249,6 +308,7 @@ class MultimediaUpload
   public function setRawFiles(array $files): void
   {
     $this->filesArray = $files;
+    $this->trackRawFilesTempPaths($files);
   }
 
   /**
@@ -326,31 +386,40 @@ class MultimediaUpload
     $restructured = [];
 
     foreach ($files as $fileInputName => $fileArray) {
+      if (!is_array($fileArray) || !isset($fileArray['name'], $fileArray['tmp_name'], $fileArray['error'], $fileArray['size'])) {
+        continue;
+      }
+
       if (is_array($fileArray['name'])) {
         $fileCount = count($fileArray['name']);
         for ($i = 0; $i < $fileCount; $i++) {
+          if (!isset($fileArray['tmp_name'][$i])) {
+            continue;
+          }
           $tempFilePath = generateUniqueFilename('file_upload_', $tempDirectory);
           if (move_uploaded_file($fileArray['tmp_name'][$i], $tempFilePath)) {
+            $this->registerTempFile($tempFilePath);
             $restructured[] = [
               'input_name' => $fileInputName,
-              'name' => $fileArray['name'][$i],
-              'type' => $fileArray['type'][$i],
+              'name' => $fileArray['name'][$i] ?? basename($tempFilePath),
+              'type' => $fileArray['type'][$i] ?? 'application/octet-stream',
               'tmp_name' => $tempFilePath,
-              'error' => $fileArray['error'][$i],
-              'size' => $fileArray['size'][$i],
+              'error' => $fileArray['error'][$i] ?? UPLOAD_ERR_OK,
+              'size' => $fileArray['size'][$i] ?? 0,
             ];
           }
         }
       } else {
         $tempFilePath = generateUniqueFilename('file_upload_', $tempDirectory);
         if (move_uploaded_file($fileArray['tmp_name'], $tempFilePath)) {
+          $this->registerTempFile($tempFilePath);
           $restructured[] = [
             'input_name' => $fileInputName,
-            'name' => $fileArray['name'],
-            'type' => $fileArray['type'],
+            'name' => $fileArray['name'] ?? basename($tempFilePath),
+            'type' => $fileArray['type'] ?? 'application/octet-stream',
             'tmp_name' => $tempFilePath,
-            'error' => $fileArray['error'],
-            'size' => $fileArray['size'],
+            'error' => $fileArray['error'] ?? UPLOAD_ERR_OK,
+            'size' => $fileArray['size'] ?? 0,
           ];
         }
       }
@@ -403,14 +472,15 @@ class MultimediaUpload
 
     // Move the file to the temporary directory
     $file->moveTo($tempFilePath);
+    $this->registerTempFile($tempFilePath);
 
     return [
       'input_name' => $fileInputName,
-      'name' => $file->getClientFilename(),
-      'type' => $file->getClientMediaType(),
+      'name' => $file->getClientFilename() ?? basename($tempFilePath),
+      'type' => $file->getClientMediaType() ?? 'application/octet-stream',
       'tmp_name' => $tempFilePath,
       'error' => $file->getError(),
-      'size' => $file->getSize(),
+      'size' => (int)($file->getSize() ?? 0),
       'metadata' => $metadata, // Include the metadata for the file
     ];
   }
@@ -448,7 +518,12 @@ class MultimediaUpload
 
     // Write stream to temporary file
     $handle = fopen($tempFilePath, 'wb');
-    $contentLength = $metadata['content_length'];
+    if ($handle === false) {
+      throw new RuntimeException('Failed to open temporary file for PUT upload');
+    }
+    $this->registerTempFile($tempFilePath);
+
+    $contentLength = isset($metadata['content_length']) ? (int)$metadata['content_length'] : PHP_INT_MAX;
     $size = 0;
 
     while (!$stream->eof() && $size < $contentLength) {
@@ -520,7 +595,7 @@ class MultimediaUpload
         return $validationResult;
       }
       // Perform PhotoDNA check
-      /* disabled for now untill we make it off-band
+      /* disabled for now until we make it off-band
       try {
         $pdnaNpub = empty($this->userNpub) ? 'Unknown' : $this->userNpub;
         $photoDNA = new PhotoDNA($pdnaNpub, $fileSha256, $this->file['tmp_name']);
@@ -590,13 +665,15 @@ class MultimediaUpload
       return [false, 500, 'Server error, please try again later'];
     }
     // Remove temp file if exists
-    if (file_exists($this->file['tmp_name'])) {
+    if (!empty($this->file['tmp_name']) && file_exists($this->file['tmp_name'])) {
       unlink($this->file['tmp_name']);
+      $this->releaseTempFile($this->file['tmp_name']);
     }
     // Signal webhook about upload
     try {
       // fileType Must be one of 'video' | 'audio' | 'image' | "archive" | "document" | "text" | 'other'
-      $whFileType = match (explode('/', $fileType['mime'])[0]) {
+      $mimeRoot = explode('/', (string)($fileType['mime'] ?? 'application/octet-stream'))[0] ?? 'other';
+      $whFileType = match ($mimeRoot) {
         'image' => 'image',
         'video' => 'video',
         'audio' => 'audio',
@@ -625,7 +702,7 @@ class MultimediaUpload
       error_log("Webhook signalling failed: " . $e->getMessage());
     }
 
-    //error_log('Profile picutre upload successful:' . $newFileName . PHP_EOL);
+    //error_log('Profile picture upload successful:' . $newFileName . PHP_EOL);
     //error_log('Mime:' . $fileType['mime'] . PHP_EOL);
     //error_log('sha256:' . $fileSha256 . PHP_EOL);
     //error_log('Npub:' . $this->userNpub ?? 'anon' . PHP_EOL);
@@ -717,7 +794,7 @@ class MultimediaUpload
         $fileType = detectFileExt($this->file['tmp_name'], $accountLevelInt);
 
         // Perform PhotoDNA check
-        /* disable for now untill we make it off-band
+        /* disable for now until we make it off-band
         if (!$this->pro && $fileType['type'] === 'image') {
           try {
             $pdnaNpub = empty($this->userNpub) ? 'Unknown' : $this->userNpub;
@@ -755,7 +832,10 @@ class MultimediaUpload
         if ($fileType['type'] === 'video' && $this->file['size'] < 1024 ** 2 * 200 && !$this->no_transform) { // 200MB
           try {
             $videoRepackager = new VideoRepackager($this->file['tmp_name']);
-            $this->file['tmp_name'] = $videoRepackager->repackageVideo();
+            $repackagedTmp = $videoRepackager->repackageVideo();
+            if (is_string($repackagedTmp) && $repackagedTmp !== '') {
+              $this->replaceCurrentTempFile($repackagedTmp, true);
+            }
             // We need to detect the file type again, because it may have changed due to conversion
             $fileType = detectFileExt($this->file['tmp_name'], $accountLevelInt);
           } catch (Exception $e) {
@@ -765,10 +845,8 @@ class MultimediaUpload
         // Generate transformed file hash
         $transformedFileSha256 = $this->generateFileName(0);
         // Check dupes for blossom uploads
-        // THIS IS SO DUMB, I HATE IT! Given that Blossom had ZERO regard for backwards compatibility,
-        // we have to jump through hoops to make sure we don't upload duplicates or corrupt the database of existing files
-        // NOTE TO SELF: NEVER IMPLEMENT ANOTHER DUMB IDEA OR PROTOCOL LIKE THIS!
-        // Thanks to Blossom, we will be wasting CPU cycles on optimizing potential duplicate so we can just fucking check hash
+        // Blossom compatibility requires duplicate checks with both original and transformed hashes,
+        // to avoid duplicate uploads and preserve database consistency across /media and /upload endpoints.
         if (!$this->pro && $blossom && $this->checkForDuplicates($transformedFileSha256, blossom: $blossom, clientInfo: $clientInfo, sha256: $sha256, no_transform: $this->no_transform, originalSha256: $fileSha256)) {
           error_log('Duplicate file:' . $fileSha256 . PHP_EOL);
           continue;
@@ -883,7 +961,7 @@ class MultimediaUpload
       } catch (Exception $e) {
         $lastError = $e;
         error_log("File loop exception: " . $lastError->getMessage());
-        // Since upload to S3 happenese last, we should be safe to do not delete the file from S3
+        // Since upload to S3 happens last, we should not need to delete the file from S3
         // unless something goes wrong with DB commit.
         // We want to loop over all files and not stop on the errors
         continue;
@@ -892,7 +970,7 @@ class MultimediaUpload
       $originalMediaUrl = $this->generateMediaURL($newFileName, $fileType['type']);
       try {
         // fileType Must be one of 'video' | 'audio' | 'image' | "archive" | "document" | "text" | 'other'
-        $doVirusScan = in_array($fileType['type'], ['archive', 'document', 'text', 'other']);
+        $doVirusScan = in_array($fileType['type'], ['archive', 'document', 'text', 'other'], true);
         $whFileType = $fileType['type'];
         $this->uploadWebhook->createPayload(
           fileHash: explode('.', $newFileName)[0], // Remove extension
@@ -961,7 +1039,7 @@ class MultimediaUpload
    * @throws \Exception
    * @return array
    * 
-   * Thos method will perform the following:
+  * This method will perform the following:
    * 1) HEAD request to get the file size and type
    * 2) Check if the file size is within the limit
    * 3) Check if the file type is supported
@@ -986,7 +1064,7 @@ class MultimediaUpload
     list($fileType) = explode("/", $metadata['type'], 2);
 
     // Ensure the file is of a valid type (image, video, or audio)
-    if (!in_array($fileType, ['image', 'video', 'audio'])) {
+    if (!in_array($fileType, ['image', 'video', 'audio'], true)) {
       error_log('Invalid file type: ' . $fileType);
       return [false, 400, 'Invalid file type'];
     }
@@ -1016,6 +1094,7 @@ class MultimediaUpload
     $tempFile = tempnam(sys_get_temp_dir(), 'url_download');
     if ($tempFile === false) {
       error_log('Failed to create temporary file');
+      $this->releaseCurlHandle($ch);
       return [false, 500, 'Server error, please try again later'];
     }
     $fp = fopen($tempFile, 'wb');
@@ -1023,6 +1102,8 @@ class MultimediaUpload
     // Check if the file was created successfully
     if ($fp === false) {
       error_log('Failed to open file for writing');
+      $this->releaseCurlHandle($ch);
+      @unlink($tempFile);
       return [false, 500, 'Server error, please try again later'];
     }
 
@@ -1031,6 +1112,7 @@ class MultimediaUpload
 
     // Set option to have a hard limit on how many bytes we will download
     // This should prevent from the potential DOS attack
+    $fileSize = 0;
     $curlSizeExceeded = false;
     curl_setopt($ch, CURLOPT_NOPROGRESS, false);
     curl_setopt($ch, CURLOPT_PROGRESSFUNCTION, function ($ch, $downloadSize, $downloaded, $uploadSize, $uploaded) use (&$fileSize, $sizeLimit, &$curlSizeExceeded) {
@@ -1054,33 +1136,42 @@ class MultimediaUpload
     // Check for any errors during the download
     if ($success === false) {
       // Remove the temporary file
-      unlink($tempFile);
+      if (is_file($tempFile)) {
+        @unlink($tempFile);
+      }
+      $this->releaseTempFile($tempFile);
       // Log the error
       error_log(curl_error($ch));
       // Check if the error was caused by the file size limit
       if ($fileSize > $sizeLimit || $curlSizeExceeded) {
         error_log('File size exceeds the limit of ' . formatSizeUnits($sizeLimit));
+        $this->releaseCurlHandle($ch);
         return [false, 413, 'File size exceeds the limit of ' . formatSizeUnits($sizeLimit)];
       }
       // Return the error
       error_log('cURL error: ' . curl_error($ch));
+      $this->releaseCurlHandle($ch);
       return [false, 500, 'Server error, please try again later'];
     }
 
     // Close the cURL resource
-    curl_close($ch);
+    $this->releaseCurlHandle($ch);
+
+    $resolvedTmpPath = realpath($tempFile);
+    $resolvedTmpPath = is_string($resolvedTmpPath) && $resolvedTmpPath !== '' ? $resolvedTmpPath : $tempFile;
 
     // Set the file property
     $this->filesArray[] = [
       'input_name' => 'url',
       'name' => $metadata['name'],
       'type' => $metadata['type'],
-      'tmp_name' => realpath($tempFile),
+      'tmp_name' => $resolvedTmpPath,
       'error' => UPLOAD_ERR_OK, // No error
       'size' => filesize($tempFile),
       'title' => $title ?? '',
       'ai_prompt' => $ai_prompt ?? '',
     ];
+    $this->registerTempFile($resolvedTmpPath);
 
     // Lastly, trigger the uploadFiles method to process and store the file
     if ($pfp) {
@@ -1111,7 +1202,7 @@ class MultimediaUpload
       throw new Exception($e->getMessage());
     }
 
-    // Check if the URL is sain and throw if it is not
+    // Check if the URL is sane and throw if it is not
     if (!$sanity) {
       throw new Exception('URL sanity check failed');
     }
@@ -1135,7 +1226,14 @@ class MultimediaUpload
 
     // Check if any error occurred
     if (curl_errno($ch)) {
-      throw new Exception('Curl error: ' . curl_error($ch));
+      $curlError = curl_error($ch);
+      $this->releaseCurlHandle($ch);
+      throw new Exception('Curl error: ' . $curlError);
+    }
+
+    if (!is_string($headers) || $headers === '') {
+      $this->releaseCurlHandle($ch);
+      throw new Exception('Failed to read URL metadata headers');
     }
 
     // Extract headers from the response
@@ -1143,7 +1241,7 @@ class MultimediaUpload
     $headerMap = [];
     foreach ($headerList as $header) {
       $parts = explode(": ", $header, 2);
-      if (count($parts) == 2) {
+      if (count($parts) === 2) {
         // Convert the header name to lowercase
         $headerName = strtolower($parts[0]);
         $headerMap[$headerName] = trim($parts[1]);
@@ -1151,7 +1249,7 @@ class MultimediaUpload
     }
 
     // Close the cURL resource
-    curl_close($ch);
+    $this->releaseCurlHandle($ch);
 
     // Check if Content-Length header is present
     if (!isset($headerMap['content-length'])) {
@@ -1179,6 +1277,17 @@ class MultimediaUpload
    */
   protected function validateFile(): array
   {
+    if (
+      !is_array($this->file) ||
+      !isset($this->file['error'], $this->file['tmp_name'], $this->file['size'], $this->file['sha256']) ||
+      !is_string($this->file['tmp_name']) ||
+      $this->file['tmp_name'] === '' ||
+      !is_file($this->file['tmp_name'])
+    ) {
+      error_log('Invalid file structure for upload validation');
+      return [false, 400, 'Invalid file upload payload'];
+    }
+
     // Validate if file upload is OK
     if ($this->file['error'] !== UPLOAD_ERR_OK) {
       error_log('File upload error: ' . $this->file['error']);
@@ -1242,7 +1351,7 @@ class MultimediaUpload
    */
   protected function checkForDuplicates(string $filehash, ?bool $profile = false, ?bool $blossom = false, ?string $sha256 = '', ?string $clientInfo = '', ?bool $no_transform = false, ?string $originalSha256 = ''): bool
   {
-    // Another LACK of thoughtfulnes in the design of Blossom
+    // Blossom requires duplicate checks using original and/or transformed hashes.
     // We have to check for duplicates in the uploads_data table
     // using the original sha256 and not transformed sha256
     // Now we need to distinguish between no_transform and blossom vs. blossom with transform
@@ -1336,7 +1445,7 @@ class MultimediaUpload
     // If checkDuplicate is non-blossom, we take $filehash
     // If checkDuplicate is $blossom and $no_transform, we take $originalSha256
     // If checkDuplicate is $blossom and !$no_transform, we take $filehash
-    // Thanks, Obama!
+    // This mapping preserves expected hash semantics for each upload mode.
     $fileDataOX = !$blossom ? $filehash : ($blossom && $no_transform ? $filehash : $originalSha256); 
 
     $fileData = [
@@ -1383,12 +1492,8 @@ class MultimediaUpload
       $fileData['url'] = $this->generateMediaURL($data['filename'], $data['type']);
       $fileData['thumbnail'] = $this->generateImageThumbnailURL($data['filename'], $data['type']);
       $fileData['responsive'] = $this->generateResponsiveImagesURL($data['filename'], $data['type']);
-      try {
-        $fileData['metadata'] = json_decode($data['metadata'], true);
-      } catch (Exception $e) {
-        error_log("Failed to decode metadata: " . $e->getMessage());
-        $fileData['metadata'] = [];
-      }
+      $decodedMetadata = json_decode((string)($data['metadata'] ?? ''), true);
+      $fileData['metadata'] = is_array($decodedMetadata) ? $decodedMetadata : [];
     }
 
     $this->addFileToUploadedFilesArray($fileData);
@@ -1451,11 +1556,7 @@ class MultimediaUpload
       $tmp_gif = $this->gifConverter->downsizeGif($this->file['tmp_name']);
       // Check if the optimized version atleast 5% smaller, otherwise keep the original
       if (filesize($tmp_gif) < 0.95 * filesize($this->file['tmp_name'])) {
-        // Unlink old file.
-        if (file_exists($this->file['tmp_name'])) {
-          unlink($this->file['tmp_name']);
-        }
-        $this->file['tmp_name'] = $tmp_gif;
+        $this->replaceCurrentTempFile($tmp_gif, true);
       } else {
         error_log('Optimized GIF is not smaller, keeping original: ' . filesize($tmp_gif) . ' vs ' . filesize($this->file['tmp_name']));
         // Disable further transformations
@@ -1509,11 +1610,7 @@ class MultimediaUpload
       $tmp_gif = $this->gifConverter->downsizeGif($this->file['tmp_name']);
       // Check if the optimized version atleast 5% smaller, otherwise keep the original
       if (filesize($tmp_gif) < 0.95 * filesize($this->file['tmp_name'])) {
-        // Unlink old file.
-        if (file_exists($this->file['tmp_name'])) {
-          unlink($this->file['tmp_name']);
-        }
-        $this->file['tmp_name'] = $tmp_gif;
+        $this->replaceCurrentTempFile($tmp_gif, true);
       } else {
         error_log('Optimized GIF is not smaller, keeping original: ' . filesize($tmp_gif) . ' vs ' . filesize($this->file['tmp_name']));
         // Disable further transformations
@@ -1557,11 +1654,7 @@ class MultimediaUpload
     ) {
       // Process animated image or video with GifConverter class
       $tmp_gif = $this->gifConverter->convertToGif($this->file['tmp_name']);
-      // Unlink old file.
-      if (file_exists($this->file['tmp_name'])) {
-        unlink($this->file['tmp_name']);
-      }
-      $this->file['tmp_name'] = $tmp_gif;
+      $this->replaceCurrentTempFile($tmp_gif, true);
     } else {
       // Process static image with ImageProcessor class
       $img = new ImageProcessor($this->file['tmp_name']);
@@ -1595,7 +1688,21 @@ class MultimediaUpload
   protected function generateFileName(int $id = 0): string
   {
     // This method should be called before any other file transformations are performed.
-    return $id === 0 ? hash_file('sha256', realpath($this->file['tmp_name'])) : getUniqueNanoId();
+    if ($id !== 0) {
+      return getUniqueNanoId();
+    }
+
+    $tmpName = is_array($this->file) ? (string)($this->file['tmp_name'] ?? '') : '';
+    if ($tmpName === '' || !is_file($tmpName)) {
+      throw new RuntimeException('Unable to generate file hash: temporary file is missing');
+    }
+
+    $hash = hash_file('sha256', $tmpName);
+    if (!is_string($hash) || $hash === '') {
+      throw new RuntimeException('Unable to generate file hash');
+    }
+
+    return $hash;
   }
 
   /**
@@ -1870,7 +1977,7 @@ class MultimediaUpload
       $uppyMetadata['folderHierarchy'] = json_decode($uppyMetadata['folderHierarchy'], true);
     }
     // Check for noTransform metadata flag and set it
-    $this->no_transform = $uppyMetadata['noTransform'] === 'true' ? true : false;
+    $this->no_transform = isset($uppyMetadata['noTransform']) && $uppyMetadata['noTransform'] === 'true';
     $this->uppyMetadata = $uppyMetadata;
     return $this;
   }
@@ -1883,6 +1990,6 @@ class MultimediaUpload
 
   public function getDefaultFolderName(): string
   {
-    return $this->defaultFolderName;
+    return $this->defaultFolderName ?? '';
   }
 }
