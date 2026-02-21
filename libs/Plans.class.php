@@ -23,8 +23,8 @@ class Plan
   public string $name;
   public string $image;
   public string $imageAlt;
-  public string $promo;
-  public string $discountPercentage;
+  public bool $promo;
+  public int $discountPercentage;
   public int $priceInt;
   public string $price;
   public int $priceInt2y;
@@ -69,8 +69,8 @@ class Plan
     $this->image = $image;
     $this->imageAlt = $imageAlt;
     $this->bonusCredits = $bonusCredits;
-    $this->bonusCredits2y = $bonusCredits * 1.5;
-    $this->bonusCredits3y = $bonusCredits * 2;
+    $this->bonusCredits2y = (int)round($bonusCredits * 1.5);
+    $this->bonusCredits3y = (int)round($bonusCredits * 2);
 
     // If the current plan is the same as the plan we are creating, set isCurrentPlan to true
     $this->isCurrentPlan = $fromPlanLevel === $id;
@@ -78,8 +78,8 @@ class Plan
 
     // Ensure the prorated price is not negative
     $this->fullPriceInt = $price;
-    $this->full2yPriceInt = $price + ($price * 1 * (1 - Plans::$twoYearDiscount));
-    $this->full3yPriceInt = $price + ($price * 2 * (1 - Plans::$threeYearDiscount));
+    $this->full2yPriceInt = (int)round($price + ($price * 1 * (1 - Plans::$twoYearDiscount)));
+    $this->full3yPriceInt = (int)round($price + ($price * 2 * (1 - Plans::$threeYearDiscount)));
 
     // Prepopulate the price with the full price
     $this->priceInt = $price;
@@ -115,6 +115,29 @@ class Plan
     $this->full2yPrice = number_format($this->full2yPriceInt, 0, '.', ',');
     $this->full3yPrice = number_format($this->full3yPriceInt, 0, '.', ',');
     // This code is shit but it will do for now.
+  }
+
+  public function applyDiscount(float $percentage): void
+  {
+    if ($percentage <= 0 || $percentage >= 100) {
+      return;
+    }
+
+    $multiplier = 1 - ($percentage / 100);
+
+    if ($this->priceInt !== -1) {
+      $this->priceInt = (int)round($this->priceInt * $multiplier);
+    }
+    if ($this->priceInt2y !== -1) {
+      $this->priceInt2y = (int)round($this->priceInt2y * $multiplier);
+    }
+    if ($this->priceInt3y !== -1) {
+      $this->priceInt3y = (int)round($this->priceInt3y * $multiplier);
+    }
+
+    $this->price = number_format($this->priceInt, 0, '.', ',');
+    $this->price2y = number_format($this->priceInt2y, 0, '.', ',');
+    $this->price3y = number_format($this->priceInt3y, 0, '.', ',');
   }
 
   public function getCurrencySymbol(): string
@@ -450,8 +473,7 @@ class Plans
         }, ['promotion_percentage' => 0, 'promotion_end_time' => '']);
         // Apply the promotion if there is one
         if ($promotion['promotion_percentage'] > 0) {
-          $plan->priceInt = $plan->priceInt * (1 - $promotion['promotion_percentage'] / 100);
-          $plan->price = number_format($plan->priceInt, 0, '.', ',');
+          $plan->applyDiscount((float)$promotion['promotion_percentage']);
           // Prepend the promotion to the features with the end date
           array_unshift($plan->features, "<span class=\"promotion_text\">Valid until {$promotion['promotion_end_time']} UTC.</span>");
           array_unshift($plan->features, "<span class=\"promotion_text\">Save {$promotion['promotion_percentage']}% with {$promotion['promotion_name']}!</span>");
@@ -470,13 +492,7 @@ class Plans
         if ($plan->isCurrentPlan) {
           continue;
         }
-        $plan->priceInt = $plan->priceInt * (1 - $globalPromotionDiscount['promotion_percentage'] / 100);
-        $plan->price = number_format($plan->priceInt, 0, '.', ',');
-        // Apply the promotion to the multi-year plans as well
-        $plan->priceInt2y = $plan->priceInt2y * (1 - $globalPromotionDiscount['promotion_percentage'] / 100);
-        $plan->price2y = number_format($plan->priceInt2y, 0, '.', ',');
-        $plan->priceInt3y = $plan->priceInt3y * (1 - $globalPromotionDiscount['promotion_percentage'] / 100);
-        $plan->price3y = number_format($plan->priceInt3y, 0, '.', ',');
+        $plan->applyDiscount((float)$globalPromotionDiscount['promotion_percentage']);
         // Update fullPrice as well
         /* BROKEN
         $plan->fullPriceInt = $plan->fullPriceInt * (1 - $globalPromotionDiscount['promotion_percentage'] / 100);

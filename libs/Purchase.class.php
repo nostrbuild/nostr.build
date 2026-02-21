@@ -89,6 +89,10 @@ class Purchase
     if (!isset($_SESSION['purchase_plan'])) return 1;
     // If the user is not created, the step is not valid
     if (!isset($_SESSION['purchase_npub'])) return 2;
+
+    // Persist expected order type based on stable purchase origin and selected plan
+    $_SESSION['purchase_order_type'] = $this->resolveExpectedOrderType();
+
     // Check if the invoice is already created and settled
     if (isset($_SESSION['purchase_invoiceId'])) {
       if ($this->checkInvoiceSettled()) {
@@ -118,9 +122,46 @@ class Purchase
     $invoiceId = $_SESSION['purchase_invoiceId'];
     try {
       $invoice = $this->btcpayClient->getInvoice($invoiceId);
-      if ($invoice->isSettled()) {
-        return true;
+      if (!$invoice->isSettled()) {
+        return false;
       }
+
+      $invoiceData = $invoice->getData();
+      $metadata = $invoiceData['metadata'] ?? [];
+
+      $invoiceNpub = $metadata['userNpub'] ?? null;
+      $invoicePlan = isset($metadata['plan']) ? (int)$metadata['plan'] : null;
+      $invoicePeriod = $metadata['orderPeriod'] ?? null;
+      $invoiceOrderType = $metadata['orderType'] ?? null;
+      $invoicePurchasePrice = $metadata['purchasePrice'] ?? null;
+
+      $sessionNpub = $_SESSION['purchase_npub'] ?? null;
+      $sessionPlan = isset($_SESSION['purchase_plan']) ? (int)$_SESSION['purchase_plan'] : null;
+      $sessionPeriod = $_SESSION['purchase_period'] ?? null;
+      $sessionOrderType = $_SESSION['purchase_order_type'] ?? $this->resolveExpectedOrderType();
+
+      if (
+        empty($sessionNpub) ||
+        $sessionPlan === null ||
+        empty($sessionPeriod) ||
+        empty($sessionOrderType) ||
+        $invoiceNpub !== $sessionNpub ||
+        $invoicePlan !== $sessionPlan ||
+        $invoicePeriod !== $sessionPeriod ||
+        $invoiceOrderType !== $sessionOrderType
+      ) {
+        return false;
+      }
+
+      if (!is_string($invoicePurchasePrice) && !is_numeric($invoicePurchasePrice)) {
+        return false;
+      }
+
+      if (!BTCPayClient::amountEqualString((string)$invoicePurchasePrice, $invoice->getAmount())) {
+        return false;
+      }
+
+      return true;
     } catch (Exception $e) {
       // Log the error
       error_log($e->getMessage());
@@ -128,25 +169,49 @@ class Purchase
     return false;
   }
 
+  private function resolveExpectedOrderType(): string
+  {
+    $origin = $_SESSION['purchase_origin'] ?? null;
+    if ($origin === 'existing-user') {
+      $sessionPlan = isset($_SESSION['purchase_plan']) ? (int)$_SESSION['purchase_plan'] : null;
+      $sessionLevel = isset($_SESSION['acctlevel']) ? (int)$_SESSION['acctlevel'] : null;
+
+      if ($sessionPlan !== null && $sessionLevel !== null) {
+        return $sessionLevel === $sessionPlan ? 'renewal' : 'upgrade';
+      }
+    }
+    return 'signup';
+  }
+
   private function getStep(): int
   {
     $stepsCount = count($this->steps);
     $this->step = 1;
-    if (isset($_GET['step']) && is_numeric($_GET['step']) && $_GET['step'] <= $stepsCount) {
-      $this->step = $_GET['step'];
+    if (isset($_GET['step']) && is_numeric($_GET['step'])) {
+      $requestedStep = (int)$_GET['step'];
+      if ($requestedStep >= 1 && $requestedStep <= $stepsCount) {
+        $this->step = $requestedStep;
+      }
     } elseif (isset($_SESSION['purchase_step'])) {
-      $this->step = $_SESSION['purchase_step'];
+      $sessionStep = (int)$_SESSION['purchase_step'];
+      if ($sessionStep >= 1 && $sessionStep <= $stepsCount) {
+        $this->step = $sessionStep;
+      }
     }
     return $this->step;
   }
 
   private function getSelectedPlan(): int
   {
-    $this->selectedPlan = 1; // Default plan
+    $planKeys = array_keys(Plans::$PLANS);
+    $this->selectedPlan = empty($planKeys) ? 1 : (int)reset($planKeys);
     if (isset($_GET['plan']) && is_numeric($_GET['plan']) && $this->plans::isValidPlan($_GET['plan'])) {
-      $this->selectedPlan = $_GET['plan'];
+      $this->selectedPlan = (int)$_GET['plan'];
     } elseif (isset($_SESSION['purchase_plan'])) {
-      $this->selectedPlan = $_SESSION['purchase_plan'];
+      $sessionPlan = (int)$_SESSION['purchase_plan'];
+      if ($this->plans::isValidPlan($sessionPlan)) {
+        $this->selectedPlan = $sessionPlan;
+      }
     }
     return $this->selectedPlan;
   }

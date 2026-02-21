@@ -29,6 +29,8 @@ if (
 ) {
   // If the user is logged in but has an unverified account, set signup_npub in session
   $_SESSION['purchase_npub'] = $_SESSION['usernpub'];
+  $_SESSION['purchase_origin'] = 'existing-user';
+  unset($_SESSION['purchase_order_type']);
 }
 
 // When purchase_npub is set, be it new user or logged in, we instantiate Account class
@@ -55,16 +57,20 @@ if (isset($_GET['reset'])) {
 // Capture referral code if it exists
 if (
   isset($_GET['ref']) &&
-  !isset($_SESSION['purchase_ref']) &&
-  $_GET['ref'] !== $_SESSION['purchase_ref']
+  (!isset($_SESSION['purchase_ref']) || $_GET['ref'] !== $_SESSION['purchase_ref'])
 ) {
+  $referralCode = trim((string)$_GET['ref']);
+  if ($referralCode === '') {
+    header('Location: /plans/');
+    exit;
+  }
   // Get the referral npub from the referral code
-  $referralNpub = findNpubByReferralCode($link, $_GET['ref']);
+  $referralNpub = findNpubByReferralCode($link, $referralCode);
   // Check if referrl account has valid level
   if (!empty($referralNpub)) {
     $referrerAccount = new Account($referralNpub, $link);
     $_SESSION['purchase_ref_npub'] = $referralNpub;
-    $_SESSION['purchase_ref'] = $_GET['ref'];
+    $_SESSION['purchase_ref'] = $referralCode;
     // Get the account pfp link and nym from the referral npub
     $_SESSION['purchase_ref_pfp'] = $referrerAccount->getAccount()['ppic'];
     $_SESSION['purchase_ref_nym'] = $referrerAccount->getAccount()['nym'];
@@ -126,14 +132,17 @@ $steps = $purchase->getSteps();
 
 // Processing form data when form is submitted to create an account
 // Not applicable to renew and upgrade
-if ($_SERVER["REQUEST_METHOD"] == "POST") {
+$account_create_error = "";
+if (
+  $_SERVER["REQUEST_METHOD"] === "POST" &&
+  isset($_POST["usernpub"], $_POST["password"], $_POST["confirm_password"])
+) {
   // Define variables and initialize with empty values
   $usernpub = $password = $confirm_password = "";
-  $account_create_error = "";
   $bech32 = new Bech32();
 
   // Validate usernpub
-  $usernpub = trim($_POST["usernpub"]);
+  $usernpub = trim((string)$_POST["usernpub"]);
   if (empty($_SESSION['signup_npub_verified'])) {
     $account_create_error = "Please verify your npub1 public key.";
   } elseif (
@@ -150,7 +159,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
   if (empty($account_create_error)) {
     // Validate password
-    $password = trim($_POST["password"]);
+    $password = trim((string)$_POST["password"]);
     if (empty($password)) {
       $account_create_error = "Please enter a password.";
     } elseif (strlen($password) < 6) {
@@ -160,7 +169,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
   if (empty($account_create_error)) {
     // Validate confirm password
-    $confirm_password = trim($_POST["confirm_password"]);
+    $confirm_password = trim((string)$_POST["confirm_password"]);
     if (empty($confirm_password)) {
       $account_create_error = "Please confirm password.";
     } elseif ($password != $confirm_password) {
@@ -200,6 +209,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $step = 3;
     $_SESSION['purchase_step'] = $step;
     $_SESSION['purchase_npub'] = $usernpub;
+    $_SESSION['purchase_origin'] = 'new-signup';
+    $_SESSION['purchase_order_type'] = 'signup';
   } else {
     // Encountered an error, display it in the form and stay on the same step
     error_log($account_create_error);
@@ -471,10 +482,9 @@ SVG;
           <!-- Create Account -->
           <?php
           // Only applicable to new users, otherwise the step is skipped
-          $userNpub = $_SESSION['purchase_npub'] ?? null;
+          $userNpub = $_SESSION['purchase_npub'] ?? $_SESSION['usernpub'] ?? null;
           $userNpubVerified = $_SESSION['signup_npub_verified'] ?? null;
           $userPfp = $_SESSION['ppic'] ?? null;
-          $userNpub = $_SESSION['usernpub'] ?? null;
           $userNym = $_SESSION['nym'] ?? null;
           ?>
           <div class="mt-10 px-8 sm:mx-auto sm:w-full sm:max-w-sm">
@@ -607,10 +617,10 @@ SVG;
           <?php
           // Helper function to create the invoice
           // TODO: Relocate this function to a more appropriate file
-          function createInvoice(BTCPayClient $btcpayClient, Plan $plan, string $npub, string $period, string $orderType, string $orderIdPrefix = 'nb_signup_order', string $redirectUrl, ?string $referralCode = null): ?string
+          function createInvoice(BTCPayClient $btcpayClient, Plan $plan, string $npub, string $period, string $orderType, string $orderIdPrefix = 'nb_signup_order', string $redirectUrl = '', ?string $referralCode = null): ?string
           {
-            $period = $_SESSION['purchase_period'];
-            $price = match ($period) {
+            $safePeriod = in_array($period, ['1y', '2y', '3y'], true) ? $period : '1y';
+            $price = match ($safePeriod) {
               '1y' => $plan->priceInt,
               '2y' => $plan->priceInt2y,
               '3y' => $plan->priceInt3y,
@@ -618,7 +628,7 @@ SVG;
             };
             // Handle renewals
             if ($orderType === 'renewal') {
-              $price = match ($period) {
+              $price = match ($safePeriod) {
                 '1y' => $plan->fullPriceInt,
                 '2y' => $plan->full2yPriceInt,
                 '3y' => $plan->full3yPriceInt,
@@ -639,7 +649,7 @@ SVG;
                   'planName' => $plan->name,
                   'planStart' => date('Y-m-d'),
                   'userNpub' => $npub,
-                  'orderPeriod' => $period,
+                  'orderPeriod' => $safePeriod,
                   'orderType' => $orderType,
                   'purchasePrice' => $price, // Can be used to verify that the full amount was paid.
                   'referralCode' => $referralCode ?? '',
@@ -656,18 +666,32 @@ SVG;
           $redirectUrl = 'https://' . $_SERVER['HTTP_HOST'] . '/plans/?step=4';
 
           // Identify order type, e.g. 'signup', 'renewal', 'upgrade'
-          $orderType = 'signup';
-          $orderIdPrefix = 'nb_signup_order';
-          $_selectedPlan = Plans::$PLANS[$selectedPlan];
-          if ($currentAccountLevel !== null && $currentAccountLevel !== $selectedPlan) {
-            $orderType = 'upgrade';
-            $orderIdPrefix = 'nb_upgrade_order';
-          } else if ($currentAccountLevel !== null && $currentAccountLevel === $selectedPlan) {
-            $orderType = 'renewal';
-            $orderIdPrefix = 'nb_renewal_order';
+          $orderType = $_SESSION['purchase_order_type'] ?? 'signup';
+          $orderIdPrefix = match ($orderType) {
+            'upgrade' => 'nb_upgrade_order',
+            'renewal' => 'nb_renewal_order',
+            default => 'nb_signup_order',
+          };
+          $_selectedPlan = Plans::$PLANS[$selectedPlan] ?? null;
+          $purchaseOrigin = $_SESSION['purchase_origin'] ?? null;
+          $hasActiveInvoice = isset($_SESSION['purchase_invoiceId']) && $_SESSION['purchase_invoiceId'] !== null && $_SESSION['purchase_invoiceId'] !== '';
+          if ($purchaseOrigin === 'existing-user' && !$hasActiveInvoice) {
+            if ($currentAccountLevel !== null && $currentAccountLevel !== $selectedPlan) {
+              $orderType = 'upgrade';
+              $orderIdPrefix = 'nb_upgrade_order';
+            } elseif ($currentAccountLevel !== null && $currentAccountLevel === $selectedPlan) {
+              $orderType = 'renewal';
+              $orderIdPrefix = 'nb_renewal_order';
+            }
+          } elseif ($purchaseOrigin === 'new-signup') {
+            $orderType = 'signup';
+            $orderIdPrefix = 'nb_signup_order';
           }
+          $_SESSION['purchase_order_type'] = $orderType;
 
-          if (!isset($_SESSION['purchase_invoiceId']) || $_SESSION['purchase_invoiceId'] === null) {
+          if ($_selectedPlan === null) {
+            $_SESSION['purchase_invoiceId'] = null;
+          } elseif (!isset($_SESSION['purchase_invoiceId']) || $_SESSION['purchase_invoiceId'] === null || $_SESSION['purchase_invoiceId'] === '') {
             // If no invoice exists, create a new one
             $referralCode = (isset($_SESSION['purchase_ref']) ? $_SESSION['purchase_ref'] : null);
             $_SESSION['purchase_invoiceId'] = createInvoice(
@@ -684,41 +708,74 @@ SVG;
             try {
               $invoice = $btcpayClient->getInvoice($_SESSION['purchase_invoiceId']);
               $invoiceStatus = $invoice->getStatus();
-              $invoiceNpub = $invoice->getData()['metadata']['userNpub'];
-              $invoicePlan = $invoice->getData()['metadata']['plan'];
-              $invoicePeriod = $invoice->getData()['metadata']['orderPeriod'];
-              $invoiceOrderType = $invoice->getData()['metadata']['orderType'];
-              $purchasePrice = $invoice->getData()['metadata']['purchasePrice'];
-              $priceEqual = BTCPayClient::amountEqualString($purchasePrice, $invoice->getAmount());
+              $invoiceData = $invoice->getData();
+              $invoiceNpub = $invoiceData['metadata']['userNpub'] ?? null;
+              $invoicePlan = $invoiceData['metadata']['plan'] ?? null;
+              $invoicePeriod = $invoiceData['metadata']['orderPeriod'] ?? null;
+              $invoiceOrderType = $invoiceData['metadata']['orderType'] ?? null;
+              $purchasePrice = $invoiceData['metadata']['purchasePrice'] ?? null;
+              $priceEqual = is_string($purchasePrice) || is_numeric($purchasePrice)
+                ? BTCPayClient::amountEqualString((string)$purchasePrice, $invoice->getAmount())
+                : false;
+              $invoiceSettled = $invoice->isSettled();
+
+              if ($invoiceSettled) {
+                $_SESSION['purchase_finished'] = true;
+                if (!empty($invoiceOrderType)) {
+                  $_SESSION['purchase_order_type'] = (string)$invoiceOrderType;
+                }
+              }
 
               if (
-                $invoiceStatus == 'Expired' ||
-                $invoiceNpub != $_SESSION['purchase_npub'] ||
-                $invoicePlan != $selectedPlan ||
-                $invoicePeriod != $_SESSION['purchase_period'] ||
-                $invoiceOrderType != $orderType ||
-                !$priceEqual
+                !$invoiceSettled &&
+                (
+                  $invoiceStatus == 'Expired' ||
+                  $invoiceNpub != $_SESSION['purchase_npub'] ||
+                  $invoicePlan != $selectedPlan ||
+                  $invoicePeriod != $_SESSION['purchase_period'] ||
+                  $invoiceOrderType != $orderType ||
+                  !$priceEqual
+                )
               ) {
                 // Conditions met for a new invoice creation
-                $_SESSION['purchase_invoiceId'] = createInvoice($btcpayClient, $_selectedPlan, $_SESSION['purchase_npub'], $_SESSION['purchase_period'], $orderType, $orderIdPrefix, $redirectUrl);
+                $_SESSION['purchase_invoiceId'] = createInvoice(
+                  $btcpayClient,
+                  $_selectedPlan,
+                  $_SESSION['purchase_npub'],
+                  $_SESSION['purchase_period'],
+                  $orderType,
+                  $orderIdPrefix,
+                  $redirectUrl,
+                  (isset($_SESSION['purchase_ref']) ? $_SESSION['purchase_ref'] : null)
+                );
               }
             } catch (Exception $e) {
               // Handle exception by creating a new invoice if the existing one is not found or any other error occurs
-              $_SESSION['purchase_invoiceId'] = createInvoice($btcpayClient, $_selectedPlan, $_SESSION['purchase_npub'], $_SESSION['purchase_period'], $orderType, $orderIdPrefix, $redirectUrl);
+              $_SESSION['purchase_invoiceId'] = createInvoice(
+                $btcpayClient,
+                $_selectedPlan,
+                $_SESSION['purchase_npub'],
+                $_SESSION['purchase_period'],
+                $orderType,
+                $orderIdPrefix,
+                $redirectUrl,
+                (isset($_SESSION['purchase_ref']) ? $_SESSION['purchase_ref'] : null)
+              );
             }
           }
 
           ?>
           <div class="flex flex-col justify-center mx-auto max-w-7xl sm:px-6 lg:px-8 py-16 space-y-4">
-            <?php if (!isset($_SESSION['purchase_invoiceId']) && $_SESSION['purchase_invoiceId'] === null) : ?>
+            <?php if (!isset($_SESSION['purchase_invoiceId']) || $_SESSION['purchase_invoiceId'] === null || $_SESSION['purchase_invoiceId'] === '') : ?>
               <p class="text-2xl font-semibold text-center text-gray-300">An error occurred while creating the invoice. Please try again later or choose eligible plan.</p>
+            <?php else : ?>
+              <button onclick="window.btcpay.showInvoice('<?= $_SESSION['purchase_invoiceId'] ?>');" type="button" class="self-center inline-flex items-center gap-x-2 rounded-md bg-purple-600 px-3.5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-purple-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-purple-600">
+                Show Invoice
+                <svg class="-mr-0.5 h-5 w-5" aria-hidden="true" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z" />
+                </svg>
+              </button>
             <?php endif; ?>
-            <button onclick="window.btcpay.showInvoice('<?= $_SESSION['purchase_invoiceId'] ?>');" type="button" class="self-center inline-flex items-center gap-x-2 rounded-md bg-purple-600 px-3.5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-purple-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-purple-600">
-              Show Invoice
-              <svg class="-mr-0.5 h-5 w-5" aria-hidden="true" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z" />
-              </svg>
-            </button>
             <button onclick="window.location.href = '?step=1';" type="button" class="self-center inline-flex items-center gap-x-2 rounded-md bg-purple-600 px-3.5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-purple-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-purple-600">
               Change Plan
               <svg class="-mr-0.5 h-5 w-5" aria-hidden="true" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
@@ -736,14 +793,29 @@ SVG;
           try {
             $btcpayClient = $purchase->getBTCPayClient();
             $invoice = $btcpayClient->getInvoice($_SESSION['purchase_invoiceId']);
-            $invoiceNpub = $invoice->getData()['metadata']['userNpub'];
-            $invoicePlan = $invoice->getData()['metadata']['plan'];
-            $invoicePeriod = $invoice->getData()['metadata']['orderPeriod'];
-            $invoiceOrderType = $invoice->getData()['metadata']['orderType'];
-            $purchasePrice = $invoice->getData()['metadata']['purchasePrice'];
-            $priceEqual = BTCPayClient::amountEqualString($purchasePrice, $invoice->getAmount());
+            $invoiceData = $invoice->getData();
+            $invoiceNpub = $invoiceData['metadata']['userNpub'] ?? null;
+            $invoicePlan = $invoiceData['metadata']['plan'] ?? null;
+            $invoicePeriod = $invoiceData['metadata']['orderPeriod'] ?? null;
+            $invoiceOrderType = $invoiceData['metadata']['orderType'] ?? null;
+            $purchasePrice = $invoiceData['metadata']['purchasePrice'] ?? null;
+            $expectedPlan = isset($_SESSION['purchase_plan']) ? (int)$_SESSION['purchase_plan'] : null;
+            $expectedPeriod = $_SESSION['purchase_period'] ?? null;
+            $priceEqual = is_string($purchasePrice) || is_numeric($purchasePrice)
+              ? BTCPayClient::amountEqualString((string)$purchasePrice, $invoice->getAmount())
+              : false;
+            $isPurchaseFinished = !empty($_SESSION['purchase_finished']);
 
-            if ($invoiceNpub != $_SESSION['purchase_npub'] || !$priceEqual || !$_SESSION['purchase_finished']) {
+            if (
+              $invoiceNpub != $_SESSION['purchase_npub'] ||
+              $expectedPlan === null ||
+              $expectedPeriod === null ||
+              (int)$invoicePlan !== $expectedPlan ||
+              (string)$invoicePeriod !== (string)$expectedPeriod ||
+              !$priceEqual ||
+              !$invoice->isSettled() ||
+              !$isPurchaseFinished
+            ) {
               throw new Exception('Invoice did not match the expected npub or price, or was not settled.');
             }
 
@@ -775,6 +847,8 @@ SVG;
             // Unset all purchase_* session variables
             unset(
               $_SESSION['purchase_npub'],
+              $_SESSION['purchase_origin'],
+              $_SESSION['purchase_order_type'],
               $_SESSION['purchase_period'],
               $_SESSION['purchase_price'],
               $_SESSION['purchase_invoiceId'],
