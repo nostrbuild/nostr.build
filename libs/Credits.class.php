@@ -236,7 +236,7 @@ class Credits
       $metadata = $invoice->getData()['metadata'];
       $purchasedCredits = intval($metadata['purchasedCredits']);
       $bonusCredits = intval($metadata['bonusCredits']);
-      $orderId = $metadata['orderId'];
+      $orderId = $metadata['orderId'] ?? $invoice->getId();
 
       // Verify that the invoice is for credits top-up
       if ($metadata['orderType'] !== 'credits-topup') {
@@ -249,7 +249,7 @@ class Credits
       }
 
       // Verify that the invoice paid amount is correct and matches the credits
-      $price = $metadata['purchasePrice'];
+      $price = isset($metadata['purchasePrice']) ? (int)$metadata['purchasePrice'] : -1;
       $expectedPrice = $purchasedCredits * $this->pricePerCredit;
 
       // Compare the actual amount paid with the purchase price

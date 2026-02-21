@@ -40,8 +40,14 @@ class BTCPayWebhook
   {
 
     // Convert requestBody into an object and check if it has an invoiceId
-    $payload = json_decode($requestBody, false, 512, JSON_THROW_ON_ERROR);
-    if (!isset($payload->invoiceId) && true === empty($payload->invoiceId)) {
+    try {
+      $payload = json_decode($requestBody, false, 512, JSON_THROW_ON_ERROR);
+    } catch (Throwable $e) {
+      error_log("Invalid webhook payload JSON: " . $e->getMessage() . PHP_EOL);
+      return false;
+    }
+
+    if (!isset($payload->invoiceId) || empty($payload->invoiceId)) {
       error_log("The request body is invalid or missing invoice ID." . PHP_EOL);
       return false;
     }
@@ -94,26 +100,39 @@ class BTCPayWebhook
     if (!$invoice->isSettled()) {
       error_log("Invoice is not paid." . PHP_EOL);
       error_log("Invoice status: " . print_r($invoice, true) . PHP_EOL);
+      return true;
     } else {
       try {
         global $link;
+        $invoiceData = $invoice->getData();
+        $metadata = $invoiceData['metadata'] ?? [];
+
         // Get the user npub from the invoice metadata
-        $userNpub = $invoice->getData()['metadata']['userNpub'];
+        $userNpub = $metadata['userNpub'] ?? '';
         // Get the item code from the invoice metadata
-        $accountPlan = intval($invoice->getData()['metadata']['plan']) ?? 0;
+        $accountPlan = isset($metadata['plan']) ? (int)$metadata['plan'] : 0;
         // Get the order ID from the invoice metadata
-        $orderId = $invoice->getData()['metadata']['orderId'];
+        $orderId = $metadata['orderId'] ?? ($invoiceData['orderId'] ?? $invoice->getId());
         // Get the order type from the invoice metadata (new, renewal, upgrade)
-        $orderType = $invoice->getData()['metadata']['orderType'];
+        $orderType = $metadata['orderType'] ?? '';
         // Get the order period from the invoice metadata
-        $orderPeriod = $invoice->getData()['metadata']['orderPeriod'] ?? '';
+        $orderPeriod = $metadata['orderPeriod'] ?? '';
         // Get purchasePrice from the invoice
-        $purchasePrice = $invoice->getData()['metadata']['purchasePrice'];
+        $purchasePrice = $metadata['purchasePrice'] ?? null;
         // Get referral code from the invoice
-        $referralCode = $invoice->getData()['metadata']['referralCode'] ?? '';
+        $referralCode = $metadata['referralCode'] ?? '';
+
+        if (empty($userNpub) || empty($orderType)) {
+          error_log("Missing required invoice metadata fields." . PHP_EOL);
+          return false;
+        }
+
+        $amountMatches = is_string($purchasePrice) || is_numeric($purchasePrice)
+          ? BTCPayClient::amountEqualString((string)$purchasePrice, $invoice->getAmount())
+          : false;
 
         // Compare the actual amount paid with the purchase price
-        if (!BTCPayClient::amountEqual($purchasePrice, $invoice->getAmount())) {
+        if (!$amountMatches) {
           error_log("The actual amount paid is less than the purchase price." . PHP_EOL);
           return false;
         }
@@ -175,8 +194,9 @@ class BTCPayWebhook
           // Based on a 10% of the initial bonus credits, split between the referrer and the referred
           $referralBonus = intval($referralInitialBonus * 0.1 / 2);
           // Apply bonus credits to the referrer and the referred
-          $referrerCredits->topupCredits($referralBonus, $orderId . '/referrer-bonus', $invoice->getData());
-          $referralCredits->topupCredits($referralBonus, $orderId . '/referral-bonus', $invoice->getData());
+          $bonusEventId = $invoice->getId();
+          $referrerCredits->topupCredits($referralBonus, $bonusEventId . '/referrer-bonus', $invoiceData);
+          $referralCredits->topupCredits($referralBonus, $bonusEventId . '/referral-bonus', $invoiceData);
         }
       } catch (Exception $e) {
         error_log("Failed to update account: " . $e . PHP_EOL);
