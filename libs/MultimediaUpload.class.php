@@ -367,9 +367,11 @@ class MultimediaUpload
         $returnError = [];
         $successfulUploads = 0;
 
+        $baseNoTransform = $this->no_transform;
         foreach ($this->filesArray as $file) {
             try {
                 $this->file = $file;
+                $this->no_transform = $baseNoTransform; // Reset per file to prevent cross-contamination
 
                 // Hash original file
                 $fileSha256 = $this->generateFileHash();
