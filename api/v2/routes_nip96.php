@@ -96,7 +96,7 @@ $app->group('/nip96', function (RouteCollectorProxy $group) {
         if (empty($body['url'])) {
           [$status, $code, $message] = $upload->uploadFiles($no_transform);
         } else {
-          [$status, $code, $message] = $upload->uploadFileFromUrl($body['url'], $no_transform);
+          [$status, $code, $message] = $upload->uploadFileFromUrl($body['url'], no_transform: $no_transform);
         }
       }
       if (!$status) {
