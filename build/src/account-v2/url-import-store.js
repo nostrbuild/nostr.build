@@ -1,7 +1,5 @@
 import Alpine from 'alpinejs';
-
-const apiUrl = `https://${window.location.hostname}/api/v2/account/dashboard`;
-const getApiFetcher = (...args) => window.getApiFetcher(...args);
+import { apiUrl, getApiFetcher } from './api-constants';
 
 Alpine.store('urlImportStore', {
   isLoading: false,

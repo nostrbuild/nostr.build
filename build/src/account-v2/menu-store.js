@@ -1,7 +1,5 @@
 import Alpine from 'alpinejs';
-
-const apiUrl = `https://${window.location.hostname}/api/v2/account/dashboard`;
-const getApiFetcher = (...args) => window.getApiFetcher(...args);
+import { apiUrl, getApiFetcher } from './api-constants';
 
 const aiImagesFolderName = 'AI: Generated Images';
 const homeFolderName = 'Home: Main Folder';
@@ -26,8 +24,8 @@ function getUpdatedHashLink(f, p) {
 
 function getHashParams() {
   const params = new URLSearchParams(window.location.hash.slice(1));
-  const folder = decodeURIComponent(params.get('f'));
-  const page = decodeURIComponent(params.get('p'));
+  const folder = params.get('f') ? decodeURIComponent(params.get('f')) : '';
+  const page = params.get('p') ? decodeURIComponent(params.get('p')) : '';
   return {
     folder,
     page

@@ -6,15 +6,13 @@ import {
   toStartOfInterval,
   parseData,
   generateTimeLabels,
-  mergeDataWithLabels,
   prepareDatasets,
-  getColor,
 } from './file-store-stats-helpers';
 import { createMediaProperties } from './file-store-media-properties';
+import { createModalState } from './modal-state';
 
-const apiUrl = `https://${window.location.hostname}/api/v2/account/dashboard`;
-const getApiFetcher = (...args) => window.getApiFetcher(...args);
-const copyToClipboard = (...args) => window.copyToClipboard(...args);
+import { apiUrl, getApiFetcher } from './api-constants';
+const copyTextToClipboard = (...args) => window.copyTextToClipboard(...args);
 const abbreviateNumber = (...args) => window.abbreviateNumber(...args);
 
 Alpine.store('fileStore', {
@@ -22,103 +20,12 @@ Alpine.store('fileStore', {
   filesById: {},
   loading: false,
   fullWidth: false,
-  Files: {
-    _files: [],
-    _filesById: new Map(),
-    _filesByName: new Map(),
-
-    get files() {
-      return this._files;
-    },
-
-    get filesById() {
-      return this._filesById;
-    },
-
-    get filesByName() {
-      return this._filesByName;
-    },
-
-    set files(files) {
-      this._files = [...files];
-      this.updateMaps();
-    },
-
-    updateMaps() {
-      this._filesById = new Map(this._files.map(file => [file.id, file]));
-      this._filesByName = new Map(this._files.map(file => [file.name, file]));
-    },
-
-    addFile(file, position = 'bottom') {
-      if (!this._filesById.has(file.id)) {
-        if (position === 'top') {
-          this._files.unshift(file);
-        } else {
-          this._files.push(file);
-        }
-        this.addFileToMaps(file);
-      }
-    },
-
-    addFiles(newFiles, position = 'bottom') {
-      const uniqueFiles = newFiles.filter(file => !this._filesById.has(file.id));
-      if (position === 'top') {
-        this._files.unshift(...uniqueFiles);
-      } else {
-        this._files.push(...uniqueFiles);
-      }
-      uniqueFiles.forEach(file => this.addFileToMaps(file));
-    },
-
-    addFileToMaps(file) {
-      this._filesById.set(file.id, file);
-      this._filesByName.set(file.name, file);
-    },
-
-    removeFile(file) {
-      const index = this._files.findIndex(f => f.id === file.id);
-      if (index !== -1) {
-        this._files.splice(index, 1);
-        this.removeFileFromMaps(file);
-      }
-    },
-
-    removeFileFromMaps(file) {
-      this._filesById.delete(file.id);
-      this._filesByName.delete(file.name);
-    },
-
-    getFileByName(name) {
-      return this._filesByName.get(name);
-    },
-
-    getFileById(id) {
-      return this._filesById.get(id);
-    }
-  },
-  moveToFolder: {
-    isOpen: false,
-    isLoading: false,
-    isError: false,
-    selectedIds: [],
-    selectedFiles: [],
+  moveToFolder: createModalState({
     destinationFolderId: null,
     hoveredFolder: null,
     isDropdownOpen: false,
     searchTerm: '',
     selectedFolderName: '',
-    callback: null,
-    open(ids, callback) {
-      if (!Array.isArray(ids)) {
-        ids = [ids];
-      }
-      console.debug('Opening move to folder modal:', ids);
-      this.selectedIds = ids;
-      this.selectedFiles = Alpine.store('fileStore').files.filter(file => ids.includes(file.id));
-      console.debug('Selected files:', this.selectedFiles);
-      this.isOpen = true;
-      this.callback = callback;
-    },
     close(dontCallback) {
       this.selectedIds = [];
       this.selectedFiles = [];
@@ -137,7 +44,7 @@ Alpine.store('fileStore', {
     toggleDropdown() {
       this.isDropdownOpen = !this.isDropdownOpen;
     },
-  },
+  }),
   moveToFolderConfirm() {
     this.moveToFolder.isLoading = true;
     const destinationFolderName = Alpine.store('menuStore').folders.find(folder => folder.id === this.moveToFolder.destinationFolderId).name;
@@ -149,11 +56,11 @@ Alpine.store('fileStore', {
     return this.moveItemsToFolder(this.moveToFolder.selectedIds, this.moveToFolder.destinationFolderId)
       .then(() => {
         this.moveToFolder.close();
-        this.isError = false;
+        this.moveToFolder.isError = false;
       })
       .catch(error => {
         console.error('Error moving files:', error);
-        this.isError = true;
+        this.moveToFolder.isError = true;
       })
       .finally(() => {
         this.moveToFolder.isLoading = false;
@@ -192,47 +99,20 @@ Alpine.store('fileStore', {
         console.error('Error moving items to folder:', error);
       });
   },
-  shareMedia: {
-    isOpen: false,
-    isLoading: false,
-    isError: false,
-    selectedIds: [],
-    selectedFiles: [],
-    callback: null,
-    open(ids, callback) {
-      if (!Array.isArray(ids)) {
-        ids = [ids];
-      }
-      console.debug('Opening sharing modal:', ids);
-      this.selectedIds = ids;
-      this.selectedFiles = Alpine.store('fileStore').files.filter(file => ids.includes(file.id));
-      console.debug('Selected files:', this.selectedFiles);
-      this.isOpen = true;
-      this.callback = callback;
-    },
-    close(dontCallback) {
-      this.selectedIds = [];
-      this.selectedFiles = [];
-      this.isError = false;
-      this.isOpen = false;
-      this.isLoading = false;
-      if (this.callback && !dontCallback) {
-        this.callback();
-      }
-    },
+  shareMedia: createModalState({
     getFlag() {
       return this.selectedFiles.length > 0 && this.selectedFiles[0].flag === 1;
     },
-  },
+  }),
   shareMediaCreatorConfirm(shareFlag) {
     this.shareMedia.isLoading = true;
     this.shareItemsCreatorPage(shareFlag)
       .then(() => {
-        this.isError = false;
+        this.shareMedia.isError = false;
       })
       .catch(error => {
         console.error('Error sharing files:', error);
-        this.isError = true;
+        this.shareMedia.isError = true;
       })
       .finally(() => {
         this.shareMedia.isLoading = false;
@@ -266,46 +146,18 @@ Alpine.store('fileStore', {
         console.error('Error sharing media on Creators page:', error);
       });
   },
-  mediaProperties: createMediaProperties({ apiUrl, getApiFetcher }),
-  deleteConfirmation: {
-    isOpen: false,
-    isLoading: false,
-    isError: false,
-    selectedIds: [],
-    selectedFiles: [],
-    callback: null,
-    open(ids, callback) {
-      if (!Array.isArray(ids)) {
-        ids = [ids];
-      }
-      console.debug('Opening delete confirmation:', ids);
-      this.selectedIds = ids;
-      this.selectedFiles = Alpine.store('fileStore').files.filter(file => ids.includes(file.id));
-      console.debug('Selected files:', this.selectedFiles);
-      this.isOpen = true;
-      this.callback = callback;
-    },
-    close(dontCallback) {
-      this.selectedIds = [];
-      this.selectedFiles = [];
-      this.isError = false;
-      this.isOpen = false;
-      this.isLoading = false;
-      if (this.callback && !dontCallback) {
-        this.callback();
-      }
-    }
-  },
+  mediaProperties: createMediaProperties(),
+  deleteConfirmation: createModalState(),
   confirmDelete() {
     this.deleteConfirmation.isLoading = true;
     this.deleteItem(this.deleteConfirmation.selectedIds)
       .then(() => {
         this.deleteConfirmation.close();
-        this.isError = false;
+        this.deleteConfirmation.isError = false;
       })
       .catch(error => {
         console.error('Error deleting files:', error);
-        this.isError = true;
+        this.deleteConfirmation.isError = true;
       })
       .finally(() => {
         this.deleteConfirmation.isLoading = false;
@@ -683,26 +535,33 @@ Alpine.store('fileStore', {
       }
       return url.toString();
     },
+    escapeHtml(str) {
+      if (!str) return '';
+      return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+    },
     generateImgCode(file) {
-      const embedCode = `<img src="${file.url}" alt="${file?.title || file?.name}" width="${file?.width}" height="${file?.height}" loading="lazy">`;
+      const alt = this.escapeHtml(file?.title || file?.name);
+      const embedCode = `<img src="${file.url}" alt="${alt}" width="${file?.width}" height="${file?.height}" loading="lazy">`;
       return embedCode;
     },
     generateResponsiveImgCode(file) {
-      const embedCode = `<img src="${file.url}" srcset="${file.srcset}" sizes="${file.sizes}" alt="${file?.title || file?.name}" width="${file?.width}" height="${file?.height}" loading="lazy">`;
+      const alt = this.escapeHtml(file?.title || file?.name);
+      const embedCode = `<img src="${file.url}" srcset="${file.srcset}" sizes="${file.sizes}" alt="${alt}" width="${file?.width}" height="${file?.height}" loading="lazy">`;
       return embedCode;
     },
     copyImgCode(file) {
       const embedCode = this.generateImgCode(file);
-      copyToClipboard(embedCode);
+      copyTextToClipboard(embedCode);
     },
     generateIframeCode(file) {
       const iframeUrl = this.getEmbedURL(file);
-      const iframeCode = `<iframe src="${iframeUrl}" style="border: 0; width: ${file?.width || '100%'}; height: ${file?.height || '100%'}; min-height: 560px; display: block; aspect-ratio: ${file?.width || '1'}/${file?.height || '1'}" allow="fullscreen; encrypted-media; picture-in-picture" loading="lazy" title="${file?.title || file?.name}"></iframe>`;
+      const title = this.escapeHtml(file?.title || file?.name);
+      const iframeCode = `<iframe src="${iframeUrl}" style="border: 0; width: ${file?.width || '100%'}; height: ${file?.height || '100%'}; min-height: 560px; display: block; aspect-ratio: ${file?.width || '1'}/${file?.height || '1'}" allow="fullscreen; encrypted-media; picture-in-picture" loading="lazy" title="${title}"></iframe>`;
       return iframeCode;
     },
     copyIframeCode(file) {
       const iframeCode = this.generateIframeCode(file);
-      copyToClipboard(iframeCode);
+      copyTextToClipboard(iframeCode);
     },
   },
 
@@ -711,34 +570,6 @@ Alpine.store('fileStore', {
     isError: false,
     errorMessage: '',
     statsCache: {},
-
-    intervalToMilliseconds(interval) {
-      return intervalToMilliseconds(interval);
-    },
-
-    toStartOfInterval(time, interval) {
-      return toStartOfInterval(time, interval);
-    },
-
-    parseData(jsonData, interval) {
-      return parseData(jsonData, interval);
-    },
-
-    generateTimeLabels(startDate, endDate, interval) {
-      return generateTimeLabels(startDate, endDate, interval);
-    },
-
-    mergeDataWithLabels(labels, data, metric) {
-      return mergeDataWithLabels(labels, data, metric);
-    },
-
-    prepareDatasets(labels, data, metrics) {
-      return prepareDatasets(labels, data, metrics, abbreviateNumber);
-    },
-
-    getColor(index, alpha = 1) {
-      return getColor(index, alpha);
-    },
 
     async getStats(mediaId, period = 'day', interval = '1h', groupBy = 'time') {
       const stats = this.statsCache[mediaId];
@@ -766,7 +597,7 @@ Alpine.store('fileStore', {
         });
         const data = response.data;
         const key = `${period}-${interval}-${groupBy}`;
-        const intervalMs = this.intervalToMilliseconds(interval);
+        const intervalMs = intervalToMilliseconds(interval);
         const expires = Date.now() + intervalMs;
 
         if (!this.statsCache[mediaId]) {
@@ -789,10 +620,10 @@ Alpine.store('fileStore', {
         this.isError = false;
         const rawData = await this.getStats(mediaId, period, interval, groupBy);
 
-        const { data, metrics } = this.parseData(rawData, interval);
+        const { data, metrics } = parseData(rawData, interval);
 
         let endDate = new Date();
-        endDate = this.toStartOfInterval(endDate, interval);
+        endDate = toStartOfInterval(endDate, interval);
 
         let startDate = new Date(endDate);
         switch (period) {
@@ -823,10 +654,10 @@ Alpine.store('fileStore', {
           default:
             startDate.setDate(startDate.getDate() - 1);
         }
-        startDate = this.toStartOfInterval(startDate, interval);
+        startDate = toStartOfInterval(startDate, interval);
 
-        const labels = this.generateTimeLabels(startDate, endDate, interval);
-        const datasets = this.prepareDatasets(labels, data, metrics);
+        const labels = generateTimeLabels(startDate, endDate, interval);
+        const datasets = prepareDatasets(labels, data, metrics, abbreviateNumber);
 
         const chartData = {
           labels: labels.map(label => label.getTime()),

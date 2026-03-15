@@ -1,8 +1,6 @@
 import Alpine from 'alpinejs';
 import { nip19 } from 'nostr-tools';
-
-const apiUrl = `https://${window.location.hostname}/api/v2/account/dashboard`;
-const getApiFetcher = (...args) => window.getApiFetcher(...args);
+import { apiUrl, getApiFetcher } from './api-constants';
 
 Alpine.store('nostrStore', {
   share: {
@@ -93,7 +91,12 @@ Alpine.store('nostrStore', {
       }
     },
     async isNostrExtensionEnabled() {
-      return (await window?.nostr?.getPublicKey()) !== null;
+      if (!window.nostr) return false;
+      try {
+        return (await window.nostr.getPublicKey()) !== null;
+      } catch {
+        return false;
+      }
     },
     async send(files = [], callback = null) {
       const nostrStore = Alpine.store('nostrStore');
@@ -207,6 +210,12 @@ Alpine.store('nostrStore', {
         tags: tags,
         content: this.note,
       };
+      if (!window.nostr) {
+        this.isError = true;
+        this.isErrorMessages.push('No Nostr extension found. Please install a Nostr signing extension.');
+        this.isLoading = false;
+        return;
+      }
       this.signedEvent = await window.nostr.signEvent(event);
       console.debug('Signed event:', this.signedEvent);
       console.debug('Event ID from signedEvent:', this.signedEvent?.id);
@@ -282,6 +291,13 @@ Alpine.store('nostrStore', {
       tags: tags,
       content: 'User requested deletion of these posts',
     };
+    if (!window.nostr) {
+      const nostrStore = Alpine.store('nostrStore');
+      nostrStore.share.isError = true;
+      nostrStore.share.isErrorMessages.push('No Nostr extension found. Please install a Nostr signing extension.');
+      nostrStore.share.isLoading = false;
+      return;
+    }
     const signedEvent = await window.nostr.signEvent(event);
     const nostrStore = Alpine.store('nostrStore');
     return nostrStore.publishSignedEvent(signedEvent)
@@ -299,6 +315,10 @@ Alpine.store('nostrStore', {
       });
   },
   async nostrGetPublicKey() {
+    if (!window.nostr) {
+      console.error('No Nostr extension found.');
+      return null;
+    }
     try {
       const publicKey = await window.nostr.getPublicKey();
       console.debug('Nostr public key:', publicKey);

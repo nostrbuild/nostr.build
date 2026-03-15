@@ -1,0 +1,81 @@
+export const mimeTypesImages = {
+  'image/jpeg': 'jpg',
+  'image/png': 'png',
+  'image/apng': 'apng',
+  'image/gif': 'gif',
+  'image/webp': 'webp',
+  'image/bmp': 'bmp',
+  'image/tiff': 'tiff',
+  'image/heic': 'heic',
+  'image/heif': 'heif',
+  'image/avif': 'avif',
+  'image/jp2': 'jp2',
+  'image/jpx': 'jpx',
+  'image/jpm': 'jpm',
+  'image/jxr': 'jxr',
+  'image/pipeg': 'jfif',
+  'image/dng': 'dng',
+  'image/*': 'jpg'
+};
+
+export const mimeTypesAudio = {
+  'audio/mpeg': 'mp3',
+  'audio/ogg': 'ogg',
+  'audio/wav': 'wav',
+  'audio/aac': 'aac',
+  'audio/webm': 'weba',
+  'audio/flac': 'flac',
+  'audio/x-aiff': 'aif',
+  'audio/x-ms-wma': 'wma',
+  'audio/x-m4a': 'm4a',
+  'audio/x-m4b': 'm4b',
+  'audio/mp4': 'mp4a',
+  'audio/mpegurl': 'm3u',
+  'audio/x-mpegurl': 'm3u',
+  'audio/x-ms-wax': 'wax',
+  'audio/x-realaudio': 'ra',
+  'audio/x-pn-realaudio': 'ram',
+  'audio/x-pn-realaudio-plugin': 'rmp',
+  'audio/x-wav': 'wav',
+};
+
+export const mimeTypesVideo = {
+  'video/mp4': 'mp4',
+  'video/webm': 'webm',
+  'video/ogg': 'ogv',
+  'video/x-msvideo': 'avi',
+  'video/x-ms-wmv': 'wmv',
+  'video/quicktime': 'mov',
+  'video/mpeg': 'mpeg',
+  'video/3gpp': '3gp',
+  'video/3gpp2': '3g2',
+  'video/x-flv': 'flv',
+  'video/x-m4v': 'm4v',
+  'video/x-matroska': 'mkv',
+  'video/x-mpeg2': 'mp2v',
+  'video/x-m4p': 'm4p',
+  'video/mp2t': 'm2ts',
+  'video/MP2T': 'ts',
+  'video/mp2p': 'mp2',
+  'video/x-mxf': 'mxf',
+  'video/x-ms-asf': 'asf',
+  'video/x-ms-wm': 'asf',
+  'video/x-pn-realvideo': 'rm',
+  'video/x-ms-vob': 'vob',
+  'video/x-f4v': 'f4v',
+  'video/x-fli': 'fli',
+  'video/x-m2v': 'm2v',
+  'video/x-ms-wmx': 'wmx',
+  'video/x-ms-wvx': 'wvx',
+  'video/x-sgi-movie': 'movie',
+};
+
+export const mimeTypesAddonDocs = {
+  'application/pdf': 'pdf',
+  'image/svg+xml': 'svg',
+};
+
+export const mimeTypesAddonExtra = {
+  'application/zip': 'zip',
+  'application/x-tar': 'tar',
+};

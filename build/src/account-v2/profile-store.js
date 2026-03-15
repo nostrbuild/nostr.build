@@ -1,7 +1,5 @@
 import Alpine from 'alpinejs';
-
-const apiUrl = `https://${window.location.hostname}/api/v2/account/dashboard`;
-const getApiFetcher = (...args) => window.getApiFetcher(...args);
+import { apiUrl, getApiFetcher } from './api-constants';
 
 Alpine.store('profileStore', {
   profileDataInitialized: false,
@@ -172,46 +170,7 @@ Alpine.store('profileStore', {
         !this.accountExpired && !this.storageOverLimit;
     },
     allowed(permission) {
-      switch (permission) {
-        case 'isAdmin':
-          return this.isAdmin;
-        case 'isModerator':
-          return this.isModerator;
-        case 'isAIStudioEligible':
-          return this.isAIStudioEligible;
-        case 'isAIDreamShaperEligible':
-          return this.isAIDreamShaperEligible;
-        case 'isAISDXLLightningEligible':
-          return this.isAISDXLLightningEligible;
-        case 'isFluxSchnellEligible':
-          return this.isFluxSchnellEligible;
-        case 'isSDCoreEligible':
-          return this.isSDCoreEligible;
-        case 'isAIToolsEligible':
-          return this.isAIToolsEligible;
-        case 'isAISDiffusionEligible':
-          return this.isAISDiffusionEligible;
-        case 'isCreatorsPageEligible':
-          return this.isCreatorsPageEligible;
-        case 'isNostrShareEligible':
-          return this.isNostrShareEligible;
-        case 'isUploadEligible':
-          return this.isUploadEligible;
-        case 'isShareEligible':
-          return this.isShareEligible;
-        case 'isSearchEligible':
-          return this.isSearchEligible;
-        case 'isFreeGalleryEligible':
-          return this.isFreeGalleryEligible;
-        case 'isReferralEligible':
-          return this.isReferralEligible;
-        case 'isAnalyticsEligible':
-          return this.isAnalyticsEligible;
-        case 'isLargeUploadEligible':
-          return this.isLargeUploadEligible;
-        default:
-          return false;
-      }
+      return this[permission] ?? false;
     }
   },
   dialogOpen: false,
@@ -386,7 +345,11 @@ Alpine.store('profileStore', {
     this.profileInfo.allowNostrLogin = data.allowNostrLogin === 1;
     this.profileInfo.npubVerified = data.npubVerified === 1;
     this.profileInfo.accountLevel = data.accountLevel;
-    this.profileInfo.accountFlags = JSON.parse(data.accountFlags);
+    try {
+      this.profileInfo.accountFlags = JSON.parse(data.accountFlags);
+    } catch {
+      this.profileInfo.accountFlags = {};
+    }
     this.profileInfo.remainingDays = data.remainingDays;
     this.profileInfo.subscriptionExpired = data.remainingDays <= 0;
     this.profileInfo.storageUsed = data.storageUsed;
@@ -419,19 +382,24 @@ Alpine.store('profileStore', {
 
       if (data.error) {
         console.error('Error activating nostr.land Plus:', data);
-        alert('Error: ' + data.error);
+        this.dialogError = true;
+        this.dialogErrorMessages.push(data.error);
+        this.hideMessages();
       } else {
         console.log('nostr.land Plus activated successfully:', data);
         if (data.accountData) {
           this.updateProfileInfoFromData(data.accountData);
         }
         this.refreshProfileInfo();
-        alert('nostr.land Plus activated successfully! 🎉');
+        this.dialogSuccessMessages.push('nostr.land Plus activated successfully!');
+        this.hideMessages();
         this.closeNlActivationModal();
       }
     } catch (error) {
       console.error('Error activating nostr.land Plus:', error);
-      alert('Failed to activate nostr.land Plus. Please try again.');
+      this.dialogError = true;
+      this.dialogErrorMessages.push('Failed to activate nostr.land Plus. Please try again.');
+      this.hideMessages();
     } finally {
       this.nlActivationLoading = false;
     }

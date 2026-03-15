@@ -123,10 +123,10 @@
 		})();
 	</script>
 
-	<script defer src="/scripts/dist/account-v2.js?v=b8249b04df98be6686aeb7070b1603d5"></script>
+	<script defer src="/scripts/dist/account-v2.js?v=5bcf692dda8a531c51988e0e0171b116"></script>
 	<link href="/scripts/dist/account-v2.css?v=27ba93e570a70d775737614d6faf6846" rel="stylesheet">
 
-	<link href="/styles/twbuild.css?v=15bc66df5f07001110224f91a4577136" rel="stylesheet">
+	<link href="/styles/twbuild.css?v=4eacb396b321c0b3c0ce55c18b3314a4" rel="stylesheet">
 
 	<!-- Pre-connect and DNS prefetch -->
 	<link rel="preconnect" href="https://i.nostr.build" crossorigin>
@@ -1600,38 +1600,12 @@ closeUploadDialogs() {
 															class="group flex gap-x-3 rounded-md p-2 text-sm leading-6 font-semibold"
 															@click="menuStore.setActiveMenu(item.name); menuStore.mobileMenuOpen = false">
 															<svg aria-hidden="true" class="size-6 shrink-0" fill="none" viewBox="0 0 24 24"
-																stroke-width="1.5" stroke="currentColor" aria-hidden="true" x-html="item.icon"></svg>
+																stroke-width="1.5" stroke="currentColor" x-html="item.icon"></svg>
 															<span x-text="item.name"></span>
 														</a>
 													</li>
 												</template>
 											</ul>
-											<!-- AI Studio submenu -->
-											<!--
-		<div x-data="{ AISubMenuExpand: menuStore.menuItemsAI.length === 1, isAI: menuStore.menuItemsAI.find(item=>item.name === menuStore.activeMenu) }" x-init="fileStore.fullWidth = !isAI" class="-mx-2 space-y-1 mt-1">
-			<button @click.throttle="AISubMenuExpand = !AISubMenuExpand" type="button" class="text-nbpurple-300 hover:text-nbpurple-50 hover:bg-nbpurple-800 flex items-center w-full text-left rounded-md p-2 gap-x-3 text-sm leading-6 font-semibold" aria-controls="sub-menu-ai" aria-expanded="AISubMenuExpand">
-				<svg class="h-6 w-6 shrink-0 text-nbpurple-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-					<path d="M12 8V4H8"/>
-					<rect width="16" height="12" x="4" y="8" rx="2"/>
-					<path d="M2 14h2"/><path d="M20 14h2"/><path d="M15 13v2"/><path d="M9 13v2"/>
-				</svg>
-				AI Studio
-				<svg :class="AISubMenuExpand ? 'rotate-90 text-nbpurple-500' : 'text-nbpurple-400'" class="ml-auto h-5 w-5 shrink-0" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-					<path fill-rule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clip-rule="evenodd" />
-				</svg>
-			</button>
-			<ul x-cloak x-show="AISubMenuExpand || isAI" class="mt-1 px-2" id="sub-menu-ai">
-				<template x-for="item in menuStore.menuItemsAI" :key="item.name">
-					<li>
-						<a :href="item.route" :class="{ 'bg-nbpurple-800 text-nbpurple-50': menuStore.activeMenu === item.name, 'text-nbpurple-300 hover:text-nbpurple-50 hover:bg-nbpurple-800': menuStore.activeMenu !== item.name }" class="group flex gap-x-3 rounded-md p-2 text-sm leading-6 font-semibold" @click="menuStore.setActiveMenu(item.name); menuStore.mobileMenuOpen = false">
-							<svg aria-hidden="true" class="size-6 shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true" x-html="item.icon"></svg>
-							<span x-text="item.name"></span>
-						</a>
-					</li>
-				</template>
-			</ul>
-		</div>
--->
 											<ul x-data="{ isAI: menuStore.menuItemsAI.find(item=>item.name === menuStore.activeMenu) }"
 												x-init="fileStore.fullWidth = !isAI" role="list" class="-mx-2 space-y-1">
 												<template x-for="item in menuStore.menuItemsAI" :key="item.name">
@@ -1641,7 +1615,7 @@ closeUploadDialogs() {
 															class="group flex gap-x-3 rounded-md p-2 text-sm leading-6 font-semibold"
 															@click="menuStore.setActiveMenu(item.name); menuStore.mobileMenuOpen = false">
 															<svg aria-hidden="true" class="size-6 shrink-0" fill="none" viewBox="0 0 24 24"
-																stroke-width="1.5" stroke="currentColor" aria-hidden="true" x-html="item.icon"></svg>
+																stroke-width="1.5" stroke="currentColor" x-html="item.icon"></svg>
 															<span x-text="item.name"></span>
 															<span
 																class="inline-flex items-center rounded-full bg-nbpurple-200 px-1.5 py-0.5 text-xs font-medium text-nbpurple-800 ring-1 ring-inset ring-nbpurple-700/10">New</span>
@@ -1657,7 +1631,7 @@ closeUploadDialogs() {
 															:class="{ 'bg-nbpurple-800 text-nbpurple-50': menuStore.activeMenu === item.name, 'text-nbpurple-300 hover:text-nbpurple-50 hover:bg-nbpurple-800': menuStore.activeMenu !== item.name }"
 															class="group flex gap-x-3 rounded-md p-2 text-sm leading-6 font-semibold" target="_blank">
 															<svg aria-hidden="true" class="size-6 shrink-0" fill="none" viewBox="0 0 24 24"
-																stroke-width="1.5" stroke="currentColor" aria-hidden="true" x-html="item.icon"></svg>
+																stroke-width="1.5" stroke="currentColor" x-html="item.icon"></svg>
 															<span x-text="item.name"></span>
 															<span
 																class="inline-flex items-center rounded-full bg-nbpurple-200 px-1.5 py-0.5 text-xs font-medium text-nbpurple-800 ring-1 ring-inset ring-nbpurple-700/10">Renewed</span>
@@ -1953,7 +1927,7 @@ closeUploadDialogs() {
 								</svg>
 								<input id="search-field"
 									class="block h-full w-full border-0 bg-transparent py-0 pl-8 pr-0 text-nbpurple-50 focus:ring-0 sm:text-sm placeholder:text-nbpurple-300"
-									placeholder="Search..." type="search" name="search" disabled>
+									placeholder="Search coming soon" type="search" name="search" disabled title="Search functionality coming soon">
 							</div>
 						</form>
 					</div>
@@ -1975,43 +1949,8 @@ closeUploadDialogs() {
 								<span class="sr-only">Toggle theme</span>
 							</button>
 						</div>
-						<!-- Credits Menu Button // TBD
-						<button type="button"
-							class="inline-flex items-center gap-x-1.5 rounded-md px-2.5 py-1.5 text-nbpurple-50 hover:text-nbpurple-500 bg-darknborange-600 hover:bg-darknborange-400 text-xs font-semibold"
-							@click="profileStore">
-							<svg aria-hidden="true" class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-								stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-								<path d="M18 12h2" />
-								<path d="M18 16h2" />
-								<path d="M18 20h2" />
-								<path d="M18 4h2" />
-								<path d="M18 8h2" />
-								<path d="M4 12h2" />
-								<path d="M4 16h2" />
-								<path d="M4 20h2" />
-								<path d="M4 4h2" />
-								<path d="M4 8h2" />
-								<path
-									d="M8 2a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2h-1.5c-.276 0-.494.227-.562.495a2 2 0 0 1-3.876 0C9.994 2.227 9.776 2 9.5 2z" />
-							</svg>
-							<span x-text="'Credits'"></span>
-						</button>
-					-->
 
 
-						<!--
-					<button type="button" class="p-2.5 text-nbpurple-50">
-						<span class="sr-only">Notifications</span>
-						<svg :class="{ 'animate-[wiggle_1s_ease-in-out_infinite]': false }" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-							<path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 0 0 5.454-1.31A8.967 8.967 0 0 1 18 9.75V9A6 6 0 0 0 6 9v.75a8.967 8.967 0 0 1-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 0 1-5.714 0m5.714 0a3 3 0 1 1-5.714 0" />
-						</svg>
--->
-						<!--
-						<span x-cloak class="animate-ping absolute top-2 right-2.5 block h-1 w-1 rounded-full ring-2 ring-nbpurple-400 bg-nbpurple-600"></span>
-						-->
-						<!--
-					</button>
--->
 						<!-- Refresh folder content button -->
 						<button :disabled="loading"
 							@click="loading = true; fileStore.refreshFoldersAfterFetch = true; fileStore.fetchFiles(menuStore.activeFolder, true).finally(() => setTimeout(() => { loading = false}, 1000))"
@@ -2051,11 +1990,7 @@ closeUploadDialogs() {
 								<!-- Form fields -->
 								<div
 									class="overflow-hidden rounded-lg border border-nbpurple-300 shadow-sm focus-within:border-nbpurple-500 focus-within:ring-1 focus-within:ring-nbpurple-500">
-									<!--
-								<label for="title" class="sr-only">Title</label>
-								<input x-model="title" type="text" name="title" id="title" class="block w-full border-0 pt-2.5 text-sm text-nbpurple-800 font-medium placeholder:text-nbpurple-400 focus:ring-0 bg-nbpurple-50" placeholder="Title (name your creation)">
-				-->
-									<label for="prompt" class="sr-only">Prompt</label>
+										<label for="prompt" class="sr-only">Prompt</label>
 									<textarea x-model="prompt" rows="4" name="prompt" id="prompt"
 										class="block w-full resize-none border-0 py-0 pt-2 text-nbpurple-900 placeholder:text-nbpurple-400 focus:ring-0 sm:text-sm sm:leading-6 bg-nbpurple-100"
 										placeholder="(Prompt) ex. Purple ostrich …"></textarea>

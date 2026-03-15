@@ -5,9 +5,9 @@ import Webcam from '@uppy/webcam';
 import DropTarget from '@uppy/drop-target';
 import Alpine from 'alpinejs';
 import { createUppyDialogState } from './uppy-dialog-state';
+import { mimeTypesImages, mimeTypesAudio, mimeTypesVideo, mimeTypesAddonDocs, mimeTypesAddonExtra } from './mime-types';
+import { attachCommonUppyHandlers, handleFileAdded, handleUploadSuccess } from './uppy-shared-handlers';
 
-const apiUrl = `https://${window.location.hostname}/api/v2/account/dashboard`;
-const getApiFetcher = (...args) => window.getApiFetcher(...args);
 const imageVariantsPrecache = (...args) => window.imageVariantsPrecache(...args);
 const formatBytes = (...args) => window.formatBytes(...args);
 
@@ -16,96 +16,14 @@ Alpine.store('uppyStore', {
   mainDialog: createUppyDialogState(),
   largeFileThresholdBytes: 40 * 1024 * 1024,
   getAllowedFileTypes(accountLevel = 0) {
-    const mimeTypesImages = {
-      'image/jpeg': 'jpg',
-      'image/png': 'png',
-      'image/apng': 'apng',
-      'image/gif': 'gif',
-      'image/webp': 'webp',
-      'image/bmp': 'bmp',
-      'image/tiff': 'tiff',
-      'image/heic': 'heic',
-      'image/heif': 'heif',
-      'image/avif': 'avif',
-      'image/jp2': 'jp2',
-      'image/jpx': 'jpx',
-      'image/jpm': 'jpm',
-      'image/jxr': 'jxr',
-      'image/pipeg': 'jfif',
-      'image/dng': 'dng',
-      'image/*': 'jpg'
-    };
-
-    const mimeTypesAudio = {
-      'audio/mpeg': 'mp3',
-      'audio/ogg': 'ogg',
-      'audio/wav': 'wav',
-      'audio/aac': 'aac',
-      'audio/webm': 'weba',
-      'audio/flac': 'flac',
-      'audio/x-aiff': 'aif',
-      'audio/x-ms-wma': 'wma',
-      'audio/x-m4a': 'm4a',
-      'audio/x-m4b': 'm4b',
-      'audio/mp4': 'mp4a',
-      'audio/mpegurl': 'm3u',
-      'audio/x-mpegurl': 'm3u',
-      'audio/x-ms-wax': 'wax',
-      'audio/x-realaudio': 'ra',
-      'audio/x-pn-realaudio': 'ram',
-      'audio/x-pn-realaudio-plugin': 'rmp',
-      'audio/x-wav': 'wav',
-    };
-
-    const mimeTypesVideo = {
-      'video/mp4': 'mp4',
-      'video/webm': 'webm',
-      'video/ogg': 'ogv',
-      'video/x-msvideo': 'avi',
-      'video/x-ms-wmv': 'wmv',
-      'video/quicktime': 'mov',
-      'video/mpeg': 'mpeg',
-      'video/3gpp': '3gp',
-      'video/3gpp2': '3g2',
-      'video/x-flv': 'flv',
-      'video/x-m4v': 'm4v',
-      'video/x-matroska': 'mkv',
-      'video/x-mpeg2': 'mp2v',
-      'video/x-m4p': 'm4p',
-      'video/mp2t': 'm2ts',
-      'video/MP2T': 'ts',
-      'video/mp2p': 'mp2',
-      'video/x-mxf': 'mxf',
-      'video/x-ms-asf': 'asf',
-      'video/x-ms-wm': 'asf',
-      'video/x-pn-realvideo': 'rm',
-      'video/x-ms-vob': 'vob',
-      'video/x-f4v': 'f4v',
-      'video/x-fli': 'fli',
-      'video/x-m2v': 'm2v',
-      'video/x-ms-wmx': 'wmx',
-      'video/x-ms-wvx': 'wvx',
-      'video/x-sgi-movie': 'movie',
-    };
-
-    const mimeTypesAddonDocs = {
-      'application/pdf': 'pdf',
-      'image/svg+xml': 'svg',
-    };
-
-    const mimeTypesAddonExtra = {
-      'application/zip': 'zip',
-      'application/x-tar': 'tar',
-    };
-
     const extsAddonDocs = Object.values(mimeTypesAddonDocs).map(ext => `.${ext}`);
     const extsAddonExtra = Object.values(mimeTypesAddonExtra).map(ext => `.${ext}`);
 
-    const mimesImages = Object.keys(mimeTypesImages).map(mime => mime);
-    const mimesAudio = Object.keys(mimeTypesAudio).map(mime => mime);
-    const mimesVideo = Object.keys(mimeTypesVideo).map(mime => mime);
-    const mimesAddonDocs = Object.keys(mimeTypesAddonDocs).map(mime => mime);
-    const mimesAddonExtra = Object.keys(mimeTypesAddonExtra).map(mime => mime);
+    const mimesImages = Object.keys(mimeTypesImages);
+    const mimesAudio = Object.keys(mimeTypesAudio);
+    const mimesVideo = Object.keys(mimeTypesVideo);
+    const mimesAddonDocs = Object.keys(mimeTypesAddonDocs);
+    const mimesAddonExtra = Object.keys(mimeTypesAddonExtra);
 
     switch (accountLevel) {
       case 1:
@@ -175,8 +93,6 @@ Alpine.store('uppyStore', {
   instantiateUppy(el, dropTarget, onDropCallback, onDragOverCallback, onDragLeaveCallback) {
     this.mainDialog.dialogEl = el;
     console.debug('Instantiating Uppy...');
-    const menuStore = Alpine.store('menuStore');
-    const fileStore = Alpine.store('fileStore');
     const profileStore = Alpine.store('profileStore');
     const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
     const dropTargetEl = typeof dropTarget === 'string' ? document.querySelector(dropTarget) : dropTarget;
@@ -320,44 +236,26 @@ Alpine.store('uppyStore', {
 
     window.__nbUppy = uppyInstance
       .on('upload-success', (file, response) => {
-        console.debug('Upload result:', response);
-        file.progress.uploadComplete = true;
-
-        const fd = response?.body?.fileData;
-
-        if (!fd || !fd.mime) {
-          console.error('Invalid file data received:', fd);
-          window.__nbUppy.removeFile(file.id);
-          return;
-        }
-
-        console.debug('File uploaded:', fd);
-        const folderName = JSON.parse(file.meta.folderName || '""');
-        const fileFolderName = folderName === '' ? menuStore.folders?.find(folder => folder.id === 0)?.name || '' : folderName;
-        menuStore.updateFolderStatsFromFile(fd, fileFolderName, true);
-        if (fd.mime.startsWith('image/')) {
-          const urls = [...Object.values(fd.responsive), fd.thumb, fd.url];
-          imageVariantsPrecache(urls)
-            .then(() => {
-              console.debug('Image variants pre-caching completed.');
-            })
-            .catch((error) => {
-              console.error('Error during image variants pre-caching:', error);
-            });
-        }
-        if (menuStore.activeFolder === fileFolderName) {
-          this.mainDialog.removeFile(file.id);
-          fileStore.files = fileStore.files.filter(f => f.id !== file.id);
-          if (!fileStore.files.some(f => f.id === fd.id)) {
-            fileStore.injectFile(fd);
-          }
-        } else {
-          this.mainDialog.removeFile(file.id);
-        }
-
-        setTimeout(() => {
-          window.__nbUppy.removeFile(file.id);
-        }, 1000);
+        handleUploadSuccess(file, response, {
+          globalName: '__nbUppy',
+          store: this,
+          validateFileData: (resp) => {
+            const fd = resp?.body?.fileData;
+            return (fd && fd.mime) ? fd : null;
+          },
+          onSuccess: (fd) => {
+            if (fd.mime.startsWith('image/')) {
+              const urls = [...Object.values(fd.responsive), fd.thumb, fd.url];
+              imageVariantsPrecache(urls)
+                .then(() => {
+                  console.debug('Image variants pre-caching completed.');
+                })
+                .catch((error) => {
+                  console.error('Error during image variants pre-caching:', error);
+                });
+            }
+          },
+        });
       })
       .on('file-added', (file) => {
         if (this.routeFileToLargeUploader(file, profileStore)) {
@@ -368,172 +266,19 @@ Alpine.store('uppyStore', {
           return;
         }
 
-        const activeFolder = menuStore.activeFolder;
-        const activeFolderId = menuStore.folders.find(folder => folder.name === activeFolder)?.id || 0;
-        const defaultFolder = activeFolderId === 0 ? '' : activeFolder;
-        const noTransform = menuStore.noTransform ?? false;
-        console.debug('Active folder (Uppy):', activeFolder, activeFolderId, defaultFolder);
-        const path = file.data.relativePath ?? file.data.webkitRelativePath;
-        let folderHierarchy = [defaultFolder];
-        let folderName = defaultFolder;
-
-        if (path && activeFolderId === 0) {
-          const folderPath = path.replace(/\\/g, '/');
-          const folderPathParts = folderPath.split('/').filter(part => part !== '');
-          folderHierarchy = folderPathParts.length > 1 ? folderPathParts.slice(0, -1) : [defaultFolder];
-          folderName = folderHierarchy.length > 0 ? folderHierarchy[folderHierarchy.length - 1] : defaultFolder;
-          this.mainDialog.uploadFolder = folderName;
-          const folderExists = menuStore.folders.some(folder => folder.name === folderName);
-          if (!folderExists) {
-            const folder = {
-              id: folderName,
-              name: folderName,
-              icon: folderName.substring(0, 1).toUpperCase(),
-              route: '#',
-              allowDelete: false
-            };
-            menuStore.folders.push(folder);
-            menuStore.folders = menuStore.folders.sort((a, b) => a.name.localeCompare(b.name));
-          }
-        } else {
-          this.mainDialog.uploadFolder = defaultFolder;
-        }
-        console.debug('Folder name', folderName);
-        console.debug('Folder hierarchy', folderHierarchy);
-        window.__nbUppy.setFileMeta(file.id, {
-          folderName: JSON.stringify(folderName),
-          folderHierarchy: JSON.stringify(folderHierarchy),
-          noTransform: noTransform,
+        handleFileAdded(file, {
+          globalName: '__nbUppy',
+          store: this,
+          mimeLabel: 'uppy/upload',
         });
-        console.debug('File added:', file);
-        const currentFile = {
-          id: file.id,
-          name: file.name,
-          mime: 'uppy/upload',
-          media_type: 'uppy',
-          size: file.size,
-          loaded: false,
-          folder: folderName,
-          uppy: {
-            uploadComplete: false,
-            uploadError: false,
-            errorMessage: '',
-            errorResponse: null,
-            progress: 0,
-            bytesUploaded: 0,
-          },
-        };
-        this.mainDialog.addFile(currentFile);
-        if (folderName === defaultFolder) {
-          fileStore.injectFile(currentFile);
-        }
-      })
-      .on('upload', (data) => {
-        console.debug('Upload started:', data);
-        this.mainDialog.isLoading = true;
-      })
-      .on('complete', (result) => {
-        const isInHomeFolder = menuStore.folders.find(folder => folder.name === menuStore.activeFolder)?.id === 0;
-        const activeFolderMatch = result.successful.some(file => {
-          const folderName = JSON.parse(file.meta.folderName);
-          return folderName === menuStore.activeFolder || (isInHomeFolder && folderName === '');
-        });
-        if (result.failed.length === 0) {
-          console.debug('Upload complete:', result);
-          window.__nbUppy.cancelAll();
-          this.mainDialog.close();
-          this.mainDialog.uploadProgress = null;
-          this.mainDialog.clearFiles();
-        } else {
-          result.successful.forEach(file => {
-            window.__nbUppy.removeFile(file.id);
-            this.mainDialog.removeFile(file.id);
-          });
-          this.mainDialog.open();
-        }
-        if (activeFolderMatch) {
-          console.debug('Refreshing files:', menuStore.activeFolder);
-          fileStore.refreshFoldersAfterFetch = true;
-          fileStore.fetchFiles(menuStore.activeFolder, true);
-        } else {
-          menuStore.fetchFolders();
-        }
-        this.mainDialog.isLoading = false;
-      })
-      .on('progress', (progress) => {
-        this.mainDialog.uploadProgress = progress > 0 ? progress + '%' : null;
-      })
-      .on('upload-progress', (file, progress) => {
-        if (file.progress && file.progress.uploadComplete) {
-          return;
-        }
-
-        const fileData = this.mainDialog.getFileById(file.id);
-        const fileProgress = progress.bytesUploaded / progress.bytesTotal;
-        if (fileData) {
-          fileData.uppy.progress = Math.round(fileProgress * 100);
-          fileData.uppy.bytesUploaded = progress.bytesUploaded;
-        }
-      })
-      .on('upload-error', (file, error, response) => {
-        console.debug('error with file:', file.id);
-        console.debug('error message:', error);
-        console.debug('error response:', response);
-        const fileData = this.mainDialog.getFileById(file.id);
-        if (fileData) {
-          fileData.uppy.uploadError = true;
-          fileData.uppy.errorMessage = error.message;
-          fileData.uppy.errorResponse = response;
-        }
-        if (response && response.status === 401) {
-          console.debug('User is not authenticated, redirecting to login page...');
-          profileStore.unauthenticated = true;
-        }
-      })
-      .on('info-visible', () => {
-        const { info } = window.__nbUppy.getState();
-        console.debug('Full info object:', info);
-        if (info && info.message) {
-          let infoMessage = info.message;
-          if (info.details) {
-            infoMessage += ` - ${info.details}`;
-          }
-          console.debug(`Info (${info.type || 'unknown'}): ${infoMessage}`);
-        }
-      })
-      .on('file-removed', (file) => {
-        console.debug('File removed:', file);
-        this.mainDialog.removeFile(file.id);
-        fileStore.files = fileStore.files.filter(f => f.id !== file.id);
-        if (window.__nbUppy.getFiles().length === 0) {
-          this.mainDialog.uploadProgress = null;
-          this.mainDialog.isLoading = false;
-          this.mainDialog.clearFiles();
-        }
-      })
-      .on('upload-retry', (fileId) => {
-        console.debug('Retrying upload:', fileId);
-        const fileData = this.mainDialog.getFileById(fileId);
-        if (fileData) {
-          fileData.uppy.uploadError = false;
-          fileData.uppy.errorMessage = '';
-          fileData.uppy.errorResponse = null;
-        }
-      })
-      .on('retry-all', () => {
-        console.debug('Retrying all uploads');
-        this.mainDialog.currentFiles.forEach(file => {
-          file.uppy.uploadError = false;
-          file.uppy.errorMessage = '';
-          file.uppy.errorResponse = null;
-        });
-      })
-      .on('thumbnail:generated', (file, preview) => {
-        const fileData = this.mainDialog.getFileById(file.id);
-        if (fileData) {
-          fileData.uppy.preview = preview;
-        }
       });
+
+    attachCommonUppyHandlers(window.__nbUppy, {
+      globalName: '__nbUppy',
+      store: this,
+      profileStore,
+    });
+
     console.debug('Uppy instance created:', el.id);
     Alpine.effect(() => {
       if (window.__nbUppy && profileStore.profileInfo) {

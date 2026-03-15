@@ -1,6 +1,7 @@
 import Alpine from 'alpinejs';
+import { apiUrl, getApiFetcher } from './api-constants';
 
-export function createMediaProperties({ apiUrl, getApiFetcher }) {
+export function createMediaProperties() {
   return {
     isOpen: false,
     isLoading: false,
@@ -176,51 +177,25 @@ export function createMediaProperties({ apiUrl, getApiFetcher }) {
         this.newTitle = this.targetFile.title ?? this.targetFile.name;
       }
     },
-    delete() {
+    async delete() {
       const id = this.targetFile.id;
       this.isDeleting = true;
-      if (this.deleteAssociatedNotes && this.targetFile.associated_notes?.length > 0) {
-        const noteIds = this.targetFile.associated_notes.split(',').map(id_ts => id_ts.split(':')[0]);
-        const nostrStore = Alpine.store('nostrStore');
-        nostrStore.deleteEvent(noteIds)
-          .then(() => {
-            console.debug('Deleted associated notes:', noteIds);
-            this.deleteMedia(id)
-              .then(() => {
-                this.isDeleting = false;
-                console.debug('Deleted media and its notes:', id, noteIds);
-                this.close();
-              })
-              .catch(error => {
-                console.error('Error deleting media:', error);
-                this.isError = true;
-              })
-              .finally(() => {
-                this.isDeleting = false;
-                this.deleteAssociatedNotes = false;
-              });
-          })
-          .catch(error => {
-            console.error('Error deleting associated notes:', error);
-            this.isError = true;
-          })
-          .finally(() => {
-            this.isDeleting = false;
-          });
-      } else {
-        this.deleteMedia(id)
-          .then(() => {
-            this.isDeleting = false;
-            console.debug('Deleted media:', id);
-            this.close();
-          })
-          .catch(error => {
-            console.error('Error deleting media:', error);
-            this.isError = true;
-          })
-          .finally(() => {
-            this.isDeleting = false;
-          });
+      try {
+        if (this.deleteAssociatedNotes && this.targetFile.associated_notes?.length > 0) {
+          const noteIds = this.targetFile.associated_notes.split(',').map(id_ts => id_ts.split(':')[0]);
+          const nostrStore = Alpine.store('nostrStore');
+          await nostrStore.deleteEvent(noteIds);
+          console.debug('Deleted associated notes:', noteIds);
+        }
+        await this.deleteMedia(id);
+        console.debug('Deleted media:', id);
+        this.close();
+      } catch (error) {
+        console.error('Error deleting media:', error);
+        this.isError = true;
+      } finally {
+        this.isDeleting = false;
+        this.deleteAssociatedNotes = false;
       }
     },
     deleteMedia(id) {
@@ -266,7 +241,6 @@ export function createMediaProperties({ apiUrl, getApiFetcher }) {
 
           fileStore.files.forEach(file => {
             if (sharedImageIds.includes(file.id)) {
-              file.flag = file?.flag ? 1 : 0;
               menuStore.updateSharedStatsFromFile(file, menuStore.activeFolder, file?.flag);
             }
           });

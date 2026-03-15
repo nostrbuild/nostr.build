@@ -1,8 +1,7 @@
 import Alpine from 'alpinejs';
+import { apiUrl, getApiFetcher } from './api-constants';
 
-const apiUrl = `https://${window.location.hostname}/api/v2/account/dashboard`;
 const aiImagesFolderName = 'AI: Generated Images';
-const getApiFetcher = (...args) => window.getApiFetcher(...args);
 
 Alpine.store('GAI', {
   ImageShow: false,
@@ -70,6 +69,8 @@ Alpine.store('GAI', {
         }
         Alpine.store('fileStore').injectFile(data);
         this.file = data;
+        this.ImageLoading = false;
+        this.ImageShow = true;
       })
       .catch(error => {
         console.error('Error generating image:', error);
