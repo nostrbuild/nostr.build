@@ -23,7 +23,7 @@ $perm = new Permission();
   <link rel="preconnect" href="https://cdn.nostr.build" crossorigin />
   <link rel="preconnect" href="https://v.nostr.build" crossorigin />
 
-  <link rel="stylesheet" href="/styles/twbuild.css?v=f2ed30a5e499dd3221ac53a2a1ef016e" />
+  <link rel="stylesheet" href="/styles/twbuild.css?v=15bc66df5f07001110224f91a4577136" />
   <link rel="stylesheet" href="/styles/index.css?v=16013407201d48c976a65d9ea88a77a3" />
   <link rel="stylesheet" href="/styles/header.css?v=19cde718a50bd676387bbe7e9e24c639" />
   <link rel="icon" href="https://cdn.nostr.build/assets/01.png" />
@@ -492,7 +492,7 @@ $perm = new Permission();
                 <div class="w-6 h-6 bg-[#2edf95] rounded-full flex-shrink-0 mt-1"></div>
                 <div>
                   <p class="text-white font-medium"><?= SiteConfig::PURIST_PER_FILE_UPLOAD_LIMIT / 1024 / 1024 ?>MB File Uploads</p>
-                  <p class="text-[#d0bed8] text-sm">Share high-quality videos and images</p>
+                  <p class="text-[#d0bed8] text-sm">Share high-quality videos, audio and images</p>
                 </div>
               </div>
               <div class="flex items-start gap-3">
@@ -1316,7 +1316,7 @@ $perm = new Permission();
               <div class="bg-gradient-to-r from-[#2edf95]/10 to-[#07847c]/10 rounded-xl p-6 border border-[#2edf95]/20">
                 <h4 class="text-xl font-semibold text-white mb-3">🧘‍♀️ Clean & Simple Experience</h4>
                 <p class="text-[#d0bed8] leading-relaxed">
-                  <strong><?= SiteConfig::STORAGE_LIMITS[Plans::PURIST]['message'] ?></strong> with support for essential image and video formats. No complexity, just pure functionality for users who value simplicity and want to keep their content organized without overwhelming features.
+                  <strong><?= SiteConfig::STORAGE_LIMITS[Plans::PURIST]['message'] ?></strong> with support for essential image, audio and video formats. No complexity, just pure functionality for users who value simplicity and want to keep their content organized without overwhelming features.
                 </p>
               </div>
 

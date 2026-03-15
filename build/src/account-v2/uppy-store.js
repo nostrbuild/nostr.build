@@ -98,21 +98,6 @@ Alpine.store('uppyStore', {
       'application/x-tar': 'tar',
     };
 
-    const mimeTypesPurist = {
-      'image/jpeg': 'jpg',
-      'image/png': 'png',
-      'image/gif': 'gif',
-      'image/webp': 'webp',
-      'image/heic': 'heic',
-      'image/avif': 'avif',
-      'video/mp4': 'mp4',
-      'video/webm': 'webm',
-      'video/quicktime': 'mov',
-      'video/mpeg': 'mpeg',
-      'video/x-mv4': 'm4v',
-      'video/x-matroska': 'mkv',
-    };
-
     const extsAddonDocs = Object.values(mimeTypesAddonDocs).map(ext => `.${ext}`);
     const extsAddonExtra = Object.values(mimeTypesAddonExtra).map(ext => `.${ext}`);
 
@@ -121,7 +106,6 @@ Alpine.store('uppyStore', {
     const mimesVideo = Object.keys(mimeTypesVideo).map(mime => mime);
     const mimesAddonDocs = Object.keys(mimeTypesAddonDocs).map(mime => mime);
     const mimesAddonExtra = Object.keys(mimeTypesAddonExtra).map(mime => mime);
-    const mimesPurist = Object.keys(mimeTypesPurist).map(mime => mime);
 
     switch (accountLevel) {
       case 1:
@@ -132,9 +116,6 @@ Alpine.store('uppyStore', {
       case 2:
         console.debug('All file types allowed except for archives.');
         return [...mimesImages, ...mimesAudio, ...mimesVideo, ...mimesAddonDocs, ...extsAddonDocs];
-      case 3:
-        console.debug('Only images, and video allowed.');
-        return mimesPurist;
       default:
         console.debug('Default file types allowed.');
         return [...mimesImages, ...mimesAudio, ...mimesVideo];
@@ -571,7 +552,6 @@ Alpine.store('uppyStore', {
             note += ', including documents';
             break;
           case 3:
-            note = 'Images and video only';
             byteLimit = Math.min(byteLimit, (1024 * 1024 * 450));
         }
         note += `, up to your storage limit, and ${formatBytes(byteLimit)} per file`;
