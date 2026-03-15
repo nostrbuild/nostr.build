@@ -272,10 +272,10 @@ class S3Multipart
       //error_log("Completed multipart upload: $uploadId for user: $userNpub");
 
       return [
-        'location' => $result['Location'],
-        'bucket' => $result['Bucket'],
-        'key' => $result['Key'],
-        'etag' => $result['ETag'],
+        'location' => isset($result) ? $result['Location'] : null,
+        'bucket' => isset($result) ? $result['Bucket'] : $this->bucket,
+        'key' => $key,
+        'etag' => isset($result) ? $result['ETag'] : ($copyResult['etag'] ?? null),
         'fileData' => $fileData
       ];
     } catch (AwsException $e) {
@@ -418,7 +418,7 @@ class S3Multipart
   private function generateUploadKey(string $filename, string $userNpub, string $mimeType): string
   {
     // Get the correct extension from MIME type using our utils function
-    $accountLevel = (int)$_SESSION['acctlevel'] ?? 0;
+    $accountLevel = (int)($_SESSION['acctlevel'] ?? 0);
     $allowedMimes = getAllowedMimesArray($accountLevel);
     $fileExtension = $allowedMimes[$mimeType] ?? null;
 
@@ -628,7 +628,7 @@ class S3Multipart
         // Send upload hook
         // We only accept two types now, video or archive, TODO: Update for new types
         $fileType = str_starts_with($fileData['mimeType'], 'video/') ? 'video' : 'archive';
-        $fileTooLarge = $fileData['fileSize'] > 8 * 1024 ** 2 ** 1024; // 
+        $fileTooLarge = $fileData['fileSize'] > 8 * 1024 * 1024; // 8 MB
         $doVirusScan = in_array($fileType, ['archive', 'document', 'text', 'other']) && !$fileTooLarge;
         $nameWithoutExtension = pathinfo($fileData['filename'], PATHINFO_FILENAME);
         $this->uploadWebhook->createPayload(
