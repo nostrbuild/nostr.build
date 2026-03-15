@@ -6,7 +6,7 @@ import DropTarget from '@uppy/drop-target';
 import Alpine from 'alpinejs';
 import { createUppyDialogState } from './uppy-dialog-state';
 
-const apiUrl = `https://${window.location.hostname}/account/api.php`;
+const apiUrl = `https://${window.location.hostname}/api/v2/account/dashboard`;
 const getApiFetcher = (...args) => window.getApiFetcher(...args);
 const imageVariantsPrecache = (...args) => window.imageVariantsPrecache(...args);
 const formatBytes = (...args) => window.formatBytes(...args);

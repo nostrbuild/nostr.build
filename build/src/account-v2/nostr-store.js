@@ -1,7 +1,7 @@
 import Alpine from 'alpinejs';
 import { nip19 } from 'nostr-tools';
 
-const apiUrl = `https://${window.location.hostname}/account/api.php`;
+const apiUrl = `https://${window.location.hostname}/api/v2/account/dashboard`;
 const getApiFetcher = (...args) => window.getApiFetcher(...args);
 
 Alpine.store('nostrStore', {
@@ -230,7 +230,6 @@ Alpine.store('nostrStore', {
   },
   async publishSignedEvent(signedEvent, mediaIds = []) {
     const formData = {
-      action: 'publish_nostr_event',
       event: JSON.stringify(signedEvent),
       mediaIds: JSON.stringify(mediaIds),
       eventId: signedEvent.id,
@@ -239,7 +238,7 @@ Alpine.store('nostrStore', {
     };
     const api = getApiFetcher(apiUrl, 'multipart/form-data');
 
-    return api.post('', formData)
+    return api.post('/nostr/publish', formData)
       .then(response => response.data)
       .then(data => {
         if (!data.noteId || !data.success) {

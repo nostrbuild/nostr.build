@@ -1,6 +1,6 @@
 import Alpine from 'alpinejs';
 
-const apiUrl = `https://${window.location.hostname}/account/api.php`;
+const apiUrl = `https://${window.location.hostname}/api/v2/account/dashboard`;
 const getApiFetcher = (...args) => window.getApiFetcher(...args);
 
 Alpine.store('profileStore', {
@@ -255,7 +255,6 @@ Alpine.store('profileStore', {
     this.dialogLoading = true;
 
     const formData = {
-      action: 'update_profile',
       name: this.profileInfo.name,
       pfpUrl: this.profileInfo.pfpUrl,
       wallet: this.profileInfo.wallet,
@@ -265,7 +264,7 @@ Alpine.store('profileStore', {
 
     const api = getApiFetcher(apiUrl, 'multipart/form-data');
 
-    api.post('', formData)
+    api.post('/profile', formData)
       .then(response => response.data)
       .then(data => {
         if (data.error) {
@@ -318,7 +317,7 @@ Alpine.store('profileStore', {
     }
 
     if (newPassword !== confirmPassword) {
-      console.error('Passwords do not match:', newPassword, confirmPassword);
+      console.error('Passwords do not match');
       this.dialogError = true;
       this.dialogLoading = false;
       this.dialogErrorMessages.push('New password and confirm password do not match');
@@ -327,13 +326,12 @@ Alpine.store('profileStore', {
     }
 
     const formData = {
-      action: 'update_password',
       password: current,
       newPassword: newPassword,
     };
     const api = getApiFetcher(apiUrl, 'multipart/form-data');
 
-    api.post('', formData)
+    api.post('/profile/password', formData)
       .then(response => response.data)
       .then(data => {
         if (data.error) {
@@ -362,14 +360,9 @@ Alpine.store('profileStore', {
       });
   },
   async refreshProfileInfo() {
-    const params = {
-      action: 'get_profile_info',
-    };
     const api = getApiFetcher(apiUrl, 'application/json');
 
-    api.get('', {
-      params
-    })
+    api.get('/profile')
       .then(response => response.data)
       .then(data => {
         if (!data.error) {
@@ -418,14 +411,10 @@ Alpine.store('profileStore', {
   async activateNostrLandPlus() {
     this.nlActivationLoading = true;
 
-    const formData = {
-      action: 'activate_nostrland_plus'
-    };
-
     const api = getApiFetcher(apiUrl, 'multipart/form-data');
 
     try {
-      const response = await api.post('', formData);
+      const response = await api.post('/nostrland/activate');
       const data = response.data;
 
       if (data.error) {
@@ -449,14 +438,13 @@ Alpine.store('profileStore', {
   },
   async getCreditHistory(type = "all", limit = 100, offset = 0) {
     const params = {
-      action: 'get_credits_tx_history',
       type,
       limit,
       offset,
     };
     const api = getApiFetcher(apiUrl, 'application/json');
 
-    api.get('', {
+    api.get('/credits/history', {
       params
     })
       .then(response => response.data)
@@ -469,12 +457,11 @@ Alpine.store('profileStore', {
   },
   getCreditsInvoice(credits = 0) {
     const params = {
-      action: 'get_credits_invoice',
       credits,
     };
     const api = getApiFetcher(apiUrl, 'application/json');
 
-    api.get('', {
+    api.get('/credits/invoice', {
       params
     })
       .then(response => response.data)
@@ -486,14 +473,9 @@ Alpine.store('profileStore', {
       });
   },
   getCreditsBalance() {
-    const params = {
-      action: 'get_credits_balance',
-    };
     const api = getApiFetcher(apiUrl, 'application/json');
 
-    api.get('', {
-      params
-    })
+    api.get('/credits/balance')
       .then(response => response.data)
       .then(data => {
         console.debug('Credit balance:', data);

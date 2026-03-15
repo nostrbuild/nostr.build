@@ -231,13 +231,12 @@ export function createMediaProperties({ apiUrl, getApiFetcher }) {
       console.debug('Saving media edit:', file);
       const api = getApiFetcher(apiUrl, 'multipart/form-data');
       const formData = {
-        action: 'update_media_metadata',
         mediaId: file.id,
         title: file.title,
         description: file.description,
       };
 
-      return api.post('', formData)
+      return api.post('/media/metadata', formData)
         .then(response => response.data)
         .then(data => {
           console.debug('Saved media edit:', data);
@@ -254,12 +253,11 @@ export function createMediaProperties({ apiUrl, getApiFetcher }) {
 
       const api = getApiFetcher(apiUrl, 'multipart/form-data');
       const formData = {
-        action: 'share_creator_page',
         shareFlag: file?.flag ? 'true' : 'false',
         imagesToShare: JSON.stringify([file.id]),
       };
 
-      return api.post('', formData)
+      return api.post('/media/share', formData)
         .then(response => response.data)
         .then(data => {
           const sharedImageIds = data.sharedImages || [];

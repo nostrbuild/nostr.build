@@ -1,5 +1,5 @@
 const getApiFetcher = (...args) => window.getApiFetcher(...args);
-const apiUrl = `https://${window.location.hostname}/account/api.php`;
+const apiUrl = `https://${window.location.hostname}/api/v2/account/dashboard`;
 
 window.imageVariantsPrecache = async (urls) => {
   const promises = urls.map((url) => {
@@ -214,10 +214,9 @@ window.uploadVideoPoster = (videoId, fileId, scaleFactor, time, callback, errorC
   const file = dataUrlToFile(dataUrl, 'poster.jpg');
   const api = getApiFetcher(apiUrl, 'multipart/form-data');
   const formData = new FormData();
-  formData.append('action', 'upload_video_poster');
   formData.append('fileId', fileId);
   formData.append('file', file);
-  api.post('', formData)
+  api.post('/media/poster', formData)
     .then(response => response.data)
     .then(data => {
       if (data.error) {

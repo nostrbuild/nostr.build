@@ -1,6 +1,6 @@
 import Alpine from 'alpinejs';
 
-const apiUrl = `https://${window.location.hostname}/account/api.php`;
+const apiUrl = `https://${window.location.hostname}/api/v2/account/dashboard`;
 const getApiFetcher = (...args) => window.getApiFetcher(...args);
 
 const aiImagesFolderName = 'AI: Generated Images';
@@ -260,15 +260,9 @@ Alpine.store('menuStore', {
   },
   foldersFetched: false,
   async fetchFolders() {
-    const params = {
-      action: 'list_folders',
-    };
-
     const api = getApiFetcher(apiUrl, 'application/json');
 
-    await api.get('', {
-      params
-    })
+    await api.get('/folders')
       .then(response => response.data)
       .then(data => {
         const folders = data || [];
@@ -418,13 +412,12 @@ Alpine.store('menuStore', {
     console.debug('Deleting folders:', folderIds);
 
     const formData = {
-      action: 'delete_folders',
       foldersToDelete: JSON.stringify(folderIds),
     };
 
     const api = getApiFetcher(apiUrl, 'multipart/form-data');
 
-    return api.post('', formData)
+    return api.post('/folders/delete', formData)
       .then(response => response.data)
       .then(data => {
         console.debug('Folders deleted:', data);
@@ -468,12 +461,8 @@ Alpine.store('menuStore', {
   },
   async refreshFoldersStats() {
     const api = getApiFetcher(apiUrl, 'application/json');
-    const params = {
-      action: 'get_folders_stats',
-    };
-    api.get('', {
-      params
-    })
+
+    api.get('/folders/stats')
       .then(response => response.data)
       .then(data => {
         this.fileStats.stats = data;

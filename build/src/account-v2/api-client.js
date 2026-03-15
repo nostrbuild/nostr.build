@@ -2,6 +2,9 @@ import axios from 'axios';
 import axiosRetry from 'axios-retry';
 import Alpine from 'alpinejs';
 
+// Set to true to log request timing to console (disable in production)
+const API_TIMING_DEBUG = false;
+
 window.getApiFetcher = function (baseUrl, contentType = 'multipart/form-data', timeout = 30000) {
   const api = axios.create({
     baseURL: baseUrl,
@@ -12,9 +15,37 @@ window.getApiFetcher = function (baseUrl, contentType = 'multipart/form-data', t
     withCredentials: true,
   });
 
+  // Request timing interceptor
+  if (API_TIMING_DEBUG) {
+    api.interceptors.request.use((config) => {
+      config._startTime = performance.now();
+      config._retryCount = config['axios-retry']?.retryCount || 0;
+      const label = `${config.method.toUpperCase()} ${config.url}`;
+      if (config._retryCount > 0) {
+        console.warn(`[API_TIMING] RETRY #${config._retryCount} ${label}`);
+      } else {
+        console.debug(`[API_TIMING] >> ${label}`);
+      }
+      return config;
+    });
+  }
+
   api.interceptors.response.use(
-    (response) => response,
+    (response) => {
+      if (API_TIMING_DEBUG && response.config._startTime) {
+        const ms = (performance.now() - response.config._startTime).toFixed(0);
+        const label = `${response.config.method.toUpperCase()} ${response.config.url}`;
+        console.debug(`[API_TIMING] << ${label} ${response.status} (${ms}ms)`);
+      }
+      return response;
+    },
     (error) => {
+      if (API_TIMING_DEBUG && error.config?._startTime) {
+        const ms = (performance.now() - error.config._startTime).toFixed(0);
+        const label = `${error.config.method.toUpperCase()} ${error.config.url}`;
+        const status = error.response?.status || 'NETWORK_ERR';
+        console.warn(`[API_TIMING] << ${label} ${status} FAILED (${ms}ms)`);
+      }
       if (error.response && error.response.status === 401) {
         console.debug('HTTP 401 Unauthorized error encountered');
         Alpine.store('profileStore').unauthenticated = true;
@@ -32,6 +63,9 @@ window.getApiFetcher = function (baseUrl, contentType = 'multipart/form-data', t
     ) => {
       const delay = 2 ** retryNumber * delayFactor;
       const randomSum = delay * 0.2 * Math.random();
+      if (API_TIMING_DEBUG) {
+        console.warn(`[API_TIMING] retry #${retryNumber} delay: ${(delay + randomSum).toFixed(0)}ms`);
+      }
       return delay + randomSum;
     },
     retryCondition: (error) => {

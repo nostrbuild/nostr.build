@@ -1,5 +1,37 @@
 <?php
+$__apiTimingStart = hrtime(true);
+
+// Set to true to enable detailed request timing logs (disable in production)
+define('API_TIMING_DEBUG', false);
+
+function apiTimingLog(string $label, ?float $startNs = null): void
+{
+  if (!API_TIMING_DEBUG) return;
+  $now = hrtime(true);
+  if ($startNs !== null) {
+    $ms = ($now - $startNs) / 1e6;
+    error_log("[API_TIMING] {$label}: {$ms}ms");
+  } else {
+    error_log("[API_TIMING] {$label}");
+  }
+}
+
+$__requestPath = $_SERVER['REQUEST_URI'] ?? '?';
+if (API_TIMING_DEBUG) {
+  $__fpmQueueMs = (microtime(true) - $_SERVER['REQUEST_TIME_FLOAT']) * 1000;
+  error_log("[API_TIMING] FPM queue/session wait for {$__requestPath}: {$__fpmQueueMs}ms");
+}
+
 require_once $_SERVER['DOCUMENT_ROOT'] . '/config.php';
+
+// Catch any delay after script end (destructors, session close, etc.)
+if (API_TIMING_DEBUG) {
+  register_shutdown_function(function () {
+    global $__apiTimingStart, $__requestPath;
+    $totalMs = (hrtime(true) - $__apiTimingStart) / 1e6;
+    error_log("[API_TIMING] SHUTDOWN {$__requestPath} total including cleanup: {$totalMs}ms");
+  });
+}
 require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/MultimediaUpload.class.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/S3Service.class.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/S3Multipart.class.php';
@@ -26,9 +58,13 @@ use Psr\Http\Server\RequestHandlerInterface as RequestHandler;
 
 require $_SERVER['DOCUMENT_ROOT'] . '/vendor/autoload.php';
 
+apiTimingLog('index.php requires done', $__apiTimingStart);
+
 // Get user-agent
-$userAgent = $_SERVER['HTTP_USER_AGENT'];
-error_log('User agent: ' . $userAgent . PHP_EOL);
+$userAgent = $_SERVER['HTTP_USER_AGENT'] ?? '';
+if (API_TIMING_DEBUG) {
+  error_log('User agent: ' . $userAgent . PHP_EOL);
+}
 
 // Create Container using PHP-DI
 $container = new Container();
@@ -167,11 +203,15 @@ $container->set('s3Multipart', function () {
 });
 
 
+apiTimingLog('container setup done', $__apiTimingStart);
+
 // Create app
 $app = AppFactory::create();
 // Middleware to add CORS headers
 $app->add(function (Request $request, RequestHandler $handler): Response {
+  $__corsStart = hrtime(true);
   $response = $handler->handle($request);
+  apiTimingLog('CORS middleware (after handler) ' . $request->getUri()->getPath(), $__corsStart);
   // Check if the Origin header is present
   $origin = $request->getHeaderLine('Origin');
   if (empty($origin)) {
@@ -190,6 +230,11 @@ $app->add(function (Request $request, RequestHandler $handler): Response {
   ];
 
   $currentPath = $request->getUri()->getPath();
+
+  // Never allow CORS for session-authenticated dashboard routes
+  if (preg_match('#^/api/v2/account/dashboard(/|$)#', $currentPath)) {
+    return $response;
+  }
 
   foreach ($allowedOriginsAndPaths as $originPattern => $pathPatterns) {
     if (preg_match('#^' . $originPattern . '$#', $origin)) {
@@ -211,9 +256,10 @@ $app->options('/{routes:.+}', function ($request, $response, $args) {
   return $response;
 });
 $app->setBasePath('/api/v2');
-$app->addErrorMiddleware(true, true, true);
+$app->addErrorMiddleware(false, true, true);
 $app->addBodyParsingMiddleware();
 
+$__routesStart = hrtime(true);
 require_once __DIR__ . '/routes_upload.php'; // Include free upload routes
 require_once __DIR__ . '/routes_nip96.php'; // Include nip96 upload routes
 require_once __DIR__ . '/routes_uppy.php'; // Include uppy upload routes
@@ -223,7 +269,27 @@ require_once __DIR__ . '/routes_banned.php'; // Include btcpay routes
 require_once __DIR__ . '/routes_gifs.php'; // Include gif routes
 require_once __DIR__ . '/routes_blossom.php'; // Include blossom routes
 require_once __DIR__ . '/routes_s3.php'; // Include S3 multipart upload routes
+require_once __DIR__ . '/routes_account_dashboard.php'; // Include account dashboard routes
+apiTimingLog('all route files loaded', $__routesStart);
 
 $contentLengthMiddleware = new ContentLengthMiddleware();
 $app->add($contentLengthMiddleware);
-$app->run();
+
+apiTimingLog('app ready', $__apiTimingStart);
+
+// Break $app->run() into individual steps to time each phase
+$__t1 = hrtime(true);
+$serverRequestCreator = \Slim\Factory\ServerRequestCreatorFactory::create();
+$request = $serverRequestCreator->createServerRequestFromGlobals();
+apiTimingLog('1-createRequest ' . $request->getUri()->getPath(), $__t1);
+
+$__t2 = hrtime(true);
+$response = $app->handle($request);
+apiTimingLog('2-handle (routing+middleware+handler) ' . $request->getUri()->getPath(), $__t2);
+
+$__t3 = hrtime(true);
+$responseEmitter = new \Slim\ResponseEmitter();
+$responseEmitter->emit($response);
+apiTimingLog('3-emit (send response to client) ' . $request->getUri()->getPath(), $__t3);
+
+apiTimingLog('total request ' . $request->getUri()->getPath(), $__apiTimingStart);

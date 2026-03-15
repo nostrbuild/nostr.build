@@ -1,6 +1,6 @@
 import Alpine from 'alpinejs';
 
-const apiUrl = `https://${window.location.hostname}/account/api.php`;
+const apiUrl = `https://${window.location.hostname}/api/v2/account/dashboard`;
 const aiImagesFolderName = 'AI: Generated Images';
 const getApiFetcher = (...args) => window.getApiFetcher(...args);
 
@@ -40,7 +40,6 @@ Alpine.store('GAI', {
       title: title,
       prompt: prompt,
       model: selectedModel,
-      action: 'generate_ai_image',
       negative_prompt: negativePrompt,
       aspect_ratio: aspectRatio,
       style_preset: stylePreset,
@@ -50,7 +49,7 @@ Alpine.store('GAI', {
     this.ImageLoading = true;
     const api = getApiFetcher(apiUrl, 'multipart/form-data');
 
-    api.post('', formData, {
+    api.post('/ai/generate', formData, {
       timeout: 60000
     })
       .then(response => response.data)

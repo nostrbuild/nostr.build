@@ -1,6 +1,6 @@
 import Alpine from 'alpinejs';
 
-const apiUrl = `https://${window.location.hostname}/account/api.php`;
+const apiUrl = `https://${window.location.hostname}/api/v2/account/dashboard`;
 const getApiFetcher = (...args) => window.getApiFetcher(...args);
 
 Alpine.store('urlImportStore', {
@@ -47,14 +47,13 @@ Alpine.store('urlImportStore', {
     const importToHomeFolder = menuStore.folders.find(folder => folder.name === folderName).id === 0;
 
     const formData = {
-      action: 'import_from_url',
       url: this.importURL,
       folder: importToHomeFolder ? '' : folderName,
     };
 
     const api = getApiFetcher(apiUrl, 'multipart/form-data', (60000 * 5));
 
-    return api.post('', formData)
+    return api.post('/media/import', formData)
       .then(response => response.data)
       .then(data => {
         if (data.error) {

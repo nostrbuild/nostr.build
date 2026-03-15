@@ -12,7 +12,7 @@ import {
 } from './file-store-stats-helpers';
 import { createMediaProperties } from './file-store-media-properties';
 
-const apiUrl = `https://${window.location.hostname}/account/api.php`;
+const apiUrl = `https://${window.location.hostname}/api/v2/account/dashboard`;
 const getApiFetcher = (...args) => window.getApiFetcher(...args);
 const copyToClipboard = (...args) => window.copyToClipboard(...args);
 const abbreviateNumber = (...args) => window.abbreviateNumber(...args);
@@ -165,14 +165,13 @@ Alpine.store('fileStore', {
     itemIds = Array.isArray(itemIds) ? itemIds : [itemIds];
 
     const formData = {
-      action: 'move_to_folder',
       imagesToMove: JSON.stringify(itemIds),
       destinationFolderId: folderId,
     };
 
     const api = getApiFetcher(apiUrl, 'multipart/form-data');
 
-    return api.post('', formData)
+    return api.post('/media/move', formData)
       .then(response => response.data)
       .then(data => {
         console.debug('Moved items to folder:', data);
@@ -244,14 +243,13 @@ Alpine.store('fileStore', {
 
     const itemsToShare = Array.isArray(this.shareMedia.selectedIds) ? this.shareMedia.selectedIds : [this.shareMedia.selectedIds];
     const formData = {
-      action: 'share_creator_page',
       shareFlag: shareFlag,
       imagesToShare: JSON.stringify(itemsToShare),
     };
 
     const api = getApiFetcher(apiUrl, 'multipart/form-data');
 
-    return api.post('', formData)
+    return api.post('/media/share', formData)
       .then(response => response.data)
       .then(data => {
         const sharedImageIds = data.sharedImages || [];
@@ -319,14 +317,13 @@ Alpine.store('fileStore', {
     itemIds = Array.isArray(itemIds) ? itemIds : [itemIds];
 
     const formData = {
-      action: 'delete',
       imagesToDelete: JSON.stringify(itemIds),
     };
 
     const api = getApiFetcher(apiUrl, 'multipart/form-data');
     const menuStore = Alpine.store('menuStore');
 
-    return api.post('', formData)
+    return api.post('/media/delete', formData)
       .then(response => response.data)
       .then(data => {
         console.debug('Deleted image:', data);
@@ -429,7 +426,6 @@ Alpine.store('fileStore', {
 
     const fetchLimit = refresh ? (this.files.length + this.fileFetchLimit) : this.fileFetchLimit;
     const params = {
-      action: 'list_files',
       folder: folder,
       start: refresh ? 0 : this.fileFetchStart,
       limit: fetchLimit,
@@ -445,7 +441,7 @@ Alpine.store('fileStore', {
     this.fetchAbortController = new AbortController();
 
     try {
-      const response = await api.get('', {
+      const response = await api.get('/files', {
         params,
         signal: this.fetchAbortController.signal,
       });
@@ -761,10 +757,8 @@ Alpine.store('fileStore', {
       console.debug('Fetching stats:', mediaId, period, interval, groupBy);
 
       try {
-        const response = await api.get('', {
+        const response = await api.get(`/media/${mediaId}/stats`, {
           params: {
-            action: 'get_media_stats',
-            media_id: mediaId,
             period,
             interval,
             group_by: groupBy,
