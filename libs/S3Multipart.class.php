@@ -34,6 +34,7 @@ class S3Multipart
   private $s3Service;
   private $userNpub;
   private $uploadWebhook;
+  private $awsConfig;
 
   /**
    * Constructor
@@ -54,6 +55,7 @@ class S3Multipart
       throw new Exception("S3 upload credentials are not set in the config file.");
     }
 
+    $this->awsConfig = $awsConfig;
     $this->s3Client = new S3Client($awsConfig['upload']);
     $this->bucket = $awsConfig['upload']['bucket'];
     $this->db = $db;
@@ -266,10 +268,39 @@ class S3Multipart
         ];
       }
 
+      // Auto-extract video poster (best-effort, never fails the upload)
+      if (str_starts_with($copyResult['mimeType'], 'video/')) {
+        try {
+          require_once __DIR__ . '/VideoPosterExtractor.class.php';
+
+          // Generate presigned URL from R2 final storage for ffmpeg to read
+          $posterBucket = $this->awsConfig['r2']['bucket']
+            . SiteConfig::getBucketSuffix('professional_account_video');
+          $presignedUrl = getPresignedUrlFromObjectKey(
+            $copyResult['filename'],
+            $this->awsConfig['r2']['endpoint'],
+            $this->awsConfig['r2']['credentials']['key'],
+            $this->awsConfig['r2']['credentials']['secret'],
+            $posterBucket,
+            300
+          );
+
+          if (!empty($presignedUrl)) {
+            $posterExtractor = new VideoPosterExtractor($this->awsConfig, $this->usersImages);
+            $posterExtractor->extractAndUpload(
+              $presignedUrl,
+              $copyResult['filename'],
+              $fileId,
+              $uploadInfo['userNpub']
+            );
+          }
+        } catch (\Throwable $e) {
+          error_log("Auto poster extraction (multipart) failed: " . $e->getMessage());
+        }
+      }
+
       // Get the complete file data for frontend
       $fileData = $this->getFileDataById($fileId, $uploadInfo, $copyResult);
-
-      //error_log("Completed multipart upload: $uploadId for user: $userNpub");
 
       return [
         'location' => isset($result) ? $result['Location'] : null,

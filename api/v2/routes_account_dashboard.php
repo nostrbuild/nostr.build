@@ -231,7 +231,7 @@ function dashboardBuildReturnFile(array $fileData): array
 function dashboardImportFromURL(string $url, string $folder, string $title, string $prompt, $link, $awsConfig): array
 {
   $s3 = new S3Service($awsConfig);
-  $upload = new MultimediaUpload($link, $s3, true, $_SESSION['usernpub']);
+  $upload = new MultimediaUpload($link, $s3, true, $_SESSION['usernpub'], $awsConfig);
   if (!empty($folder)) {
     $upload->setDefaultFolderName($folder);
   }
@@ -287,7 +287,7 @@ function dashboardGenerateAIImage(string $model, string $prompt, string $title, 
     throw new \Exception("AI Image generation failed: Unexpected content type: {$contentType}");
   }
 
-  $upload = new MultimediaUpload($link, $s3, true, $_SESSION['usernpub']);
+  $upload = new MultimediaUpload($link, $s3, true, $_SESSION['usernpub'], $awsConfig);
   $upload->setDefaultFolderName("AI: Generated Images");
   $upload->setRawFiles([[
     'input_name' => 'ai_image',
@@ -398,7 +398,7 @@ function dashboardGenerateSDCoreImage(string $prompt, string $negativePrompt, st
     throw new \Exception("SD Core Image generation failed: Unexpected content type: {$contentType}");
   }
 
-  $upload = new MultimediaUpload($link, $s3, true, $_SESSION['usernpub']);
+  $upload = new MultimediaUpload($link, $s3, true, $_SESSION['usernpub'], $awsConfig);
   $upload->setDefaultFolderName("AI: Generated Images");
   $upload->setRawFiles([[
     'input_name' => 'ai_image',

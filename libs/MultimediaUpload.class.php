@@ -77,19 +77,22 @@ class MultimediaUpload
     protected array $formParams = [];
     protected string $defaultFolderName = '';
     protected bool $no_transform = false;
+    protected array $awsConfig = [];
 
     /**
      * @param mysqli $db
      * @param S3Service $s3Service
      * @param bool $pro
      * @param string $userNpub
+     * @param array $awsConfig AWS/R2 config for poster extraction (optional, enables auto poster for pro videos)
      */
-    public function __construct(mysqli $db, S3Service $s3Service, bool $pro = false, string $userNpub = '')
+    public function __construct(mysqli $db, S3Service $s3Service, bool $pro = false, string $userNpub = '', array $awsConfig = [])
     {
         $this->db = $db;
         $this->s3Service = $s3Service;
         $this->userNpub = $userNpub;
         $this->pro = $pro;
+        $this->awsConfig = $awsConfig;
 
         // Data layer
         $this->uploadsData = new UploadsData($db);
@@ -528,6 +531,22 @@ class MultimediaUpload
                 if (!$this->persistence->uploadToS3($this->file['tmp_name'], $newFilePrefix . $newFileName, $fileSha256)) {
                     $returnError[] = [false, 500, 'Failed to upload to S3'];
                     throw new Exception('Upload to S3 failed');
+                }
+
+                // Auto-extract video poster for pro uploads (best-effort, never fails the upload)
+                if ($this->pro && $fileType['type'] === 'video' && !empty($this->awsConfig)) {
+                    try {
+                        require_once __DIR__ . '/VideoPosterExtractor.class.php';
+                        $posterExtractor = new VideoPosterExtractor($this->awsConfig, $this->usersImages);
+                        $posterExtractor->extractAndUpload(
+                            $this->file['tmp_name'],
+                            $newFileName,
+                            $insert_id,
+                            $this->userNpub
+                        );
+                    } catch (\Throwable $e) {
+                        error_log("Auto poster extraction failed: " . $e->getMessage());
+                    }
                 }
 
                 // Build response

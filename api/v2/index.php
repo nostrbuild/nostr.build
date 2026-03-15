@@ -89,7 +89,7 @@ $container->set('proUpload', function () {
   global $link;
   // Instantiate S3Service
   $s3 = new S3Service($awsConfig);
-  return new MultimediaUpload($link, $s3, true, $_SESSION['usernpub'] ?? '');
+  return new MultimediaUpload($link, $s3, true, $_SESSION['usernpub'] ?? '', $awsConfig);
 });
 
 $container->set('userImages', function () {
@@ -160,7 +160,7 @@ class MultimediaUploadFactory
   {
     $s3 = new S3Service($this->awsConfig);
     $npubValue = $npub ?? $_SESSION['usernpub'] ?? '';
-    return new MultimediaUpload($this->link, $s3, $isPro, $npubValue);
+    return new MultimediaUpload($this->link, $s3, $isPro, $npubValue, $this->awsConfig);
   }
 }
 
