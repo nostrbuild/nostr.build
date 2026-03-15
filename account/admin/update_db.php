@@ -8,119 +8,74 @@ $perm = new Permission();
 
 if (!$perm->isAdmin()) {
     header("location: /login");
-    $link->close(); // CLOSE MYSQL LINK
+    $link->close();
     exit;
 }
-
-$user =  $_SESSION["usernpub"];
+$link->close();
 ?>
-
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-    <meta charset="UTF-8">
-    <title>nostr.build DB updater</title>
-    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
-    <style>
-        body {
-            font: 14px sans-serif;
-            text-align: center;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <title>nostr.build DB updater</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>body { font: 14px sans-serif; padding: 20px; }</style>
 </head>
-
 <body>
+<div class="container">
+  <h2>Update User DB</h2>
 
+  <h4>Update @nym</h4>
+  <form class="api-form row g-2 mb-3" data-url="/api/v2/admin/users/nym">
+    <div class="col-auto"><input type="text" class="form-control" name="usernpub" placeholder="user's npub" required></div>
+    <div class="col-auto"><input type="text" class="form-control" name="nym" placeholder="@nym" required></div>
+    <div class="col-auto"><button type="submit" class="btn btn-primary">Submit</button></div>
+    <div class="col-12 result"></div>
+  </form>
 
-    <form action="" method="post">&ensp;
-        <p>
-            <input type="text" name="usernpub" id="usernpub" placeholder="user's npub">
-            <input type="text" name="nym" id="nym" placeholder="@nym">
-            <input type="submit" value="Submit">
-        </p>
-    </form>
+  <h4>Update Profile Pic</h4>
+  <form class="api-form row g-2 mb-3" data-url="/api/v2/admin/users/pfp">
+    <div class="col-auto"><input type="text" class="form-control" name="usernpub" placeholder="user's npub" required></div>
+    <div class="col-auto"><input type="text" class="form-control" name="ppic" placeholder="link to profile pic" required></div>
+    <div class="col-auto"><button type="submit" class="btn btn-primary">Submit</button></div>
+    <div class="col-12 result"></div>
+  </form>
 
-    <form action="" method="post">&ensp;
-        <p>
-            <input type="text" name="usernpub" id="usernpub" placeholder="user's npub">
-            <input type="text" name="ppic" id="ppic" placeholder="link to profile pic">
-            <input type="submit" value="Submit">
-        </p>
-    </form>
+  <h4>Update Account Level</h4>
+  <form class="api-form row g-2 mb-3" data-url="/api/v2/admin/users/account-level">
+    <div class="col-auto"><input type="text" class="form-control" name="usernpub" placeholder="user's npub" required></div>
+    <div class="col-auto"><input type="number" class="form-control" name="acctlevel" placeholder="account level" required></div>
+    <div class="col-auto"><button type="submit" class="btn btn-primary">Submit</button></div>
+    <div class="col-12 result"></div>
+  </form>
+</div>
 
-    <form action="" method="post">&ensp;
-        <p>
-            <input type="text" name="usernpub" id="usernpub" placeholder="user's npub">
-            <input type="text" name="acctlevel" id="acctlevel" placeholder="account level">
-            <input type="submit" value="Submit">
-        </p>
-    </form>
+<script>
+document.querySelectorAll('.api-form').forEach(function(form) {
+  form.addEventListener('submit', function(e) {
+    e.preventDefault();
+    const url = this.getAttribute('data-url');
+    const resultDiv = this.querySelector('.result');
+    const formData = new FormData(this);
 
+    fetch(url, {
+      method: 'POST',
+      credentials: 'same-origin',
+      body: formData
+    })
+    .then(r => r.json())
+    .then(data => {
+      if (data.success) {
+        resultDiv.innerHTML = '<div class="alert alert-success mt-2">Updated successfully!</div>';
+      } else {
+        resultDiv.innerHTML = '<div class="alert alert-danger mt-2">Error: ' + (data.error || 'Unknown') + '</div>';
+      }
+    })
+    .catch(err => {
+      resultDiv.innerHTML = '<div class="alert alert-danger mt-2">' + err.message + '</div>';
+    });
+  });
+});
+</script>
 </body>
-
 </html>
-
-<?php
-
-
-//update nym in DB
-if (array_key_exists('nym', $_POST)) {
-
-    $nym =  $_REQUEST['nym'];
-    $user = $_POST['usernpub'];
-
-    if (substr($nym, 0, 1) != '@') $nym = '@' . $nym;
-
-    echo "User: " . $user;
-    echo ", acct level " . $acctlevel;
-
-    $sql = "UPDATE users SET nym='$nym' WHERE usernpub='$user' ";
-
-    if (mysqli_query($link, $sql)) {
-        echo "<a>Updated nym!</a>";
-    } else echo "ERROR: Hush! Sorry $sql. " . mysqli_error($link);
-
-    $link->close(); // CLOSE MYSQL LINK
-}
-
-//update pic in DB
-if (array_key_exists('ppic', $_POST)) {
-
-    $ppic =  $_REQUEST['ppic'];
-
-    $user = $_POST['usernpub'];
-
-    echo "User: " . $user;
-    echo ", ppic " . $ppic;
-
-    $sql = "UPDATE users SET ppic='$ppic' WHERE usernpub='$user' ";
-
-    if (mysqli_query($link, $sql)) {
-        echo "<a>Updated profile pic!</a>";
-    } else echo "ERROR: Hush! Sorry $sql. " . mysqli_error($link);
-
-    $link->close(); // CLOSE MYSQL LINK
-}
-
-//update acctlevel in DB
-if (array_key_exists('acctlevel', $_POST)) {
-
-    $acctlevel =  $_REQUEST['acctlevel'];
-
-    $user = $_POST['usernpub'];
-
-    echo "User: " . $user;
-    echo ", acct level " . $acctlevel;
-
-    $sql = "UPDATE users SET acctlevel='$acctlevel' WHERE usernpub='$user' ";
-
-    if (mysqli_query($link, $sql)) {
-        echo "<a>, updated!</a>";
-    } else echo "ERROR: Hush! Sorry $sql. " . mysqli_error($link);
-
-    $link->close(); // CLOSE MYSQL LINK
-}
-
-$link->close(); // CLOSE MYSQL LINK
-?>

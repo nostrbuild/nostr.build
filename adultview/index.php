@@ -70,7 +70,7 @@ $morePages = $result->num_rows > $perpage ? true : false;
 	<link rel="stylesheet" href="/styles/index.css?v=16013407201d48c976a65d9ea88a77a3" />
 	<link rel="stylesheet" href="/styles/profile.css?v=ded26f9ac31e7492f67e6da9c95a14e2" />
 	<link rel="stylesheet" href="/styles/header.css?v=19cde718a50bd676387bbe7e9e24c639" />
-	<link rel="stylesheet" href="/styles/twbuild.css?v=3c1d198a5a36993c27ef137bf456eb46" />
+	<link rel="stylesheet" href="/styles/twbuild.css?v=f2ed30a5e499dd3221ac53a2a1ef016e" />
 
 	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/lightgallery/2.7.2/css/lightgallery-bundle.min.css" integrity="sha512-nUqPe0+ak577sKSMThGcKJauRI7ENhKC2FQAOOmdyCYSrUh0GnwLsZNYqwilpMmplN+3nO3zso8CWUgu33BDag==" crossorigin="anonymous" referrerpolicy="no-referrer" />
 
@@ -296,7 +296,7 @@ $morePages = $result->num_rows > $perpage ? true : false;
 					</a>
 					<?php if ($perm->isAdmin()): ?>
 						<div class="text-white rounded-sm py-2 px-1 button-container">
-							<form action="/account/admin/change_status.php" method="post">
+							<form action="/api/v2/admin/moderation/status" method="post">
 								<input type="hidden" name="id" value="<?= $fileId ?>">
 								<div class="flex justify-center">
 									<div class="inline-flex rounded-md shadow-sm" role="group">
@@ -377,13 +377,13 @@ $morePages = $result->num_rows > $perpage ? true : false;
 							reportForm.append('id', id);
 							reportForm.append('status', status);
 							// Submit the request
-							fetch('/account/admin/change_status.php', {
+							fetch('/api/v2/admin/moderation/status', {
 									method: 'POST',
+									credentials: 'same-origin',
 									body: reportForm
 								})
 								.then(response => response.json())
 								.then(data => {
-									console.log(data);
 									if (data.success) {
 										// Handle successful status change
 										// Remove the entire form/container if it's a deletion action

@@ -38,7 +38,7 @@ if (isset($_POST['searchFile'])) {
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>nostr.build - Admin Moderation</title>
-  <link rel="stylesheet" href="/styles/twbuild.css?v=3c1d198a5a36993c27ef137bf456eb46">
+  <link rel="stylesheet" href="/styles/twbuild.css?v=f2ed30a5e499dd3221ac53a2a1ef016e">
   <link rel="icon" href="https://cdn.nostr.build/assets/primo_nostr.png">
   <style>
     [x-cloak] { display: none !important; }
@@ -305,11 +305,12 @@ if (isset($_POST['searchFile'])) {
           const id = ids[i];
           
           try {
-            const response = await fetch('change_status.php', {
+            const response = await fetch('/api/v2/admin/moderation/status', {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/x-www-form-urlencoded',
               },
+              credentials: 'same-origin',
               body: 'id=' + encodeURIComponent(id) + '&status=' + encodeURIComponent(status),
             });
             
@@ -371,11 +372,12 @@ if (isset($_POST['searchFile'])) {
               btn.innerHTML = '<span class="inline-block w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>';
             });
             
-            fetch('change_status.php', {
+            fetch('/api/v2/admin/moderation/status', {
                 method: 'POST',
                 headers: {
                   'Content-Type': 'application/x-www-form-urlencoded',
                 },
+                credentials: 'same-origin',
                 body: 'id=' + encodeURIComponent(id) + '&status=' + encodeURIComponent(status),
               })
               .then(response => response.json())
@@ -450,11 +452,12 @@ if (isset($_POST['searchFile'])) {
             });
             
             // Make AJAX request to server to approve all
-            fetch('approve_all.php', {
+            fetch('/api/v2/admin/moderation/approve-all', {
                 method: 'POST',
                 headers: {
                   'Content-Type': 'application/json',
                 },
+                credentials: 'same-origin',
                 body: JSON.stringify({
                   ids: imageIds
                 }),
@@ -603,11 +606,12 @@ if (isset($_POST['searchFile'])) {
           progressModal.log('Initiating user ban...');
           
           try {
-            const banResponse = await fetch('change_status.php', {
+            const banResponse = await fetch('/api/v2/admin/moderation/status', {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/x-www-form-urlencoded',
               },
+              credentials: 'same-origin',
               body: 'id=' + encodeURIComponent(mediaIds[0]) + '&status=ban',
             });
             
@@ -650,11 +654,12 @@ if (isset($_POST['searchFile'])) {
               progressModal.update(i + 2, mediaIds.length + 1, `Step 2: Rejecting media ${i + 1} of ${remainingIds.length}...`, `Item ID: ${id}`);
               
               try {
-                const response = await fetch('change_status.php', {
+                const response = await fetch('/api/v2/admin/moderation/status', {
                   method: 'POST',
                   headers: {
                     'Content-Type': 'application/x-www-form-urlencoded',
                   },
+                  credentials: 'same-origin',
                   body: 'id=' + encodeURIComponent(id) + '&status=rejected',
                 });
                 
@@ -695,6 +700,100 @@ if (isset($_POST['searchFile'])) {
             progressModal.log('Network error during ban: ' + error.message, true);
             progressModal.complete(false, 'Network error. Please try again.');
             rejectAllBanBtn.disabled = false;
+          }
+        });
+      }
+
+      // Report All as CSAM button handler (npub view only, admin only)
+      const reportAllCsamBtn = document.getElementById('reportAllCsamBtn');
+      if (reportAllCsamBtn) {
+        reportAllCsamBtn.addEventListener('click', async function(e) {
+          e.preventDefault();
+
+          const npub = reportAllCsamBtn.getAttribute('data-npub');
+          if (!npub) {
+            alert('Error: No npub found');
+            return;
+          }
+
+          // Collect all media IDs that are NOT already rejected or csam
+          const mediaIds = Array.from(document.querySelectorAll('[data-id]'))
+            .filter(el => {
+              const status = el.getAttribute('data-status');
+              return status !== 'rejected' && status !== 'csam';
+            })
+            .map(el => el.getAttribute('data-id'));
+
+          if (mediaIds.length === 0) {
+            alert('No media items to report.');
+            return;
+          }
+
+          const confirmed = await showDangerConfirmDialog({
+            title: '🚨 REPORT ALL AS CSAM',
+            message: `You are about to report ${mediaIds.length} media item(s) as CSAM. Each item will be archived as evidence, the uploader blacklisted, and the file permanently deleted.`,
+            warning: 'THIS ACTION CANNOT BE UNDONE! Each item will be processed one at a time. Evidence will be preserved for NCMEC reporting.',
+            checkboxLabel: `I understand this will report ${mediaIds.length} item(s) as CSAM and permanently delete them`
+          });
+
+          if (!confirmed) return;
+
+          // Disable the button
+          reportAllCsamBtn.disabled = true;
+
+          // Show progress modal
+          progressModal.show('Reporting All Media as CSAM');
+
+          let successCount = 0;
+          let errorCount = 0;
+
+          for (let i = 0; i < mediaIds.length; i++) {
+            const id = mediaIds[i];
+
+            progressModal.update(i, mediaIds.length, `Reporting item ${i + 1} of ${mediaIds.length} as CSAM...`, `Item ID: ${id}`);
+
+            try {
+              const response = await fetch('/api/v2/admin/moderation/status', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                credentials: 'same-origin',
+                body: 'id=' + encodeURIComponent(id) + '&status=csam',
+              });
+
+              const data = await response.json();
+
+              if (data.success) {
+                successCount++;
+                progressModal.log(`Item ${id}: evidence archived and deleted`);
+                // Remove the item from UI
+                const item = document.querySelector(`[data-id="${id}"]`);
+                if (item) {
+                  item.style.opacity = '0.5';
+                  item.style.transform = 'scale(0.9)';
+                  setTimeout(() => item.remove(), 300);
+                }
+              } else {
+                errorCount++;
+                progressModal.log(`Error on item ${id}: ${data.error}`, true);
+              }
+            } catch (error) {
+              errorCount++;
+              progressModal.log(`Network error on item ${id}: ${error.message}`, true);
+            }
+
+            // CSAM processing is heavier — give the server more breathing room
+            if (i < mediaIds.length - 1) {
+              await new Promise(resolve => setTimeout(resolve, 500));
+            }
+          }
+
+          // Show completion
+          if (errorCount === 0) {
+            progressModal.complete(true, `All ${successCount} item(s) reported as CSAM and deleted. Proceed to CSAM Cases page to submit NCMEC reports.`);
+          } else {
+            progressModal.complete(false, `Completed with ${errorCount} error(s). ${successCount} item(s) reported as CSAM.`);
           }
         });
       }
@@ -1126,16 +1225,6 @@ if (isset($_POST['searchFile'])) {
     </form>
 
     <?php
-    if (isset($_POST['button1'])) {
-      $sql = "UPDATE uploads_data SET approval_status='approved' WHERE approval_status='pending'";
-      if ($link->query($sql) === TRUE) {
-        echo "<div class='bg-green-500/20 border border-green-500 text-green-300 px-4 py-3 rounded-md mb-4'>Images approved successfully!</div>";
-      } else {
-        error_log('Admin approve.php error: ' . $link->error);
-        echo "<div class='bg-red-500/20 border border-red-500 text-red-300 px-4 py-3 rounded-md mb-4'>Error updating record. Please try again.</div>";
-      }
-    }
-
     // Query to get the total size of all uploads
     $sql = "SELECT total_files, total_size FROM uploads_summary WHERE id = 1";
     $result = $link->query($sql);
@@ -1266,6 +1355,12 @@ if (isset($_POST['searchFile'])) {
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"></path>
           </svg>
           Reject All &amp; Ban User
+        </button>
+        <button type="button" id="reportAllCsamBtn" data-npub="<?= htmlspecialchars($searchNpub) ?>" class="bulk-action-btn px-6 py-2 bg-purple-800 hover:bg-purple-900 text-white rounded-md font-semibold transition-colors shadow-lg flex items-center gap-2">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+          </svg>
+          Report All as CSAM
         </button>
         <?php endif; ?>
       </div>

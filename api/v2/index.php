@@ -231,8 +231,8 @@ $app->add(function (Request $request, RequestHandler $handler): Response {
 
   $currentPath = $request->getUri()->getPath();
 
-  // Never allow CORS for session-authenticated dashboard routes
-  if (preg_match('#^/api/v2/account/dashboard(/|$)#', $currentPath)) {
+  // Never allow CORS for session-authenticated routes (dashboard + admin)
+  if (preg_match('#^/api/v2/(account/dashboard|admin)(/|$)#', $currentPath)) {
     return $response;
   }
 
@@ -270,6 +270,7 @@ require_once __DIR__ . '/routes_gifs.php'; // Include gif routes
 require_once __DIR__ . '/routes_blossom.php'; // Include blossom routes
 require_once __DIR__ . '/routes_s3.php'; // Include S3 multipart upload routes
 require_once __DIR__ . '/routes_account_dashboard.php'; // Include account dashboard routes
+require_once __DIR__ . '/routes_admin.php'; // Include admin API routes
 apiTimingLog('all route files loaded', $__routesStart);
 
 $contentLengthMiddleware = new ContentLengthMiddleware();

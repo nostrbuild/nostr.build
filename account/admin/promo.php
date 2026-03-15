@@ -16,57 +16,14 @@ if (!$perm->isAdmin()) {
 
 global $link;
 
-//Plans::init();
 Plans::getInstance();
 
 $promotions = new Promotions($link);
 
-if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['add_promotion'])) {
-  $promotionData = [
-    'promotion_name' => $_POST['promotion_name'],
-    'promotion_description' => $_POST['promotion_description'],
-    'promotion_start_time' => $_POST['promotion_start_time'],
-    'promotion_end_time' => $_POST['promotion_end_time'],
-    'promotion_percentage' => $_POST['promotion_percentage'],
-    'promotion_applicable_plans' => implode(",", $_POST['promotion_applicable_plans']),
-    'promotion_type' => $_POST['promotion_type'],
-  ];
-
-  $promotions->addPromotion($promotionData);
-  header("location: /account/admin/promo.php");
-  $link->close(); // CLOSE MYSQL LINK
-  exit;
-}
-
-if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['update_promotion'])) {
-  $promotionData = [
-    'promotion_name' => $_POST['promotion_name'],
-    'promotion_description' => $_POST['promotion_description'],
-    'promotion_start_time' => $_POST['promotion_start_time'],
-    'promotion_end_time' => $_POST['promotion_end_time'],
-    'promotion_percentage' => $_POST['promotion_percentage'],
-    'promotion_applicable_plans' => implode(",", $_POST['promotion_applicable_plans']),
-    'promotion_type' => $_POST['promotion_type'],
-  ];
-
-  $promotions->updatePromotion($_POST['id'], $promotionData);
-  header("location: /account/admin/promo.php");
-  $link->close(); // CLOSE MYSQL LINK
-  exit;
-}
-
-if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['delete_promotion'])) {
-  $promotions->deletePromotion($_POST['id']);
-  header("location: /account/admin/promo.php");
-  $link->close(); // CLOSE MYSQL LINK
-  exit;
-}
-
 $present_promotions = $promotions->getCurrentAndFuturePromotions();
 $past_promotions = $promotions->getPastPromotions();
 
-// Build HTML for promotions table and a form for each promotion, as well as a form for adding a new promotion
-
+$link->close();
 ?>
 
 <!DOCTYPE html>
@@ -74,7 +31,7 @@ $past_promotions = $promotions->getPastPromotions();
 
 <head>
   <title>Manage Promotions</title>
-  <link rel="stylesheet" href="/styles/twbuild.css?v=3c1d198a5a36993c27ef137bf456eb46" />
+  <link rel="stylesheet" href="/styles/twbuild.css?v=f2ed30a5e499dd3221ac53a2a1ef016e" />
 </head>
 
 <body class="bg-gray-100">
@@ -102,7 +59,7 @@ $past_promotions = $promotions->getPastPromotions();
     <!-- Promotions Display -->
     <div class="space-y-4">
       <?php foreach ($present_promotions as $promo) : ?>
-        <form method="post" class="bg-white p-4 rounded-lg shadow">
+        <form class="promo-form bg-white p-4 rounded-lg shadow" data-action="update">
           <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
             <div>
               <label class="block text-gray-700 text-sm font-bold mb-2">Name:</label>
@@ -150,8 +107,8 @@ $past_promotions = $promotions->getPastPromotions();
 
           <div class="flex justify-end space-x-2">
             <input type="hidden" name="id" value="<?= $promo['id']; ?>">
-            <input type="submit" name="update_promotion" value="Update" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
-            <input type="submit" name="delete_promotion" value="Delete" class="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded">
+            <button type="submit" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded" data-action="update">Update</button>
+            <button type="button" class="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded delete-promo-btn">Delete</button>
           </div>
         </form>
       <?php endforeach; ?>
@@ -160,7 +117,7 @@ $past_promotions = $promotions->getPastPromotions();
     <!-- Form for adding a new promotion -->
     <div class="mt-8">
       <h3 class="text-2xl font-bold text-gray-800 mb-4">Add New Promotion</h3>
-      <form method="post" class="bg-white p-4 shadow rounded-lg">
+      <form class="promo-form bg-white p-4 shadow rounded-lg" data-action="add">
         <div class="mb-4">
           <label for="promotion_name" class="block text-gray-700 text-sm font-bold mb-2">Name:</label>
           <input type="text" id="promotion_name" name="promotion_name" required class="form-input mt-1 block w-full">
@@ -203,7 +160,7 @@ $past_promotions = $promotions->getPastPromotions();
           </select>
         </div>
 
-        <input type="submit" name="add_promotion" value="Add Promotion" class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded">
+        <button type="submit" class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded">Add Promotion</button>
       </form>
     </div>
     <!-- past promotions -->
@@ -239,6 +196,58 @@ $past_promotions = $promotions->getPastPromotions();
     </table>
 
   </div>
+<script>
+document.querySelectorAll('.promo-form').forEach(function(form) {
+  form.addEventListener('submit', function(e) {
+    e.preventDefault();
+    const action = this.getAttribute('data-action');
+    const url = action === 'add'
+      ? '/api/v2/admin/promotions/add'
+      : '/api/v2/admin/promotions/update';
+    const formData = new FormData(this);
+
+    fetch(url, {
+      method: 'POST',
+      credentials: 'same-origin',
+      body: formData
+    })
+    .then(r => r.json())
+    .then(data => {
+      if (data.success) {
+        location.reload();
+      } else {
+        alert('Error: ' + (data.error || 'Unknown error'));
+      }
+    })
+    .catch(err => alert('Error: ' + err.message));
+  });
+});
+
+document.querySelectorAll('.delete-promo-btn').forEach(function(btn) {
+  btn.addEventListener('click', function() {
+    if (!confirm('Are you sure you want to delete this promotion?')) return;
+    const form = this.closest('form');
+    const id = form.querySelector('input[name="id"]').value;
+    const formData = new FormData();
+    formData.append('id', id);
+
+    fetch('/api/v2/admin/promotions/delete', {
+      method: 'POST',
+      credentials: 'same-origin',
+      body: formData
+    })
+    .then(r => r.json())
+    .then(data => {
+      if (data.success) {
+        location.reload();
+      } else {
+        alert('Error: ' + (data.error || 'Unknown error'));
+      }
+    })
+    .catch(err => alert('Error: ' + err.message));
+  });
+});
+</script>
 </body>
 
 </html>

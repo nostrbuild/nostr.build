@@ -104,6 +104,21 @@ Table: identified_csam_cases
         <button class="btn btn-primary" type="submit">Search</button>
       </div>
     </form>
+    <!-- Bulk Submit Unsubmitted Reports -->
+    <div class="card mb-3">
+      <div class="card-body">
+        <div class="d-flex align-items-center gap-3">
+          <button id="bulkSubmitBtn" class="btn btn-danger">Submit All Unsubmitted Reports (Past 7 Days)</button>
+          <span id="bulkSubmitStatus" class="text-muted"></span>
+        </div>
+        <div id="bulkSubmitProgress" class="mt-2" style="display:none;">
+          <div class="progress mb-2">
+            <div id="bulkSubmitBar" class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%">0%</div>
+          </div>
+          <div id="bulkSubmitLog" class="small" style="max-height:200px;overflow-y:auto;font-family:monospace;white-space:pre-wrap;"></div>
+        </div>
+      </div>
+    </div>
     <?php
     // Query to get the total count of CSAM cases and total reported
     $sql = <<<SQL
@@ -397,7 +412,7 @@ Table: identified_csam_cases
         button.addEventListener('click', function() {
           const incidentId = this.getAttribute('data-incident-id');
           // Make AJAX request to get the evidence image
-          fetch('get_evidence.php?incidentId=' + incidentId)
+          fetch('/api/v2/admin/csam/evidence?incidentId=' + incidentId, { credentials: 'same-origin' })
             .then(response => response.text())
             .then(data => {
               // Insert the image into the modal body
@@ -422,7 +437,7 @@ Table: identified_csam_cases
           const incidentId = this.getAttribute('data-incident-id');
           const testReport = this.getAttribute('data-test-report');
           // Make AJAX request to get the sanitized report data
-          fetch('preview_report.php?incidentId=' + incidentId + '&testReport=' + testReport)
+          fetch('/api/v2/admin/csam/report/preview?incidentId=' + incidentId + '&testReport=' + testReport, { credentials: 'same-origin' })
             .then(response => response.json())
             .then(data => {
               if (data.error) {
@@ -450,11 +465,12 @@ Table: identified_csam_cases
         const incidentId = document.getElementById('previewIncidentId').value;
         const testReport = document.getElementById('previewTestReport').value;
         // Make AJAX request to submit the report
-        fetch('submit_report.php', {
+        fetch('/api/v2/admin/csam/report/submit', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json'
             },
+            credentials: 'same-origin',
             body: JSON.stringify({
               incidentId: incidentId,
               testReport: testReport
@@ -492,11 +508,12 @@ Table: identified_csam_cases
           // Confirm action
           if (confirm('Are you sure you want to unblacklist this user?')) {
             // Make AJAX request to unblacklist the user
-            fetch('unblacklist_user.php', {
+            fetch('/api/v2/admin/csam/unblacklist', {
                 method: 'POST',
                 headers: {
                   'Content-Type': 'application/json'
                 },
+                credentials: 'same-origin',
                 body: JSON.stringify({
                   incidentId: incidentId
                 })
@@ -518,6 +535,105 @@ Table: identified_csam_cases
           }
         });
       });
+    });
+
+    // Bulk Submit Unsubmitted Reports
+    document.getElementById('bulkSubmitBtn').addEventListener('click', async function() {
+      if (!confirm('WARNING: This will submit all unsubmitted CSAM reports from the past 7 days to NCMEC. This action cannot be undone. Are you sure you want to proceed?')) {
+        return;
+      }
+
+      const btn = this;
+      const status = document.getElementById('bulkSubmitStatus');
+      const progressDiv = document.getElementById('bulkSubmitProgress');
+      const progressBar = document.getElementById('bulkSubmitBar');
+      const logDiv = document.getElementById('bulkSubmitLog');
+
+      btn.disabled = true;
+      status.textContent = 'Fetching unsubmitted reports...';
+      logDiv.textContent = '';
+      progressDiv.style.display = 'none';
+
+      function log(msg, isError) {
+        const line = document.createElement('div');
+        line.textContent = msg;
+        if (isError) line.style.color = '#dc3545';
+        logDiv.appendChild(line);
+        logDiv.scrollTop = logDiv.scrollHeight;
+      }
+
+      try {
+        // Step 1: Get unsubmitted incident IDs
+        const listResp = await fetch('/api/v2/admin/csam/unsubmitted?days=7', { credentials: 'same-origin' });
+        const listData = await listResp.json();
+
+        if (!listData.ids || listData.ids.length === 0) {
+          status.textContent = 'No unsubmitted reports found in the past 7 days.';
+          btn.disabled = false;
+          return;
+        }
+
+        const ids = listData.ids;
+        status.textContent = `Found ${ids.length} unsubmitted report(s). Submitting...`;
+        progressDiv.style.display = 'block';
+        log(`Starting bulk submission of ${ids.length} report(s)...`);
+
+        let successCount = 0;
+        let errorCount = 0;
+
+        // Step 2: Submit each one by one
+        for (let i = 0; i < ids.length; i++) {
+          const incidentId = ids[i];
+          const pct = Math.round(((i + 1) / ids.length) * 100);
+          progressBar.style.width = pct + '%';
+          progressBar.textContent = `${i + 1} / ${ids.length}`;
+
+          try {
+            const resp = await fetch('/api/v2/admin/csam/report/submit-single', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              credentials: 'same-origin',
+              body: JSON.stringify({ incidentId: incidentId })
+            });
+            const data = await resp.json();
+
+            if (data.success) {
+              successCount++;
+              log(`Incident ${incidentId}: submitted successfully (NCMEC report ID: ${data.result?.response || 'N/A'})`);
+            } else {
+              errorCount++;
+              log(`Incident ${incidentId}: FAILED - ${data.error || JSON.stringify(data.result)}`, true);
+            }
+          } catch (err) {
+            errorCount++;
+            log(`Incident ${incidentId}: network error - ${err.message}`, true);
+          }
+
+          // Delay between submissions to avoid hammering NCMEC API
+          if (i < ids.length - 1) {
+            await new Promise(resolve => setTimeout(resolve, 1000));
+          }
+        }
+
+        // Done
+        if (errorCount === 0) {
+          status.textContent = `All ${successCount} report(s) submitted successfully!`;
+          progressBar.classList.remove('progress-bar-animated');
+          progressBar.classList.add('bg-success');
+        } else {
+          status.textContent = `Done: ${successCount} succeeded, ${errorCount} failed.`;
+          progressBar.classList.remove('progress-bar-animated');
+          progressBar.classList.add('bg-warning');
+        }
+
+        log(`\nComplete: ${successCount} succeeded, ${errorCount} failed.`);
+
+      } catch (err) {
+        status.textContent = 'Error: ' + err.message;
+        log('Fatal error: ' + err.message, true);
+      }
+
+      btn.disabled = false;
     });
   </script>
 </body>
