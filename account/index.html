@@ -126,7 +126,7 @@
 	<script defer src="/scripts/dist/account-v2.js?v=5bcf692dda8a531c51988e0e0171b116"></script>
 	<link href="/scripts/dist/account-v2.css?v=27ba93e570a70d775737614d6faf6846" rel="stylesheet">
 
-	<link href="/styles/twbuild.css?v=4eacb396b321c0b3c0ce55c18b3314a4" rel="stylesheet">
+	<link href="/styles/twbuild.css?v=eeae2d6257e41948d0c755b32758efeb" rel="stylesheet">
 
 	<!-- Pre-connect and DNS prefetch -->
 	<link rel="preconnect" href="https://i.nostr.build" crossorigin>
@@ -3785,35 +3785,44 @@ closeUploadDialogs() {
 						this.isLoading = false;
 				}, 50);
 			},
+			pauseActiveMedia() {
+				try { this.$refs?.fsVideo?.pause(); } catch(e) {}
+				try { this.$refs?.fsAudio?.pause(); } catch(e) {}
+			},
+			init() {
+				this.$watch('fileStore.modalOpen', (open) => { if (!open) this.pauseActiveMedia(); });
+			},
 			async handleNext() {
-				if (this.isTransitioning) return;  // Block if transitioning
+				if (this.isTransitioning) return;
 				this.isTransitioning = true;
+				this.pauseActiveMedia();
 				this.currentTransition = 'slide-right-out';
 				await new Promise(r => setTimeout(r, 250));
 				this.handleMediaStartLoad(fileStore.modalFileNext);
 				await fileStore.modalNext();
 				this.currentTransition = 'slide-left';
-				this.isTransitioning = false;  // Release lock
+				this.isTransitioning = false;
 			},
 			async handlePrevious() {
-				if (this.isTransitioning) return;  // Block if transitioning
+				if (this.isTransitioning) return;
 				this.isTransitioning = true;
+				this.pauseActiveMedia();
 				this.currentTransition = 'slide-left-out';
 				await new Promise(r => setTimeout(r, 250));
 				this.handleMediaStartLoad(fileStore.modalFilePrevious);
 				await fileStore.modalPrevious();
 				this.currentTransition = 'slide-right';
-				this.isTransitioning = false;  // Release lock
+				this.isTransitioning = false;
 			},
 			handleTouchStart(event) {
-					timeOfTouch = new Date().getTime();
+					this.timeOfTouch = new Date().getTime();
 					this.startX = event.touches[0].clientX;
 					this.startY = event.touches[0].clientY;
 			},
 			handleTouchMove: async function(event) {
 					if (!this.startX || !this.startY || this.isTransitioning) return;
 
-					const timeTaken = new Date().getTime() - timeOfTouch;
+					const timeTaken = new Date().getTime() - this.timeOfTouch;
 					const currentX = event.touches[0].clientX;
 					const currentY = event.touches[0].clientY;
 					const diffX = this.startX - currentX;
@@ -3830,6 +3839,7 @@ closeUploadDialogs() {
 											if (horizontal) {
 													await this.handlePrevious();
 											} else {
+													this.pauseActiveMedia();
 													await fileStore.closeModal();
 											}
 									}
@@ -3865,6 +3875,7 @@ closeUploadDialogs() {
 							
 							this.scrollTimeout = setTimeout(async () => {
 									if (event.deltaY < 0) {
+											this.pauseActiveMedia();
 											await fileStore.closeModal();
 									} else if (event.deltaY > 0) {
 											await this.handleNext();
@@ -3872,15 +3883,15 @@ closeUploadDialogs() {
 							}, 150);
 					}
 			}
-	}" @wheel.passive="handleScroll($event)" @keydown.escape="fileStore.closeModal()" @keydown.down="await handleNext()"
+	}" @wheel.passive="handleScroll($event)" @keydown.escape="pauseActiveMedia(); fileStore.closeModal()" @keydown.down="await handleNext()"
 				@keydown.right="await handleNext()" @keydown.up="await handlePrevious()" @keydown.left="await handlePrevious()"
 				@touchstart.passive="handleTouchStart($event)" @touchmove.passive="await handleTouchMove($event)"
 				@touchend.passive="handleTouchEnd($event)" class="flex flex-col h-svh">
 				<div class="flex-grow flex items-center justify-center relative">
 					<button type="button"
-						class="z-10 absolute top-3 right-3 inline-flex items-center justify-center p-1 bg-black bg-opacity-50 rounded-full text-nbpurple-50 hover:text-nbpurple-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-nbpurple-500"
-						@click="fileStore.closeModal()">
-						<svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+						class="z-20 absolute top-4 right-4 inline-flex items-center justify-center p-2 bg-black/60 backdrop-blur-sm rounded-full text-white/80 hover:text-white hover:bg-black/80 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-nbpurple-500"
+						@click="pauseActiveMedia(); fileStore.closeModal()" aria-label="Close media viewer">
+						<svg class="h-6 w-6" viewBox="0 0 20 20" fill="currentColor">
 							<path fill-rule="evenodd"
 								d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
 								clip-rule="evenodd" />
@@ -3920,59 +3931,78 @@ closeUploadDialogs() {
 										$el.src = fileStore.modalImageUrl;
 									}
 								" @load="$nextTick(()=>handleMediaLoad())" @error="handleMediaLoad"
-								class="w-dvh h-full max-w-full max-h-[80svh] landscape:max-h-svh xl:landscape:max-h-[80svh] object-contain mx-auto">
+								class="w-full h-full max-w-full max-h-[80svh] landscape:max-h-svh xl:landscape:max-h-[80svh] object-contain mx-auto">
 						</template>
 
 						<!-- Video -->
 						<template x-if="fileStore.modalFile.media_type === 'video'">
-							<div x-show="!isLoading" class="relative w-full h-full flex items-center justify-center"
+							<div x-show="!isLoading" x-data="{ currentVideoUrl: '' }" class="relative w-full h-full flex items-center justify-center"
 								@mouseenter="handleMouseEnter" @mouseleave="handleMouseLeave">
-								<media-theme-sutro x-effect="if (fileStore.modalFile.mime?.startsWith('video/') && $refs?.fsVideo) {
-													$refs.fsVideo.load();
-													// Listen for events on the video element
-													$refs.fsVideo.addEventListener('loadedmetadata', () => handleMediaLoad());
-													$refs.fsVideo.addEventListener('error', () => handleMediaLoad());
+								<media-theme-sutro x-effect="
+											const url = fileStore.modalFile.url;
+											const video = $refs?.fsVideo;
+											if (fileStore.modalFile.mime?.startsWith('video/') && video) {
+												if (currentVideoUrl !== url) {
+													currentVideoUrl = url;
+													video.src = url;
+													video.poster = url + '/poster.jpg?_=' + Date.now();
+													video.load();
+												}
+												video.addEventListener('loadedmetadata', () => handleMediaLoad());
+												video.addEventListener('error', () => handleMediaLoad());
 											} else {
-													$refs?.fsVideo?.pause();
-											}" x-init="if (fileStore.modalOpen && $refs?.fsVideo) {
-													$refs.fsVideo.load();
-													// Listen for events on the video element
-													$refs.fsVideo.addEventListener('loadedmetadata', () => handleMediaLoad());
-													$refs.fsVideo.addEventListener('error', () => handleMediaLoad());
+												video?.pause();
+											}" x-init="
+											const video = $refs?.fsVideo;
+											if (fileStore.modalOpen && video) {
+												currentVideoUrl = fileStore.modalFile.url;
+												video.src = fileStore.modalFile.url;
+												video.poster = fileStore.modalFile.url + '/poster.jpg?_=' + Date.now();
+												video.load();
+												video.addEventListener('loadedmetadata', () => handleMediaLoad());
+												video.addEventListener('error', () => handleMediaLoad());
 											} else {
-													$refs?.fsVideo?.pause();
-											}" class="w-dvh h-full max-w-full max-h-[80svh] landscape:max-h-svh xl:landscape:max-h-[80svh] pt-20 mx-auto">
+												video?.pause();
+											}" class="w-full h-full max-w-full max-h-[80svh] landscape:max-h-svh xl:landscape:max-h-[80svh] mx-auto">
 									<video slot="media" x-ref="fsVideo" class="w-full h-full max-w-full max-h-full m-auto"
-										:src="fileStore.modalFile.url" :type="fileStore.modalFile.mime"
-										:poster="`${fileStore.modalFile.url}/poster.jpg?_=${Date.now()}`" playsinline loop
-										preload="metadata" crossorigin="use-credentials">
+										playsinline loop preload="auto" crossorigin="use-credentials">
 									</video>
+									<media-loading-indicator slot="centered-chrome" noautohide loadingdelay="200"></media-loading-indicator>
 								</media-theme-sutro>
 							</div>
 						</template>
 
 						<!-- Audio -->
 						<template x-if="fileStore.modalFile.media_type === 'audio'">
-							<media-theme-sutro-audio x-show="!isLoading"
-								:mediatitle="fileStore.modalFile?.title || fileStore.modalFile?.name" x-effect="if (fileStore.modalFile.mime?.startsWith('audio/') && $refs?.fsAudio) {
-											$refs.fsAudio.load();
-											// Listen for events on the audio element
-											$refs.fsAudioPoster.addEventListener('load', () => handleMediaLoad());
-											$refs.fsAudio.addEventListener('loadedmetadata', () => handleMediaLoad());
-											$refs.fsAudio.addEventListener('error', () => handleMediaLoad());
-									} else {
-											$refs?.fsAudio?.pause();
-									}" x-init="if (fileStore.modalOpen && $refs?.fsAudio) {
-											$refs.fsAudio.load();
-											// Listen for events on the audio element
-											$refs.fsAudioPoster.addEventListener('load', () => handleMediaLoad());
-											$refs.fsAudio.addEventListener('loadedmetadata', () => handleMediaLoad());
-											$refs.fsAudio.addEventListener('error', () => handleMediaLoad());
-									} else {
-											$refs?.fsAudio?.pause();
-									}" class="w-dvh h-fit max-w-full mx-auto pt-20 px-0 sm:px-4">
-								<audio slot="media" x-ref="fsAudio" :src="fileStore.modalFile.url" :type="fileStore.modalFile.mime"
-									playsinline loop preload="metadata" crossorigin="use-credentials">
+							<media-theme-sutro-audio x-show="!isLoading" x-data="{ currentAudioUrl: '' }"
+								:mediatitle="fileStore.modalFile?.title || fileStore.modalFile?.name" x-effect="
+											const url = fileStore.modalFile.url;
+											const audio = $refs?.fsAudio;
+											if (fileStore.modalFile.mime?.startsWith('audio/') && audio) {
+												if (currentAudioUrl !== url) {
+													currentAudioUrl = url;
+													audio.src = url;
+													audio.load();
+												}
+												$refs.fsAudioPoster.addEventListener('load', () => handleMediaLoad());
+												audio.addEventListener('loadedmetadata', () => handleMediaLoad());
+												audio.addEventListener('error', () => handleMediaLoad());
+											} else {
+												audio?.pause();
+											}" x-init="
+											const audio = $refs?.fsAudio;
+											if (fileStore.modalOpen && audio) {
+												currentAudioUrl = fileStore.modalFile.url;
+												audio.src = fileStore.modalFile.url;
+												audio.load();
+												$refs.fsAudioPoster.addEventListener('load', () => handleMediaLoad());
+												audio.addEventListener('loadedmetadata', () => handleMediaLoad());
+												audio.addEventListener('error', () => handleMediaLoad());
+											} else {
+												audio?.pause();
+											}" class="w-full h-fit max-w-full mx-auto px-0 sm:px-4">
+								<audio slot="media" x-ref="fsAudio"
+									playsinline loop preload="auto" crossorigin="use-credentials">
 								</audio>
 								<img slot="poster" x-ref="fsAudioPoster"
 									src="https://cdn.nostr.build/assets/audio/jpg/audio-wave@0.5x.jpg" alt="Audio waveform visualization"
@@ -3991,13 +4021,13 @@ closeUploadDialogs() {
 						<!-- SVG -->
 						<template x-if="fileStore.modalFile.media_type === 'other' && fileStore.modalFile.mime === 'image/svg+xml'">
 							<img x-show="!isLoading" :src="fileStore.modalFile.url" x-init="handleMediaLoad()"
-								class="w-dvh h-full max-w-full max-h-[80svh] landscape:max-h-svh xl:landscape:max-h-[80svh] object-contain mx-auto">
+								class="w-full h-full max-w-full max-h-[80svh] landscape:max-h-svh xl:landscape:max-h-[80svh] object-contain mx-auto">
 						</template>
 
 						<!-- All other types -->
 						<template
 							x-if="fileStore.modalFile && !['image', 'video', 'audio'].includes(fileStore.modalFile?.media_type) && !fileStore.modalFile?.mime?.startsWith('application/pdf') && !fileStore.modalFile?.mime?.startsWith('image/svg+xml')">
-							<div x-show="!isLoading" class="flex items-center justify-center h-full" x-init="handleMediaLoad()">
+							<div x-show="!isLoading" class="flex items-center justify-center h-full" x-init="handleMediaLoad()"
 								x-html="getIconByMime(fileStore.modalFile.mime, 'size-1/2 text-nbpurple-300', 2, true)">
 							</div>
 						</template>
@@ -4005,8 +4035,8 @@ closeUploadDialogs() {
 
 					<!-- Navigation Buttons -->
 					<button type="button"
-						class="z-10 absolute left-3 top-1/2 transform -translate-y-1/2 md:inline-flex items-center justify-center p-1 bg-black bg-opacity-50 rounded-full text-nbpurple-50 hover:text-nbpurple-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-nbpurple-500 hidden xl:block"
-						@click="await handlePrevious()">
+						class="z-10 absolute left-3 top-1/2 -translate-y-1/2 hidden md:inline-flex items-center justify-center p-2 bg-black/60 backdrop-blur-sm rounded-full text-white/70 hover:text-white hover:bg-black/80 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-nbpurple-500"
+						@click="await handlePrevious()" aria-label="Previous media">
 						<svg class="h-8 w-8" viewBox="0 0 20 20" fill="currentColor">
 							<path fill-rule="evenodd"
 								d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z"
@@ -4014,8 +4044,8 @@ closeUploadDialogs() {
 						</svg>
 					</button>
 					<button type="button"
-						class="z-10 absolute right-3 top-1/2 transform -translate-y-1/2 md:inline-flex items-center justify-center p-1 bg-black bg-opacity-50 rounded-full text-nbpurple-50 hover:text-nbpurple-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-nbpurple-500 hidden xl:block"
-						@click="await handleNext()">
+						class="z-10 absolute right-3 top-1/2 -translate-y-1/2 hidden md:inline-flex items-center justify-center p-2 bg-black/60 backdrop-blur-sm rounded-full text-white/70 hover:text-white hover:bg-black/80 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-nbpurple-500"
+						@click="await handleNext()" aria-label="Next media">
 						<svg class="h-8 w-8" viewBox="0 0 20 20" fill="currentColor">
 							<path fill-rule="evenodd"
 								d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z"
@@ -4023,41 +4053,40 @@ closeUploadDialogs() {
 						</svg>
 					</button>
 				</div>
-				<div class="bg-black/50 px-4 py-3 sm:px-6 overflow-y-auto landscape:hidden xl:landscape:block">
-					<div class="flex justify-between items-center">
-						<div class="flex flex-col items-start">
-							<p class="text-sm text-gray-300">Name: <span x-text="fileStore.modalImageAlt"></span></p>
-							<p class="text-sm text-gray-300">Size: <span x-text="formatBytes(fileStore.modalImageFilesize)"></span>
-							</p>
+				<div class="bg-gradient-to-t from-black/80 via-black/60 to-transparent px-4 py-3 sm:px-6 overflow-y-auto landscape:hidden xl:landscape:block">
+					<div class="flex flex-wrap justify-between items-center gap-x-6 gap-y-1">
+						<div class="flex items-center gap-4 text-sm text-gray-300">
+							<span class="truncate max-w-[200px] sm:max-w-none" x-text="fileStore.modalImageAlt"></span>
+							<span class="text-gray-500">|</span>
+							<span x-text="formatBytes(fileStore.modalImageFilesize)"></span>
+							<template x-if="fileStore.modalImageDimensions">
+								<span><span class="text-gray-500">|</span> <span x-text="fileStore.modalImageDimensions"></span></span>
+							</template>
 						</div>
-						<div class="flex flex-col items-start">
-							<p class="text-sm text-gray-300">Dimensions: <span x-text="fileStore.modalImageDimensions"></span></p>
-							<p class="text-sm text-gray-300">URL: <a :href="fileStore.modalImageUrl" target="_blank"
-									x-text="fileStore.modalImageUrl"></a>
-								<svg class="size-3 ml-1 inline-block" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
-									stroke="currentColor">
-									<path stroke-linecap="round" stroke-linejoin="round"
-										d="M13.19 8.688a4.5 4.5 0 0 1 1.242 7.244l-4.5 4.5a4.5 4.5 0 0 1-6.364-6.364l1.757-1.757m13.35-.622 1.757-1.757a4.5 4.5 0 0 0-6.364-6.364l-4.5 4.5a4.5 4.5 0 0 0 1.242 7.244" />
-								</svg>
-							</p>
-						</div>
+						<a :href="fileStore.modalImageUrl" target="_blank"
+							class="text-sm text-nbpurple-300 hover:text-nbpurple-200 transition-colors truncate max-w-[250px] sm:max-w-[400px] inline-flex items-center gap-1">
+							<span x-text="fileStore.modalImageUrl" class="truncate"></span>
+							<svg class="size-3 shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+								<path stroke-linecap="round" stroke-linejoin="round"
+									d="M13.5 6H5.25A2.25 2.25 0 0 0 3 8.25v10.5A2.25 2.25 0 0 0 5.25 21h10.5A2.25 2.25 0 0 0 18 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
+							</svg>
+						</a>
 					</div>
-					<!-- Prompt and title with copy button -->
+					<!-- Prompt and title -->
 					<div x-data="{promptCopied: false}"
 						x-show="fileStore.modalImageTitle.length > 0 || fileStore.modalImagePrompt.length > 0"
-						class="mt-4 relative">
-						<!-- Copy success indicator -->
+						class="mt-2 relative">
 						<div x-cloak x-show="promptCopied"
-							class="absolute top-0 left-0 -mt-2 -mr-2 bg-orange-500 text-nbpurple-50 text-xs p-2 rounded-lg"
-							x-transition>Prompt Copied</div>
-						<div class="flex flex-col items-start">
-							<p x-show="fileStore.modalImageTitle.length > 0" class="text-sm text-gray-300 font-medium">Title: <span
-									class="font-normal" x-text="fileStore.modalImageTitle"></span></p>
-							<p x-show="fileStore.modalImageDescription.length > 0" class="text-sm text-gray-300 font-medium">
-								Description: <span class="font-normal" x-text="fileStore.modalImageDescription"></span></p>
+							class="absolute -top-8 left-0 bg-nbpurple-600 text-white text-xs px-2 py-1 rounded"
+							x-transition>Copied</div>
+						<div class="flex flex-col gap-0.5">
+							<p x-show="fileStore.modalImageTitle.length > 0" class="text-sm text-gray-300">
+								<span class="text-gray-500">Title:</span> <span x-text="fileStore.modalImageTitle"></span></p>
+							<p x-show="fileStore.modalImageDescription.length > 0" class="text-sm text-gray-300">
+								<span class="text-gray-500">Description:</span> <span x-text="fileStore.modalImageDescription"></span></p>
 							<p @click="copyTextToClipboard(fileStore.modalImagePrompt.toString(), () => {promptCopied = true}, () => {promptCopied = false})"
-								x-show="fileStore.modalImagePrompt.length > 0" class="cursor-copy text-sm text-gray-300 font-medium">
-								<svg class="size-4 inline-block" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+								x-show="fileStore.modalImagePrompt.length > 0" class="cursor-pointer text-sm text-gray-300 hover:text-gray-200 transition-colors inline-flex items-start gap-1">
+								<svg class="size-4 shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor"
 									stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
 									<rect width="8" height="4" x="8" y="2" rx="1" ry="1" />
 									<path d="M8 4H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2" />
@@ -4065,42 +4094,35 @@ closeUploadDialogs() {
 									<path d="M21 14H11" />
 									<path d="m15 10-4 4 4 4" />
 								</svg>
-								Prompt: <span class="font-normal" x-text="fileStore.modalImagePrompt"></span>
+								<span><span class="text-gray-500">Prompt:</span> <span x-text="fileStore.modalImagePrompt"></span></span>
 							</p>
 						</div>
 					</div>
 				</div>
 				<!-- Controls -->
 				<!-- Media actions -->
-				<div x-data="{ 
+				<div x-data="{
 					currentFile: null,
 					updateCurrentFile() {
-							// If modalFile is set, update currentFile
 							if (fileStore.modalFile) {
 									this.currentFile = fileStore.modalFile;
 							}
 					}
 				}" x-init="updateCurrentFile(); $watch('fileStore.modalFile', () => updateCurrentFile())"
-					class="absolute inset-0 top-0 h-[10%] object-contain bg-black/80 z-[8] flex flex-col">
-					<div class="m-auto w-[80%] grid gap-1 grid-cols-5 place-items-center">
-						<!-- Buttons -->
+					class="absolute top-0 left-0 right-0 z-[8] flex justify-center py-3 bg-gradient-to-b from-black/70 to-transparent">
+					<div class="flex items-center gap-2 sm:gap-3">
 						<!-- Delete button -->
 						<button x-data="{deleteClick: false}"
 							@click="fileStore.closeModal(); fileStore.deleteConfirmation.open(currentFile.id)"
-							class="p-1 bg-nbpurple-600/10 text-nbpurple-50 rounded-md hover:bg-nbpurple-700/10 focus:outline-none focus:ring-2 focus:ring-nbpurple-500/10"
+							class="p-2.5 bg-white/10 backdrop-blur-sm text-white/80 rounded-full hover:bg-white/20 hover:text-white transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-nbpurple-500"
 							aria-label="Delete media file">
-							<svg x-show="!deleteClick" class="max-h-11 w-full inline-block" fill="none" viewBox="0 0 24 24"
-								stroke-width="1.5" stroke="currentColor" aria-hidden="true"
-								x-transition:enter="transition-opacity duration-500" x-transition:enter-start="opacity-0"
-								x-transition:enter-end="opacity-100">
+							<svg x-show="!deleteClick" class="size-5" fill="none" viewBox="0 0 24 24"
+								stroke-width="1.5" stroke="currentColor" aria-hidden="true">
 								<path stroke-linecap="round" stroke-linejoin="round"
 									d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
 							</svg>
-							<svg x-cloak x-show="deleteClick"
-								class="max-h-11 animate-[pulse_3s_ease-in-out_infinite] w-full inline-block" fill="none"
-								viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true"
-								x-transition:enter="transition-opacity duration-500" x-transition:enter-start="opacity-0"
-								x-transition:enter-end="opacity-100">
+							<svg x-cloak x-show="deleteClick" class="size-5 animate-pulse" fill="none"
+								viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true">
 								<path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" />
 							</svg>
 						</button>
@@ -4108,42 +4130,32 @@ closeUploadDialogs() {
 						<button x-cloak
 							x-show="profileStore.profileInfo.isShareEligible && (!fileStore.modalFile?.scanResults || fileStore.modalFile?.scanResults?.status === 'clean')"
 							x-data="{shareClick: false}" @click="fileStore.closeModal(); fileStore.shareMedia.open(currentFile.id)"
-							class="p-1 bg-nbpurple-600/10 text-nbpurple-50 rounded-md hover:bg-nbpurple-700/10 focus:outline-none focus:ring-2 focus:ring-nbpurple-500/10"
+							class="p-2.5 bg-white/10 backdrop-blur-sm text-white/80 rounded-full hover:bg-white/20 hover:text-white transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-nbpurple-500"
 							aria-label="Share media file">
-							<svg x-show="!shareClick" class="max-h-11 w-full inline-block" fill="none" viewBox="0 0 24 24"
-								stroke-width="1.5" stroke="currentColor" aria-hidden="true"
-								x-transition:enter="transition-opacity duration-500" x-transition:enter-start="opacity-0"
-								x-transition:enter-end="opacity-100">
+							<svg x-show="!shareClick" class="size-5" fill="none" viewBox="0 0 24 24"
+								stroke-width="1.5" stroke="currentColor" aria-hidden="true">
 								<path stroke-linecap="round" stroke-linejoin="round"
 									d="M7.5 7.5h-.75A2.25 2.25 0 0 0 4.5 9.75v7.5a2.25 2.25 0 0 0 2.25 2.25h7.5a2.25 2.25 0 0 0 2.25-2.25v-7.5a2.25 2.25 0 0 0-2.25-2.25h-.75m0-3-3-3m0 0-3 3m3-3v11.25m6-2.25h.75a2.25 2.25 0 0 1 2.25 2.25v7.5a2.25 2.25 0 0 1-2.25 2.25h-7.5a2.25 2.25 0 0 1-2.25-2.25v-.75" />
 							</svg>
-							<svg x-cloak x-show="shareClick"
-								class="max-h-11 animate-[pulse_3s_ease-in-out_infinite] w-full inline-block" fill="none"
-								viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true"
-								x-transition:enter="transition-opacity duration-500" x-transition:enter-start="opacity-0"
-								x-transition:enter-end="opacity-100">
+							<svg x-cloak x-show="shareClick" class="size-5 animate-pulse" fill="none"
+								viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true">
 								<path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" />
 							</svg>
 						</button>
 						<!-- Move button -->
 						<button x-data="{moveClick: false}"
 							@click="fileStore.closeModal(); fileStore.moveToFolder.open(currentFile.id)"
-							class="p-1 bg-nbpurple-600/10 text-nbpurple-50 rounded-md hover:bg-nbpurple-700/10 focus:outline-none focus:ring-2 focus:ring-nbpurple-500/10"
+							class="p-2.5 bg-white/10 backdrop-blur-sm text-white/80 rounded-full hover:bg-white/20 hover:text-white transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-nbpurple-500"
 							aria-label="Move media file to folder">
-							<svg x-show="!moveClick" class="max-h-11 w-full inline-block" fill="none" viewBox="0 0 24 24"
-								stroke-width="1.5" stroke="currentColor" aria-hidden="true"
-								x-transition:enter="transition-opacity duration-500" x-transition:enter-start="opacity-0"
-								x-transition:enter-end="opacity-100">
+							<svg x-show="!moveClick" class="size-5" fill="none" viewBox="0 0 24 24"
+								stroke-width="1.5" stroke="currentColor" aria-hidden="true">
 								<path stroke-linecap="round" stroke-linejoin="round"
 									d="M2 9V5a2 2 0 0 1 2-2h3.9a2 2 0 0 1 1.69.9l.81 1.2a2 2 0 0 0 1.67.9H20a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-1" />
 								<path stroke-linecap="round" stroke-linejoin="round" d="M2 13h10" />
 								<path stroke-linecap="round" stroke-linejoin="round" d="m9 16 3-3-3-3" />
 							</svg>
-							<svg x-cloak x-show="moveClick"
-								class="max-h-11 animate-[pulse_3s_ease-in-out_infinite] w-full inline-block" fill="none"
-								viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true"
-								x-transition:enter="transition-opacity duration-500" x-transition:enter-start="opacity-0"
-								x-transition:enter-end="opacity-100">
+							<svg x-cloak x-show="moveClick" class="size-5 animate-pulse" fill="none"
+								viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true">
 								<path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" />
 							</svg>
 						</button>
@@ -4152,20 +4164,15 @@ closeUploadDialogs() {
 							x-show="!fileStore.modalFile?.scanResults || fileStore.modalFile?.scanResults?.status === 'clean'"
 							x-data="{copyClick: false}"
 							@click="copyUrlToClipboard(currentFile.url); copyClick = true; setTimeout(() => copyClick = false, 2000); showToast = true"
-							class="p-1 bg-nbpurple-600/10 text-nbpurple-50 rounded-md hover:bg-nbpurple-700/10 focus:outline-none focus:ring-2 focus:ring-nbpurple-500/10"
-							aria-label="Copy image URL to clipboard">
-							<svg x-show="!copyClick" class="max-h-11 w-full inline-block" fill="none" viewBox="0 0 24 24"
-								stroke-width="1.5" stroke="currentColor" aria-hidden="true"
-								x-transition:enter="transition-opacity duration-500" x-transition:enter-start="opacity-0"
-								x-transition:enter-end="opacity-100">
+							class="p-2.5 bg-white/10 backdrop-blur-sm text-white/80 rounded-full hover:bg-white/20 hover:text-white transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-nbpurple-500"
+							aria-label="Copy URL to clipboard">
+							<svg x-show="!copyClick" class="size-5" fill="none" viewBox="0 0 24 24"
+								stroke-width="1.5" stroke="currentColor" aria-hidden="true">
 								<path stroke-linecap="round" stroke-linejoin="round"
 									d="M11.35 3.836c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 0 0 .75-.75 2.25 2.25 0 0 0-.1-.664m-5.8 0A2.251 2.251 0 0 1 13.5 2.25H15c1.012 0 1.867.668 2.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m8.9-4.414c.376.023.75.05 1.124.08 1.131.094 1.976 1.057 1.976 2.192V16.5A2.25 2.25 0 0 1 18 18.75h-2.25m-7.5-10.5H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V18.75m-7.5-10.5h6.375c.621 0 1.125.504 1.125 1.125v9.375m-8.25-3 1.5 1.5 3-3.75" />
 							</svg>
-							<svg x-cloak x-show="copyClick"
-								class="max-h-11 animate-[pulse_3s_ease-in-out_infinite] w-full inline-block" fill="none"
-								viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true"
-								x-transition:enter="transition-opacity duration-500" x-transition:enter-start="opacity-0"
-								x-transition:enter-end="opacity-100">
+							<svg x-cloak x-show="copyClick" class="size-5 animate-pulse" fill="none"
+								viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true">
 								<path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" />
 							</svg>
 						</button>
@@ -4173,9 +4180,9 @@ closeUploadDialogs() {
 						<button x-cloak
 							x-show="profileStore.profileInfo.isNostrShareEligible && (!fileStore.modalFile?.scanResults || fileStore.modalFile?.scanResults?.status === 'clean')"
 							@click="fileStore.closeModal(); nostrStore.share.open(currentFile.id)"
-							class="p-1 bg-nbpurple-600/10 text-nostrpurple-50 rounded-md hover:bg-nbpurple-700/10 focus:outline-none focus:ring-2 focus:ring-nbpurple-500/10"
-							aria-label="Share image on Nostr">
-							<svg class="max-h-11 w-full inline-block" stroke="currentColor" fill="currentColor" viewBox="0 0 256 256"
+							class="p-2.5 bg-white/10 backdrop-blur-sm text-white/80 rounded-full hover:bg-white/20 hover:text-white transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-nbpurple-500"
+							aria-label="Share on Nostr">
+							<svg class="size-5" stroke="currentColor" fill="currentColor" viewBox="0 0 256 256"
 								xmlns="http://www.w3.org/2000/svg">
 								<circle cx="137.9" cy="99" fill="#fff" r="12.1" />
 								<path
@@ -6187,8 +6194,8 @@ closeUploadDialogs() {
 
 	</main>
 
-	<script type="module" src="https://cdn.jsdelivr.net/npm/player.style/sutro/+esm"></script>
-	<script type="module" src="https://cdn.jsdelivr.net/npm/player.style/sutro-audio/+esm"></script>
+	<script type="module" src="https://cdn.jsdelivr.net/npm/player.style@0.3.1/sutro/+esm"></script>
+	<script type="module" src="https://cdn.jsdelivr.net/npm/player.style@0.3.1/sutro-audio/+esm"></script>
 	<script>
 		window.NBTheme?.bindToggle(document.getElementById('theme-toggle'));
 	</script>
