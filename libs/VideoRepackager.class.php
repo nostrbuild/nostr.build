@@ -104,11 +104,112 @@ class VideoRepackager
   }
   */
 
+  private function isAlreadyOptimized(): bool
+  {
+    $info = $this->videoInfoClass->get_video_info();
+    $formatName = $info['format']['format_name'] ?? '';
+
+    // Must be an MP4/MOV container
+    if (strpos($formatName, 'mp4') === false && strpos($formatName, 'mov') === false) {
+      return false;
+    }
+
+    $videoCodec = $this->videoInfoClass->get_video_codec();
+    $audioCodec = $this->videoInfoClass->get_audio_codec();
+
+    // Video must be a compatible codec
+    if (!in_array($videoCodec, ['h264', 'hevc'])) {
+      return false;
+    }
+
+    // Audio must be AAC or absent
+    if (!empty($audioCodec) && $audioCodec !== 'aac') {
+      return false;
+    }
+
+    // HEVC must already have hvc1 tag for iOS compatibility
+    if ($videoCodec === 'hevc') {
+      foreach ($info['streams'] as $stream) {
+        if ($stream['codec_type'] === 'video') {
+          $codecTag = $stream['codec_tag_string'] ?? '';
+          if ($codecTag !== 'hvc1') {
+            return false;
+          }
+          break;
+        }
+      }
+    }
+
+    // Check for faststart: moov atom must come before mdat
+    if (!$this->hasFastStart()) {
+      return false;
+    }
+
+    return true;
+  }
+
+  private function hasFastStart(): bool
+  {
+    $fh = fopen($this->videoFile, 'rb');
+    if (!$fh) {
+      return false;
+    }
+
+    $moovPos = null;
+    $mdatPos = null;
+    $offset = 0;
+    $fileSize = filesize($this->videoFile);
+
+    // Walk top-level MP4 atoms to find moov and mdat positions
+    while ($offset < $fileSize) {
+      fseek($fh, $offset);
+      $header = fread($fh, 8);
+      if (strlen($header) < 8) {
+        break;
+      }
+      $size = unpack('N', substr($header, 0, 4))[1];
+      $type = substr($header, 4, 4);
+
+      if ($type === 'moov') {
+        $moovPos = $offset;
+      } elseif ($type === 'mdat') {
+        $mdatPos = $offset;
+      }
+
+      if ($moovPos !== null && $mdatPos !== null) {
+        break;
+      }
+
+      // Handle extended size (64-bit) atoms
+      if ($size === 1) {
+        $extHeader = fread($fh, 8);
+        if (strlen($extHeader) < 8) break;
+        $size = unpack('J', $extHeader)[1];
+      } elseif ($size === 0) {
+        break; // atom extends to end of file
+      }
+
+      $offset += $size;
+    }
+    fclose($fh);
+
+    if ($moovPos === null || $mdatPos === null) {
+      return false;
+    }
+
+    return $moovPos < $mdatPos;
+  }
+
   public function repackageVideo(): string
   {
 
     $inputFile = $this->videoFile;
     if (!$inputFile || !file_exists($inputFile)) {
+      return $inputFile;
+    }
+
+    // Skip repackaging if the file is already well-formed
+    if ($this->isAlreadyOptimized()) {
       return $inputFile;
     }
 
@@ -139,7 +240,7 @@ class VideoRepackager
     // Escape file paths for shell safety
     $inputFileEsc = escapeshellarg($inputFile);
     $tempFileEsc = escapeshellarg($this->tempFile);
-    $repackCommand = "timeout {$this->timeout} nice -n 19 {$this->ffmpegPath} -y -hide_banner -i {$inputFileEsc} -c:v copy {$audioCodecParam} {$tagParam} -map 0:v -map 0:a? -movflags +faststart -f mp4 {$tempFileEsc} 2>&1";
+    $repackCommand = "timeout {$this->timeout} nice -n 19 {$this->ffmpegPath} -y -hide_banner -copytb 1 -i {$inputFileEsc} -c:v copy {$audioCodecParam} {$tagParam} -map 0:v -map 0:a? -avoid_negative_ts make_zero -movflags +faststart -f mp4 {$tempFileEsc} 2>&1";
     try {
       exec($repackCommand, $output, $returnVar);
     } catch (Exception $e) {
