@@ -180,6 +180,7 @@ export function createMediaProperties() {
     async delete() {
       const id = this.targetFile.id;
       this.isDeleting = true;
+      let success = false;
       try {
         if (this.deleteAssociatedNotes && this.targetFile.associated_notes?.length > 0) {
           const noteIds = this.targetFile.associated_notes.split(',').map(id_ts => id_ts.split(':')[0]);
@@ -189,13 +190,16 @@ export function createMediaProperties() {
         }
         await this.deleteMedia(id);
         console.debug('Deleted media:', id);
-        this.close();
+        success = true;
       } catch (error) {
         console.error('Error deleting media:', error);
         this.isError = true;
       } finally {
         this.isDeleting = false;
         this.deleteAssociatedNotes = false;
+        if (success) {
+          this.close();
+        }
       }
     },
     deleteMedia(id) {
