@@ -86,23 +86,31 @@ class UploadValidator
       return [false, 403, "File or User has been flagged as rejected"];
     }
 
-    // IP-blocklist gate. Runs after the npub-blacklist check (which is the
-    // authoritative ban): if npub passes, we still drop the upload when the
-    // source IP is on the CIDR blocklist. The npub doubles as the whitelist
-    // override key — a whitelisted user bypasses any IP block they would
-    // otherwise hit.
-    $clientIp = $this->clientIp ?? IpAccessControl::extractClientIp();
-    if ($clientIp !== null) {
-      try {
-        $iac = new IpAccessControl($this->uploadsData->getDb());
-        if ($iac->isBlocked($clientIp, $userNpub)) {
-          error_log('IP blocked: ' . $clientIp . ' (npub: ' . ($userNpub !== '' ? $userNpub : 'anon') . ')');
-          return [false, 403, 'Access denied'];
+    // IP-blocklist gate. Free-only — active subscribers ($pro === true means
+    // a valid, non-expired plan with available storage; see routes_blossom /
+    // routes_nip96 / routes_account / routes_upload for how that's wired) are
+    // implicitly whitelisted. Rationale: paying customers shouldn't get
+    // locked out by a shared/VPN/CGNAT block targeting bad-actor traffic. The
+    // npub blacklist above still applies to pro users — that's the
+    // authoritative ban path.
+    //
+    // For free users: if the npub passed, drop the upload when the source IP
+    // is on the CIDR blocklist. The npub doubles as the whitelist override
+    // key, so an admin can manually whitelist a specific free user.
+    if (!$pro) {
+      $clientIp = $this->clientIp ?? IpAccessControl::extractClientIp();
+      if ($clientIp !== null) {
+        try {
+          $iac = new IpAccessControl($this->uploadsData->getDb());
+          if ($iac->isBlocked($clientIp, $userNpub)) {
+            error_log('IP blocked: ' . $clientIp . ' (npub: ' . ($userNpub !== '' ? $userNpub : 'anon') . ')');
+            return [false, 403, 'Access denied'];
+          }
+        } catch (\Throwable $e) {
+          // Fail open on infrastructure errors so a transient DB problem
+          // doesn't take down uploads. Block decisions log loudly above.
+          error_log('IP blocklist check failed (allowing upload): ' . $e->getMessage());
         }
-      } catch (\Throwable $e) {
-        // Fail open on infrastructure errors so a transient DB problem
-        // doesn't take down uploads. Block decisions log loudly above.
-        error_log('IP blocklist check failed (allowing upload): ' . $e->getMessage());
       }
     }
 
