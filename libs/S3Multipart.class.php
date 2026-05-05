@@ -6,6 +6,7 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/db/UsersImages.class.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/db/UsersImagesFolders.class.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . "/libs/CloudflareUploadWebhook.class.php";
 require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/S3Service.class.php';
+require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/LegacyBlacklist.class.php';
 require $_SERVER['DOCUMENT_ROOT'] . '/vendor/autoload.php';
 
 use Aws\S3\S3Client;
@@ -82,6 +83,22 @@ class S3Multipart
   public function createMultipartUpload(string $filename, string $contentType, array $metadata, string $userNpub)
   {
     try {
+      // Hard-fail banned npubs before we hand out any presigned URLs.
+      // Until this gate landed, the entire /s3/multipart path bypassed
+      // every blacklist check (UploadValidator only runs inside
+      // MultimediaUpload — S3Multipart is its own pipeline). A banned npub
+      // could keep uploading large files via the dashboard's multipart flow
+      // even after their npub was blacklisted on every other route.
+      // The check uses the legacy `blacklist` table which both abuse and
+      // CSAM bans write to.
+      if ($userNpub === '') {
+        throw new Exception('userNpub is required');
+      }
+      if ((new LegacyBlacklist($this->db))->isNpubBanned($userNpub)) {
+        error_log('S3Multipart: blocked banned npub ' . $userNpub);
+        throw new Exception('User has been flagged as rejected');
+      }
+
       // Validate user account
       $account = new Account($userNpub, $this->db);
       if ($account->isExpired()) {
@@ -190,6 +207,26 @@ class S3Multipart
       // Validate user owns this upload
       if (!$this->validateUserOwnership($uploadId, $userNpub, $key)) {
         throw new Exception('User does not own this upload');
+      }
+
+      // Re-check the npub blacklist at completion. Catches the case where a
+      // user created the multipart upload before being banned and is now
+      // trying to publish the assembled file. Best-effort cleanup of the
+      // S3 parts on abort below — even if cleanup fails, the file never
+      // becomes publicly accessible because we don't run the copy step
+      // or insert the DB row.
+      if ($userNpub === '' || (new LegacyBlacklist($this->db))->isNpubBanned($userNpub)) {
+        error_log('S3Multipart: blocked banned npub ' . $userNpub . ' at complete; aborting upload ' . substr($uploadId, 0, 10));
+        try {
+          $this->s3Client->abortMultipartUpload([
+            'Bucket' => $this->bucket,
+            'Key' => $key,
+            'UploadId' => $uploadId,
+          ]);
+        } catch (\Throwable $abortError) {
+          error_log('S3Multipart: abort after ban-check failure: ' . $abortError->getMessage());
+        }
+        throw new Exception('User has been flagged as rejected');
       }
 
       // Check if object already exists as a completed upload (disconnect scenario)
