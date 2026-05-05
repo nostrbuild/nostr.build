@@ -230,7 +230,7 @@ $app->group('/upload', function (RouteCollectorProxy $group) {
 
       $data = $upload->getUploadedFiles();
       return jsonResponse($response, 'success', $message, $data, $code);
-    } catch (\Exception $e) {
+    } catch (\Throwable $e) {
       return jsonResponse($response, 'error', 'Upload failed: ' . $e->getMessage(), new stdClass(), 500);
     }
   })->add(new NostrAuthMiddleware());
@@ -272,7 +272,7 @@ $app->group('/upload', function (RouteCollectorProxy $group) {
 
       $data = $upload->getUploadedFiles();
       return jsonResponse($response, 'success', $message, $data, $code);
-    } catch (\Exception $e) {
+    } catch (\Throwable $e) {
       return jsonResponse($response, 'error', 'Upload failed: ' . $e->getMessage(), new stdClass(), 500);
     }
   })->add(new NostrAuthMiddleware());
@@ -315,7 +315,7 @@ $app->group('/upload', function (RouteCollectorProxy $group) {
 
       $data = $upload->getUploadedFiles();
       return jsonResponse($response, 'success', $message, $data, $code);
-    } catch (\Exception $e) {
+    } catch (\Throwable $e) {
       return jsonResponse($response, 'error', 'URL processing failed: ' . $e->getMessage(), new stdClass(), 500);
     }
   })->add(new NostrAuthMiddleware());
@@ -326,7 +326,7 @@ $app->group('/upload', function (RouteCollectorProxy $group) {
       $uploadLimitInBytes = $request->getAttribute('upload_limit_in_bytes');
 
       return jsonResponse($response, 'success', 'Upload limit retrieved successfully', ['limit' => $uploadLimitInBytes], 200);
-    } catch (\Exception $e) {
+    } catch (\Throwable $e) {
       return jsonResponse($response, 'error', 'Failed to retrieve upload limit: ' . $e->getMessage(), new stdClass(), 500);
     }
   })->add(new NostrAuthMiddleware());
@@ -353,7 +353,7 @@ $app->group('/upload', function (RouteCollectorProxy $group) {
       }
 
       return jsonResponse($response, 'success', 'Status of file changed successfully', new stdClass(), 200);
-    } catch (\Exception $e) {
+    } catch (\Throwable $e) {
       error_log('Exception: ' . $e->getMessage());
       return jsonResponse($response, 'error', 'Failed to change status of file: ' . $e->getMessage(), new stdClass(), 500);
     }

@@ -23,7 +23,7 @@ $app->group('/account', function (RouteCollectorProxy $group) {
       // Handle exceptions thrown by the MultimediaUpload class
       $data = $userImages->getFiles($_SESSION['usernpub'], $folderId);
       return jsonResponse($response, 'success', 'Files retrieved successfully', $data);
-    } catch (\Exception $e) {
+    } catch (\Throwable $e) {
       return jsonResponse($response, 'error', 'Files retrieval failed: ' . $e->getMessage(), new stdClass(), 500);
     }
   });
@@ -51,7 +51,7 @@ $app->group('/account', function (RouteCollectorProxy $group) {
 
       $data = $upload->getUploadedFiles();
       return jsonResponse($response, 'success', $message, $data, $code);
-    } catch (\Exception $e) {
+    } catch (\Throwable $e) {
       return jsonResponse($response, 'error', 'Upload failed: ' . $e->getMessage(), new stdClass(), 500);
     }
   });
@@ -83,7 +83,7 @@ $app->group('/account', function (RouteCollectorProxy $group) {
 
       $data = $upload->getUploadedFiles();
       return uppyResponse($response, 'success', $message, $data, $code);
-    } catch (\Exception $e) {
+    } catch (\Throwable $e) {
       return uppyResponse($response, 'error', 'Upload failed: ' . $e->getMessage(), new stdClass(), 500);
     }
   });
@@ -95,7 +95,7 @@ $app->group('/account', function (RouteCollectorProxy $group) {
       // Handle exceptions thrown by the MultimediaUpload class
       $data = $userImagesFolders->getFolders($_SESSION['usernpub']);
       return jsonResponse($response, 'success', 'Folders retrieved successfully', $data);
-    } catch (\Exception $e) {
+    } catch (\Throwable $e) {
       return jsonResponse($response, 'error', 'Folders retrieval failed: ' . $e->getMessage(), new stdClass(), 500);
     }
   });
@@ -117,7 +117,7 @@ $app->group('/account', function (RouteCollectorProxy $group) {
         'folder' => $data['folder_name'],
       ]);
       return jsonResponse($response, 'success', 'Folder created successfully', $data);
-    } catch (\Exception $e) {
+    } catch (\Throwable $e) {
       return jsonResponse($response, 'error', 'Folder creation failed: ' . $e->getMessage(), new stdClass(), 500);
     }
   });
@@ -139,7 +139,7 @@ $app->group('/account', function (RouteCollectorProxy $group) {
         'usernpub' => $_SESSION['usernpub'],
       ]);
       return jsonResponse($response, 'success', 'Folder deleted successfully', $data);
-    } catch (\Exception $e) {
+    } catch (\Throwable $e) {
       return jsonResponse($response, 'error', 'Folder deletion failed: ' . $e->getMessage(), new stdClass(), 500);
     }
   });
@@ -162,7 +162,7 @@ $app->group('/account', function (RouteCollectorProxy $group) {
         'usernpub' => $_SESSION['usernpub'],
       ]);
       return jsonResponse($response, 'success', 'File deleted successfully', $data);
-    } catch (\Exception $e) {
+    } catch (\Throwable $e) {
       return jsonResponse($response, 'error', 'File deletion failed: ' . $e->getMessage(), new stdClass(), 500);
     }
   });
@@ -189,7 +189,7 @@ $app->group('/account', function (RouteCollectorProxy $group) {
 
       $result = $upload->getUploadedFiles();
       return jsonResponse($response, 'success', $message, $result, $code);
-    } catch (\Exception $e) {
+    } catch (\Throwable $e) {
       return jsonResponse($response, 'error', 'URL processing failed: ' . $e->getMessage(), new stdClass(), 500);
     }
   });
@@ -234,7 +234,7 @@ $app->group('/account', function (RouteCollectorProxy $group) {
       $npub = $body['npub'];
       try {
         $account = $this->get('accountClass')($npub);
-      } catch (\Exception $e) {
+      } catch (\Throwable $e) {
         return jsonResponse($response, 'error', 'Login failed: ' . $e->getMessage(), new stdClass(), 500);
       }
 
@@ -272,7 +272,7 @@ $app->group('/account', function (RouteCollectorProxy $group) {
               // This should never happen, but just in case
               return jsonResponse($response, 'error', 'Login failed', new stdClass(), 401);
             }
-          } catch (\Exception $e) {
+          } catch (\Throwable $e) {
             return jsonResponse($response, 'error', 'Login failed: ' . $e->getMessage(), new stdClass(), 500);
           }
           return jsonResponse($response, 'success', 'Login successful.', new stdClass(), 200);
@@ -293,7 +293,7 @@ $app->group('/account', function (RouteCollectorProxy $group) {
           if (!$nc->sendDm($npub, ['Your temporary login code and URL is:', $dmCode, $dmCodeUrl], true)) {
             throw new Exception('Error sending DM');
           }
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
           error_log('Error sending DM: ' . $e->getMessage());
           return jsonResponse($response, 'error', 'Error sending DM', new stdClass(), 500);
         }
@@ -332,7 +332,7 @@ $app->group('/account', function (RouteCollectorProxy $group) {
             }
             $account->updateAccountDataFromNostrApi(false, $account->accountExists());
             $account->setSessionParameters();
-          } catch (\Exception $e) {
+          } catch (\Throwable $e) {
             error_log('Error updating DB for npub verification: ' . $e->getMessage());
           }
           $_SESSION['signup_npub_verified'] = $npub;
@@ -357,7 +357,7 @@ $app->group('/account', function (RouteCollectorProxy $group) {
           if (!$nc->sendDm($npub, ['Your verification code is:', (string)$dmCode], true)) {
             throw new Exception('Error sending DM');
           }
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
           error_log('Error sending DM: ' . $e->getMessage());
           return jsonResponse($response, 'error', 'Error sending DM', new stdClass(), 500);
         }

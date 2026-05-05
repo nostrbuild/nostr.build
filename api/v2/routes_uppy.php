@@ -65,7 +65,7 @@ $app->group('/uppy', function (RouteCollectorProxy $group) {
       }
 
       return $response;
-    } catch (\Exception $e) {
+    } catch (\Throwable $e) {
       return uppyResponse($response, 'error', 'Upload failed: ' . $e->getMessage(), new stdClass(), 500);
     }
   });

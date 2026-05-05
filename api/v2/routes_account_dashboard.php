@@ -46,7 +46,7 @@ function buildFileListEntry(array $row): array
 
   try {
     $base_url = SiteConfig::getFullyQualifiedUrl($professional_type);
-  } catch (\Exception $e) {
+  } catch (\Throwable $e) {
     error_log($e->getMessage());
     $base_url = SiteConfig::ACCESS_SCHEME . "://" . SiteConfig::DOMAIN_NAME . "/p/";
   }
@@ -449,7 +449,7 @@ function dashboardGetDaysRemaining(): int
   if ($days === null) {
     try {
       $days = dashboardGetAccount()->getRemainingSubscriptionDays();
-    } catch (\Exception $e) {
+    } catch (\Throwable $e) {
       error_log($e->getMessage());
       $days = 0;
     }
@@ -549,7 +549,7 @@ $app->group('/account/dashboard', function (RouteCollectorProxy $group) {
       $usersFoldersStats = $usersFoldersTable->getTotalStats($_SESSION['usernpub']);
       apiTimingLog('route /folders/stats total', $__t);
       return dashboardJson($response, ['totalStats' => $usersFoldersStats]);
-    } catch (\Exception $e) {
+    } catch (\Throwable $e) {
       error_log($e->getMessage());
       return dashboardError($response, 'Failed to get folders stats', 500);
     }
@@ -567,7 +567,7 @@ $app->group('/account/dashboard', function (RouteCollectorProxy $group) {
       $txOffset = isset($params['offset']) ? max(0, intval($params['offset'])) : null;
       $txHistory = $credits->getTransactionsHistory($txType, $txLimit, $txOffset);
       return dashboardJson($response, $txHistory);
-    } catch (\Exception $e) {
+    } catch (\Throwable $e) {
       error_log($e->getMessage());
       return dashboardError($response, 'Failed to get credits transaction history', 500);
     }
@@ -586,7 +586,7 @@ $app->group('/account/dashboard', function (RouteCollectorProxy $group) {
       $credits = new Credits($_SESSION['usernpub'], $apiBase, $_SERVER['AI_GEN_API_HMAC_KEY'], $link);
       $invoice = $credits->getInvoice($creditsAmount);
       return dashboardJson($response, $invoice);
-    } catch (\Exception $e) {
+    } catch (\Throwable $e) {
       error_log($e->getMessage());
       return dashboardError($response, 'Failed to get credits invoice', 500);
     }
@@ -598,7 +598,7 @@ $app->group('/account/dashboard', function (RouteCollectorProxy $group) {
     try {
       $balance = dashboardGetCredits($link);
       return dashboardJson($response, $balance);
-    } catch (\Exception $e) {
+    } catch (\Throwable $e) {
       error_log($e->getMessage());
       return dashboardError($response, 'Failed to get credits balance', 500);
     }
@@ -645,7 +645,7 @@ $app->group('/account/dashboard', function (RouteCollectorProxy $group) {
       }
       $resultString = json_encode($json['results'], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR);
       return dashboardJson($response, $resultString);
-    } catch (\Exception $e) {
+    } catch (\Throwable $e) {
       error_log($e->getMessage());
       return dashboardError($response, 'Failed to get media stats', 500);
     }
@@ -705,7 +705,7 @@ $app->group('/account/dashboard', function (RouteCollectorProxy $group) {
         $aiImage = dashboardGenerateAIImage($model, $prompt, $title, $link, $awsConfig);
       }
       return dashboardJson($response, $aiImage);
-    } catch (\Exception $e) {
+    } catch (\Throwable $e) {
       error_log($e->getMessage());
       return dashboardError($response, 'Failed to generate AI image', 500);
     }
@@ -741,7 +741,7 @@ $app->group('/account/dashboard', function (RouteCollectorProxy $group) {
     try {
       $media = dashboardImportFromURL($url, $body['folder'], '', '', $link, $awsConfig);
       return dashboardJson($response, $media);
-    } catch (\Exception $e) {
+    } catch (\Throwable $e) {
       error_log($e->getMessage());
       return dashboardError($response, 'Failed to import media from URL', 500);
     }
@@ -921,7 +921,7 @@ $app->group('/account/dashboard', function (RouteCollectorProxy $group) {
 
       $posterURL = $videoURL . "/poster.jpg";
       return dashboardJson($response, ["posterURL" => $posterURL, "dimensions" => $posterDimensions]);
-    } catch (\Exception $e) {
+    } catch (\Throwable $e) {
       error_log($e->getMessage());
       // Clean up temp file on failure
       if (isset($tmpPath) && file_exists($tmpPath)) {
@@ -1047,7 +1047,7 @@ $app->group('/account/dashboard', function (RouteCollectorProxy $group) {
         default:
           return dashboardError($response, 'Invalid event kind');
       }
-    } catch (\Exception $e) {
+    } catch (\Throwable $e) {
       error_log($e->getMessage());
       return dashboardError($response, 'Failed to store Nostr event in the database', 500);
     }
@@ -1089,7 +1089,7 @@ $app->group('/account/dashboard', function (RouteCollectorProxy $group) {
       $account->allowNpubLogin($profileData['allowNostrLogin']);
       $data = dashboardGetAccountData($link, $account);
       return dashboardJson($response, $data);
-    } catch (\Exception $e) {
+    } catch (\Throwable $e) {
       error_log($e->getMessage());
       return dashboardError($response, 'Failed to update profile', 500);
     }
@@ -1140,7 +1140,7 @@ $app->group('/account/dashboard', function (RouteCollectorProxy $group) {
         "message" => "NostrLand Plus activated successfully!",
         "accountData" => $refreshedData,
       ]);
-    } catch (\Exception $e) {
+    } catch (\Throwable $e) {
       error_log("NostrLand activation failed: " . $e->getMessage());
       error_log("NostrLand activation error: " . $e->getMessage());
       return dashboardError($response, 'Failed to activate NostrLand Plus', 500);

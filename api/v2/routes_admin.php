@@ -122,14 +122,21 @@ $app->group('/admin/moderation', function (RouteCollectorProxy $group) {
     }
 
     if ($status === 'rejected') {
-      deleteAndRejectUpload($link, $s3, $blossomFrontEndAPI, $id, $filename, $type);
+      if (!deleteAndRejectUpload($link, $s3, $blossomFrontEndAPI, $id, $filename, $type)) {
+        return adminError($response, 'Reject failed (S3 delete error). The upload was preserved for retry.', 500);
+      }
     } elseif ($status === 'ban') {
       // Ban requires admin level
       $perm = new Permission();
       if (!$perm->isAdmin()) {
         return adminError($response, 'Unauthorized: Ban actions require admin privileges', 403);
       }
-      banUserAndDeleteUpload($link, $s3, $blossomFrontEndAPI, $csamReportingConfig, $id, $filename, $type);
+      // banUserAndDeleteUpload writes the npub ban first then calls
+      // deleteAndRejectUpload — even if delete fails, the user is now
+      // banned. Surface the partial state to the admin so they can retry.
+      if (!banUserAndDeleteUpload($link, $s3, $blossomFrontEndAPI, $csamReportingConfig, $id, $filename, $type)) {
+        return adminError($response, 'User was banned but file delete failed. Retry the reject action to clean up.', 500);
+      }
     } elseif ($status === 'csam') {
       // CSAM requires admin level
       $perm = new Permission();
@@ -425,7 +432,7 @@ $app->group('/admin/csam', function (RouteCollectorProxy $group) {
       }
       $response->getBody()->write($imgTag);
       return $response->withHeader('Content-Type', 'text/html')->withStatus(200);
-    } catch (Exception $e) {
+    } catch (\Throwable $e) {
       error_log("Admin get_evidence error: " . $e->getMessage());
       return adminError($response, 'Error fetching evidence', 500);
     }
@@ -477,7 +484,7 @@ $app->group('/admin/csam', function (RouteCollectorProxy $group) {
       $ncmecHandler = new NCMECReportHandler($incidentId, $testReport);
       $result = $ncmecHandler->processAndReportViolation();
       return adminJson($response, $result);
-    } catch (Exception $e) {
+    } catch (\Throwable $e) {
       error_log("Admin submit_report error: " . $e->getMessage());
       return adminError($response, 'Error submitting report', 500);
     }
@@ -505,7 +512,7 @@ $app->group('/admin/csam', function (RouteCollectorProxy $group) {
         return adminSuccess($response);
       }
       return adminError($response, 'Failed to unblacklist user. User may not be blacklisted or an error occurred.', 500);
-    } catch (Exception $e) {
+    } catch (\Throwable $e) {
       error_log("Admin unblacklist error: " . $e->getMessage());
       return adminError($response, 'Error unblacklisting user', 500);
     }
@@ -566,7 +573,7 @@ $app->group('/admin/csam', function (RouteCollectorProxy $group) {
         'incidentId' => $incidentId,
         'result' => $result,
       ]);
-    } catch (Exception $e) {
+    } catch (\Throwable $e) {
       error_log("Admin submit-single error for incident {$incidentId}: " . $e->getMessage());
       return adminJson($response, [
         'success' => false,
@@ -1570,7 +1577,7 @@ $app->group('/admin/media', function (RouteCollectorProxy $group) {
         if ($result !== false) {
           error_log("Mass delete purge result: " . json_encode($result));
         }
-      } catch (Exception $e) {
+      } catch (\Throwable $e) {
         error_log("Mass delete PURGE error: " . $e->getMessage());
       }
 
@@ -1879,9 +1886,16 @@ $app->group('/admin/stats', function (RouteCollectorProxy $group) {
 // =============================================================================
 
 /**
- * Delete a file from S3, ban from blossom, insert into rejected_files, delete from uploads_data.
+ * Delete a file from S3, ban from blossom, insert into rejected_files, delete
+ * from uploads_data. Returns true on full success, false when the S3 delete
+ * failed — the DB row is preserved in that case so the admin can retry
+ * without orphaning the S3 object.
+ *
+ * Ordering rule (matches /admin/moderation/reject-batch): S3 first, DB last.
+ * Once we lose the uploads_data row we lose the only handle pointing to the
+ * S3 object, so the row must outlive any failure that leaves the file in S3.
  */
-function deleteAndRejectUpload($link, S3Service $s3, BlossomFrontEndAPI $blossomAPI, int $id, string $filename, string $type): void
+function deleteAndRejectUpload(mysqli $link, S3Service $s3, BlossomFrontEndAPI $blossomAPI, int $id, string $filename, string $type): bool
 {
   $objectName = match ($type) {
     'picture' => 'i/' . $filename,
@@ -1889,39 +1903,78 @@ function deleteAndRejectUpload($link, S3Service $s3, BlossomFrontEndAPI $blossom
     default   => 'av/' . $filename,
   };
 
+  // S3Service::deleteFromS3 returns true on success (and treats NoSuchKey as
+  // success), false on AWS error. It catches its own exceptions internally,
+  // so the outer try/catch only fires if something pre-S3 throws.
+  $s3DeleteOk = false;
+  $currentSha256 = '';
   try {
     $currentSha256 = $s3->getS3ObjectHash(objectKey: $objectName, paidAccount: false);
-    $s3->deleteFromS3(objectKey: $objectName, paidAccount: false);
+    $s3DeleteOk = $s3->deleteFromS3(objectKey: $objectName, paidAccount: false) === true;
+  } catch (\Throwable $e) {
+    error_log("deleteAndRejectUpload S3 exception for id {$id} ({$filename}): " . $e->getMessage());
+  }
+
+  if (!$s3DeleteOk) {
+    error_log("deleteAndRejectUpload: S3 delete failed for id {$id} ({$filename}); preserving DB row for retry");
+    return false;
+  }
+
+  // CF cache purge — best-effort. A failure here just leaves a stale cache
+  // entry that expires on its own; never a reason to keep the DB row.
+  try {
     $purger = new CloudflarePurger($_SERVER['NB_API_SECRET'], $_SERVER['NB_API_PURGE_URL']);
-    $purgeFilename = !empty($currentSha256) ? "{$filename}|{$currentSha256}" : $filename;
+    $purgeFilename = $currentSha256 !== '' ? "{$filename}|{$currentSha256}" : $filename;
     $result = $purger->purgeFiles([$purgeFilename]);
     if ($result !== false) {
       error_log(json_encode($result));
     }
-  } catch (Exception $e) {
+  } catch (\Throwable $e) {
     error_log("PURGE error occurred: " . $e->getMessage());
   }
 
-  // Ban from blossom if hash exists
-  banFromBlossomIfHashExists($link, $blossomAPI, $id);
+  // Ban from blossom if hash exists — best-effort, same reasoning as CF.
+  try {
+    banFromBlossomIfHashExists($link, $blossomAPI, $id);
+  } catch (\Throwable $e) {
+    error_log("Blossom hash ban failed for id {$id}: " . $e->getMessage());
+  }
 
-  // Insert into rejected_files
-  $stmt = $link->prepare("INSERT INTO rejected_files (filename, type) VALUES (?, ?)");
-  $stmt->bind_param("ss", $filename, $type);
-  $stmt->execute();
-  $stmt->close();
+  // Insert into rejected_files (best-effort: file is already gone from S3,
+  // so a missing rejected_files row only weakens the duplicate-rejection
+  // check for free re-uploads. Log and continue to the DB delete.)
+  try {
+    $stmt = $link->prepare("INSERT INTO rejected_files (filename, type) VALUES (?, ?)");
+    $stmt->bind_param("ss", $filename, $type);
+    $stmt->execute();
+    $stmt->close();
+  } catch (\Throwable $e) {
+    error_log("rejected_files insert failed for id {$id} ({$filename}): " . $e->getMessage());
+  }
 
-  // Delete from uploads_data
-  $stmt = $link->prepare("DELETE FROM uploads_data WHERE id = ?");
-  $stmt->bind_param("i", $id);
-  $stmt->execute();
-  $stmt->close();
+  // Delete from uploads_data — last write. If this fails the file is gone
+  // from S3 but the DB row remains; admin retry will see the file missing
+  // (S3Service treats NoSuchKey as success) and complete the cleanup.
+  try {
+    $stmt = $link->prepare("DELETE FROM uploads_data WHERE id = ?");
+    $stmt->bind_param("i", $id);
+    $stmt->execute();
+    $stmt->close();
+  } catch (\Throwable $e) {
+    error_log("uploads_data delete failed for id {$id}: " . $e->getMessage());
+    return false;
+  }
+
+  return true;
 }
 
 /**
- * Ban user (blacklist IPs/UAs/npubs from logs), delete file, insert into rejected_files.
+ * Ban user (legacy blacklist + blossom ban), then delete the file. Returns
+ * true on full success, false when the deletion step fails — in that case
+ * the user IS still banned (we keep the ban writes regardless), but the
+ * file remains in S3 + DB and the admin should retry the reject.
  */
-function banUserAndDeleteUpload($link, S3Service $s3, BlossomFrontEndAPI $blossomAPI, array $csamReportingConfig, int $id, string $filename, string $type): void
+function banUserAndDeleteUpload(mysqli $link, S3Service $s3, BlossomFrontEndAPI $blossomAPI, array $csamReportingConfig, int $id, string $filename, string $type): bool
 {
   $file_sha256_hash = pathinfo($filename, PATHINFO_FILENAME);
 
@@ -1937,9 +1990,9 @@ function banUserAndDeleteUpload($link, S3Service $s3, BlossomFrontEndAPI $blosso
   if (!empty($logsJSON)) {
     $bl = new LegacyBlacklist($link);
     foreach ($logsJSON as $log) {
-      $logData = json_decode($log['uploadedFileInfo'], true);
-      $ip = $logData['realIp'] ?? null;
-      $ua = $logData['userAgent'] ?? null;
+      $logData = json_decode($log['uploadedFileInfo'] ?? '', true);
+      $ip = is_array($logData) ? ($logData['realIp'] ?? null) : null;
+      $ua = is_array($logData) ? ($logData['userAgent'] ?? null) : null;
       $npub = $log['uploadNpub'] ?? "anonymous";
       try {
         // npub is the actual block target; ip/ua kept as forensic context only.
@@ -1947,12 +2000,17 @@ function banUserAndDeleteUpload($link, S3Service $s3, BlossomFrontEndAPI $blosso
       } catch (\Throwable $e) {
         error_log('Legacy blacklist insert (BANNED) failed for ' . $npub . ': ' . $e->getMessage());
       }
-      $blossomAPI->banUser($npub, 'Repeated TOS Violation or legal reasons');
+      try {
+        $blossomAPI->banUser($npub, 'Repeated TOS Violation or legal reasons');
+      } catch (\Throwable $e) {
+        error_log('Blossom banUser failed for ' . $npub . ': ' . $e->getMessage());
+      }
     }
   }
 
-  // Delete the file (reuse reject helper logic)
-  deleteAndRejectUpload($link, $s3, $blossomAPI, $id, $filename, $type);
+  // Delete the file (reuse reject helper logic). Ban writes above already
+  // succeeded — even if delete returns false, the user is banned.
+  return deleteAndRejectUpload($link, $s3, $blossomAPI, $id, $filename, $type);
 }
 
 /**
@@ -2039,12 +2097,22 @@ function processCsamReport($link, S3Service $s3, BlossomFrontEndAPI $blossomAPI,
       } catch (\Throwable $e) {
         error_log('Legacy blacklist insert (CSAM) failed for ' . $npub . ': ' . $e->getMessage());
       }
-      $blossomAPI->banUser($npub, 'Confirmed CSAM report');
+      try {
+        $blossomAPI->banUser($npub, 'Confirmed CSAM report');
+      } catch (\Throwable $e) {
+        error_log('Blossom banUser failed for ' . $npub . ': ' . $e->getMessage());
+      }
     }
   }
 
-  // Delete file from S3, purge CF, ban blossom hash, reject, delete from DB
-  deleteAndRejectUpload($link, $s3, $blossomAPI, $id, $filename, $type);
+  // Delete file from S3, purge CF, ban blossom hash, reject, delete from DB.
+  // CRITICAL: at this point the case row + R2 evidence are already persisted,
+  // so reporting to NCMEC is still possible even if local cleanup fails.
+  // Surface the partial state so the admin can retry the cleanup; the case
+  // row stays intact regardless.
+  if (!deleteAndRejectUpload($link, $s3, $blossomAPI, $id, $filename, $type)) {
+    return 'CSAM case recorded and user banned, but file cleanup failed (S3 delete error). The evidence and ban are intact; retry the action to remove the file.';
+  }
 
   return true;
 }

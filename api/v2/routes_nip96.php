@@ -122,7 +122,7 @@ $app->group('/nip96', function (RouteCollectorProxy $group) {
         message: $message,
         data: reset($data),
       );
-    } catch (\Exception $e) {
+    } catch (\Throwable $e) {
       error_log('Upload failed: ' . $e->getMessage());
       return nip96Response(
         response: $response,
@@ -147,7 +147,7 @@ $app->group('/nip96', function (RouteCollectorProxy $group) {
       error_log('npub: ' . $npub . ' deleting file');
       try {
         $delete = $factory->create($npub, $fileId);
-      } catch (\Exception $e) {
+      } catch (\Throwable $e) {
         error_log('Delete failed: ' . $e->getMessage());
         return nip96Response(
           response: $response,
@@ -181,7 +181,7 @@ $app->group('/nip96', function (RouteCollectorProxy $group) {
         message: 'File deleted.',
         data: [],
       );
-    } catch (\Exception $e) {
+    } catch (\Throwable $e) {
       error_log('Delete failed: ' . $e->getMessage());
       return nip96Response(
         response: $response,

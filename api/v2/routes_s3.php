@@ -48,7 +48,7 @@ $app->group('/s3', function (RouteCollectorProxy $group) {
       $duration = round(($endTime - $startTime) * 1000, 2);
       error_log("S3 API: POST /multipart - SUCCESS - {$duration}ms - File: " . substr($data['filename'], 0, 10));
       return jsonResponse($response, 'success', 'Multipart upload created', $result);
-    } catch (Exception $e) {
+    } catch (\Throwable $e) {
       $endTime = microtime(true);
       $duration = round(($endTime - $startTime) * 1000, 2);
       error_log("S3 API: POST /multipart - EXCEPTION - {$duration}ms - Error: " . $e->getMessage());
@@ -95,7 +95,7 @@ $app->group('/s3', function (RouteCollectorProxy $group) {
       $duration = round(($endTime - $startTime) * 1000, 2);
       error_log("S3 API: GET /multipart/{$uploadIdShort}/{$partNumber} - SUCCESS - {$duration}ms");
       return jsonResponse($response, 'success', 'Part signed', $result);
-    } catch (Exception $e) {
+    } catch (\Throwable $e) {
       $endTime = microtime(true);
       $duration = round(($endTime - $startTime) * 1000, 2);
       $errorShort = substr($e->getMessage(), 0, 10);
@@ -158,7 +158,7 @@ $app->group('/s3', function (RouteCollectorProxy $group) {
           'completed' => false
         ]);
       }
-    } catch (Exception $e) {
+    } catch (\Throwable $e) {
       $endTime = microtime(true);
       $duration = round(($endTime - $startTime) * 1000, 2);
       $errorShort = substr($e->getMessage(), 0, 50);
@@ -204,7 +204,7 @@ $app->group('/s3', function (RouteCollectorProxy $group) {
       $duration = round(($endTime - $startTime) * 1000, 2);
       error_log("S3 API: GET /multipart/{$uploadIdShort} - SUCCESS - {$duration}ms");
       return jsonResponse($response, 'success', 'Parts listed', $result);
-    } catch (Exception $e) {
+    } catch (\Throwable $e) {
       $endTime = microtime(true);
       $duration = round(($endTime - $startTime) * 1000, 2);
       $errorShort = substr($e->getMessage(), 0, 10);
@@ -253,7 +253,7 @@ $app->group('/s3', function (RouteCollectorProxy $group) {
       $duration = round(($endTime - $startTime) * 1000, 2);
       error_log("S3 API: POST /multipart/{$uploadIdShort}/complete - SUCCESS - {$duration}ms - Key: {$keyShort}");
       return jsonResponse($response, 'success', 'Multipart upload completed', $result);
-    } catch (Exception $e) {
+    } catch (\Throwable $e) {
       $endTime = microtime(true);
       $duration = round(($endTime - $startTime) * 1000, 2);
       $errorShort = substr($e->getMessage(), 0, 10);
@@ -300,7 +300,7 @@ $app->group('/s3', function (RouteCollectorProxy $group) {
       $duration = round(($endTime - $startTime) * 1000, 2);
       error_log("S3 API: DELETE /multipart/{$uploadIdShort} - SUCCESS - {$duration}ms - Key: {$keyShort}");
       return jsonResponse($response, 'success', 'Multipart upload aborted', new stdClass());
-    } catch (Exception $e) {
+    } catch (\Throwable $e) {
       $endTime = microtime(true);
       $duration = round(($endTime - $startTime) * 1000, 2);
       $errorShort = substr($e->getMessage(), 0, 10);
