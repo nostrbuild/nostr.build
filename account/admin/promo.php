@@ -31,7 +31,7 @@ $link->close();
 
 <head>
   <title>Manage Promotions</title>
-  <link rel="stylesheet" href="/styles/twbuild.css?v=f1ad5a3bcecce7c18d0d9267a2166c6a" />
+  <link rel="stylesheet" href="/styles/twbuild.css?v=ec16da4b842295cf8fd28e26368a49ca" />
 </head>
 
 <body class="bg-gray-100">
