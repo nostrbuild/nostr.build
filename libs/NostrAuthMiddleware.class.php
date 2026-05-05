@@ -57,6 +57,15 @@ class NostrAuthMiddleware implements MiddlewareInterface
       $accountDefaultFolder = $account->getDefaultFolder() ?? null;
 
       if ($account->isAccountValid()) {
+        // Banned npubs are not upload-eligible regardless of plan status.
+        // We still treat the request as authenticated (for routing/logging),
+        // but flip the eligibility flag so MultimediaUpload sees $pro=false
+        // and UploadValidator's npub gate fires for the second-line block.
+        if ($account->isBanned()) {
+          error_log('User ' . $npub . ' is blacklisted; marking as ineligible for pro upload');
+          $accountUploadEligible = false;
+        }
+
         // Calculate projected upload size and check if user has enough storage
         $uploadedFiles = $request->getUploadedFiles();
         $totalSize = 0;

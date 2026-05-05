@@ -43,9 +43,12 @@ $app->group('/blossom', function (RouteCollectorProxy $group) {
     // NIP-98 handling
     $npub = $metadata['npub'] ?? null;
     $account = $this->get('accountClass')($npub);
-    $accountUploadEligible = $account->isAccountValid()
-      && $account->hasSufficientStorageSpace($contentLength)
-      && $account->isExpired() === false;
+    // isUploadEligible() rolls in valid + not-expired + not-on-blacklist.
+    // A banned npub falls back to the free path (and gets caught a second
+    // time by UploadValidator's npub gate); a banned-but-paid user no
+    // longer sneaks through with $pro=true.
+    $accountUploadEligible = $account->isUploadEligible()
+      && $account->hasSufficientStorageSpace($contentLength);
     $accountDefaultFolder = $account->getDefaultFolder() ?? null;
     $factory = $this->get('multimediaUploadFactory');
 
@@ -87,7 +90,7 @@ $app->group('/blossom', function (RouteCollectorProxy $group) {
         message: $message,
         data: reset($data),
       );
-    } catch (\Exception $e) {
+    } catch (\Throwable $e) {
       error_log('Upload failed: ' . $e->getMessage());
       return nip96Response(
         response: $response,
@@ -121,7 +124,7 @@ $app->group('/blossom', function (RouteCollectorProxy $group) {
       error_log('npub: ' . $npub . ' deleting file');
       try {
         $delete = $factory->create($npub, $fileId);
-      } catch (\Exception $e) {
+      } catch (\Throwable $e) {
         return nip96Response(
           response: $response,
           status: 'error',
@@ -155,7 +158,7 @@ $app->group('/blossom', function (RouteCollectorProxy $group) {
         message: 'File deleted.',
         data: [],
       );
-    } catch (\Exception $e) {
+    } catch (\Throwable $e) {
       error_log('Delete failed (delete): ' . $e->getMessage());
       return nip96Response(
         response: $response,

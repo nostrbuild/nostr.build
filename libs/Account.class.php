@@ -773,6 +773,34 @@ class Account
   }
 
   /**
+   * Whether this account is allowed to upload right now: a valid,
+   * non-expired plan AND the npub is NOT on the legacy blacklist.
+   *
+   * Use this — not isAccountValid() — anywhere we decide whether to treat a
+   * request as a "pro" upload (i.e. when computing accountUploadEligible).
+   * isAccountValid() is intentionally narrower: a banned user can still log
+   * in, view their plan, manage billing, etc. They just can't upload.
+   */
+  public function isUploadEligible(): bool
+  {
+    if (!$this->isAccountValid()) return false;
+    if ($this->isExpired()) return false;
+    if ($this->isBanned()) return false;
+    return true;
+  }
+
+  /**
+   * Public read of the legacy npub blacklist for this account's npub.
+   * Wraps UploadsData::checkBlacklisted (which delegates to LegacyBlacklist)
+   * so callers can ask "is this user banned?" without poking at private
+   * collaborators.
+   */
+  public function isBanned(): bool
+  {
+    return $this->uploadsData->checkBlacklisted($this->npub);
+  }
+
+  /**
    * Summary of isAccountVerified
    * @return bool
    */
