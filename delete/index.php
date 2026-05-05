@@ -17,12 +17,12 @@
 		<meta name="msapplication-TileColor" content="#9f00a7">
 		<meta name="theme-color" content="#ffffff">
 
-		<script src="/scripts/dist/delete.js?v=85c8b5b6f935fdcec56d21164a25c549" defer></script>
+		<script src="/scripts/dist/delete.js?v=5cb53a70241da212beb449b42229d79d" defer></script>
 
 		<link rel="stylesheet" href="/styles/index.css?v=16013407201d48c976a65d9ea88a77a3" />
 		<link rel="stylesheet" href="/styles/header.css?v=19cde718a50bd676387bbe7e9e24c639" />
 
-		<link href="/styles/twbuild.css?v=eeae2d6257e41948d0c755b32758efeb" rel="stylesheet">
+		<link href="/styles/twbuild.css?v=f1ad5a3bcecce7c18d0d9267a2166c6a" rel="stylesheet">
 
 		<title>nostr.build Delete Media</title>
 	</head>

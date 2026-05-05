@@ -443,17 +443,19 @@ class Filesystem
             throw new InvalidArgumentException(\sprintf('The end path "%s" is not absolute.', $endPath));
         }
 
+        $originalEndPath = $endPath;
+
         // Normalize separators on Windows
         if ('\\' === \DIRECTORY_SEPARATOR) {
             $endPath = str_replace('\\', '/', $endPath);
             $startPath = str_replace('\\', '/', $startPath);
         }
 
-        $splitDriveLetter = fn ($path) => (\strlen($path) > 2 && ':' === $path[1] && '/' === $path[2] && ctype_alpha($path[0]))
+        $splitDriveLetter = static fn ($path) => (\strlen($path) > 2 && ':' === $path[1] && '/' === $path[2] && ctype_alpha($path[0]))
             ? [substr($path, 2), strtoupper($path[0])]
             : [$path, null];
 
-        $splitPath = function ($path) {
+        $splitPath = static function ($path) {
             $result = [];
 
             foreach (explode('/', trim($path, '/')) as $segment) {
@@ -498,6 +500,11 @@ class Filesystem
 
         // Construct $endPath from traversing to the common path, then to the remaining $endPath
         $relativePath = $traverser.('' !== $endPathRemainder ? $endPathRemainder.'/' : '');
+
+        // Remove ending "/" if $endPath points to an existing file
+        if (str_ends_with($relativePath, '/') && is_file($originalEndPath)) {
+            $relativePath = substr($relativePath, 0, -1);
+        }
 
         return '' === $relativePath ? './' : $relativePath;
     }
