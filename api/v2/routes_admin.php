@@ -19,6 +19,9 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/BlossomFrontEndAPI.class.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/NCMECReportHandler.class.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/db/Promotions.class.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/Plans.class.php';
+require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/IpAccessControl.class.php';
+require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/CymruWhois.class.php';
+require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/LegacyBlacklist.class.php';
 
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
@@ -188,6 +191,209 @@ $app->group('/admin/moderation', function (RouteCollectorProxy $group) {
     $stmt->close();
     error_log("Admin approve-all error: " . $error);
     return adminError($response, 'Database error', 500);
+  });
+
+  /**
+   * POST /admin/moderation/reject-batch
+   * Body: { ids: [int, ...] } — up to MAX_REJECT_BATCH per call.
+   *
+   * Bulk equivalent of `/status` with status=rejected. Same semantics as
+   * deleteAndRejectUpload (S3 delete + CF purge + blossom hash ban + insert
+   * into rejected_files + delete from uploads_data) but consolidates the
+   * Cloudflare purge into one call per batch and uses single multi-row
+   * INSERT/DELETE for the DB writes — the per-item per-HTTP-call overhead
+   * (CF purge in particular) is what made bulk offender cleanup slow.
+   *
+   * S3 deletes and blossom hash bans remain per-item — those libraries don't
+   * expose batch surfaces — but they're fast HTTP calls.
+   *
+   * Returns per-id success/failure so the caller can show granular progress
+   * rather than bailing on first error.
+   */
+  $group->post('/reject-batch', function (Request $request, Response $response) {
+    global $link, $awsConfig;
+
+    // Cap aligned with what the front-end sends; CF purge accepts plenty more
+    // but we keep the chunk small so per-batch latency stays predictable and
+    // a single failure can't lose too much work.
+    $MAX_REJECT_BATCH = 30;
+
+    $data = $request->getParsedBody();
+    if (!is_array($data) || !isset($data['ids']) || !is_array($data['ids'])) {
+      return adminError($response, 'Invalid payload, expecting an "ids" array');
+    }
+
+    $ids = array_values(array_unique(array_filter(
+      array_map('intval', $data['ids']),
+      fn(int $id): bool => $id > 0,
+    )));
+
+    if ($ids === []) {
+      return adminError($response, 'No valid IDs provided');
+    }
+    if (count($ids) > $MAX_REJECT_BATCH) {
+      return adminError($response, "Too many IDs, max $MAX_REJECT_BATCH per request");
+    }
+
+    // Single SELECT to fetch every row's filename + type + blossom_hash. Any
+    // id not found here will be reported as a failure in the result map.
+    $placeholders = implode(',', array_fill(0, count($ids), '?'));
+    $stmt = $link->prepare(
+      "SELECT id, filename, type, blossom_hash
+         FROM uploads_data
+        WHERE id IN ($placeholders)"
+    );
+    $stmt->bind_param(str_repeat('i', count($ids)), ...$ids);
+    $stmt->execute();
+    $rs = $stmt->get_result();
+    /** @var array<int,array{filename:string,type:string,blossom_hash:?string}> $rows */
+    $rows = [];
+    while ($r = $rs->fetch_assoc()) {
+      $rows[(int) $r['id']] = [
+        'filename' => (string) $r['filename'],
+        'type' => (string) ($r['type'] ?? ''),
+        'blossom_hash' => $r['blossom_hash'] !== null ? (string) $r['blossom_hash'] : null,
+      ];
+    }
+    $rs->free();
+    $stmt->close();
+
+    /** @var list<array{id:int,ok:bool,error?:string}> $results */
+    $results = [];
+    $foundIds = [];      // ids we actually processed (subset of $ids)
+    $purgeBatch = [];    // CF cache keys (filename or filename|sha256)
+    $blossomHashes = []; // distinct blossom hashes to ban
+    $rejectedRows = [];  // [filename, type] tuples for rejected_files insert
+
+    $s3 = new S3Service($awsConfig);
+
+    foreach ($ids as $id) {
+      if (!isset($rows[$id])) {
+        $results[] = ['id' => $id, 'ok' => false, 'error' => 'Upload not found'];
+        continue;
+      }
+      $row = $rows[$id];
+      $filename = $row['filename'];
+      $type     = $row['type'];
+
+      $objectKey = match ($type) {
+        'picture' => 'i/' . $filename,
+        'profile' => 'i/p/' . $filename,
+        default   => 'av/' . $filename,
+      };
+
+      // CRITICAL ORDERING: S3 delete first, DB delete last. If we ever lose
+      // the uploads_data row but leave the S3 object behind, the file becomes
+      // an unreferenced orphan we can never find again. So an S3 failure here
+      // SKIPS the rest of the per-item bookkeeping (no rejected_files insert,
+      // no DELETE) — the DB row is preserved as our pointer for retry.
+      // (deleteFromS3 already swallows AWS exceptions internally and reports
+      //  via boolean return; NoSuchKey counts as success.)
+      $s3DeleteOk = false;
+      $currentSha256 = '';
+      try {
+        $currentSha256 = $s3->getS3ObjectHash(objectKey: $objectKey, paidAccount: false);
+        $s3DeleteOk    = $s3->deleteFromS3(objectKey: $objectKey, paidAccount: false) === true;
+      } catch (\Throwable $e) {
+        error_log("reject-batch S3 exception for id {$id} ({$filename}): " . $e->getMessage());
+      }
+
+      if (!$s3DeleteOk) {
+        error_log("reject-batch: S3 delete failed for id {$id} ({$filename}); preserving DB row for retry");
+        $results[] = [
+          'id' => $id,
+          'ok' => false,
+          'error' => 'S3 delete failed — DB row preserved for retry',
+        ];
+        continue;
+      }
+
+      $purgeBatch[] = $currentSha256 !== '' ? "{$filename}|{$currentSha256}" : $filename;
+      if ($row['blossom_hash'] !== null && $row['blossom_hash'] !== '') {
+        $blossomHashes[$row['blossom_hash']] = true;
+      }
+
+      $foundIds[] = $id;
+      $rejectedRows[] = [$filename, $type];
+      $results[] = ['id' => $id, 'ok' => true];
+    }
+
+    // Consolidated Cloudflare purge — one call per batch instead of per item.
+    if ($purgeBatch !== []) {
+      try {
+        $purger = new CloudflarePurger($_SERVER['NB_API_SECRET'], $_SERVER['NB_API_PURGE_URL']);
+        $purger->purgeFiles($purgeBatch);
+      } catch (\Throwable $e) {
+        error_log('reject-batch CF purge error: ' . $e->getMessage());
+      }
+    }
+
+    // Per-hash blossom ban. No bulk surface upstream; sequential calls.
+    if ($blossomHashes !== []) {
+      $blossomAPI = new BlossomFrontEndAPI($_SERVER['BLOSSOM_API_URL'], $_SERVER['BLOSSOM_API_KEY']);
+      foreach (array_keys($blossomHashes) as $hash) {
+        try {
+          $blossomAPI->banMedia($hash);
+        } catch (\Throwable $e) {
+          error_log("reject-batch blossom ban failed for hash {$hash}: " . $e->getMessage());
+        }
+      }
+    }
+
+    if ($foundIds !== []) {
+      // Single multi-row INSERT into rejected_files.
+      $valuesSql = implode(',', array_fill(0, count($rejectedRows), '(?, ?)'));
+      $insTypes  = str_repeat('ss', count($rejectedRows));
+      $insArgs   = [];
+      foreach ($rejectedRows as [$fn, $tp]) { $insArgs[] = $fn; $insArgs[] = $tp; }
+      try {
+        $stmt = $link->prepare("INSERT INTO rejected_files (filename, type) VALUES $valuesSql");
+        $stmt->bind_param($insTypes, ...$insArgs);
+        $stmt->execute();
+        $stmt->close();
+      } catch (\Throwable $e) {
+        // If the bulk insert fails, the DELETE below is still safe (the file
+        // is gone from S3 already). Log loudly so a sweeper can backfill.
+        error_log('reject-batch rejected_files insert failed: ' . $e->getMessage()
+          . ' — affected filenames: ' . implode(',', array_column($rejectedRows, 0)));
+      }
+
+      // Single DELETE for the whole batch.
+      $delPlaceholders = implode(',', array_fill(0, count($foundIds), '?'));
+      try {
+        $stmt = $link->prepare("DELETE FROM uploads_data WHERE id IN ($delPlaceholders)");
+        $stmt->bind_param(str_repeat('i', count($foundIds)), ...$foundIds);
+        $stmt->execute();
+        $stmt->close();
+      } catch (\Throwable $e) {
+        // This one matters — if we can't delete the row, the upload reappears
+        // in admin queues. Mark all in-batch ids as failed so the caller
+        // retries.
+        error_log('reject-batch uploads_data delete failed: ' . $e->getMessage());
+        $foundSet = array_flip($foundIds);
+        foreach ($results as &$r) {
+          if (isset($foundSet[$r['id']])) {
+            $r['ok'] = false;
+            $r['error'] = 'Database delete failed';
+          }
+        }
+        unset($r);
+      }
+    }
+
+    $succeeded = 0;
+    $failed = 0;
+    foreach ($results as $r) {
+      $r['ok'] ? $succeeded++ : $failed++;
+    }
+
+    return adminJson($response, [
+      'success' => $failed === 0,
+      'processed' => count($results),
+      'succeeded' => $succeeded,
+      'failed' => $failed,
+      'results' => $results,
+    ]);
   });
 
 })->add(adminOrModeratorMiddleware());
@@ -365,6 +571,774 @@ $app->group('/admin/csam', function (RouteCollectorProxy $group) {
         'error' => 'Error submitting report',
       ], 500);
     }
+  });
+
+  /**
+   * GET /admin/csam/offender-uploads/{caseId}
+   * For an already-NCMEC-submitted case, return the offender's npub plus every
+   * still-active upload they own. Caller iterates over upload IDs and rejects
+   * each via /admin/moderation/status (status=rejected) — same per-item flow as
+   * approve.php's "Reject All & Ban User" button.
+   *
+   * Refuses to act when:
+   *   - the case has not been submitted (numeric NCMEC report id),
+   *   - or the offender npub cannot be confidently extracted from logs.
+   */
+  $group->get('/offender-uploads/{caseId:[0-9]+}', function (Request $request, Response $response, array $args) {
+    global $link;
+    $caseId = (int) $args['caseId'];
+
+    $stmt = $link->prepare('SELECT logs, ncmec_report_id FROM identified_csam_cases WHERE id = ?');
+    $stmt->bind_param('i', $caseId);
+    $stmt->execute();
+    $caseRow = $stmt->get_result()->fetch_assoc();
+    $stmt->close();
+
+    if ($caseRow === null) {
+      return adminError($response, 'Case not found', 404);
+    }
+
+    $reportId = (string) ($caseRow['ncmec_report_id'] ?? '');
+    if (!csamCaseAllowsOffenderCleanup($reportId)) {
+      return adminError($response, 'Case is not in a delete-eligible state (need numeric NCMEC report id or EVIDENCE_EXPIRED).', 422);
+    }
+
+    $npub = extractOffenderNpubFromLogs($caseRow['logs']);
+    if ($npub === null || !isLikelyValidNpub($npub)) {
+      return adminError($response, 'Unable to determine offender npub from case logs.', 422);
+    }
+
+    // Only list uploads still alive (not already rejected or csam'd).
+    // The usernpub <> '' / IS NOT NULL guards are belt-and-suspenders against
+    // ever scanning legacy anonymous uploads — `extractOffenderNpubFromLogs`
+    // already refuses to return empty/null, but defending at the SQL layer
+    // means a future bug in extraction can never sweep those rows.
+    $stmt = $link->prepare(
+      "SELECT id, filename, type, approval_status
+         FROM uploads_data
+        WHERE usernpub = ?
+          AND usernpub <> ''
+          AND usernpub IS NOT NULL
+          AND approval_status NOT IN ('rejected', 'csam')
+        ORDER BY upload_date DESC"
+    );
+    $stmt->bind_param('s', $npub);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $uploads = [];
+    while ($r = $result->fetch_assoc()) {
+      $uploads[] = [
+        'id' => (int) $r['id'],
+        'filename' => (string) $r['filename'],
+        'type' => (string) $r['type'],
+        'approval_status' => (string) $r['approval_status'],
+      ];
+    }
+    $stmt->close();
+
+    return adminJson($response, [
+      'caseId' => $caseId,
+      'reportId' => $reportId,
+      'npub' => $npub,
+      'count' => count($uploads),
+      'uploads' => $uploads,
+    ]);
+  });
+
+  /**
+   * GET /admin/csam/submitted-offenders?days=N
+   * Bulk variant of /offender-uploads/{caseId}: collect every offender npub
+   * extracted from CSAM cases that were *successfully* submitted to NCMEC in
+   * the past N days, dedupe by npub, and attach each offender's remaining
+   * active uploads. The caller iterates the flat list of upload ids.
+   *
+   * "Successfully submitted" = ncmec_report_id is non-empty AND not TEST_/
+   * FALSE_MATCH/Null:Technical Error AND is_numeric (final guard in PHP).
+   */
+  $group->get('/submitted-offenders', function (Request $request, Response $response) {
+    global $link;
+    $params = $request->getQueryParams();
+    $days = isset($params['days']) ? min(90, max(1, (int) $params['days'])) : 7;
+
+    $stmt = $link->prepare(
+      "SELECT id, logs, ncmec_report_id
+         FROM identified_csam_cases
+        WHERE timestamp >= DATE_SUB(NOW(), INTERVAL ? DAY)
+          AND ncmec_report_id IS NOT NULL
+          AND ncmec_report_id NOT LIKE 'TEST_%'
+          AND ncmec_report_id <> 'FALSE_MATCH'
+          AND ncmec_report_id <> 'Null: Technical Error'
+        ORDER BY timestamp ASC"
+    );
+    $stmt->bind_param('i', $days);
+    $stmt->execute();
+    $result = $stmt->get_result();
+
+    /** @var array<string,array{case_ids:list<int>,report_ids:list<string>}> $offenderMap */
+    $offenderMap = [];
+    while ($r = $result->fetch_assoc()) {
+      // Final guard — only truly numeric NCMEC report ids count as "submitted".
+      if (!is_numeric((string) $r['ncmec_report_id'])) continue;
+      $npub = extractOffenderNpubFromLogs($r['logs']);
+      if ($npub === null) continue;
+      if (!isset($offenderMap[$npub])) {
+        $offenderMap[$npub] = ['case_ids' => [], 'report_ids' => []];
+      }
+      $offenderMap[$npub]['case_ids'][]   = (int) $r['id'];
+      $offenderMap[$npub]['report_ids'][] = (string) $r['ncmec_report_id'];
+    }
+    $stmt->close();
+
+    $offenders = [];
+    $totalUploads = 0;
+    if ($offenderMap !== []) {
+      // Re-validate every key — extractOffenderNpubFromLogs already does, but
+      // a future refactor breaking that must not let a bad value reach the IN
+      // clause.
+      $npubs = array_values(array_filter(array_keys($offenderMap), 'isLikelyValidNpub'));
+
+      // Group by npub in PHP from a single SELECT instead of one query per
+      // offender. The usernpub <> '' / IS NOT NULL guards are belt-and-
+      // suspenders against ever scanning legacy anonymous uploads.
+      $uploadsByNpub = [];
+      if ($npubs !== []) {
+        $placeholders = implode(',', array_fill(0, count($npubs), '?'));
+        $listStmt = $link->prepare(
+          "SELECT id, filename, type, usernpub
+             FROM uploads_data
+            WHERE usernpub IN ($placeholders)
+              AND usernpub <> ''
+              AND usernpub IS NOT NULL
+              AND approval_status NOT IN ('rejected', 'csam')
+            ORDER BY upload_date DESC"
+        );
+        $listStmt->bind_param(str_repeat('s', count($npubs)), ...$npubs);
+        $listStmt->execute();
+        $rs = $listStmt->get_result();
+        while ($u = $rs->fetch_assoc()) {
+          $uploadsByNpub[(string) $u['usernpub']][] = [
+            'id' => (int) $u['id'],
+            'filename' => (string) $u['filename'],
+            'type' => (string) $u['type'],
+          ];
+        }
+        $rs->free();
+        $listStmt->close();
+      }
+
+      foreach ($offenderMap as $npub => $info) {
+        if (!isLikelyValidNpub($npub)) continue;
+        $uploads = $uploadsByNpub[$npub] ?? [];
+        $totalUploads += count($uploads);
+        $offenders[] = [
+          'npub' => $npub,
+          'case_ids' => $info['case_ids'],
+          'report_ids' => $info['report_ids'],
+          'uploads' => $uploads,
+          'remaining_count' => count($uploads),
+        ];
+      }
+    }
+
+    return adminJson($response, [
+      'days' => $days,
+      'total_offenders' => count($offenders),
+      'total_uploads' => $totalUploads,
+      'offenders' => $offenders,
+    ]);
+  });
+
+})->add(adminOnlyMiddleware());
+
+// =============================================================================
+// Security routes — admin only
+//   IP blocklist/whitelist management + Team Cymru WHOIS lookup.
+//   First phase: management UI only — enforcement is wired separately.
+// =============================================================================
+
+/**
+ * Pull IP candidates out of an identified_csam_cases.logs JSON blob.
+ * Handles both Type 1 (filename-keyed with uploadedFileInfo JSON string)
+ * and Type 2 (evidenceData.ViolationContentCollection / ReporteeIPAddress).
+ *
+ * @return list<array{ip:string,source:string,npub:?string,filename:?string,datetime:?string}>
+ */
+function extractIpCandidatesFromLogs(?string $logsJson): array
+{
+  if ($logsJson === null || $logsJson === '') return [];
+  $data = json_decode($logsJson, true);
+  if (!is_array($data)) return [];
+
+  $out = [];
+  $seen = [];
+  $push = function (string $ip, string $source, ?string $npub, ?string $filename, ?string $datetime) use (&$out, &$seen) {
+    $ip = trim($ip);
+    if ($ip === '' || filter_var($ip, FILTER_VALIDATE_IP) === false) return;
+    $key = $ip . '|' . $source;
+    if (isset($seen[$key])) return;
+    $seen[$key] = true;
+    $out[] = [
+      'ip' => $ip,
+      'source' => $source,
+      'npub' => $npub,
+      'filename' => $filename,
+      'datetime' => $datetime,
+    ];
+  };
+
+  if (isset($data['evidenceData']) && is_array($data['evidenceData'])) {
+    $ed = $data['evidenceData'];
+    if (!empty($ed['ReporteeIPAddress'])) {
+      $push((string) $ed['ReporteeIPAddress'], 'ReporteeIPAddress', $ed['ReporteeName'] ?? null, null, $ed['IncidentTime'] ?? null);
+    }
+    $vc = $ed['ViolationContentCollection'] ?? [];
+    if (isset($vc['UploadIpAddress']) || isset($vc['LocationOfFile'])) {
+      $vc = [$vc];
+    }
+    if (is_array($vc)) {
+      foreach ($vc as $v) {
+        if (!is_array($v)) continue;
+        if (!empty($v['UploadIpAddress'])) {
+          $push(
+            (string) $v['UploadIpAddress'],
+            'UploadIpAddress',
+            null,
+            $v['Name'] ?? null,
+            $v['UploadDateTime'] ?? null
+          );
+        }
+      }
+    }
+  } else {
+    foreach ($data as $key => $entry) {
+      if (!is_array($entry)) continue;
+      $info = $entry['uploadedFileInfo'] ?? null;
+      $infoArr = is_string($info) ? json_decode($info, true) : (is_array($info) ? $info : null);
+      if (!is_array($infoArr)) continue;
+      $ip = $infoArr['realIp'] ?? null;
+      if (!is_string($ip) || $ip === '') continue;
+      // CSAM-case logs are keyed by filename; R2 logs are keyed by R2 path.
+      // Prefer the explicit fileName field; fall back to the key only if it
+      // looks like a filename (contains "." with no "/").
+      $filename = $entry['fileName'] ?? null;
+      if ($filename === null && is_string($key) && str_contains($key, '.') && !str_contains($key, '/')) {
+        $filename = $key;
+      }
+      $npub = $entry['uploadNpub'] ?? null;
+      $datetime = isset($entry['uploadTime']) ? date('Y-m-d\TH:i:s\Z', (int) $entry['uploadTime']) : null;
+      $push($ip, 'realIp', $npub, $filename, $datetime);
+    }
+  }
+
+  return $out;
+}
+
+/**
+ * A CSAM case is "delete-eligible" (offender confirmed, cleanup allowed) when
+ * its NCMEC report id is either a real numeric report id or the manual
+ * EVIDENCE_EXPIRED sentinel — i.e. the offender has been positively identified
+ * even if the formal submission couldn't go through. TEST_/FALSE_MATCH/
+ * Null:Technical Error/empty are NOT eligible.
+ */
+function csamCaseAllowsOffenderCleanup(?string $reportId): bool
+{
+  if ($reportId === null || $reportId === '') return false;
+  if ($reportId === 'EVIDENCE_EXPIRED') return true;
+  return is_numeric($reportId);
+}
+
+/**
+ * Tight npub-shape validator. Real bech32 npub is `npub1` + 58 bech32 chars
+ * (63 total). We allow [60, 100] to be tolerant of any future format drift but
+ * still reject empty / "anonymous" / "Unknown" / partial sentinels — anything
+ * that could land in `uploads_data.usernpub = ''` and bulk-match legacy
+ * anonymous uploads.
+ */
+function isLikelyValidNpub(?string $n): bool
+{
+  if ($n === null) return false;
+  $len = strlen($n);
+  return $len >= 60 && $len <= 100 && str_starts_with($n, 'npub1');
+}
+
+/**
+ * Pull the offender (uploader) npub out of an identified_csam_cases.logs JSON.
+ *
+ * Type 1 logs (filename-keyed): each entry has uploadNpub.
+ * Type 2 logs (evidenceData):   ReporteeName carries the npub.
+ *
+ * Returns null when the npub cannot be confidently identified as a real npub.
+ * Critical: the caller MUST treat null as "no actionable target" — never fall
+ * back to an empty-string match, which would sweep up every legacy anonymous
+ * upload (rows with usernpub = '' or NULL).
+ */
+function extractOffenderNpubFromLogs(?string $logsJson): ?string
+{
+  if ($logsJson === null || $logsJson === '') return null;
+  $data = json_decode($logsJson, true);
+  if (!is_array($data)) return null;
+
+  if (isset($data['evidenceData']['ReporteeName'])) {
+    $n = trim((string) $data['evidenceData']['ReporteeName']);
+    if (isLikelyValidNpub($n)) return $n;
+  }
+
+  foreach ($data as $entry) {
+    if (!is_array($entry)) continue;
+    $n = isset($entry['uploadNpub']) ? trim((string) $entry['uploadNpub']) : '';
+    if (isLikelyValidNpub($n)) return $n;
+  }
+
+  return null;
+}
+
+$app->group('/admin/security', function (RouteCollectorProxy $group) {
+
+  /**
+   * GET /admin/security/case-ip/{id}
+   * Return IP candidates extracted from a CSAM case's logs column.
+   */
+  $group->get('/case-ip/{id:[0-9]+}', function (Request $request, Response $response, array $args) {
+    global $link;
+    $id = (int) $args['id'];
+
+    $stmt = $link->prepare('SELECT logs FROM identified_csam_cases WHERE id = ?');
+    $stmt->bind_param('i', $id);
+    $stmt->execute();
+    $row = $stmt->get_result()->fetch_assoc();
+    $stmt->close();
+
+    if ($row === null) {
+      return adminError($response, 'Incident not found', 404);
+    }
+
+    $candidates = extractIpCandidatesFromLogs($row['logs']);
+    return adminJson($response, ['incidentId' => $id, 'candidates' => $candidates]);
+  });
+
+  /**
+   * GET /admin/security/whois?ip=X
+   * Team Cymru ASN/prefix/country/registry lookup.
+   */
+  $group->get('/whois', function (Request $request, Response $response) {
+    $params = $request->getQueryParams();
+    $ip = trim($params['ip'] ?? '');
+    if ($ip === '' || filter_var($ip, FILTER_VALIDATE_IP) === false) {
+      return adminError($response, 'Valid ip parameter is required');
+    }
+
+    try {
+      $whois = new CymruWhois();
+      $info = $whois->lookup($ip);
+      if ($info === null) {
+        return adminJson($response, ['ip' => $ip, 'found' => false]);
+      }
+      return adminJson($response, ['found' => true] + $info);
+    } catch (\Throwable $e) {
+      error_log('Admin whois error: ' . $e->getMessage());
+      return adminError($response, 'WHOIS lookup failed', 500);
+    }
+  });
+
+  /**
+   * POST /admin/security/blocklist/check
+   * Body: { ip: "...", userId?: "..." }
+   * Returns whether the IP is currently blocked.
+   */
+  $group->post('/blocklist/check', function (Request $request, Response $response) {
+    global $link;
+    $body = $request->getParsedBody() ?? [];
+    $ip = trim($body['ip'] ?? '');
+    $userId = trim((string) ($body['userId'] ?? ''));
+    if ($ip === '' || filter_var($ip, FILTER_VALIDATE_IP) === false) {
+      return adminError($response, 'Valid ip is required');
+    }
+
+    $iac = new IpAccessControl($link);
+    $match = $iac->findBlock($ip, $userId);
+    return adminJson($response, [
+      'ip' => $ip,
+      'blocked' => $match !== null,
+      'match' => $match,
+    ]);
+  });
+
+  // -------------------------------------------------------------------------
+  // Blocklist CRUD
+  // -------------------------------------------------------------------------
+
+  /**
+   * GET /admin/security/blocklist
+   * Query: source?, active_only?, limit?, offset?
+   */
+  $group->get('/blocklist', function (Request $request, Response $response) {
+    global $link;
+    $q = $request->getQueryParams();
+    $opts = [
+      'limit' => isset($q['limit']) ? (int) $q['limit'] : 100,
+      'offset' => isset($q['offset']) ? (int) $q['offset'] : 0,
+      'active_only' => !empty($q['active_only']),
+    ];
+    if (isset($q['source']) && $q['source'] !== '') {
+      $opts['source'] = (string) $q['source'];
+    }
+
+    $iac = new IpAccessControl($link);
+    $rows = $iac->listBlocks($opts);
+    $total = $iac->countBlocks($opts['source'] ?? null);
+
+    return adminJson($response, [
+      'rows' => $rows,
+      'total' => $total,
+      'limit' => $opts['limit'],
+      'offset' => $opts['offset'],
+    ]);
+  });
+
+  /**
+   * POST /admin/security/blocklist
+   * Body: { cidr, reason?, source?, expires_at? }
+   */
+  $group->post('/blocklist', function (Request $request, Response $response) {
+    global $link;
+    $body = $request->getParsedBody() ?? [];
+    $cidr = trim((string) ($body['cidr'] ?? ''));
+    if ($cidr === '') {
+      return adminError($response, 'cidr is required');
+    }
+    $reason = isset($body['reason']) ? trim((string) $body['reason']) : null;
+    $source = isset($body['source']) && $body['source'] !== '' ? (string) $body['source'] : 'manual';
+    $expiresAt = isset($body['expires_at']) && $body['expires_at'] !== '' ? (string) $body['expires_at'] : null;
+
+    if ($expiresAt !== null && strtotime($expiresAt) === false) {
+      return adminError($response, 'Invalid expires_at format');
+    }
+
+    try {
+      $iac = new IpAccessControl($link);
+      $id = $iac->addBlock($cidr, $reason ?: null, $source, $expiresAt);
+      if ($id === null) {
+        return adminError($response, 'Duplicate range — this CIDR is already blocked', 409);
+      }
+      return adminJson($response, ['success' => true, 'id' => $id, 'cidr' => IpAccessControl::normalizeCidr($cidr)]);
+    } catch (InvalidArgumentException $e) {
+      return adminError($response, $e->getMessage(), 422);
+    } catch (\Throwable $e) {
+      error_log('Admin blocklist add error: ' . $e->getMessage());
+      return adminError($response, 'Failed to add block', 500);
+    }
+  });
+
+  /**
+   * PATCH /admin/security/blocklist/{id}
+   * Body: any of { reason, source, expires_at }
+   */
+  $group->patch('/blocklist/{id:[0-9]+}', function (Request $request, Response $response, array $args) {
+    global $link;
+    $id = (int) $args['id'];
+    $body = $request->getParsedBody() ?? [];
+
+    $fields = [];
+    foreach (['reason', 'source', 'expires_at'] as $f) {
+      if (array_key_exists($f, $body)) {
+        $fields[$f] = $body[$f] === '' ? null : (string) $body[$f];
+      }
+    }
+    if ($fields === []) {
+      return adminError($response, 'No updatable fields provided');
+    }
+    if (isset($fields['expires_at']) && $fields['expires_at'] !== null && strtotime($fields['expires_at']) === false) {
+      return adminError($response, 'Invalid expires_at format');
+    }
+
+    try {
+      $iac = new IpAccessControl($link);
+      $ok = $iac->updateBlock($id, $fields);
+      if (!$ok) {
+        return adminError($response, 'Block not found or unchanged', 404);
+      }
+      return adminSuccess($response, ['id' => $id]);
+    } catch (InvalidArgumentException $e) {
+      return adminError($response, $e->getMessage(), 422);
+    } catch (\Throwable $e) {
+      error_log('Admin blocklist update error: ' . $e->getMessage());
+      return adminError($response, 'Failed to update block', 500);
+    }
+  });
+
+  /**
+   * DELETE /admin/security/blocklist/{id}
+   */
+  $group->delete('/blocklist/{id:[0-9]+}', function (Request $request, Response $response, array $args) {
+    global $link;
+    $id = (int) $args['id'];
+    $iac = new IpAccessControl($link);
+    $ok = $iac->removeBlock($id);
+    if (!$ok) {
+      return adminError($response, 'Block not found', 404);
+    }
+    return adminSuccess($response, ['id' => $id]);
+  });
+
+  // -------------------------------------------------------------------------
+  // Whitelist CRUD
+  // -------------------------------------------------------------------------
+
+  /**
+   * GET /admin/security/whitelist
+   */
+  $group->get('/whitelist', function (Request $request, Response $response) {
+    global $link;
+    $q = $request->getQueryParams();
+    $opts = [
+      'limit' => isset($q['limit']) ? (int) $q['limit'] : 100,
+      'offset' => isset($q['offset']) ? (int) $q['offset'] : 0,
+      'active_only' => !empty($q['active_only']),
+    ];
+    $iac = new IpAccessControl($link);
+    $rows = $iac->listWhitelist($opts);
+    return adminJson($response, [
+      'rows' => $rows,
+      'limit' => $opts['limit'],
+      'offset' => $opts['offset'],
+    ]);
+  });
+
+  /**
+   * POST /admin/security/whitelist
+   * Body: { user_id, reason?, expires_at? }
+   * (user_id is application-level — stored as-is. Caller decides npub vs numeric.)
+   */
+  $group->post('/whitelist', function (Request $request, Response $response) {
+    global $link;
+    $body = $request->getParsedBody() ?? [];
+    $userId = trim((string) ($body['user_id'] ?? ''));
+    if ($userId === '') {
+      return adminError($response, 'user_id is required');
+    }
+    $reason = isset($body['reason']) ? trim((string) $body['reason']) : null;
+    $expiresAt = isset($body['expires_at']) && $body['expires_at'] !== '' ? (string) $body['expires_at'] : null;
+    if ($expiresAt !== null && strtotime($expiresAt) === false) {
+      return adminError($response, 'Invalid expires_at format');
+    }
+
+    try {
+      $iac = new IpAccessControl($link);
+      $iac->addToWhitelist($userId, $reason ?: null, $expiresAt);
+      return adminSuccess($response, ['user_id' => $userId]);
+    } catch (InvalidArgumentException $e) {
+      return adminError($response, $e->getMessage(), 422);
+    } catch (\Throwable $e) {
+      error_log('Admin whitelist add error: ' . $e->getMessage());
+      return adminError($response, 'Failed to add whitelist entry', 500);
+    }
+  });
+
+  /**
+   * PATCH /admin/security/whitelist/{userId}
+   */
+  $group->patch('/whitelist/{userId}', function (Request $request, Response $response, array $args) {
+    global $link;
+    $userId = (string) $args['userId'];
+    $body = $request->getParsedBody() ?? [];
+
+    $fields = [];
+    foreach (['reason', 'expires_at'] as $f) {
+      if (array_key_exists($f, $body)) {
+        $fields[$f] = $body[$f] === '' ? null : (string) $body[$f];
+      }
+    }
+    if ($fields === []) {
+      return adminError($response, 'No updatable fields provided');
+    }
+    if (isset($fields['expires_at']) && $fields['expires_at'] !== null && strtotime($fields['expires_at']) === false) {
+      return adminError($response, 'Invalid expires_at format');
+    }
+
+    try {
+      $iac = new IpAccessControl($link);
+      $ok = $iac->updateWhitelist($userId, $fields);
+      if (!$ok) {
+        return adminError($response, 'Whitelist entry not found or unchanged', 404);
+      }
+      return adminSuccess($response, ['user_id' => $userId]);
+    } catch (InvalidArgumentException $e) {
+      return adminError($response, $e->getMessage(), 422);
+    } catch (\Throwable $e) {
+      error_log('Admin whitelist update error: ' . $e->getMessage());
+      return adminError($response, 'Failed to update whitelist entry', 500);
+    }
+  });
+
+  /**
+   * DELETE /admin/security/whitelist/{userId}
+   */
+  $group->delete('/whitelist/{userId}', function (Request $request, Response $response, array $args) {
+    global $link;
+    $userId = (string) $args['userId'];
+    $iac = new IpAccessControl($link);
+    $ok = $iac->removeFromWhitelist($userId);
+    if (!$ok) {
+      return adminError($response, 'Whitelist entry not found', 404);
+    }
+    return adminSuccess($response, ['user_id' => $userId]);
+  });
+
+  // -------------------------------------------------------------------------
+  // Per-upload IP lookup (used by approve.php "Lookup & Block IP" modal).
+  // Pulls the upload's R2 logs by file hash and extracts IP candidates.
+  // -------------------------------------------------------------------------
+
+  /**
+   * GET /admin/security/upload-ip/{id}
+   * Returns IP candidates extracted from the upload's R2 log JSON, plus the
+   * upload's npub for npub-side blacklisting.
+   */
+  $group->get('/upload-ip/{id:[0-9]+}', function (Request $request, Response $response, array $args) {
+    global $link, $csamReportingConfig;
+    $id = (int) $args['id'];
+
+    $stmt = $link->prepare('SELECT filename, type, usernpub FROM uploads_data WHERE id = ?');
+    $stmt->bind_param('i', $id);
+    $stmt->execute();
+    $row = $stmt->get_result()->fetch_assoc();
+    $stmt->close();
+
+    if ($row === null) {
+      return adminError($response, 'Upload not found', 404);
+    }
+
+    $filename = (string) ($row['filename'] ?? '');
+    $type     = (string) ($row['type'] ?? '');
+    $usernpub = (string) ($row['usernpub'] ?? '');
+
+    $fileHash = pathinfo($filename, PATHINFO_FILENAME);
+    if ($fileHash === '' || !preg_match('/^[a-f0-9]{64}$/i', $fileHash)) {
+      return adminJson($response, [
+        'uploadId' => $id,
+        'filename' => $filename,
+        'usernpub' => $usernpub,
+        'candidates' => [],
+        'note' => 'Filename is not a sha256-prefixed hash; cannot fetch R2 logs.',
+      ]);
+    }
+
+    try {
+      $logs = fetchJsonFromR2Bucket(
+        prefix: $fileHash,
+        endPoint: $csamReportingConfig['r2EndPoint'],
+        accessKey: $csamReportingConfig['r2AccessKey'],
+        secretKey: $csamReportingConfig['r2SecretKey'],
+        bucket: $csamReportingConfig['r2LogsBucket'],
+      );
+    } catch (\Throwable $e) {
+      error_log('Admin upload-ip R2 fetch error: ' . $e->getMessage());
+      return adminError($response, 'Failed to fetch upload logs', 500);
+    }
+
+    $candidates = extractIpCandidatesFromLogs($logs ? json_encode($logs) : null);
+
+    return adminJson($response, [
+      'uploadId' => $id,
+      'filename' => $filename,
+      'type' => $type,
+      'usernpub' => $usernpub,
+      'candidates' => $candidates,
+    ]);
+  });
+
+  // -------------------------------------------------------------------------
+  // Legacy npub/IP blacklist (the existing `blacklist` table).
+  // Stop-gap manager — schema unchanged; CRUD only.
+  // -------------------------------------------------------------------------
+
+  /**
+   * GET /admin/security/legacy-blacklist
+   * Query: q?, limit?, offset?
+   */
+  $group->get('/legacy-blacklist', function (Request $request, Response $response) {
+    global $link;
+    $q = $request->getQueryParams();
+    $opts = [
+      'q' => isset($q['q']) ? (string) $q['q'] : '',
+      'limit' => isset($q['limit']) ? (int) $q['limit'] : 100,
+      'offset' => isset($q['offset']) ? (int) $q['offset'] : 0,
+    ];
+    $bl = new LegacyBlacklist($link);
+    $rows = $bl->list($opts);
+    $total = $bl->count($opts['q']);
+    return adminJson($response, [
+      'rows' => $rows,
+      'total' => $total,
+      'limit' => $opts['limit'],
+      'offset' => $opts['offset'],
+      'q' => $opts['q'],
+    ]);
+  });
+
+  /**
+   * GET /admin/security/legacy-blacklist/check?npub=&ip=
+   */
+  $group->get('/legacy-blacklist/check', function (Request $request, Response $response) {
+    global $link;
+    $q = $request->getQueryParams();
+    $npub = trim((string) ($q['npub'] ?? ''));
+    $ip = trim((string) ($q['ip'] ?? ''));
+
+    if ($npub === '' && $ip === '') {
+      return adminError($response, 'Provide npub and/or ip');
+    }
+
+    $bl = new LegacyBlacklist($link);
+    return adminJson($response, [
+      'npub' => $npub,
+      'ip' => $ip,
+      'npub_banned' => $npub !== '' ? $bl->isNpubBanned($npub) : null,
+      'ip_banned' => $ip !== '' ? $bl->isIpBanned($ip) : null,
+    ]);
+  });
+
+  /**
+   * POST /admin/security/legacy-blacklist
+   * Body: { npub?, ip?, user_agent?, reason? } — at least one of npub/ip required.
+   */
+  $group->post('/legacy-blacklist', function (Request $request, Response $response) {
+    global $link;
+    $body = $request->getParsedBody() ?? [];
+    $npub = isset($body['npub']) ? trim((string) $body['npub']) : '';
+    $ip = isset($body['ip']) ? trim((string) $body['ip']) : '';
+    $ua = isset($body['user_agent']) ? trim((string) $body['user_agent']) : '';
+    $reason = isset($body['reason']) ? trim((string) $body['reason']) : '';
+
+    try {
+      $bl = new LegacyBlacklist($link);
+      $id = $bl->add(
+        $npub !== '' ? $npub : null,
+        $ip !== '' ? $ip : null,
+        $ua !== '' ? $ua : null,
+        $reason !== '' ? $reason : null,
+      );
+      return adminJson($response, ['success' => true, 'id' => $id]);
+    } catch (InvalidArgumentException $e) {
+      return adminError($response, $e->getMessage(), 422);
+    } catch (\Throwable $e) {
+      error_log('Admin legacy-blacklist add error: ' . $e->getMessage());
+      return adminError($response, 'Failed to add blacklist entry', 500);
+    }
+  });
+
+  /**
+   * DELETE /admin/security/legacy-blacklist/{id}
+   */
+  $group->delete('/legacy-blacklist/{id:[0-9]+}', function (Request $request, Response $response, array $args) {
+    global $link;
+    $id = (int) $args['id'];
+    $bl = new LegacyBlacklist($link);
+    $ok = $bl->removeById($id);
+    if (!$ok) {
+      return adminError($response, 'Blacklist entry not found', 404);
+    }
+    return adminSuccess($response, ['id' => $id]);
   });
 
 })->add(adminOnlyMiddleware());
@@ -958,18 +1932,20 @@ function banUserAndDeleteUpload($link, S3Service $s3, BlossomFrontEndAPI $blosso
   );
 
   if (!empty($logsJSON)) {
-    $stmt = $link->prepare("INSERT INTO blacklist (npub, ip, user_agent, reason) VALUES (?, ?, ?, ?)");
+    $bl = new LegacyBlacklist($link);
     foreach ($logsJSON as $log) {
       $logData = json_decode($log['uploadedFileInfo'], true);
-      $ip = $logData['realIp'];
-      $ua = $logData['userAgent'];
+      $ip = $logData['realIp'] ?? null;
+      $ua = $logData['userAgent'] ?? null;
       $npub = $log['uploadNpub'] ?? "anonymous";
-      $blockReason = 'BANNED';
-      $stmt->bind_param("ssss", $npub, $ip, $ua, $blockReason);
-      $stmt->execute();
+      try {
+        // npub is the actual block target; ip/ua kept as forensic context only.
+        $bl->add($npub, $ip, $ua, 'BANNED');
+      } catch (\Throwable $e) {
+        error_log('Legacy blacklist insert (BANNED) failed for ' . $npub . ': ' . $e->getMessage());
+      }
       $blossomAPI->banUser($npub, 'Repeated TOS Violation or legal reasons');
     }
-    $stmt->close();
   }
 
   // Delete the file (reuse reject helper logic)
@@ -1048,18 +2024,20 @@ function processCsamReport($link, S3Service $s3, BlossomFrontEndAPI $blossomAPI,
 
   // Blacklist all associated users
   if (!empty($logsJSON)) {
-    $stmt = $link->prepare("INSERT INTO blacklist (npub, ip, user_agent, reason) VALUES (?, ?, ?, ?)");
+    $bl = new LegacyBlacklist($link);
     foreach ($logsJSON as $log) {
       $logData = json_decode($log['uploadedFileInfo'], true);
-      $ip = $logData['realIp'];
-      $ua = $logData['userAgent'];
+      $ip = $logData['realIp'] ?? null;
+      $ua = $logData['userAgent'] ?? null;
       $npub = $log['uploadNpub'] ?? "anonymous";
-      $blockReason = 'CSAM';
-      $stmt->bind_param("ssss", $npub, $ip, $ua, $blockReason);
-      $stmt->execute();
+      try {
+        // npub is the block target; ip/ua kept as forensic context only.
+        $bl->add($npub, $ip, $ua, 'CSAM');
+      } catch (\Throwable $e) {
+        error_log('Legacy blacklist insert (CSAM) failed for ' . $npub . ': ' . $e->getMessage());
+      }
       $blossomAPI->banUser($npub, 'Confirmed CSAM report');
     }
-    $stmt->close();
   }
 
   // Delete file from S3, purge CF, ban blossom hash, reject, delete from DB
