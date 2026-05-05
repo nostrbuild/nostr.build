@@ -90,6 +90,12 @@ $photoDNAConfig = [
     'api_key' => $_SERVER['PHOTODNA_API_KEY'],
 ];
 
+// Throw mysqli errors as exceptions so try/catch in callers (IpAccessControl,
+// LegacyBlacklist, UploadValidator, etc.) actually triggers. PHP 8.1+ defaults
+// to this, but assert it explicitly so a php.ini override or future runtime
+// change can't silently flip enforcement off.
+mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
+
 // Maybe we should move it to a separate place and do not open a link to the database every time?
 /* Attempt to connect to MySQL database */
 $link = mysqli_connect("p:" . DB_SERVER, DB_USERNAME, DB_PASSWORD, DB_NAME);

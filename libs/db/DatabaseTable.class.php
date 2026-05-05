@@ -22,6 +22,11 @@ class DatabaseTable
     $this->tableName = $tableName;
   }
 
+  public function getDb(): mysqli
+  {
+    return $this->db;
+  }
+
   protected function getType($var)
   {
     switch (gettype($var)) {
