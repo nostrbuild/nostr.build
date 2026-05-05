@@ -23,6 +23,16 @@ $app->group('/blossom', function (RouteCollectorProxy $group) {
 
     $metadata = metadataFromHeaders($headers);
 
+    // The Cloudflare Worker proxy (blossom-band) forwards the real end-user
+    // client info (incl. cf-connecting-ip as realIp) via x-blossom-client-info.
+    // nginx sets $_SERVER['CLIENT_REQUEST_INFO'] from the immediate peer, which
+    // here is the Worker's egress IP (a Cloudflare /16). Replace it with the
+    // worker-supplied info so any downstream consumer (CSAM logging, webhooks,
+    // S3Multipart, etc.) records the real client IP.
+    if (!empty($metadata['client_info'])) {
+      $_SERVER['CLIENT_REQUEST_INFO'] = $metadata['client_info'];
+    }
+
     error_log('Route: /blossom/upload - PUT: ' . json_encode($metadata) . PHP_EOL);
 
     $no_transform = $metadata['endpoint'] === 'upload' ||
@@ -95,6 +105,12 @@ $app->group('/blossom', function (RouteCollectorProxy $group) {
     error_log('Route: /blossom/delete/{id} - DELETE: ' . "$fileId" . PHP_EOL);
     $headers = $request->getHeaders(); // Authenticated path, we trust headers
     $metadata = metadataFromHeaders($headers);
+
+    // Same override as /upload — see comment there for rationale.
+    if (!empty($metadata['client_info'])) {
+      $_SERVER['CLIENT_REQUEST_INFO'] = $metadata['client_info'];
+    }
+
     $factory = $this->get('deleteMediaFactory');
 
     $npub = $metadata['npub'] ?? null;
