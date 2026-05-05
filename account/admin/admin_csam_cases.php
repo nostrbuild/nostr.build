@@ -3,6 +3,7 @@ require_once($_SERVER['DOCUMENT_ROOT'] . '/config.php');
 require_once($_SERVER['DOCUMENT_ROOT'] . '/libs/permissions.class.php');
 require_once($_SERVER['DOCUMENT_ROOT'] . '/SiteConfig.php');
 require_once($_SERVER['DOCUMENT_ROOT'] . '/libs/NCMECReportHandler.class.php');
+require_once($_SERVER['DOCUMENT_ROOT'] . '/libs/IpAccessControl.class.php');
 
 // Create new Permission object
 $perm = new Permission();
@@ -94,8 +95,9 @@ Table: identified_csam_cases
 
 <body>
   <main class="container main-content">
-    <section class="title_section">
-      <h1>Admin CSAM Cases</h1>
+    <section class="title_section d-flex justify-content-between align-items-center flex-wrap gap-2">
+      <h1 class="mb-0">Admin CSAM Cases</h1>
+      <a href="/account/admin/admin_ip_access.php" class="btn btn-outline-dark btn-sm">Manage IP Blocklist / Whitelist &raquo;</a>
     </section>
     <!-- Add Search Box -->
     <form method="post" class="mb-3">
@@ -116,6 +118,19 @@ Table: identified_csam_cases
             <div id="bulkSubmitBar" class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%">0%</div>
           </div>
           <div id="bulkSubmitLog" class="small" style="max-height:200px;overflow-y:auto;font-family:monospace;white-space:pre-wrap;"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bulk Delete Offender Media (cleanup pass for already-submitted cases) -->
+    <div class="card mb-3 border-danger">
+      <div class="card-body">
+        <div class="d-flex align-items-center gap-3 flex-wrap">
+          <button id="bulkDeleteOffendersBtn" class="btn btn-outline-danger">🗑 Delete All Media of Users with Submitted Reports (Past 7 Days)</button>
+          <span id="bulkDeleteOffendersStatus" class="text-muted small"></span>
+        </div>
+        <div class="form-text mt-1">
+          Deduped per offender npub. Only acts on cases with a numeric NCMEC report id (excludes TEST_, FALSE_MATCH, technical errors). Same checkbox-gated confirmation as the per-case button.
         </div>
       </div>
     </div>
@@ -258,6 +273,17 @@ Table: identified_csam_cases
 
       // View Evidence Button (updated to use AJAX)
       echo ' <button style="margin:3px" class="btn btn-sm btn-primary view-evidence-btn" data-incident-id="' . htmlspecialchars($id) . '">View Evidence</button>';
+
+      // Lookup & Block IP Button — pulls IP candidates from logs, runs WHOIS, lets admin add to blocklist.
+      echo ' <button style="margin:3px" class="btn btn-sm btn-dark lookup-ip-btn" data-incident-id="' . htmlspecialchars($id) . '">Lookup &amp; Block IP</button>';
+
+      // Delete Offender Media — for cases where the offender is positively
+      // identified: numeric NCMEC report id (formally submitted) OR the manual
+      // EVIDENCE_EXPIRED sentinel (offender confirmed but evidence window
+      // closed). They're already npub-banned via processCsamReport.
+      if (is_numeric($ncmec_report_id) || $ncmec_report_id === 'EVIDENCE_EXPIRED') {
+        echo ' <button style="margin:3px" class="btn btn-sm btn-outline-danger delete-offender-media-btn" data-incident-id="' . htmlspecialchars($id) . '" title="Delete all remaining media uploaded by this offender">🗑 Delete Offender Media</button>';
+      }
 
       // Submit NCMEC Report Button (if ncmec_report_id is null or report ID starts with TEST_)
       // Show below buttons if only report id is not 'FALSE_MATCH'
@@ -402,6 +428,136 @@ Table: identified_csam_cases
     </div>
   </div>
 
+  <!-- IP Lookup & Block Modal -->
+  <div class="modal fade" id="ipLookupModal" tabindex="-1" aria-labelledby="ipLookupModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="ipLookupModalLabel">Lookup &amp; Block IP</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div id="ipLookupCandidates" class="mb-3">
+            <p class="text-muted small mb-1">Loading IP candidates from incident logs...</p>
+          </div>
+
+          <div id="ipLookupWhois" class="mb-3" style="display:none;">
+            <h6>WHOIS</h6>
+            <div id="ipLookupWhoisBanner" class="mb-2" style="display:none;"></div>
+            <table class="table table-sm table-bordered mb-0">
+              <tbody id="ipLookupWhoisBody"></tbody>
+            </table>
+          </div>
+
+          <hr>
+          <h6>Add to blocklist</h6>
+          <div class="row g-2">
+            <div class="col-md-6">
+              <label class="form-label small mb-1">CIDR</label>
+              <div class="input-group">
+                <input type="text" class="form-control" id="ipBlockCidr" placeholder="e.g. 1.2.3.4/32">
+                <button type="button" class="btn btn-outline-secondary" id="ipBlockCidrPrefix" title="Use the announced prefix from WHOIS" disabled>Use prefix</button>
+              </div>
+              <div class="form-text">Bare IPs accepted; min /<?= IpAccessControl::MIN_IPV4_PREFIX ?> v4, /<?= IpAccessControl::MIN_IPV6_PREFIX ?> v6.</div>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label small mb-1">Source</label>
+              <input type="text" class="form-control" id="ipBlockSource" value="csam-manual">
+            </div>
+            <div class="col-md-8">
+              <label class="form-label small mb-1">Reason</label>
+              <input type="text" class="form-control" id="ipBlockReason" placeholder="(optional, e.g. CSAM incident #123)">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label small mb-1">Expires (optional)</label>
+              <input type="datetime-local" class="form-control" id="ipBlockExpires">
+            </div>
+          </div>
+          <div id="ipBlockStatus" class="mt-2 small"></div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+          <button type="button" class="btn btn-danger" id="ipBlockSubmitBtn">Add to Blocklist</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Delete Offender Media Modal — confirm + progress, two-stage. -->
+  <div class="modal fade" id="deleteOffenderModal" tabindex="-1" aria-labelledby="deleteOffenderModalLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content border border-danger" style="border-width:2px !important;">
+        <div class="modal-header bg-danger text-white">
+          <h5 class="modal-title" id="deleteOffenderModalLabel">🚨 Delete All Offender Media</h5>
+          <button type="button" class="btn-close btn-close-white" id="deleteOffenderCloseBtn" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <!-- Stage 1: confirm -->
+          <div id="deleteOffenderConfirm">
+            <p id="deleteOffenderLoading" class="text-muted">Looking up offender's remaining media...</p>
+
+            <!-- Single-case summary (per-row button) -->
+            <div id="deleteOffenderSummary" style="display:none;">
+              <p class="mb-2">You are about to <strong>permanently delete</strong> <span id="deleteOffenderCount" class="badge bg-danger">0</span> remaining media item(s) uploaded by:</p>
+              <pre id="deleteOffenderNpub" class="bg-light border rounded p-2 small mb-2 text-break" style="white-space:pre-wrap;"></pre>
+              <p class="small text-muted mb-3">NCMEC Report ID: <code id="deleteOffenderReportId"></code> (Case #<span id="deleteOffenderCaseId"></span>)</p>
+            </div>
+
+            <!-- Bulk summary (Past N Days button) -->
+            <div id="deleteOffenderBulkSummary" style="display:none;">
+              <p class="mb-2">You are about to <strong>permanently delete</strong>
+                <span id="deleteBulkUploadCount" class="badge bg-danger">0</span> remaining media item(s) across
+                <span id="deleteBulkOffenderCount" class="badge bg-danger">0</span> offender(s)
+                from CSAM cases submitted in the past <span id="deleteBulkDays">7</span> day(s):
+              </p>
+              <div class="border rounded mb-3" style="max-height:240px;overflow-y:auto;">
+                <table class="table table-sm mb-0">
+                  <thead class="table-light"><tr><th>npub</th><th class="text-end">Items</th><th>Cases</th></tr></thead>
+                  <tbody id="deleteBulkOffenderTbody"></tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- Shared confirmation block (used by both modes) -->
+            <div id="deleteOffenderConfirmBlock" style="display:none;">
+              <div class="alert alert-danger small mb-3">
+                <strong>This action cannot be undone.</strong>
+                Files will be removed from S3, purged from the CDN, banned from blossom, and inserted into rejected_files. The user(s) are already npub-banned (this is the cleanup pass).
+              </div>
+
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" id="deleteOffenderConfirmCheckbox">
+                <label class="form-check-label" for="deleteOffenderConfirmCheckbox">
+                  I understand this will permanently delete <span id="deleteOffenderCountInline">0</span> item(s) and cannot be undone.
+                </label>
+              </div>
+            </div>
+
+            <div id="deleteOffenderEmpty" class="alert alert-info mb-0" style="display:none;">
+              No remaining media for this offender — nothing to delete.
+            </div>
+
+            <div id="deleteOffenderError" class="alert alert-danger mb-0" style="display:none;"></div>
+          </div>
+
+          <!-- Stage 2: progress -->
+          <div id="deleteOffenderProgress" style="display:none;">
+            <div class="progress mb-2" style="height:24px;">
+              <div id="deleteOffenderBar" class="progress-bar progress-bar-striped progress-bar-animated bg-danger" role="progressbar" style="width:0%;">0%</div>
+            </div>
+            <p id="deleteOffenderStatus" class="small text-muted mb-2"></p>
+            <div id="deleteOffenderLog" class="small bg-dark text-white-50 p-2 rounded" style="max-height:240px;overflow-y:auto;font-family:monospace;white-space:pre-wrap;"></div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" id="deleteOffenderCancelBtn" data-bs-dismiss="modal">Cancel</button>
+          <button type="button" class="btn btn-danger" id="deleteOffenderConfirmBtn" disabled>Delete All</button>
+          <button type="button" class="btn btn-primary" id="deleteOffenderDoneBtn" style="display:none;" data-bs-dismiss="modal">Close &amp; Reload</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Bootstrap JS and dependencies -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
   <script>
@@ -499,6 +655,520 @@ Table: identified_csam_cases
             reportPreviewModal.hide();
           });
       });
+
+      // ===== IP Lookup & Block flow =====
+      const ipLookupModalEl = document.getElementById('ipLookupModal');
+      const ipLookupModal = new bootstrap.Modal(ipLookupModalEl);
+      const ipCandidatesEl = document.getElementById('ipLookupCandidates');
+      const ipWhoisWrap = document.getElementById('ipLookupWhois');
+      const ipWhoisBody = document.getElementById('ipLookupWhoisBody');
+      const ipBlockCidr = document.getElementById('ipBlockCidr');
+      const ipBlockCidrPrefix = document.getElementById('ipBlockCidrPrefix');
+      const ipBlockSource = document.getElementById('ipBlockSource');
+      const ipBlockReason = document.getElementById('ipBlockReason');
+      const ipBlockExpires = document.getElementById('ipBlockExpires');
+      const ipBlockStatus = document.getElementById('ipBlockStatus');
+      const ipBlockSubmitBtn = document.getElementById('ipBlockSubmitBtn');
+      let currentIncidentId = null;
+      let currentWhoisPrefix = null;
+
+      function escapeHtml(s) {
+        return String(s ?? '').replace(/[&<>"']/g, c => ({
+          '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+        }[c]));
+      }
+
+      function setBlockStatus(msg, kind) {
+        ipBlockStatus.textContent = msg || '';
+        ipBlockStatus.className = 'mt-2 small ' + (kind === 'error' ? 'text-danger' : (kind === 'ok' ? 'text-success' : 'text-muted'));
+      }
+
+      function resetIpModal(incidentId) {
+        currentIncidentId = incidentId;
+        currentWhoisPrefix = null;
+        ipCandidatesEl.innerHTML = '<p class="text-muted small mb-1">Loading IP candidates from incident logs...</p>';
+        ipWhoisWrap.style.display = 'none';
+        ipWhoisBody.innerHTML = '';
+        ipBlockCidr.value = '';
+        ipBlockCidrPrefix.disabled = true;
+        ipBlockReason.value = 'CSAM incident #' + incidentId;
+        ipBlockSource.value = 'csam-manual';
+        ipBlockExpires.value = '';
+        setBlockStatus('');
+      }
+
+      async function loadCandidates(incidentId) {
+        try {
+          const resp = await fetch('/api/v2/admin/security/case-ip/' + incidentId, { credentials: 'same-origin' });
+          const data = await resp.json();
+          if (!resp.ok) {
+            ipCandidatesEl.innerHTML = '<div class="alert alert-danger py-2 mb-0">' + escapeHtml(data.error || 'Failed to load candidates.') + '</div>';
+            return;
+          }
+          if (!data.candidates || data.candidates.length === 0) {
+            ipCandidatesEl.innerHTML = '<div class="alert alert-warning py-2 mb-0">No IPs found in this incident\'s logs.</div>';
+            return;
+          }
+          let html = '<h6 class="mb-2">IP candidates from logs</h6>';
+          html += '<div class="table-responsive"><table class="table table-sm table-bordered mb-0"><thead><tr>'
+            + '<th>IP</th><th>Source</th><th>npub</th><th>File</th><th>When</th><th></th>'
+            + '</tr></thead><tbody>';
+          for (const c of data.candidates) {
+            html += '<tr>'
+              + '<td><code>' + escapeHtml(c.ip) + '</code></td>'
+              + '<td>' + escapeHtml(c.source) + '</td>'
+              + '<td class="text-truncate" style="max-width:160px">' + escapeHtml(c.npub || '') + '</td>'
+              + '<td class="text-truncate" style="max-width:160px">' + escapeHtml(c.filename || '') + '</td>'
+              + '<td>' + escapeHtml(c.datetime || '') + '</td>'
+              + '<td><button type="button" class="btn btn-xsm btn-primary ip-whois-btn" data-ip="' + escapeHtml(c.ip) + '">WHOIS</button></td>'
+              + '</tr>';
+          }
+          html += '</tbody></table></div>';
+          ipCandidatesEl.innerHTML = html;
+
+          ipCandidatesEl.querySelectorAll('.ip-whois-btn').forEach(btn => {
+            btn.addEventListener('click', () => loadWhois(btn.getAttribute('data-ip')));
+          });
+
+          // Auto-trigger whois on the first candidate so the block form is pre-populated.
+          const first = data.candidates[0];
+          ipBlockCidr.value = first.ip;
+          loadWhois(first.ip);
+        } catch (err) {
+          ipCandidatesEl.innerHTML = '<div class="alert alert-danger py-2 mb-0">Network error: ' + escapeHtml(err.message) + '</div>';
+        }
+      }
+
+      // ASNs that should NEVER be IP-blocked. Blocking them either breaks our
+      // own infra (CDNs/clouds) or punishes huge swaths of legitimate users
+      // (consumer VPNs / shared VPS). Banner + disabled submit when matched.
+      const RISKY_ASN = {
+        13335:  { name: 'Cloudflare',         kind: 'CDN / WARP / Tor / Workers' },
+        16509:  { name: 'Amazon AWS',         kind: 'cloud' },
+        14618:  { name: 'Amazon AES',         kind: 'cloud' },
+        15169:  { name: 'Google',             kind: 'cloud / Search / WARP' },
+        396982: { name: 'Google Cloud',       kind: 'cloud' },
+        8075:   { name: 'Microsoft Azure',    kind: 'cloud' },
+        8068:   { name: 'Microsoft',          kind: 'cloud / Office' },
+        20940:  { name: 'Akamai',             kind: 'CDN' },
+        16276:  { name: 'OVH',                kind: 'shared VPS hosting' },
+        24940:  { name: 'Hetzner',            kind: 'shared VPS hosting' },
+        14061:  { name: 'DigitalOcean',       kind: 'shared VPS hosting' },
+        63949:  { name: 'Linode (Akamai)',    kind: 'shared VPS hosting' },
+        9009:   { name: 'M247',               kind: 'shared VPS / consumer VPN exit' },
+        46606:  { name: 'Unified Layer',      kind: 'shared hosting' },
+      };
+      function riskyAsn(asn) { return RISKY_ASN[Number(asn)] || null; }
+      const ipWhoisBanner = document.getElementById('ipLookupWhoisBanner');
+
+      async function loadWhois(ip) {
+        ipBlockCidr.value = ip;
+        ipWhoisWrap.style.display = 'block';
+        ipWhoisBanner.style.display = 'none';
+        ipWhoisBanner.innerHTML = '';
+        ipWhoisBody.innerHTML = '<tr><td colspan="2" class="text-muted small">Looking up ' + escapeHtml(ip) + '...</td></tr>';
+        currentWhoisPrefix = null;
+        ipBlockCidrPrefix.disabled = true;
+        ipBlockSubmitBtn.disabled = false;
+        try {
+          const resp = await fetch('/api/v2/admin/security/whois?ip=' + encodeURIComponent(ip), { credentials: 'same-origin' });
+          const data = await resp.json();
+          if (!resp.ok) {
+            ipWhoisBody.innerHTML = '<tr><td colspan="2" class="text-danger small">' + escapeHtml(data.error || 'WHOIS failed') + '</td></tr>';
+            return;
+          }
+          if (data.found === false) {
+            ipWhoisBody.innerHTML = '<tr><td colspan="2" class="text-warning small">No WHOIS record (private/reserved or not in routing table).</td></tr>';
+            return;
+          }
+
+          const risky = riskyAsn(data.asn);
+          const rows = [
+            ['IP', data.ip],
+            ['ASN', data.asn ? ('AS' + data.asn) : ''],
+            ['AS name', data.as_name || ''],
+            ['Announced prefix', data.prefix || ''],
+            ['Country', data.country || ''],
+            ['Registry', data.registry || ''],
+            ['Allocated', data.allocated || ''],
+            ['All ASNs', (data.asns || []).join(', ')],
+          ];
+          ipWhoisBody.innerHTML = rows.map(([k, v]) =>
+            '<tr><th class="w-25">' + escapeHtml(k) + '</th><td>' + escapeHtml(v) + '</td></tr>'
+          ).join('');
+
+          if (risky) {
+            ipWhoisBanner.className = 'alert alert-danger border border-danger border-2 mb-2 py-2';
+            ipWhoisBanner.innerHTML =
+              '<div class="fw-bold">🚫 DO NOT IP-BLOCK — ' + escapeHtml(risky.name) + ' (' + escapeHtml(risky.kind) + ')</div>'
+              + '<div class="small mt-1">This IP belongs to ' + escapeHtml(risky.name) + ' infrastructure. Blocking it will cut off many legitimate users (and possibly our own services). Ban the npub instead.</div>';
+            ipWhoisBanner.style.display = 'block';
+            ipBlockSubmitBtn.disabled = true;
+          } else if (data.prefix) {
+            currentWhoisPrefix = data.prefix;
+            ipBlockCidrPrefix.disabled = false;
+          }
+        } catch (err) {
+          ipWhoisBody.innerHTML = '<tr><td colspan="2" class="text-danger small">Network error: ' + escapeHtml(err.message) + '</td></tr>';
+        }
+      }
+
+      ipBlockCidrPrefix.addEventListener('click', () => {
+        if (currentWhoisPrefix) ipBlockCidr.value = currentWhoisPrefix;
+      });
+
+      ipBlockSubmitBtn.addEventListener('click', async () => {
+        const cidr = ipBlockCidr.value.trim();
+        if (!cidr) {
+          setBlockStatus('Enter a CIDR or IP first.', 'error');
+          return;
+        }
+        ipBlockSubmitBtn.disabled = true;
+        setBlockStatus('Submitting...');
+        try {
+          const body = {
+            cidr: cidr,
+            reason: ipBlockReason.value.trim(),
+            source: ipBlockSource.value.trim() || 'csam-manual',
+          };
+          // datetime-local -> "YYYY-MM-DDTHH:MM" — convert to MySQL DATETIME.
+          if (ipBlockExpires.value) {
+            body.expires_at = ipBlockExpires.value.replace('T', ' ') + ':00';
+          }
+          const resp = await fetch('/api/v2/admin/security/blocklist', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'same-origin',
+            body: JSON.stringify(body),
+          });
+          const data = await resp.json();
+          if (resp.ok && data.success) {
+            setBlockStatus('Added: ' + data.cidr + ' (id ' + data.id + ')', 'ok');
+          } else {
+            setBlockStatus('Error: ' + (data.error || ('HTTP ' + resp.status)), 'error');
+          }
+        } catch (err) {
+          setBlockStatus('Network error: ' + err.message, 'error');
+        } finally {
+          ipBlockSubmitBtn.disabled = false;
+        }
+      });
+
+      document.querySelectorAll('.lookup-ip-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const id = btn.getAttribute('data-incident-id');
+          resetIpModal(id);
+          ipLookupModal.show();
+          loadCandidates(id);
+        });
+      });
+
+      // ========== Delete Offender Media ==========
+      // Two-stage flow that mirrors approve.php's "Reject All & Ban User":
+      //   1. Fetch the offender's npub + remaining-uploads list from the server.
+      //   2. After a checkbox-gated confirmation, loop through every upload id
+      //      in chunks via POST /admin/moderation/reject-batch — that endpoint
+      //      runs the same flow as deleteAndRejectUpload (S3 delete + CF purge
+      //      + blossom ban + rejected_files insert + uploads_data delete) but
+      //      consolidates the CF purge and DB writes for the whole chunk.
+      // The offender is already npub-banned (legacy blacklist) at this point,
+      // so we don't need a separate ban call up front.
+      const delModalEl = document.getElementById('deleteOffenderModal');
+      const delModal = new bootstrap.Modal(delModalEl);
+      const delLoading = document.getElementById('deleteOffenderLoading');
+      const delSummary = document.getElementById('deleteOffenderSummary');
+      const delBulkSummary = document.getElementById('deleteOffenderBulkSummary');
+      const delConfirmBlock = document.getElementById('deleteOffenderConfirmBlock');
+      const delEmpty = document.getElementById('deleteOffenderEmpty');
+      const delErrorEl = document.getElementById('deleteOffenderError');
+      const delCountEl = document.getElementById('deleteOffenderCount');
+      const delCountInline = document.getElementById('deleteOffenderCountInline');
+      const delNpubEl = document.getElementById('deleteOffenderNpub');
+      const delReportIdEl = document.getElementById('deleteOffenderReportId');
+      const delCaseIdEl = document.getElementById('deleteOffenderCaseId');
+      const delBulkUploadCountEl = document.getElementById('deleteBulkUploadCount');
+      const delBulkOffenderCountEl = document.getElementById('deleteBulkOffenderCount');
+      const delBulkDaysEl = document.getElementById('deleteBulkDays');
+      const delBulkTbody = document.getElementById('deleteBulkOffenderTbody');
+      const delConfirmCb = document.getElementById('deleteOffenderConfirmCheckbox');
+      const delConfirmBtn = document.getElementById('deleteOffenderConfirmBtn');
+      const delCancelBtn = document.getElementById('deleteOffenderCancelBtn');
+      const delCloseBtn = document.getElementById('deleteOffenderCloseBtn');
+      const delDoneBtn = document.getElementById('deleteOffenderDoneBtn');
+      const delConfirmStage = document.getElementById('deleteOffenderConfirm');
+      const delProgressStage = document.getElementById('deleteOffenderProgress');
+      const delBar = document.getElementById('deleteOffenderBar');
+      const delStatusEl = document.getElementById('deleteOffenderStatus');
+      const delLogEl = document.getElementById('deleteOffenderLog');
+
+      // Flat list of items to delete; each entry: { id, filename, npub }
+      // (npub is included so the progress log shows whose item it is in bulk mode)
+      let delItems = [];
+      let delMode = 'single'; // 'single' | 'bulk'
+
+      function delLog(msg, isError) {
+        const line = document.createElement('div');
+        line.textContent = msg;
+        if (isError) line.style.color = '#ff6b6b';
+        delLogEl.appendChild(line);
+        delLogEl.scrollTop = delLogEl.scrollHeight;
+      }
+
+      function escHtml(s) {
+        return String(s ?? '').replace(/[&<>"']/g, c => ({
+          '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+        }[c]));
+      }
+
+      function resetDelModal(mode) {
+        delMode = mode;
+        delLoading.style.display = 'block';
+        delSummary.style.display = 'none';
+        delBulkSummary.style.display = 'none';
+        delConfirmBlock.style.display = 'none';
+        delEmpty.style.display = 'none';
+        delErrorEl.style.display = 'none';
+        delErrorEl.textContent = '';
+        delConfirmCb.checked = false;
+        delConfirmBtn.disabled = true;
+        delConfirmBtn.style.display = '';
+        delConfirmBtn.textContent = mode === 'bulk' ? 'Delete Everything' : 'Delete All';
+        delCancelBtn.style.display = '';
+        delCloseBtn.style.display = '';
+        delDoneBtn.style.display = 'none';
+        delConfirmStage.style.display = 'block';
+        delProgressStage.style.display = 'none';
+        delBar.style.width = '0%';
+        delBar.textContent = '0%';
+        delBar.classList.remove('bg-success', 'bg-warning');
+        delBar.classList.add('progress-bar-animated', 'bg-danger');
+        delStatusEl.textContent = '';
+        delLogEl.textContent = '';
+        delItems = [];
+      }
+
+      delConfirmCb.addEventListener('change', () => {
+        delConfirmBtn.disabled = !delConfirmCb.checked || delItems.length === 0;
+      });
+
+      // ---------- single-case loader ----------
+      async function loadOffenderUploads(caseId) {
+        try {
+          const resp = await fetch('/api/v2/admin/csam/offender-uploads/' + caseId, { credentials: 'same-origin' });
+          const data = await resp.json();
+          delLoading.style.display = 'none';
+
+          if (!resp.ok) {
+            delErrorEl.textContent = data.error || ('HTTP ' + resp.status);
+            delErrorEl.style.display = 'block';
+            return;
+          }
+
+          delCaseIdEl.textContent = data.caseId;
+          delReportIdEl.textContent = data.reportId;
+          delNpubEl.textContent = data.npub;
+
+          const uploads = Array.isArray(data.uploads) ? data.uploads : [];
+          delItems = uploads.map(u => ({ id: u.id, filename: u.filename, npub: data.npub }));
+
+          if (delItems.length === 0) {
+            delEmpty.style.display = 'block';
+            delConfirmBtn.style.display = 'none';
+            return;
+          }
+
+          delCountEl.textContent = delItems.length;
+          delCountInline.textContent = delItems.length;
+          delSummary.style.display = 'block';
+          delConfirmBlock.style.display = 'block';
+        } catch (err) {
+          delLoading.style.display = 'none';
+          delErrorEl.textContent = 'Network error: ' + err.message;
+          delErrorEl.style.display = 'block';
+        }
+      }
+
+      // ---------- bulk loader (past N days, deduped per offender) ----------
+      async function loadBulkOffenders(days) {
+        try {
+          const resp = await fetch('/api/v2/admin/csam/submitted-offenders?days=' + days, { credentials: 'same-origin' });
+          const data = await resp.json();
+          delLoading.style.display = 'none';
+
+          if (!resp.ok) {
+            delErrorEl.textContent = data.error || ('HTTP ' + resp.status);
+            delErrorEl.style.display = 'block';
+            return;
+          }
+
+          delBulkDaysEl.textContent = data.days;
+          delBulkOffenderCountEl.textContent = data.total_offenders;
+          delBulkUploadCountEl.textContent = data.total_uploads;
+
+          // Build the offender preview table and the flat work-list at once.
+          delItems = [];
+          delBulkTbody.innerHTML = (data.offenders || []).map(o => {
+            for (const u of (o.uploads || [])) {
+              delItems.push({ id: u.id, filename: u.filename, npub: o.npub });
+            }
+            const cases = (o.case_ids || []).map(c => '#' + c).join(', ');
+            return '<tr>'
+              + '<td class="text-truncate" style="max-width:340px;" title="' + escHtml(o.npub) + '"><code>' + escHtml(o.npub) + '</code></td>'
+              + '<td class="text-end">' + escHtml(o.remaining_count) + '</td>'
+              + '<td class="small text-muted">' + escHtml(cases) + '</td>'
+              + '</tr>';
+          }).join('');
+
+          if (delItems.length === 0) {
+            delEmpty.style.display = 'block';
+            delConfirmBtn.style.display = 'none';
+            return;
+          }
+
+          delCountInline.textContent = delItems.length;
+          delBulkSummary.style.display = 'block';
+          delConfirmBlock.style.display = 'block';
+        } catch (err) {
+          delLoading.style.display = 'none';
+          delErrorEl.textContent = 'Network error: ' + err.message;
+          delErrorEl.style.display = 'block';
+        }
+      }
+
+      // ---------- shared progress loop ----------
+      // Chunk size for the batched reject endpoint. Server caps at 30 (see
+      // MAX_REJECT_BATCH in /admin/moderation/reject-batch); 15 keeps each
+      // request snappy enough that progress feels live and a single failed
+      // request only loses a small slice of work.
+      const REJECT_BATCH_SIZE = 15;
+
+      delConfirmBtn.addEventListener('click', async () => {
+        if (delItems.length === 0) return;
+
+        delConfirmStage.style.display = 'none';
+        delProgressStage.style.display = 'block';
+        delConfirmBtn.disabled = true;
+        delConfirmBtn.style.display = 'none';
+        delCancelBtn.style.display = 'none';
+        delCloseBtn.style.display = 'none';
+
+        const total = delItems.length;
+        let success = 0;
+        let errors = 0;
+        // Quick lookup so we can pretty-print log lines from the result map.
+        const itemById = new Map(delItems.map(i => [String(i.id), i]));
+
+        delLog(delMode === 'bulk'
+          ? `Deleting ${total} item(s) across ${new Set(delItems.map(i => i.npub)).size} offender(s) in chunks of ${REJECT_BATCH_SIZE}...`
+          : `Deleting ${total} item(s) for ${delNpubEl.textContent} in chunks of ${REJECT_BATCH_SIZE}...`);
+
+        let processed = 0;
+        for (let off = 0; off < total; off += REJECT_BATCH_SIZE) {
+          const chunk = delItems.slice(off, off + REJECT_BATCH_SIZE);
+          const chunkIds = chunk.map(c => c.id);
+
+          delStatusEl.textContent = `Submitting batch of ${chunk.length} (item ${off + 1}–${off + chunk.length} of ${total})...`;
+
+          let data;
+          try {
+            const resp = await fetch('/api/v2/admin/moderation/reject-batch', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              credentials: 'same-origin',
+              body: JSON.stringify({ ids: chunkIds }),
+            });
+            data = await resp.json();
+            if (!resp.ok && !Array.isArray(data?.results)) {
+              // Endpoint-level failure (auth, malformed, etc.) — count the
+              // whole chunk as failed and keep going so one bad batch doesn't
+              // strand the rest of the queue.
+              for (const c of chunk) {
+                errors++;
+                delLog(`✗ #${c.id}: batch error — ${data?.error || ('HTTP ' + resp.status)}`, true);
+              }
+              processed += chunk.length;
+              const pct = Math.round((processed / total) * 100);
+              delBar.style.width = pct + '%';
+              delBar.textContent = `${processed} / ${total}`;
+              continue;
+            }
+          } catch (err) {
+            for (const c of chunk) {
+              errors++;
+              delLog(`✗ #${c.id}: network error — ${err.message}`, true);
+            }
+            processed += chunk.length;
+            const pct = Math.round((processed / total) * 100);
+            delBar.style.width = pct + '%';
+            delBar.textContent = `${processed} / ${total}`;
+            continue;
+          }
+
+          // Per-id results from the server.
+          for (const r of (data.results || [])) {
+            const item = itemById.get(String(r.id));
+            const filename = item?.filename ?? '(unknown)';
+            const tag = (delMode === 'bulk' && item?.npub) ? ` [${item.npub.slice(0, 14)}...]` : '';
+            if (r.ok) {
+              success++;
+              delLog(`✓ #${r.id} (${filename})${tag} deleted`);
+            } else {
+              errors++;
+              delLog(`✗ #${r.id} (${filename})${tag}: ${r.error || 'unknown'}`, true);
+            }
+          }
+
+          processed += chunk.length;
+          const pct = Math.round((processed / total) * 100);
+          delBar.style.width = pct + '%';
+          delBar.textContent = `${processed} / ${total}`;
+
+          // Brief breather between chunks so we don't hammer S3 / CF / blossom
+          // back-to-back. Skip after the last chunk.
+          if (off + REJECT_BATCH_SIZE < total) {
+            await new Promise(r => setTimeout(r, 100));
+          }
+        }
+
+        delBar.classList.remove('progress-bar-animated');
+        if (errors === 0) {
+          delBar.classList.add('bg-success');
+          delStatusEl.textContent = `All ${success} item(s) deleted.`;
+          delLog(`Done — ${success} succeeded.`);
+        } else {
+          delBar.classList.add('bg-warning');
+          delStatusEl.textContent = `${success} succeeded, ${errors} failed.`;
+          delLog(`Done — ${success} succeeded, ${errors} failed.`);
+        }
+        delDoneBtn.style.display = '';
+        delCloseBtn.style.display = '';
+      });
+
+      delDoneBtn.addEventListener('click', () => {
+        location.reload();
+      });
+
+      // Per-row trigger
+      document.querySelectorAll('.delete-offender-media-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const id = btn.getAttribute('data-incident-id');
+          resetDelModal('single');
+          delModal.show();
+          loadOffenderUploads(id);
+        });
+      });
+
+      // Bulk trigger
+      const bulkDelBtn = document.getElementById('bulkDeleteOffendersBtn');
+      const bulkDelStatus = document.getElementById('bulkDeleteOffendersStatus');
+      if (bulkDelBtn) {
+        bulkDelBtn.addEventListener('click', () => {
+          bulkDelStatus.textContent = '';
+          resetDelModal('bulk');
+          delModal.show();
+          loadBulkOffenders(7);
+        });
+      }
 
       // Unblacklist User button click handler
       const unblacklistUserButtons = document.querySelectorAll('.unblacklist-user-btn');

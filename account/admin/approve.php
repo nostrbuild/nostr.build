@@ -3,6 +3,7 @@
 require_once($_SERVER['DOCUMENT_ROOT'] . '/config.php');
 require_once($_SERVER['DOCUMENT_ROOT'] . '/libs/permissions.class.php');
 require_once($_SERVER['DOCUMENT_ROOT'] . '/SiteConfig.php');
+require_once($_SERVER['DOCUMENT_ROOT'] . '/libs/IpAccessControl.class.php');
 
 // Create new Permission object
 $perm = new Permission();
@@ -38,7 +39,7 @@ if (isset($_POST['searchFile'])) {
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>nostr.build - Admin Moderation</title>
-  <link rel="stylesheet" href="/styles/twbuild.css?v=f1ad5a3bcecce7c18d0d9267a2166c6a">
+  <link rel="stylesheet" href="/styles/twbuild.css?v=ec16da4b842295cf8fd28e26368a49ca">
   <link rel="icon" href="https://cdn.nostr.build/assets/primo_nostr.png">
   <style>
     [x-cloak] { display: none !important; }
@@ -1083,6 +1084,253 @@ if (isset($_POST['searchFile'])) {
           if (npub) setHighlightForNpub(npub, false);
         });
       });
+
+      // ===== Lookup & Block modal =====
+      const SEC_API = '/api/v2/admin/security';
+      const ipLookupEl = document.getElementById('ipLookupModal');
+      const ipLookupCtx = document.getElementById('ipLookupContext');
+      const ipLookupCands = document.getElementById('ipLookupCandidates');
+      const ipLookupWhois = document.getElementById('ipLookupWhois');
+      const ipLookupWhoisBody = document.getElementById('ipLookupWhoisBody');
+      const ipBlockCidr = document.getElementById('ipBlockCidr');
+      const ipBlockCidrPrefix = document.getElementById('ipBlockCidrPrefix');
+      const ipBlockSource = document.getElementById('ipBlockSource');
+      const ipBlockReason = document.getElementById('ipBlockReason');
+      const ipBlockExpires = document.getElementById('ipBlockExpires');
+      const ipBlockStatus = document.getElementById('ipBlockStatus');
+      const ipBlockSubmitBtn = document.getElementById('ipBlockSubmitBtn');
+      const lbBanNpub = document.getElementById('lbBanNpub');
+      const lbBanIp = document.getElementById('lbBanIp');
+      const lbBanReason = document.getElementById('lbBanReason');
+      const lbBanStatus = document.getElementById('lbBanStatus');
+      const lbBanSubmitBtn = document.getElementById('lbBanSubmitBtn');
+      let currentWhoisPrefix = null;
+
+      function escHtml(s) {
+        return String(s ?? '').replace(/[&<>"']/g, c => ({
+          '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+        }[c]));
+      }
+
+      function setMiniStatus(el, msg, kind) {
+        el.textContent = msg || '';
+        el.className = 'text-xs ' + (kind === 'error' ? 'text-red-400' : (kind === 'ok' ? 'text-green-400' : 'text-gray-400'));
+      }
+
+      window.closeIpLookupModal = function(ev) {
+        if (ev && ev.target !== ev.currentTarget) return;
+        ipLookupEl.classList.add('hidden');
+      };
+
+      function openIpLookup(uploadId, usernpub) {
+        currentWhoisPrefix = null;
+        ipBlockCidrPrefix.disabled = true;
+        ipLookupCtx.textContent = `Upload #${uploadId} — npub: ${usernpub || '(none)'}`;
+        ipLookupCands.innerHTML = '<p class="text-gray-500">Loading...</p>';
+        ipLookupWhois.classList.add('hidden');
+        ipLookupWhoisBody.innerHTML = '';
+        ipBlockCidr.value = '';
+        ipBlockSource.value = 'approve-manual';
+        ipBlockReason.value = `Upload #${uploadId}` + (usernpub ? ` (${usernpub.slice(0, 16)}...)` : '');
+        ipBlockExpires.value = '';
+        setMiniStatus(ipBlockStatus, '');
+        lbBanNpub.value = usernpub || '';
+        lbBanIp.value = '';
+        lbBanReason.value = `Upload #${uploadId} (rejected via approve queue)`;
+        setMiniStatus(lbBanStatus, '');
+        ipLookupEl.classList.remove('hidden');
+        loadIpCandidates(uploadId);
+      }
+
+      async function loadIpCandidates(uploadId) {
+        try {
+          const resp = await fetch(SEC_API + '/upload-ip/' + uploadId, { credentials: 'same-origin' });
+          const data = await resp.json();
+          if (!resp.ok) {
+            ipLookupCands.innerHTML = `<div class="text-red-400">${escHtml(data.error || 'Failed')}</div>`;
+            return;
+          }
+          if (data.note && (!data.candidates || data.candidates.length === 0)) {
+            ipLookupCands.innerHTML = `<div class="text-yellow-400">${escHtml(data.note)}</div>`;
+            return;
+          }
+          if (!data.candidates || data.candidates.length === 0) {
+            ipLookupCands.innerHTML = '<div class="text-yellow-400">No IP records found in R2 logs for this upload.</div>';
+            return;
+          }
+          let html = '<div class="overflow-x-auto"><table class="w-full text-xs"><thead class="text-gray-500"><tr>'
+            + '<th class="text-left py-1 pr-2">IP</th>'
+            + '<th class="text-left py-1 pr-2">Source</th>'
+            + '<th class="text-left py-1 pr-2">When</th>'
+            + '<th></th>'
+            + '</tr></thead><tbody class="text-gray-200">';
+          for (const c of data.candidates) {
+            html += '<tr class="border-t border-gray-700/40">'
+              + `<td class="py-1 pr-2 font-mono">${escHtml(c.ip)}</td>`
+              + `<td class="py-1 pr-2">${escHtml(c.source)}</td>`
+              + `<td class="py-1 pr-2">${escHtml(c.datetime || '')}</td>`
+              + `<td class="py-1"><button type="button" class="px-2 py-0.5 bg-purple-600 hover:bg-purple-700 text-white text-[11px] rounded ip-whois-btn" data-ip="${escHtml(c.ip)}">WHOIS</button></td>`
+              + '</tr>';
+          }
+          html += '</tbody></table></div>';
+          ipLookupCands.innerHTML = html;
+          ipLookupCands.querySelectorAll('.ip-whois-btn').forEach(btn => {
+            btn.addEventListener('click', () => loadWhois(btn.getAttribute('data-ip')));
+          });
+          // Auto-WHOIS first candidate so the form is pre-populated.
+          const first = data.candidates[0];
+          ipBlockCidr.value = first.ip;
+          lbBanIp.value = first.ip;
+          loadWhois(first.ip);
+        } catch (err) {
+          ipLookupCands.innerHTML = `<div class="text-red-400">Network error: ${escHtml(err.message)}</div>`;
+        }
+      }
+
+      // ASNs that should NEVER be IP-blocked. Blocking these CIDRs would either
+      // cut off our own infrastructure (CDNs/clouds) or punish a huge swath of
+      // legitimate users (consumer VPNs / shared VPS hosts). When one is hit,
+      // the modal shows a red banner and disables the IP-block submit button.
+      const RISKY_ASN = {
+        13335:  { name: 'Cloudflare',         kind: 'CDN / WARP / Tor / Workers' },
+        16509:  { name: 'Amazon AWS',         kind: 'cloud' },
+        14618:  { name: 'Amazon AES',         kind: 'cloud' },
+        15169:  { name: 'Google',             kind: 'cloud / Search / WARP' },
+        396982: { name: 'Google Cloud',       kind: 'cloud' },
+        8075:   { name: 'Microsoft Azure',    kind: 'cloud' },
+        8068:   { name: 'Microsoft',          kind: 'cloud / Office' },
+        20940:  { name: 'Akamai',             kind: 'CDN' },
+        16276:  { name: 'OVH',                kind: 'shared VPS hosting' },
+        24940:  { name: 'Hetzner',            kind: 'shared VPS hosting' },
+        14061:  { name: 'DigitalOcean',       kind: 'shared VPS hosting' },
+        63949:  { name: 'Linode (Akamai)',    kind: 'shared VPS hosting' },
+        9009:   { name: 'M247',               kind: 'shared VPS / consumer VPN exit' },
+        46606:  { name: 'Unified Layer',      kind: 'shared hosting' },
+      };
+      function riskyAsn(asn) { return RISKY_ASN[Number(asn)] || null; }
+      const ipLookupWhoisBanner = document.getElementById('ipLookupWhoisBanner');
+
+      async function loadWhois(ip) {
+        ipBlockCidr.value = ip;
+        lbBanIp.value = ip;
+        ipLookupWhois.classList.remove('hidden');
+        ipLookupWhoisBanner.classList.add('hidden');
+        ipLookupWhoisBanner.innerHTML = '';
+        ipLookupWhoisBody.innerHTML = `<tr><td colspan="2" class="text-gray-500 py-2">Looking up ${escHtml(ip)}...</td></tr>`;
+        currentWhoisPrefix = null;
+        ipBlockCidrPrefix.disabled = true;
+        ipBlockSubmitBtn.disabled = false;
+        try {
+          const resp = await fetch(SEC_API + '/whois?ip=' + encodeURIComponent(ip), { credentials: 'same-origin' });
+          const data = await resp.json();
+          if (!resp.ok) {
+            ipLookupWhoisBody.innerHTML = `<tr><td colspan="2" class="text-red-400 py-2">${escHtml(data.error || 'WHOIS failed')}</td></tr>`;
+            return;
+          }
+          if (data.found === false) {
+            ipLookupWhoisBody.innerHTML = '<tr><td colspan="2" class="text-yellow-400 py-2">No WHOIS record (private/reserved or not in routing table).</td></tr>';
+            return;
+          }
+
+          const risky = riskyAsn(data.asn);
+          const rows = [
+            ['IP', data.ip],
+            ['ASN', data.asn ? ('AS' + data.asn) : ''],
+            ['AS name', data.as_name || ''],
+            ['Announced prefix', data.prefix || ''],
+            ['Country', data.country || ''],
+            ['Registry', data.registry || ''],
+          ];
+          ipLookupWhoisBody.innerHTML = rows.map(([k, v]) =>
+            `<tr><th class="text-gray-500 text-left pr-3 py-0.5 font-normal w-1/3">${escHtml(k)}</th><td class="py-0.5">${escHtml(v)}</td></tr>`
+          ).join('');
+
+          if (risky) {
+            ipLookupWhoisBanner.className = 'mb-2 rounded-md p-3 bg-red-900/40 border-2 border-red-500 text-red-100';
+            ipLookupWhoisBanner.innerHTML =
+              `<div class="font-bold text-red-300 text-sm flex items-center gap-2"><span>🚫</span><span>DO NOT IP-BLOCK — ${escHtml(risky.name)} (${escHtml(risky.kind)})</span></div>`
+              + `<div class="text-xs mt-1 text-red-200">This IP belongs to ${escHtml(risky.name)} infrastructure. Blocking it will cut off many legitimate users (and possibly our own services). Ban the npub instead.</div>`;
+            ipLookupWhoisBanner.classList.remove('hidden');
+            ipBlockSubmitBtn.disabled = true;
+          } else if (data.prefix) {
+            currentWhoisPrefix = data.prefix;
+            ipBlockCidrPrefix.disabled = false;
+          }
+        } catch (err) {
+          ipLookupWhoisBody.innerHTML = `<tr><td colspan="2" class="text-red-400 py-2">Network error: ${escHtml(err.message)}</td></tr>`;
+        }
+      }
+
+      ipBlockCidrPrefix.addEventListener('click', () => {
+        if (currentWhoisPrefix) ipBlockCidr.value = currentWhoisPrefix;
+      });
+
+      ipBlockSubmitBtn.addEventListener('click', async () => {
+        const cidr = ipBlockCidr.value.trim();
+        if (!cidr) { setMiniStatus(ipBlockStatus, 'CIDR required', 'error'); return; }
+        ipBlockSubmitBtn.disabled = true;
+        setMiniStatus(ipBlockStatus, 'Submitting...');
+        try {
+          const body = {
+            cidr,
+            reason: ipBlockReason.value.trim(),
+            source: ipBlockSource.value.trim() || 'approve-manual',
+          };
+          if (ipBlockExpires.value) body.expires_at = ipBlockExpires.value.replace('T', ' ') + ':00';
+          const resp = await fetch(SEC_API + '/blocklist', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'same-origin',
+            body: JSON.stringify(body),
+          });
+          const data = await resp.json();
+          if (resp.ok && data.success) {
+            setMiniStatus(ipBlockStatus, `Added: ${data.cidr} (id ${data.id})`, 'ok');
+          } else {
+            setMiniStatus(ipBlockStatus, data.error || ('HTTP ' + resp.status), 'error');
+          }
+        } catch (err) {
+          setMiniStatus(ipBlockStatus, 'Network error: ' + err.message, 'error');
+        } finally {
+          ipBlockSubmitBtn.disabled = false;
+        }
+      });
+
+      lbBanSubmitBtn.addEventListener('click', async () => {
+        const npub = lbBanNpub.value.trim();
+        const ip = lbBanIp.value.trim();
+        if (!npub && !ip) { setMiniStatus(lbBanStatus, 'npub or IP required', 'error'); return; }
+        lbBanSubmitBtn.disabled = true;
+        setMiniStatus(lbBanStatus, 'Submitting...');
+        try {
+          const resp = await fetch(SEC_API + '/legacy-blacklist', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'same-origin',
+            body: JSON.stringify({
+              npub,
+              ip,
+              reason: lbBanReason.value.trim(),
+            }),
+          });
+          const data = await resp.json();
+          if (resp.ok && data.success) {
+            setMiniStatus(lbBanStatus, `Added (id ${data.id})`, 'ok');
+          } else {
+            setMiniStatus(lbBanStatus, data.error || ('HTTP ' + resp.status), 'error');
+          }
+        } catch (err) {
+          setMiniStatus(lbBanStatus, 'Network error: ' + err.message, 'error');
+        } finally {
+          lbBanSubmitBtn.disabled = false;
+        }
+      });
+
+      document.querySelectorAll('.lookup-ip-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          openIpLookup(btn.getAttribute('data-id'), btn.getAttribute('data-usernpub'));
+        });
+      });
     });
   </script>
 </head>
@@ -1168,6 +1416,100 @@ if (isset($_POST['searchFile'])) {
     </div>
   </div>
 
+  <!-- IP Lookup & Block Modal -->
+  <div id="ipLookupModal" class="hidden">
+    <div class="fixed inset-0 bg-black bg-opacity-80 z-50 flex items-start justify-center p-4 overflow-y-auto" onclick="closeIpLookupModal(event)">
+      <div class="bg-[#1a1433] rounded-lg shadow-2xl max-w-3xl w-full my-8 border border-purple-500" onclick="event.stopPropagation()">
+        <div class="flex items-center justify-between p-4 border-b border-purple-500/30">
+          <h3 class="text-lg font-bold text-purple-300">Lookup &amp; Block</h3>
+          <button onclick="closeIpLookupModal()" class="text-gray-400 hover:text-white text-2xl leading-none" aria-label="Close">&times;</button>
+        </div>
+        <div class="p-4 space-y-4 text-sm">
+
+          <div id="ipLookupContext" class="text-xs text-gray-400"></div>
+
+          <div>
+            <h4 class="text-purple-300 font-semibold mb-2">IP candidates from upload logs</h4>
+            <div id="ipLookupCandidates" class="text-gray-300">
+              <p class="text-gray-500">Loading...</p>
+            </div>
+          </div>
+
+          <div id="ipLookupWhois" class="hidden">
+            <h4 class="text-purple-300 font-semibold mb-2">WHOIS</h4>
+            <div id="ipLookupWhoisBanner" class="hidden mb-2"></div>
+            <div class="bg-black/30 rounded-md p-3">
+              <table class="w-full text-xs">
+                <tbody id="ipLookupWhoisBody" class="text-gray-300"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <hr class="border-purple-500/30">
+
+          <!-- Block IP (CIDR via IpAccessControl) -->
+          <div class="bg-black/20 rounded-md p-3 border border-red-500/30">
+            <h4 class="text-red-300 font-semibold mb-2">Block IP (CIDR)</h4>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
+              <div>
+                <label class="block text-xs text-gray-400 mb-1">CIDR</label>
+                <div class="flex gap-1">
+                  <input type="text" id="ipBlockCidr" class="flex-1 px-2 py-1 bg-[#110a1f] border border-gray-700 rounded text-gray-100 text-xs" placeholder="e.g. 1.2.3.4/32">
+                  <button type="button" id="ipBlockCidrPrefix" class="px-2 py-1 bg-gray-700 hover:bg-gray-600 disabled:opacity-40 text-white text-xs rounded" disabled>Use prefix</button>
+                </div>
+                <p class="text-[10px] text-gray-500 mt-1">Min /<?= IpAccessControl::MIN_IPV4_PREFIX ?> v4, /<?= IpAccessControl::MIN_IPV6_PREFIX ?> v6.</p>
+              </div>
+              <div>
+                <label class="block text-xs text-gray-400 mb-1">Source</label>
+                <input type="text" id="ipBlockSource" value="approve-manual" class="w-full px-2 py-1 bg-[#110a1f] border border-gray-700 rounded text-gray-100 text-xs">
+              </div>
+              <div class="md:col-span-2">
+                <label class="block text-xs text-gray-400 mb-1">Reason</label>
+                <input type="text" id="ipBlockReason" placeholder="(optional)" class="w-full px-2 py-1 bg-[#110a1f] border border-gray-700 rounded text-gray-100 text-xs">
+              </div>
+              <div>
+                <label class="block text-xs text-gray-400 mb-1">Expires (optional)</label>
+                <input type="datetime-local" id="ipBlockExpires" class="w-full px-2 py-1 bg-[#110a1f] border border-gray-700 rounded text-gray-100 text-xs">
+              </div>
+            </div>
+            <div class="mt-2 flex items-center gap-2">
+              <button type="button" id="ipBlockSubmitBtn" class="px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white text-xs font-semibold rounded">Add to IP Blocklist</button>
+              <span id="ipBlockStatus" class="text-xs text-gray-400"></span>
+            </div>
+            <p class="text-[10px] text-gray-500 mt-2">CF / Tor / WARP IPs are not blockable here — they'd take down legitimate users. Block by npub instead.</p>
+          </div>
+
+          <!-- Ban npub (Legacy blacklist) -->
+          <div class="bg-black/20 rounded-md p-3 border border-yellow-500/30">
+            <h4 class="text-yellow-300 font-semibold mb-2">Ban npub (legacy blacklist)</h4>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
+              <div class="md:col-span-2">
+                <label class="block text-xs text-gray-400 mb-1">npub</label>
+                <input type="text" id="lbBanNpub" class="w-full px-2 py-1 bg-[#110a1f] border border-gray-700 rounded text-gray-100 text-xs font-mono">
+              </div>
+              <div>
+                <label class="block text-xs text-gray-400 mb-1">IP (informational only)</label>
+                <input type="text" id="lbBanIp" class="w-full px-2 py-1 bg-[#110a1f] border border-gray-700 rounded text-gray-100 text-xs">
+              </div>
+              <div>
+                <label class="block text-xs text-gray-400 mb-1">Reason</label>
+                <input type="text" id="lbBanReason" placeholder="(optional)" class="w-full px-2 py-1 bg-[#110a1f] border border-gray-700 rounded text-gray-100 text-xs">
+              </div>
+            </div>
+            <div class="mt-2 flex items-center gap-2">
+              <button type="button" id="lbBanSubmitBtn" class="px-3 py-1.5 bg-yellow-600 hover:bg-yellow-700 text-white text-xs font-semibold rounded">Add to Legacy Blacklist</button>
+              <span id="lbBanStatus" class="text-xs text-gray-400"></span>
+            </div>
+          </div>
+
+        </div>
+        <div class="flex justify-end p-4 border-t border-purple-500/30">
+          <button onclick="closeIpLookupModal()" class="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded text-sm">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <main class="container mx-auto px-4 py-8 max-w-[1920px]">
     <!-- Header Section -->
     <section class="mb-8">
@@ -1184,14 +1526,24 @@ if (isset($_POST['searchFile'])) {
             <?php endif; ?>
           </p>
         </div>
-        <?php if (!empty($searchFile) || !empty($searchNpub)): ?>
-          <a href="?" class="px-6 py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-md font-semibold transition-colors shadow-lg flex items-center gap-2">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
-            </svg>
-            Back to Queue
-          </a>
-        <?php endif; ?>
+        <div class="flex items-center gap-2">
+          <?php if ($perm->isAdmin()): ?>
+            <a href="/account/admin/admin_ip_access.php" class="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-md text-sm font-semibold transition-colors shadow-lg flex items-center gap-2" title="Manage IP blocklist, whitelist, and legacy npub blacklist">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+              </svg>
+              IP Access Control
+            </a>
+          <?php endif; ?>
+          <?php if (!empty($searchFile) || !empty($searchNpub)): ?>
+            <a href="?" class="px-6 py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-md font-semibold transition-colors shadow-lg flex items-center gap-2">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+              </svg>
+              Back to Queue
+            </a>
+          <?php endif; ?>
+        </div>
       </div>
     </section>
 
@@ -1497,6 +1849,11 @@ if (isset($_POST['searchFile'])) {
 
                 <button type="button" value="ban" class="status-btn w-full px-2 py-1.5 bg-red-800 hover:bg-red-900 text-white text-xs font-semibold rounded transition-colors">
                   Ban User
+                </button>
+
+                <button type="button" data-id="<?= $row['id'] ?>" data-usernpub="<?= htmlspecialchars($usernpub, ENT_QUOTES) ?>" class="lookup-ip-btn w-full px-2 py-1.5 bg-slate-700 hover:bg-slate-600 text-white text-xs font-semibold rounded transition-colors flex items-center justify-center gap-1">
+                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-4.35-4.35M11 19a8 8 0 100-16 8 8 0 000 16z"/></svg>
+                  Lookup &amp; Block
                 </button>
               <?php endif; ?>
             </div>
