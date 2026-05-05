@@ -447,9 +447,12 @@ $app->group('/admin/csam', function (RouteCollectorProxy $group) {
 
     try {
       $ncmecHandler = new NCMECReportHandler($incidentId, $testReport);
-      $sanitizedReport = $ncmecHandler->previewReport();
-      return adminJson($response, $sanitizedReport);
-    } catch (Exception $e) {
+      // previewReport() returns the raw XML string. adminJson is typed
+      // `array $data`, so wrap the XML in an envelope. JS already pretty-
+      // prints whatever shape it receives via JSON.stringify().
+      $xml = $ncmecHandler->previewReport();
+      return adminJson($response, ['xml' => $xml]);
+    } catch (\Throwable $e) {
       error_log("Admin preview_report error: " . $e->getMessage());
       return adminError($response, 'Error generating report preview', 500);
     }
