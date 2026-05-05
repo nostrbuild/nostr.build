@@ -2,6 +2,7 @@
 
 require_once __DIR__ . '/../../SiteConfig.php';
 require_once __DIR__ . '/../utils.funcs.php';
+require_once __DIR__ . '/../IpAccessControl.class.php';
 
 class UploadValidator
 {
@@ -9,9 +10,22 @@ class UploadValidator
 
   private UploadsData $uploadsData;
 
+  /**
+   * Optional explicit client IP. If null at validate() time, the IP is
+   * resolved from the request via IpAccessControl::extractClientIp().
+   * Setter exists so non-HTTP callers (CLI, tests, queue workers) can pass
+   * an explicit value without spoofing $_SERVER.
+   */
+  private ?string $clientIp = null;
+
   public function __construct(UploadsData $uploadsData)
   {
     $this->uploadsData = $uploadsData;
+  }
+
+  public function setClientIp(?string $ip): void
+  {
+    $this->clientIp = ($ip !== null && filter_var($ip, FILTER_VALIDATE_IP) !== false) ? $ip : null;
   }
 
   /**
@@ -70,6 +84,26 @@ class UploadValidator
     ) {
       error_log('File has been flagged as rejected');
       return [false, 403, "File or User has been flagged as rejected"];
+    }
+
+    // IP-blocklist gate. Runs after the npub-blacklist check (which is the
+    // authoritative ban): if npub passes, we still drop the upload when the
+    // source IP is on the CIDR blocklist. The npub doubles as the whitelist
+    // override key — a whitelisted user bypasses any IP block they would
+    // otherwise hit.
+    $clientIp = $this->clientIp ?? IpAccessControl::extractClientIp();
+    if ($clientIp !== null) {
+      try {
+        $iac = new IpAccessControl($this->uploadsData->getDb());
+        if ($iac->isBlocked($clientIp, $userNpub)) {
+          error_log('IP blocked: ' . $clientIp . ' (npub: ' . ($userNpub !== '' ? $userNpub : 'anon') . ')');
+          return [false, 403, 'Access denied'];
+        }
+      } catch (\Throwable $e) {
+        // Fail open on infrastructure errors so a transient DB problem
+        // doesn't take down uploads. Block decisions log loudly above.
+        error_log('IP blocklist check failed (allowing upload): ' . $e->getMessage());
+      }
     }
 
     // Calculate remaining space and check if file size exceeds the remaining space for pro users
