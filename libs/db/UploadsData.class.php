@@ -29,6 +29,7 @@
  *}
  */
 require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/db/DatabaseTable.class.php';
+require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/LegacyBlacklist.class.php';
 require $_SERVER['DOCUMENT_ROOT'] . '/vendor/autoload.php';
 
 use Respect\Validation\Validator as v;
@@ -146,28 +147,15 @@ class UploadsData extends DatabaseTable
 
   public function checkBlacklisted(?string $npub = null): bool
   {
-    $sql = "SELECT id FROM blacklist WHERE npub = ? LIMIT 1";
-    $blacklisted = false;
-    if (empty($npub)) {
-      return $blacklisted;
-    }
+    if (empty($npub)) return false;
     try {
-      $stmt = $this->db->prepare($sql);
-      $stmt->bind_param('s', $npub);
-      $stmt->execute();
-      $stmt->store_result(); // This is required before you can call mysqli_stmt_num_rows()
-
-      if ($stmt->num_rows > 0) {
-        $blacklisted = true;
-        error_log("Blacklisted: " . $npub);
-      }
+      $banned = (new LegacyBlacklist($this->db))->isNpubBanned($npub);
+      if ($banned) error_log("Blacklisted: " . $npub);
+      return $banned;
     } catch (Exception $e) {
       error_log("Exception: " . $e->getMessage());
-    } finally {
-      $stmt->free_result();
-      $stmt->close();
+      return false;
     }
-    return $blacklisted;
   }
 
   public function getUploadData(string $filehash): array|bool

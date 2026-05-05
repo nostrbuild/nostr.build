@@ -15,6 +15,7 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/config.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/S3Service.class.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/utils.funcs.php';
 require_once($_SERVER['DOCUMENT_ROOT'] . '/libs/BlossomFrontEndAPI.class.php');
+require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/LegacyBlacklist.class.php';
 
 
 class NCMECReportHandler
@@ -611,18 +612,14 @@ class NCMECReportHandler
    */
   public function unBlacklistUser(?string $reason = "PhotoDNA CSAM Match API Match"): bool
   {
-    // Get the details from the incident data
     $npub = $this->reporteeName;
     $reason = "PhotoDNA CSAM Match API Match";
-    $sql = 'DELETE FROM blacklist WHERE npub = ? AND reason = ? AND timestamp BETWEEN ? AND ?';
-    $stmt = $this->db->prepare($sql);
     $timestamp = date('Y-m-d H:i:s', strtotime($this->incidentTime));
     $timestampStart = date('Y-m-d H:i:s', strtotime($timestamp . ' -10 minutes'));
     $timestampEnd = date('Y-m-d H:i:s', strtotime($timestamp . ' +10 minutes'));
-    $stmt->bind_param('ssss', $npub, $reason, $timestampStart, $timestampEnd);
-    $stmt->execute();
-    $affectedRows = $stmt->affected_rows;
-    $stmt->close();
+
+    $affectedRows = (new LegacyBlacklist($this->db))
+      ->removeByNpubReasonInWindow($npub, $reason, $timestampStart, $timestampEnd);
 
     // Blossom
     $this->blossomFrontEndAPI->unbanUser($npub);
