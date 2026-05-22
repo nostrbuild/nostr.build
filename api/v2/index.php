@@ -268,6 +268,7 @@ require_once __DIR__ . '/routes_btcpay.php'; // Include btcpay routes
 require_once __DIR__ . '/routes_banned.php'; // Include btcpay routes
 require_once __DIR__ . '/routes_gifs.php'; // Include gif routes
 require_once __DIR__ . '/routes_blossom.php'; // Include blossom routes
+require_once __DIR__ . '/routes_accounts.php'; // Include accounts BFF routes
 require_once __DIR__ . '/routes_s3.php'; // Include S3 multipart upload routes
 require_once __DIR__ . '/routes_account_dashboard.php'; // Include account dashboard routes
 require_once __DIR__ . '/routes_admin.php'; // Include admin API routes

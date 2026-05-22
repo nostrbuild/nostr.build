@@ -381,17 +381,25 @@ function metadataFromHeaders(array $headers): array
         // Extract Content-Type to content_type and first value
         if ($normalizedKey === 'content-type') {
             $metadata['content_type'] = $values[0];
+            continue;
         }
         // Extract Content-Length to content_length and first value
-        elseif ($normalizedKey === 'content-length') {
+        if ($normalizedKey === 'content-length') {
             $metadata['content_length'] = $values[0];
+            continue;
         }
-        // Extract x-blossom-<header name> to <header name> and first value
-        elseif (strpos($normalizedKey, 'x-blossom-') === 0) {
-            $headerName = substr($normalizedKey, 10);
-            // Replace - with _ in header name
-            $headerName = str_replace('-', '_', $headerName);
-            $metadata[$headerName] = $values[0];
+
+        // Recognize both x-blossom-<name> and x-accounts-<name>; strip the prefix
+        // and normalize '-' to '_'. Both produce identical metadata keys so existing
+        // Blossom-style consumers work unchanged.
+        foreach (['x-blossom-', 'x-accounts-'] as $prefix) {
+            if (strpos($normalizedKey, $prefix) === 0) {
+                $headerName = substr($normalizedKey, strlen($prefix));
+                // Replace - with _ in header name
+                $headerName = str_replace('-', '_', $headerName);
+                $metadata[$headerName] = $values[0];
+                break;
+            }
         }
     }
     return $metadata;
