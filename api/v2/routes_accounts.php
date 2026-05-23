@@ -1098,6 +1098,100 @@ $app->group('/accounts', function (RouteCollectorProxy $group) {
         }
       }
     });
+
+    // POST /api/v2/accounts/dashboard/ai/generate — text-to-image generation
+    // across Stable AI Core (@sd/core, credit-gated) and Cloudflare Workers AI
+    // models (@cf/...). Ported from routes_account_dashboard.php:654; the BFF
+    // has no full PHP session, so the tier gates use Account directly (mirrors
+    // /nostr/publish) and dashboardGetCredits() is called explicitly to
+    // populate $_SESSION['sd_credits'] for the @sd/core helper to read.
+    $sub->post('/ai/generate', function (Request $request, Response $response) {
+      global $link;
+      global $awsConfig;
+      $npub = trim((string) ($request->getHeaderLine('X-Accounts-Npub') ?? ''));
+      if ($npub === '') {
+        return dashboardError($response, 'missing-identity', 400);
+      }
+
+      $account = new Account($npub, $link);
+      if (!$account->accountExists()) {
+        return dashboardError($response, 'not-found', 404);
+      }
+
+      $prevNpub = $_SESSION['usernpub'] ?? null;
+      $_SESSION['usernpub'] = $npub;
+      try {
+        if (dashboardGetDaysRemaining() <= 0 || $account->getPerFileUploadLimit() <= 0) {
+          return dashboardError($response, 'Your account has expired', 403);
+        }
+        $level = (int) $account->getAccountLevel()->value;
+        // Base AI Studio gate: Creator (1), Professional (2), Advanced (10),
+        // Admin (99) — mirrors the legacy Permission::validatePermissionsLevelAny(2, 1, 10, 99).
+        if (!in_array($level, [1, 2, 10, 99], true)) {
+          return dashboardError($response, 'You do not have permission to generate AI images', 403);
+        }
+
+        $body = $request->getParsedBody();
+        if (empty($body['model']) || empty($body['prompt']) || !isset($body['title'])) {
+          return dashboardError($response, 'Missing required parameters');
+        }
+        $model = $body['model'];
+        $prompt = $body['prompt'];
+        $title = $body['title'];
+        $negativePrompt = $body['negative_prompt'] ?? '';
+        $ar = $body['aspect_ratio'] ?? '';
+        $preset = $body['style_preset'] ?? '';
+
+        // Per-model tier gating mirrors the legacy route. Lightning + SD-XL
+        // base share the base AI gate; FLUX is narrower (no Professional).
+        $creatorsModels = [
+          '@cf/bytedance/stable-diffusion-xl-lightning',
+          '@cf/stabilityai/stable-diffusion-xl-base-1.0',
+        ];
+        $advancedModels = ['@cf/black-forest-labs/flux-1-schnell'];
+        if (in_array($model, $creatorsModels, true) && !in_array($level, [1, 2, 10, 99], true)) {
+          return dashboardError($response, "You do not have permission to generate AI images using the {$model} model", 403);
+        }
+        if (in_array($model, $advancedModels, true) && !in_array($level, [1, 10, 99], true)) {
+          return dashboardError($response, "You do not have permission to generate AI images using the {$model} model", 403);
+        }
+
+        // @sd/core consumes credits — populate $_SESSION['sd_credits'] so the
+        // legacy generator can read it.
+        if ($model === '@sd/core') {
+          dashboardGetCredits($link);
+          if (intval($_SESSION['sd_credits'] ?? 0) <= 3) {
+            return dashboardError($response, 'You do not have enough credits to generate AI images');
+          }
+        }
+
+        if ($model === '@sd/core') {
+          $aiImage = dashboardGenerateSDCoreImage(
+            $prompt,
+            $negativePrompt,
+            $ar,
+            $preset,
+            0,
+            $account,
+            $link,
+            $awsConfig,
+          );
+          $_SESSION['sd_credits'] -= 3;
+        } else {
+          $aiImage = dashboardGenerateAIImage($model, $prompt, $title, $link, $awsConfig);
+        }
+        return dashboardJson($response, $aiImage);
+      } catch (\Throwable $e) {
+        error_log($e->getMessage());
+        return dashboardError($response, 'Failed to generate AI image', 500);
+      } finally {
+        if ($prevNpub === null) {
+          unset($_SESSION['usernpub']);
+        } else {
+          $_SESSION['usernpub'] = $prevNpub;
+        }
+      }
+    });
   });
 
   // Multipart S3 — large files. Mirrors api/v2/routes_s3.php /multipart/*
