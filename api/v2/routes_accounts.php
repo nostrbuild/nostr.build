@@ -658,12 +658,21 @@ $app->group('/accounts', function (RouteCollectorProxy $group) {
           ->withStatus(400);
       }
 
+      $folderToRename = array_map('intval', (array) $folderToRename);
+      $folderNames = array_map('strval', (array) $folderNames);
+
       $prevNpub = $_SESSION['usernpub'] ?? null;
       $_SESSION['usernpub'] = $npub;
+      $renamedFolders = [];
       try {
         $s3 = new S3Service($awsConfig);
         $icm = new ImageCatalogManager($link, $s3, $npub);
-        $renamedFolders = array_map('intval', $icm->renameFolder($folderToRename, $folderNames));
+        foreach ($folderToRename as $i => $id) {
+          if (!isset($folderNames[$i])) continue;
+          foreach ($icm->renameFolder($id, $folderNames[$i]) as $renamed) {
+            $renamedFolders[] = (int) $renamed;
+          }
+        }
       } finally {
         if ($prevNpub === null) {
           unset($_SESSION['usernpub']);

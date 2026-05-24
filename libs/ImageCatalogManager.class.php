@@ -200,7 +200,7 @@ class ImageCatalogManager
 
   /**
    * Add flag to share images on creator's page
-   * @param int $imageId Image ID
+   * @param array $imageIds Array of image IDs
    * @param bool $shareFlag Share flag
    */
   public function shareImage(array $imageIds, bool $shareFlag): array
@@ -267,7 +267,7 @@ class ImageCatalogManager
   {
     error_log("Renaming folder: $folderId to $folderName" . PHP_EOL);
     try {
-      $stmt = $this->link->prepare("UPDATE users_images_folders SET name = ? WHERE usernpub = ? AND id = ?");
+      $stmt = $this->link->prepare("UPDATE users_images_folders SET folder = ? WHERE usernpub = ? AND id = ?");
       $stmt->bind_param('ssi', $folderName, $this->usernpub, $folderId);
       if (!$stmt->execute()) {
         throw new Exception("Failed to rename folder");
