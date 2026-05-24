@@ -842,6 +842,59 @@ $app->group('/accounts', function (RouteCollectorProxy $group) {
         ->withStatus(200);
     });
 
+    // POST /api/v2/accounts/dashboard/npub/mark-verified
+    //
+    // Called by the Worker after it has cryptographically proven (NIP-07
+    // signature OR matched DM code) that the user owns the npub bound to
+    // their session. Worker carries the trust via HmacAuthMiddleware; the
+    // X-Accounts-Npub header is set by the Worker (cookie-authenticated user)
+    // and cannot be spoofed by the browser.
+    //
+    // Effect: flips users.npub_verified = 1 via Account::verifyNpub(), which
+    // also syncs to Blossom. No-op when already verified (returns 200).
+    $sub->post('/npub/mark-verified', function (Request $request, Response $response) {
+      global $link;
+      $npub = trim((string) ($request->getHeaderLine('X-Accounts-Npub') ?? ''));
+      if ($npub === '') {
+        $response->getBody()->write(json_encode(['error' => 'missing-identity']));
+        return $response
+          ->withHeader('Content-Type', 'application/json')
+          ->withStatus(400);
+      }
+
+      $prevNpub = $_SESSION['usernpub'] ?? null;
+      $_SESSION['usernpub'] = $npub;
+      try {
+        $account = new Account($npub, $link);
+        if (!$account->accountExists()) {
+          $response->getBody()->write(json_encode(['error' => 'not-found']));
+          return $response
+            ->withHeader('Content-Type', 'application/json')
+            ->withStatus(404);
+        }
+        if (!$account->isNpubVerified()) {
+          $account->verifyNpub();
+        }
+      } catch (\Throwable $e) {
+        error_log('npub mark-verified failed: ' . $e->getMessage());
+        $response->getBody()->write(json_encode(['error' => 'update-failed']));
+        return $response
+          ->withHeader('Content-Type', 'application/json')
+          ->withStatus(500);
+      } finally {
+        if ($prevNpub === null) {
+          unset($_SESSION['usernpub']);
+        } else {
+          $_SESSION['usernpub'] = $prevNpub;
+        }
+      }
+
+      $response->getBody()->write(json_encode(['ok' => true]));
+      return $response
+        ->withHeader('Content-Type', 'application/json')
+        ->withStatus(200);
+    });
+
     // POST /api/v2/accounts/dashboard/profile/password
     $sub->post('/profile/password', function (Request $request, Response $response) {
       global $link;
