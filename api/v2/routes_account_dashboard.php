@@ -143,10 +143,22 @@ function dashboardGetCredits($link): array
 {
   $__t = hrtime(true);
   $apiBase = substr($_SERVER['AI_GEN_API_ENDPOINT'], 0, strrpos($_SERVER['AI_GEN_API_ENDPOINT'], '/'));
-  $credits = new Credits($_SESSION['usernpub'], $apiBase, $_SERVER['AI_GEN_API_HMAC_KEY'], $link);
-  $balance = $credits->getCreditsBalance();
+  // Failure-tolerant: the credit API is a separate service and shouldn't take
+  // the entire profile endpoint down with it. A level-0 / expired user may
+  // legitimately not exist on the credit-API side yet, which used to surface
+  // as `Credits::fetchRequest` throwing "Unexpected HTTP code" and bubbling
+  // up — pre-fix the HMAC middleware then re-mapped that to a misleading 401.
+  // Treat any upstream error as zero balance so the profile still loads.
+  $defaultBalance = ['available' => 0, 'debited' => 0, 'credited' => 0];
+  try {
+    $credits = new Credits($_SESSION['usernpub'], $apiBase, $_SERVER['AI_GEN_API_HMAC_KEY'], $link);
+    $balance = $credits->getCreditsBalance();
+  } catch (\Throwable $e) {
+    error_log('dashboardGetCredits failed, defaulting to zero balance: ' . $e->getMessage());
+    $balance = $defaultBalance;
+  }
   apiTimingLog('dashboardGetCredits: Credits API call', $__t);
-  $_SESSION['sd_credits'] = $balance['available'];
+  $_SESSION['sd_credits'] = $balance['available'] ?? 0;
   return $balance;
 }
 

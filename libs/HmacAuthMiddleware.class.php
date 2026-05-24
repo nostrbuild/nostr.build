@@ -35,16 +35,32 @@ class HmacAuthMiddleware implements MiddlewareInterface
   {
     $secrets = explode(',', $this->secrets);
 
+    // Step 1 — verify the HMAC signature. Only HMAC verification belongs inside
+    // this try/catch; the downstream handler runs OUTSIDE so its exceptions
+    // propagate to Slim's error middleware untouched. Previously the
+    // `$handler->handle($request)` call sat inside the try, which silently
+    // converted any downstream throw (e.g. the upstream /sd/credits call
+    // failing for level-0 or expired users) into a misleading 401 here.
+    $authenticated = false;
     foreach ($secrets as $secret) {
       try {
         $hmacAuthHandler = new HmacAuthHandler($request, $secret);
         $hmacAuthHandler->authenticate();
-        $response = $handler->handle($request);
-        return $response;
+        $authenticated = true;
+        break;
       } catch (\Exception $e) {
         error_log('HmacAuthHandler error: ' . $e->getMessage());
+        // Try the next secret on HMAC failure only.
       }
     }
-    return new Psr7Response(401); 
+
+    if (!$authenticated) {
+      return new Psr7Response(401);
+    }
+
+    // Step 2 — run the downstream handler outside the HMAC try/catch so its
+    // exceptions surface as the right status (typically 500 via Slim) instead
+    // of being conflated with HMAC failure.
+    return $handler->handle($request);
   }
 }

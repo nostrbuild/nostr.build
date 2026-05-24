@@ -34,16 +34,24 @@ class HmacAuthMiddlewareBodyless implements MiddlewareInterface
   {
     $secrets = explode(',', $this->secrets);
 
+    // See HmacAuthMiddleware::process — the downstream handler MUST run outside
+    // this try/catch so its exceptions don't get rebranded as HMAC failures.
+    $authenticated = false;
     foreach ($secrets as $secret) {
       try {
         $hmacAuthHandler = new HmacAuthHandlerBodyless($request, $secret);
         $hmacAuthHandler->authenticate();
-        $response = $handler->handle($request);
-        return $response;
+        $authenticated = true;
+        break;
       } catch (\Exception $e) {
         error_log('HmacAuthHandler error: ' . $e->getMessage());
       }
     }
-    return new Psr7Response(401); 
+
+    if (!$authenticated) {
+      return new Psr7Response(401);
+    }
+
+    return $handler->handle($request);
   }
 }
