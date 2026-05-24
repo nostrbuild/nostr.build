@@ -116,7 +116,10 @@ function dashboardGetAccountData($link, $account): array
 
   return [
     "userId" => $info['id'],
-    "name" => $info['nym'],
+    // Coerce nullable `nym` to an empty string so the client never sees a
+    // null where the type promises a string. Same pattern used a few lines
+    // down for default_folder.
+    "name" => $info['nym'] ?? "",
     "npub" => $info['usernpub'],
     "pfpUrl" => $info['ppic'],
     "wallet" => $info['wallet'],
