@@ -68,6 +68,12 @@ $app->group('/accounts', function (RouteCollectorProxy $group) {
   // Uses the same 'accountClass' DI factory the rest of api/v2 uses
   // (see index.php:105-110 and routes_blossom.php:45,189) so we don't
   // duplicate the (npub, $link) wiring.
+  //
+  // Mirrors the legacy NostrLoginMiddleware gate at routes_account.php:225-227
+  // and the BFF DM-login gate at /accounts/nostr-dm-login below: NIP-07 login
+  // is only honored when the per-account allow_npub_login flag is on. Without
+  // this check the Worker happily issues a session from a verified NIP-07
+  // signature even though the user explicitly disabled extension login.
   $group->get('/user-by-npub', function (Request $request, Response $response) {
     $npub = $request->getQueryParams()['npub'] ?? '';
     if ($npub === '') {
@@ -83,6 +89,13 @@ $app->group('/accounts', function (RouteCollectorProxy $group) {
       return $response
         ->withHeader('Content-Type', 'application/json')
         ->withStatus(404);
+    }
+
+    if (!$account->isNpubLoginAllowed()) {
+      $response->getBody()->write(json_encode(['error' => 'npub-login-disabled']));
+      return $response
+        ->withHeader('Content-Type', 'application/json')
+        ->withStatus(403);
     }
 
     $data = $account->getAccount();
@@ -355,18 +368,11 @@ $app->group('/accounts', function (RouteCollectorProxy $group) {
       $prevNpub = $_SESSION['usernpub'] ?? null;
       $_SESSION['usernpub'] = $npub;
       try {
-        // Expiry guard — mirrors dashboardGetDaysRemaining() from the legacy
-        // route. It reads $_SESSION['usernpub'] internally via dashboardGetAccount.
-        $daysRemaining = dashboardGetDaysRemaining();
-        if ($daysRemaining <= 0) {
-          $response->getBody()->write(json_encode(['error' => 'account-expired']));
-          return $response
-            ->withHeader('Content-Type', 'application/json')
-            ->withStatus(403);
-        }
-
         // Permission allowlist: Creator (1), Advanced (10), Admin (99) — mirrors
         // the legacy Permission::validatePermissionsLevelAny(1, 10, 99).
+        // Expiry is intentionally NOT gated here: an expired subscriber should
+        // still be able to publish/unpublish their existing media (legacy
+        // blocked this; the new app deliberately relaxes it).
         $level = (int) $account->getAccountLevel()->value;
         if (!in_array($level, [1, 10, 99], true)) {
           $response->getBody()->write(json_encode(['error' => 'forbidden']));
@@ -1068,11 +1074,11 @@ $app->group('/accounts', function (RouteCollectorProxy $group) {
       $prevNpub = $_SESSION['usernpub'] ?? null;
       $_SESSION['usernpub'] = $npub;
       try {
-        if (dashboardGetDaysRemaining() <= 0) {
-          return dashboardError($response, 'Your account has expired', 403);
-        }
         // Creator (1), paid tiers (2, 3), Advanced (10), Admin (99) — mirrors
         // the legacy Permission::validatePermissionsLevelAny(1, 2, 3, 10, 99).
+        // Expiry is intentionally NOT gated here so an expired subscriber can
+        // still publish/unpublish their existing media (legacy blocked this;
+        // the new app deliberately relaxes it). Upload + AI still are gated.
         $level = (int) $account->getAccountLevel()->value;
         if (!in_array($level, [1, 2, 3, 10, 99], true)) {
           return dashboardError($response, 'You do not have permission to publish Nostr events', 403);
