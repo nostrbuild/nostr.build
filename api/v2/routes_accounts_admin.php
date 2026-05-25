@@ -64,11 +64,37 @@ function aaValidNpub(?string $raw): ?string
   return $npub;
 }
 
+/** Parse the nl_sub_activation_return_value JSON column. The tier name
+ *  is dynamic — read `request.tier` first, then index `current_tier_ends`
+ *  by that name. Today only "plus" exists; this keeps the lookup honest
+ *  if/when a new tier is added (e.g. "premium"). */
+function aaParseNlActivation(mixed $raw): array
+{
+  // PHP's $accountInfo['nl_sub_activation_return_value'] is already
+  // decoded (Account::getAccountInfo passes through whatever was stored).
+  // Defensive — handle both decoded array and raw JSON string.
+  $data = is_string($raw) ? json_decode($raw, true) : $raw;
+  if (!is_array($data)) {
+    return ['tier' => null, 'tierEndsAt' => null, 'timeAddedSeconds' => null];
+  }
+  $tier = $data['request']['tier'] ?? null;
+  $tierEndsMs = is_string($tier) ? ($data['current_tier_ends'][$tier] ?? null) : null;
+  return [
+    'tier'             => $tier,
+    'tierEndsAt'       => is_int($tierEndsMs) ? date('Y-m-d H:i:s', intdiv($tierEndsMs, 1000)) : null,
+    'timeAddedSeconds' => $data['request']['time_added'] ?? null,
+  ];
+}
+
 /** Build the lookup response payload from an Account. Mirrors the field
  *  names the TS handler validates against. */
 function aaUserSnapshot(Account $account): array
 {
   $info = $account->getAccountInfo();
+  // NL status: parse the stored JSON for tier name + tier-ends timestamp,
+  // so the admin doesn't have to read raw blobs. eligible/activated come
+  // straight from getAccountInfo (mirrors what the profile endpoint returns).
+  $nl = aaParseNlActivation($info['nl_sub_activation_return_value'] ?? null);
   return [
     'npub'               => $account->getNpub(),
     'userId'             => $account->getAccountNumericId(),
@@ -86,16 +112,31 @@ function aaUserSnapshot(Account $account): array
     'banned'             => (bool) ($info['banned'] ?? false),
     'banReason'          => (string) ($info['ban_reason'] ?? ''),
     'createdAt'          => $info['created_at'] ?? null,
+    'nlSubEligible'      => (bool) ($info['nl_sub_eligible'] ?? false),
+    'nlSubActivated'     => (bool) ($info['nl_sub_activated'] ?? false),
+    'nlSubActivatedDate' => $info['nl_sub_activated_date'] ?? null,
+    'nlSubActivationId'  => $info['nl_sub_activation_id'] ?? null,
+    'nlSubTier'          => $nl['tier'],
+    'nlSubTierEndsAt'    => $nl['tierEndsAt'],
   ];
 }
 
 /** Emit a profile-changed event for the AFFECTED user (target_npub).
- *  Swallows failures — webhook hiccups must not fail the admin action. */
-function aaEmitProfileChanged(?int $targetUserId, array $changed): void
+ *  Swallows failures — webhook hiccups must not fail the admin action.
+ *
+ *  Always pass the new field values when known: this keeps the SessionDO
+ *  snapshot coherent for Worker-side fast reads (requireAdmin etc.). Without
+ *  `fields`, the broadcast still invalidates the client's profile query, but
+ *  the DO snapshot stays stale until the next dashboard profile refetch
+ *  round-trips back — leaving a small window where the Worker's early-reject
+ *  gates could see old values. PHP's per-route middleware does fresh SQL
+ *  reads, so the security boundary holds either way; this is just snapshot
+ *  hygiene. */
+function aaEmitProfileChanged(?int $targetUserId, array $changed, ?array $fields = null): void
 {
   if ($targetUserId === null) return;
   try {
-    (new WorkerEventsClient())->emitProfileChanged($targetUserId, null, $changed);
+    (new WorkerEventsClient())->emitProfileChanged($targetUserId, $fields, $changed);
   } catch (\Throwable $e) {
     error_log('admin/users: emitProfileChanged failed: ' . $e->getMessage());
   }
@@ -159,7 +200,15 @@ $app->group('/accounts/admin/users', function (RouteCollectorProxy $group) {
       return aaError($response, 'server-error', 500);
     }
 
-    aaEmitProfileChanged($account->getAccountNumericId(), ['accountLevel', 'remainingDays']);
+    // adminSetPlan re-fetches account data; remainingDays is fresh here.
+    aaEmitProfileChanged(
+      $account->getAccountNumericId(),
+      ['accountLevel', 'remainingDays'],
+      [
+        'accountLevel'  => $result['level'],
+        'remainingDays' => $account->getRemainingSubscriptionDays(),
+      ],
+    );
     return aaJson($response, ['ok' => true, 'planUntilDate' => $result['planUntilDate'], 'level' => $result['level']]);
   });
 
@@ -198,7 +247,11 @@ $app->group('/accounts/admin/users', function (RouteCollectorProxy $group) {
       return aaError($response, 'server-error', 500);
     }
 
-    aaEmitProfileChanged($account->getAccountNumericId(), ['remainingDays']);
+    aaEmitProfileChanged(
+      $account->getAccountNumericId(),
+      ['remainingDays'],
+      ['remainingDays' => $account->getRemainingSubscriptionDays()],
+    );
     return aaJson($response, ['ok' => true, 'planUntilDate' => $newEnd]);
   });
 
@@ -234,7 +287,11 @@ $app->group('/accounts/admin/users', function (RouteCollectorProxy $group) {
       return aaError($response, 'server-error', 500);
     }
 
-    aaEmitProfileChanged($account->getAccountNumericId(), ['remainingDays']);
+    aaEmitProfileChanged(
+      $account->getAccountNumericId(),
+      ['remainingDays'],
+      ['remainingDays' => $account->getRemainingSubscriptionDays()],
+    );
     return aaJson($response, ['ok' => true, 'planUntilDate' => $newEnd]);
   });
 
@@ -273,7 +330,11 @@ $app->group('/accounts/admin/users', function (RouteCollectorProxy $group) {
       return aaError($response, 'server-error', 500);
     }
 
-    aaEmitProfileChanged($account->getAccountNumericId(), ['npubVerified']);
+    aaEmitProfileChanged(
+      $account->getAccountNumericId(),
+      ['npubVerified'],
+      ['npubVerified' => $verified],
+    );
     return aaJson($response, ['ok' => true, 'npubVerified' => $verified]);
   });
 
@@ -312,7 +373,11 @@ $app->group('/accounts/admin/users', function (RouteCollectorProxy $group) {
       return aaError($response, 'server-error', 500);
     }
 
-    aaEmitProfileChanged($account->getAccountNumericId(), ['allowNostrLogin']);
+    aaEmitProfileChanged(
+      $account->getAccountNumericId(),
+      ['allowNostrLogin'],
+      ['allowNostrLogin' => $allow],
+    );
     return aaJson($response, ['ok' => true, 'allowNpubLogin' => $allow]);
   });
 
@@ -374,6 +439,99 @@ $app->group('/accounts/admin/users', function (RouteCollectorProxy $group) {
     ]);
   });
 
+})
+  ->add(new ProxiedAdminMiddleware())
+  ->add(new HmacAuthMiddleware());
+
+// ----- Activations report group --------------------------------------------
+// Not scoped to a single user, so it gets its own group. Same auth stack.
+
+$app->group('/accounts/admin/nl-activations', function (RouteCollectorProxy $group) {
+  /**
+   * GET /accounts/admin/nl-activations?month=YYYY-MM
+   * Returns every NL activation triggered during the selected month.
+   * Each row = one billable API call to the NL partner.
+   *
+   * Response:
+   *   {
+   *     month:                  "2026-05",
+   *     monthStart:             "2026-05-01 00:00:00",
+   *     monthEnd:               "2026-06-01 00:00:00",   // exclusive
+   *     count:                  N,
+   *     totalTimeAddedSeconds:  N,
+   *     activations: [
+   *       { npub, nym, activatedDate, activationId, tier, tierEndsAt,
+   *         timeAddedSeconds }
+   *     ]
+   *   }
+   */
+  $group->get('', function (Request $request, Response $response) {
+    global $link;
+    $monthParam = trim((string) ($request->getQueryParams()['month'] ?? ''));
+    // Strict YYYY-MM. Anything else: 400. Default-to-current is the
+    // CLIENT's job — keeping the server explicit avoids the "I sent
+    // nothing and got data" ambiguity.
+    if (!preg_match('/^(\d{4})-(\d{2})$/', $monthParam, $m)) {
+      return aaError($response, 'invalid-month', 400, ['detail' => 'expected YYYY-MM']);
+    }
+    $year  = (int) $m[1];
+    $month = (int) $m[2];
+    if ($month < 1 || $month > 12 || $year < 2020 || $year > 2100) {
+      return aaError($response, 'invalid-month', 400);
+    }
+    $monthStart = sprintf('%04d-%02d-01 00:00:00', $year, $month);
+    // Exclusive upper bound = first day of next month.
+    $monthEndYear  = $month === 12 ? $year + 1 : $year;
+    $monthEndMonth = $month === 12 ? 1 : $month + 1;
+    $monthEnd = sprintf('%04d-%02d-01 00:00:00', $monthEndYear, $monthEndMonth);
+
+    $stmt = $link->prepare(
+      "SELECT usernpub, nym, nl_sub_activated_date, nl_sub_activation_id, nl_sub_activation_return_value
+       FROM users
+       WHERE nl_sub_activated_date >= ? AND nl_sub_activated_date < ?
+       ORDER BY nl_sub_activated_date DESC"
+    );
+    if (!$stmt) {
+      error_log('admin/nl-activations prepare failed: ' . $link->error);
+      return aaError($response, 'server-error', 500);
+    }
+
+    $activations = [];
+    $totalSeconds = 0;
+    try {
+      $stmt->bind_param('ss', $monthStart, $monthEnd);
+      if (!$stmt->execute()) {
+        error_log('admin/nl-activations execute failed: ' . $stmt->error);
+        return aaError($response, 'server-error', 500);
+      }
+      $res = $stmt->get_result();
+      while ($row = ($res ? $res->fetch_assoc() : null)) {
+        $nl = aaParseNlActivation($row['nl_sub_activation_return_value']);
+        $secs = is_int($nl['timeAddedSeconds']) ? $nl['timeAddedSeconds'] : 0;
+        $totalSeconds += $secs;
+        $activations[] = [
+          'npub'             => $row['usernpub'],
+          'nym'              => $row['nym'],
+          'activatedDate'    => $row['nl_sub_activated_date'],
+          'activationId'     => $row['nl_sub_activation_id'],
+          'tier'             => $nl['tier'],
+          'tierEndsAt'       => $nl['tierEndsAt'],
+          'timeAddedSeconds' => $nl['timeAddedSeconds'],
+        ];
+      }
+    } finally {
+      $stmt->close();
+    }
+
+    return aaJson($response, [
+      'month'                 => $monthParam,
+      'monthStart'            => $monthStart,
+      'monthEnd'              => $monthEnd,
+      'count'                 => count($activations),
+      'totalTimeAddedSeconds' => $totalSeconds,
+      'activations'           => $activations,
+    ]);
+  });
 })
   ->add(new ProxiedAdminMiddleware())
   ->add(new HmacAuthMiddleware());
