@@ -1,6 +1,7 @@
 <?php
 require_once $_SERVER['DOCUMENT_ROOT'] . '/config.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/NostrAuthMiddleware.class.php';
+require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/WorkerEventsClient.class.php';
 require_once __DIR__ . '/helper_functions.php';
 
 require $_SERVER['DOCUMENT_ROOT'] . '/vendor/autoload.php';
@@ -115,6 +116,35 @@ $app->group('/nip96', function (RouteCollectorProxy $group) {
         $data[0]['fallback'] = $body['url'];
       }
       //error_log('Upload successful' . json_encode(['code' => $code, 'message' => $message]));
+
+      // Cross-device sync: tell the Worker (which holds the WebSocket fan-out
+      // to every other tab/device this user has open) that something changed.
+      // Failures here are swallowed inside the client — we don't want a
+      // webhook hiccup turning a successful upload into a 5xx for the API caller.
+      try {
+        $account = $this->get('accountClass')($npub);
+        $userId = $account->getAccountNumericId();
+        if ($userId !== null) {
+          $events = new WorkerEventsClient();
+          if ($formParams['media_type'] === 'avatar') {
+            // Avatar upload — we don't know the canonical pfpUrl field shape
+            // here, so signal "stale" (no `fields` payload) and let each
+            // device refetch its profile.
+            $events->emitProfileChanged($userId, null, ['pfpUrl']);
+          } else {
+            // Regular file. The default folder is what we just told the
+            // upload class to write into; that's the most specific hint
+            // we can give the grid invalidator.
+            $folders = !empty($accountDefaultFolder) ? [$accountDefaultFolder] : null;
+            $events->emitFilesChanged($userId, $folders, added: 1);
+            // Storage usage shifted ⇒ profile is stale (header bar, etc.).
+            $events->emitProfileChanged($userId);
+          }
+        }
+      } catch (\Throwable $e) {
+        error_log('nip96 upload: WorkerEventsClient failed: ' . $e->getMessage());
+      }
+
       return nip96Response(
         response: $response,
         status: 'success',

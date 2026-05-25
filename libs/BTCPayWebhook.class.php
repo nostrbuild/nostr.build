@@ -4,6 +4,7 @@ declare(strict_types=1);
 require_once $_SERVER['DOCUMENT_ROOT'] . '/config.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/BTCPayClient.class.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/Credits.class.php';
+require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/WorkerEventsClient.class.php';
 require_once __DIR__ . '/Account.class.php';
 
 require $_SERVER['DOCUMENT_ROOT'] . '/vendor/autoload.php';
@@ -156,6 +157,28 @@ class BTCPayWebhook
           $new = $orderType !== 'renewal'; // If the order type is not renewal, then it is a new order
           $account->setPlan((int)$accountPlan, (string)$orderPeriod, $new);
           error_log("[INFO] Account " . $account->getNpub() . ' updated to a new plan: ' . $accountPlan . PHP_EOL);
+
+          // Cross-device sync: plan level + expiry just moved. Fire a
+          // profile-changed signal so every connected device for this user
+          // refetches its profile (badge, remaining-days label, storage
+          // header bar). We name the fields in `changed` but don't push
+          // values — Account was loaded before setPlan ran, so reading
+          // back here would yield stale numbers; the canonical truth is
+          // the DB, and each device refetches it. Failure is logged-only:
+          // a webhook-fanout hiccup must not roll back a paid invoice.
+          try {
+            $userId = $account->getAccountNumericId();
+            if ($userId !== null) {
+              (new WorkerEventsClient())->emitProfileChanged(
+                $userId,
+                null,
+                ['accountLevel', 'remainingDays']
+              );
+            }
+          } catch (\Throwable $e) {
+            error_log('btcpay webhook: WorkerEventsClient failed: ' . $e->getMessage());
+          }
+
           // Process referral code and only for orderType 'signup'
           if ($orderType !== 'signup') return true;
           // Check if the code matches the format [A-F0-9]{4}-[A-F0-9]{4}-[A-F0-9]{4} and 14 characters long

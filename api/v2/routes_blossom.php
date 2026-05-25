@@ -1,6 +1,7 @@
 <?php
 require_once $_SERVER['DOCUMENT_ROOT'] . '/config.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/HmacAuthMiddlewareBodyless.class.php';
+require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/WorkerEventsClient.class.php';
 require_once __DIR__ . '/helper_functions.php';
 
 require $_SERVER['DOCUMENT_ROOT'] . '/vendor/autoload.php';
@@ -83,6 +84,22 @@ $app->group('/blossom', function (RouteCollectorProxy $group) {
         $data[0]['fallback'] = $metadata['mirror_url'];
       }
       //error_log('Upload successful' . json_encode(['code' => $code, 'message' => $message]));
+
+      // Cross-device sync: notify the Worker so every other tab/device for
+      // this user updates its grid + storage indicator without waiting for
+      // the staleTime refetch. Swallowed failures — see WorkerEventsClient.
+      try {
+        $userId = $account->getAccountNumericId();
+        if ($userId !== null) {
+          $events = new WorkerEventsClient();
+          $folders = !empty($accountDefaultFolder) ? [$accountDefaultFolder] : null;
+          $events->emitFilesChanged($userId, $folders, added: 1);
+          $events->emitProfileChanged($userId);
+        }
+      } catch (\Throwable $e) {
+        error_log('blossom upload: WorkerEventsClient failed: ' . $e->getMessage());
+      }
+
       return nip96Response(
         response: $response,
         status: 'success',
