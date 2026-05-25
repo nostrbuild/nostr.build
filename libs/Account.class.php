@@ -1536,6 +1536,62 @@ class Account
   }
 
   /**
+   * Toggle npub_verified. Marker for "this user has cryptographically
+   * proven control of the npub" — usually set by the NIP-05 / DM
+   * verification flow; admin override exists for support tickets where
+   * the verification path failed but the user is legitimate (or the
+   * reverse — flagging a once-verified account for review).
+   *
+   * @param bool $verified
+   * @return void
+   * @throws Exception on DB failure
+   */
+  public function adminSetNpubVerified(bool $verified): void
+  {
+    $val = $verified ? 1 : 0;
+    $stmt = $this->db->prepare("UPDATE users SET npub_verified = ? WHERE usernpub = ?");
+    if (!$stmt) throw new Exception("prepare failed: " . $this->db->error);
+    try {
+      $stmt->bind_param('is', $val, $this->npub);
+      if (!$stmt->execute()) throw new Exception("execute failed: " . $stmt->error);
+      if ($stmt->affected_rows === 0 && !$this->accountExists()) {
+        throw new Exception("user not found");
+      }
+    } finally {
+      $stmt->close();
+    }
+    $this->fetchAccountData();
+  }
+
+  /**
+   * Toggle allow_npub_login. When false, the npub login path is
+   * blocked for this user — they must use password auth. Doesn't
+   * invalidate existing sessions (already-authed devices continue to
+   * work); just prevents NEW npub-based logins. Pair with a password
+   * reset + killSessions if you also need to kick everyone.
+   *
+   * @param bool $allow
+   * @return void
+   * @throws Exception on DB failure
+   */
+  public function adminSetAllowNpubLogin(bool $allow): void
+  {
+    $val = $allow ? 1 : 0;
+    $stmt = $this->db->prepare("UPDATE users SET allow_npub_login = ? WHERE usernpub = ?");
+    if (!$stmt) throw new Exception("prepare failed: " . $this->db->error);
+    try {
+      $stmt->bind_param('is', $val, $this->npub);
+      if (!$stmt->execute()) throw new Exception("execute failed: " . $stmt->error);
+      if ($stmt->affected_rows === 0 && !$this->accountExists()) {
+        throw new Exception("user not found");
+      }
+    } finally {
+      $stmt->close();
+    }
+    $this->fetchAccountData();
+  }
+
+  /**
    * Generate a strong random password, persist both legacy hashes, and
    * return the plaintext to the caller exactly ONCE. The plaintext is
    * never logged or stored anywhere else — the caller (admin route) is

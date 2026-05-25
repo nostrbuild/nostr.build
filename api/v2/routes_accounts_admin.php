@@ -239,10 +239,92 @@ $app->group('/accounts/admin/users', function (RouteCollectorProxy $group) {
   });
 
   /**
+   * POST /accounts/admin/users/verify-npub
+   * Body: { npub, verified: bool }
+   * Toggle the npub_verified marker. Usually set by NIP-05/DM verification —
+   * this is the admin override for support cases.
+   */
+  $group->post('/verify-npub', function (Request $request, Response $response) {
+    global $link;
+    $body = json_decode((string) $request->getBody(), true);
+    if (!is_array($body)) return aaError($response, 'invalid-body', 400);
+
+    $npub = aaValidNpub($body['npub'] ?? null);
+    if ($npub === null) return aaError($response, 'invalid-npub', 400);
+
+    // Strict boolean — no string coercion. Mirrors password-reset's killSessions.
+    if (!isset($body['verified']) || !is_bool($body['verified'])) {
+      return aaError($response, 'invalid-verified', 400);
+    }
+    $verified = $body['verified'];
+
+    $adminNpub = (string) $request->getAttribute('admin_npub');
+    if ($adminNpub !== '' && $adminNpub === $npub) {
+      return aaError($response, 'self-modify-forbidden', 403);
+    }
+
+    $account = new Account($npub, $link);
+    if (!$account->accountExists()) return aaError($response, 'not-found', 404);
+
+    try {
+      $account->adminSetNpubVerified($verified);
+    } catch (\Throwable $e) {
+      error_log("admin/users/verify-npub failed for {$npub}: " . $e->getMessage());
+      return aaError($response, 'server-error', 500);
+    }
+
+    aaEmitProfileChanged($account->getAccountNumericId(), ['npubVerified']);
+    return aaJson($response, ['ok' => true, 'npubVerified' => $verified]);
+  });
+
+  /**
+   * POST /accounts/admin/users/allow-npub-login
+   * Body: { npub, allow: bool }
+   * Toggle allow_npub_login. When false, future npub-based logins are
+   * blocked — existing sessions stay live (use password-reset with
+   * killSessions to also kick them).
+   */
+  $group->post('/allow-npub-login', function (Request $request, Response $response) {
+    global $link;
+    $body = json_decode((string) $request->getBody(), true);
+    if (!is_array($body)) return aaError($response, 'invalid-body', 400);
+
+    $npub = aaValidNpub($body['npub'] ?? null);
+    if ($npub === null) return aaError($response, 'invalid-npub', 400);
+
+    if (!isset($body['allow']) || !is_bool($body['allow'])) {
+      return aaError($response, 'invalid-allow', 400);
+    }
+    $allow = $body['allow'];
+
+    $adminNpub = (string) $request->getAttribute('admin_npub');
+    if ($adminNpub !== '' && $adminNpub === $npub) {
+      return aaError($response, 'self-modify-forbidden', 403);
+    }
+
+    $account = new Account($npub, $link);
+    if (!$account->accountExists()) return aaError($response, 'not-found', 404);
+
+    try {
+      $account->adminSetAllowNpubLogin($allow);
+    } catch (\Throwable $e) {
+      error_log("admin/users/allow-npub-login failed for {$npub}: " . $e->getMessage());
+      return aaError($response, 'server-error', 500);
+    }
+
+    aaEmitProfileChanged($account->getAccountNumericId(), ['allowNostrLogin']);
+    return aaJson($response, ['ok' => true, 'allowNpubLogin' => $allow]);
+  });
+
+  /**
    * POST /accounts/admin/users/password-reset
-   * Body: { npub }
+   * Body: { npub, killSessions?: bool (default false) }
    * Generates a random password, persists hashes, returns plaintext ONCE.
-   * Also force-logs-out all the target user's sessions.
+   * Optionally force-logs-out the target user's other sessions —
+   * defaults OFF because the typical case is "user forgot password,
+   * admin shares the new one out-of-band, user keeps using their
+   * already-authenticated phone." Switch ON for the
+   * compromised-account / disgruntled-employee case.
    */
   $group->post('/password-reset', function (Request $request, Response $response) {
     global $link;
@@ -251,6 +333,10 @@ $app->group('/accounts/admin/users', function (RouteCollectorProxy $group) {
 
     $npub = aaValidNpub($body['npub'] ?? null);
     if ($npub === null) return aaError($response, 'invalid-npub', 400);
+
+    // Optional, default false. Accept actual booleans only — string
+    // "false"/"true" coercion is too lenient for an action this destructive.
+    $killSessions = isset($body['killSessions']) ? $body['killSessions'] === true : false;
 
     $adminNpub = (string) $request->getAttribute('admin_npub');
     if ($adminNpub !== '' && $adminNpub === $npub) {
@@ -267,11 +353,11 @@ $app->group('/accounts/admin/users', function (RouteCollectorProxy $group) {
       return aaError($response, 'server-error', 500);
     }
 
-    // Force-logout: clears every active session for the target user.
-    // Done via the existing `banned` event arm; not a literal ban, just
-    // reusing the broadcast-and-close machinery.
+    // Optional force-logout: clears every active session for the target
+    // user. Done via the existing `banned` event arm; not a literal ban,
+    // just reusing the broadcast-and-close machinery.
     $targetUserId = $account->getAccountNumericId();
-    if ($targetUserId !== null) {
+    if ($killSessions && $targetUserId !== null) {
       try {
         (new WorkerEventsClient())->emitBanned($targetUserId);
       } catch (\Throwable $e) {
@@ -281,7 +367,11 @@ $app->group('/accounts/admin/users', function (RouteCollectorProxy $group) {
 
     // NOTE: we deliberately do NOT log the plaintext. error_log of this
     // payload would defeat the entire "shown once" guarantee.
-    return aaJson($response, ['ok' => true, 'password' => $plaintext]);
+    return aaJson($response, [
+      'ok' => true,
+      'password' => $plaintext,
+      'sessionsKilled' => $killSessions,
+    ]);
   });
 
 })
