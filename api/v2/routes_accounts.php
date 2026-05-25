@@ -1,6 +1,7 @@
 <?php
 require_once $_SERVER['DOCUMENT_ROOT'] . '/config.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/HmacAuthMiddleware.class.php';
+require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/ClientInfoMiddleware.class.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/Account.class.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/db/UsersImagesFolders.class.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/ImageCatalogManager.class.php';
@@ -1485,7 +1486,7 @@ $app->group('/accounts', function (RouteCollectorProxy $group) {
         }
       }
     });
-  });
+  })->add(new ClientInfoMiddleware());
 
   // Uploads — small files via XHR (multipart/form-data, body-aware HMAC).
   // Large files use /accounts/uploads/multipart/* (bodyless HMAC) wired by
@@ -1529,5 +1530,5 @@ $app->group('/accounts', function (RouteCollectorProxy $group) {
         $_SESSION['usernpub'] = $prevNpub;
       }
     }
-  });
+  })->add(new ClientInfoMiddleware());
 })->add(new HmacAuthMiddleware());
