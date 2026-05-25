@@ -1380,6 +1380,196 @@ class Account
     }
     return $accountInfo;
   }
+
+  // =========================================================================
+  // ADMIN OVERRIDES
+  // -------------------------------------------------------------------------
+  // These bypass the business rules baked into setPlan() (the 180-day
+  // safe-renewal window, the idempotent-skip when state matches, NostrLand
+  // renewal hooks) because an administrator deliberately driving the change
+  // is exactly the case those rules exist to prevent users from doing.
+  // Routes that call these must already have authorized the caller as an
+  // admin and validated the inputs — these methods do final defensive
+  // guards but assume the route layer is doing input validation too.
+  // =========================================================================
+
+  /**
+   * Admin-set the user's plan level + duration. Always sets plan_start_date
+   * to today and plan_until_date to today + period. Demotion to level 0
+   * (Free) clears plan dates so the account looks like a fresh free user.
+   *
+   * @param int    $level  Account level (validated against AccountLevel enum)
+   * @param string $period One of '1y' | '2y' | '3y'
+   * @return array{planUntilDate: ?string, level: int}
+   * @throws InvalidArgumentException on bad inputs
+   * @throws Exception on DB failure
+   */
+  public function adminSetPlan(int $level, string $period): array
+  {
+    try {
+      AccountLevel::from($level); // throws ValueError if not a known level
+    } catch (ValueError $e) {
+      throw new InvalidArgumentException("Invalid account level: $level");
+    }
+    if (!in_array($period, ['1y', '2y', '3y'], true)) {
+      throw new InvalidArgumentException("Invalid period: $period (expected 1y, 2y, 3y)");
+    }
+
+    // Free tier: clear plan dates so this looks like a never-paid account.
+    if ($level === 0) {
+      $stmt = $this->db->prepare(
+        "UPDATE users SET acctlevel = 0, plan_start_date = NULL, plan_until_date = NULL, subscription_period = NULL WHERE usernpub = ?"
+      );
+      if (!$stmt) throw new Exception("prepare failed: " . $this->db->error);
+      try {
+        $stmt->bind_param('s', $this->npub);
+        if (!$stmt->execute()) throw new Exception("execute failed: " . $stmt->error);
+      } finally {
+        $stmt->close();
+      }
+      $this->fetchAccountData();
+      return ['planUntilDate' => null, 'level' => 0];
+    }
+
+    $today = date('Y-m-d');
+    $duration = match ($period) {
+      '1y' => '+1 year',
+      '2y' => '+2 years',
+      '3y' => '+3 years',
+    };
+    $until = date('Y-m-d', strtotime("{$today} {$duration}"));
+    if ($until === false) throw new Exception("date arithmetic failed for period {$period}");
+
+    $stmt = $this->db->prepare(
+      "UPDATE users SET acctlevel = ?, plan_start_date = ?, plan_until_date = ?, subscription_period = ? WHERE usernpub = ?"
+    );
+    if (!$stmt) throw new Exception("prepare failed: " . $this->db->error);
+    try {
+      $stmt->bind_param('issss', $level, $today, $until, $period, $this->npub);
+      if (!$stmt->execute()) throw new Exception("execute failed: " . $stmt->error);
+    } finally {
+      $stmt->close();
+    }
+    $this->fetchAccountData();
+    return ['planUntilDate' => $until, 'level' => $level];
+  }
+
+  /**
+   * Admin-extend the user's subscription by N days. Base is current
+   * plan_until_date when the plan is active; today when the plan has
+   * already expired (treats expired-renewal the same as a fresh add-on).
+   * Refuses to operate on accounts that have NEVER had a plan
+   * (plan_until_date IS NULL) — admin must use adminSetPlan first.
+   *
+   * @param int $days 1..3650 (≈10 years)
+   * @return string new plan_until_date in YYYY-MM-DD
+   */
+  public function adminExtendSubscription(int $days): string
+  {
+    if ($days < 1 || $days > 3650) {
+      throw new InvalidArgumentException("days out of range (1..3650): $days");
+    }
+    $this->fetchAccountData();
+    $currentEnd = $this->account['plan_until_date'] ?? null;
+    if ($currentEnd === null) {
+      throw new InvalidArgumentException('user has no plan to extend — use adminSetPlan first');
+    }
+    $today = date('Y-m-d');
+    // Expired plans renew from today (preserves the "you paid for X more
+    // days" semantic without retroactively crediting the lapsed window).
+    $base = ($currentEnd < $today) ? $today : $currentEnd;
+    $newEnd = date('Y-m-d', strtotime("{$base} +{$days} days"));
+    if ($newEnd === false) throw new Exception("date arithmetic failed");
+
+    $stmt = $this->db->prepare("UPDATE users SET plan_until_date = ? WHERE usernpub = ?");
+    if (!$stmt) throw new Exception("prepare failed: " . $this->db->error);
+    try {
+      $stmt->bind_param('ss', $newEnd, $this->npub);
+      if (!$stmt->execute()) throw new Exception("execute failed: " . $stmt->error);
+    } finally {
+      $stmt->close();
+    }
+    $this->fetchAccountData();
+    return $newEnd;
+  }
+
+  /**
+   * Admin-set absolute expiry date. For corrections — the typical action
+   * is adminExtendSubscription; this is the escape hatch when the admin
+   * needs to override the date directly (refund cases, audit fixes).
+   *
+   * @param string $date YYYY-MM-DD, must be today or later
+   * @return string the persisted plan_until_date
+   */
+  public function adminSetExpiryDate(string $date): string
+  {
+    // Strict format validation — strtotime is permissive and would accept
+    // 'tomorrow', '+5 days', etc., which is not the admin's intent.
+    if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $date)) {
+      throw new InvalidArgumentException("date must be YYYY-MM-DD: $date");
+    }
+    $ts = strtotime($date);
+    if ($ts === false) throw new InvalidArgumentException("date unparseable: $date");
+    $normalized = date('Y-m-d', $ts);
+    if ($normalized !== $date) {
+      // e.g. '2025-13-40' would normalize differently.
+      throw new InvalidArgumentException("date invalid: $date");
+    }
+    if ($normalized < date('Y-m-d')) {
+      throw new InvalidArgumentException("expiry must be today or later: $date");
+    }
+    $this->fetchAccountData();
+    if (($this->account['plan_until_date'] ?? null) === null) {
+      throw new InvalidArgumentException('user has no plan — use adminSetPlan first');
+    }
+
+    $stmt = $this->db->prepare("UPDATE users SET plan_until_date = ? WHERE usernpub = ?");
+    if (!$stmt) throw new Exception("prepare failed: " . $this->db->error);
+    try {
+      $stmt->bind_param('ss', $normalized, $this->npub);
+      if (!$stmt->execute()) throw new Exception("execute failed: " . $stmt->error);
+    } finally {
+      $stmt->close();
+    }
+    $this->fetchAccountData();
+    return $normalized;
+  }
+
+  /**
+   * Generate a strong random password, persist both legacy hashes, and
+   * return the plaintext to the caller exactly ONCE. The plaintext is
+   * never logged or stored anywhere else — the caller (admin route) is
+   * responsible for surfacing it to the human admin and discarding.
+   *
+   * Hashing matches createAccount(): bcrypt via password_hash() PLUS the
+   * pbkdf2 variant so legacy auth paths continue to work.
+   *
+   * 18 random bytes → 24 base64url chars; well above any practical brute
+   * force, and short enough to read off a screen and type once.
+   *
+   * @return string plaintext password (return to admin, never persist plaintext)
+   */
+  public function adminResetPassword(): string
+  {
+    $bytes = random_bytes(18);
+    $password = rtrim(strtr(base64_encode($bytes), '+/', '-_'), '=');
+
+    $hash = password_hash($password, PASSWORD_DEFAULT);
+    $pbkdf2 = hashPasswordPBKDF2($password);
+
+    $stmt = $this->db->prepare("UPDATE users SET password = ?, pbkdf2_password = ? WHERE usernpub = ?");
+    if (!$stmt) throw new Exception("prepare failed: " . $this->db->error);
+    try {
+      $stmt->bind_param('sss', $hash, $pbkdf2, $this->npub);
+      if (!$stmt->execute()) throw new Exception("execute failed: " . $stmt->error);
+      if ($stmt->affected_rows === 0) {
+        throw new Exception("user not found");
+      }
+    } finally {
+      $stmt->close();
+    }
+    return $password;
+  }
 }
 
 // Helper function to find npub by referral code

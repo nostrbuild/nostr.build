@@ -272,6 +272,7 @@ require_once __DIR__ . '/routes_accounts.php'; // Include accounts BFF routes
 require_once __DIR__ . '/routes_s3.php'; // Include S3 multipart upload routes
 require_once __DIR__ . '/routes_account_dashboard.php'; // Include account dashboard routes
 require_once __DIR__ . '/routes_admin.php'; // Include admin API routes
+require_once __DIR__ . '/routes_accounts_admin.php'; // Proxied admin routes (Worker → PHP via HMAC + npub-level check)
 apiTimingLog('all route files loaded', $__routesStart);
 
 $contentLengthMiddleware = new ContentLengthMiddleware();
