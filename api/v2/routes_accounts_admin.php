@@ -67,22 +67,56 @@ function aaValidNpub(?string $raw): ?string
 /** Parse the nl_sub_activation_return_value JSON column. The tier name
  *  is dynamic — read `request.tier` first, then index `current_tier_ends`
  *  by that name. Today only "plus" exists; this keeps the lookup honest
- *  if/when a new tier is added (e.g. "premium"). */
+ *  if/when a new tier is added (e.g. "premium").
+ *
+ *  Returns the legacy three-key display subset (`tier`, `tierEndsAt`,
+ *  `timeAddedSeconds`) plus the full set of partner-receipt fields the
+ *  billing report needs for reconciliation. The billing fields are keyed
+ *  `partner*` so existing callers picking the legacy three are unaffected.
+ *
+ *  `partnerReceiptRaw` carries the verbatim JSON — safety net for any
+ *  receipt key we didn't enumerate today but might need tomorrow. */
 function aaParseNlActivation(mixed $raw): array
 {
   // PHP's $accountInfo['nl_sub_activation_return_value'] is already
   // decoded (Account::getAccountInfo passes through whatever was stored).
   // Defensive — handle both decoded array and raw JSON string.
   $data = is_string($raw) ? json_decode($raw, true) : $raw;
+  $rawJson = is_string($raw)
+    ? $raw
+    : (is_array($raw) ? json_encode($raw, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) : null);
+
   if (!is_array($data)) {
-    return ['tier' => null, 'tierEndsAt' => null, 'timeAddedSeconds' => null];
+    return [
+      'tier' => null, 'tierEndsAt' => null, 'timeAddedSeconds' => null,
+      'partnerActivationId' => null, 'partnerPubkey' => null,
+      'partnerUserId' => null, 'partnerTxnBundle' => null,
+      'partnerRequestTier' => null, 'partnerRequestPartner' => null,
+      'partnerExecutedAtMs' => null, 'partnerCurrentTierEndsJson' => null,
+      'partnerReceiptRaw' => is_string($rawJson) ? $rawJson : null,
+    ];
   }
   $tier = $data['request']['tier'] ?? null;
   $tierEndsMs = is_string($tier) ? ($data['current_tier_ends'][$tier] ?? null) : null;
+  $currentTierEnds = $data['current_tier_ends'] ?? null;
+
   return [
+    // ----- Legacy display subset (unchanged contract) -----
     'tier'             => $tier,
     'tierEndsAt'       => is_int($tierEndsMs) ? date('Y-m-d H:i:s', intdiv($tierEndsMs, 1000)) : null,
     'timeAddedSeconds' => $data['request']['time_added'] ?? null,
+    // ----- Partner-receipt fields for billing reconciliation -----
+    'partnerActivationId'        => $data['id'] ?? null,
+    'partnerPubkey'              => $data['request']['pubkey'] ?? null,
+    'partnerUserId'              => $data['request']['user_id'] ?? null,
+    'partnerTxnBundle'           => $data['request']['txn_bundle'] ?? null,
+    'partnerRequestTier'         => $data['request']['tier'] ?? null,
+    'partnerRequestPartner'      => $data['request']['partner'] ?? null,
+    'partnerExecutedAtMs'        => $data['request']['executed_at'] ?? null,
+    'partnerCurrentTierEndsJson' => is_array($currentTierEnds)
+      ? json_encode($currentTierEnds, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE)
+      : null,
+    'partnerReceiptRaw' => is_string($rawJson) ? $rawJson : null,
   ];
 }
 
@@ -517,6 +551,18 @@ $app->group('/accounts/admin/nl-activations', function (RouteCollectorProxy $gro
           'tier'             => $nl['tier'],
           'tierEndsAt'       => $nl['tierEndsAt'],
           'timeAddedSeconds' => $nl['timeAddedSeconds'],
+          // Partner-receipt fields used by the billing report (admin
+          // panel → Billing tab). All nullable on the wire — existing
+          // callers that don't need them ignore the extra keys.
+          'partnerActivationId'        => $nl['partnerActivationId'],
+          'partnerPubkey'              => $nl['partnerPubkey'],
+          'partnerUserId'              => $nl['partnerUserId'],
+          'partnerTxnBundle'           => $nl['partnerTxnBundle'],
+          'partnerRequestTier'         => $nl['partnerRequestTier'],
+          'partnerRequestPartner'      => $nl['partnerRequestPartner'],
+          'partnerExecutedAtMs'        => $nl['partnerExecutedAtMs'],
+          'partnerCurrentTierEndsJson' => $nl['partnerCurrentTierEndsJson'],
+          'partnerReceiptRaw'          => $nl['partnerReceiptRaw'],
         ];
       }
     } finally {
