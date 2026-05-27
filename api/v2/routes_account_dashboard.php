@@ -114,8 +114,14 @@ function dashboardGetAccountData($link, $account): array
   $credits = dashboardGetCredits($link);
   $info = $account->getAccountInfo();
 
+  // Cast mysqli `fetch_assoc()` strings to their honest types at the
+  // boundary. The connection isn't configured with
+  // MYSQLI_OPT_INT_AND_FLOAT_NATIVE, so every numeric/boolean column
+  // arrives here as a string ("42", "0", "1"). Returning that shape
+  // breaks any consumer that schema-validates (e.g. the Worker login
+  // handler returning 502 "bad-upstream"). Fix once, at the source.
   return [
-    "userId" => $info['id'],
+    "userId" => (int) $info['id'],
     // Coerce nullable `nym` to an empty string so the client never sees a
     // null where the type promises a string. Same pattern used a few lines
     // down for default_folder.
@@ -124,9 +130,9 @@ function dashboardGetAccountData($link, $account): array
     "pfpUrl" => $info['ppic'],
     "wallet" => $info['wallet'],
     "defaultFolder" => $info['default_folder'] ?? "",
-    "allowNostrLogin" => $info['allow_npub_login'],
-    "npubVerified" => $info['npub_verified'],
-    "accountLevel" => $info['acctlevel'],
+    "allowNostrLogin" => (bool) $info['allow_npub_login'],
+    "npubVerified" => (bool) $info['npub_verified'],
+    "accountLevel" => (int) $info['acctlevel'],
     "accountFlags" => $info['accflags'],
     "remainingDays" => $info['remaining_subscription_days'],
     "storageUsed" => $info['used_storage_space'],
