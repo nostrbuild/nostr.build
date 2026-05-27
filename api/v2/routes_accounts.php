@@ -29,8 +29,13 @@ use Slim\Routing\RouteCollectorProxy;
  */
 $app->group('/accounts', function (RouteCollectorProxy $group) {
   // POST /api/v2/accounts/login — npub + password validation.
-  // Mirrors login/index.php:54-66 production behavior.
+  // Mirrors login/index.php:54-66 production behavior. Returns the full
+  // dashboard profile shape (same as /accounts/dashboard/profile) so the
+  // Worker can seed the SessionDO snapshot + emit all three ecosystem
+  // cookies (npub + user_level + plan_expired) on the login response
+  // without a second PHP roundtrip.
   $group->post('/login', function (Request $request, Response $response) {
+    global $link;
     $raw = (string) $request->getBody();
     $data = json_decode($raw, true);
     if (!is_array($data) || empty($data['npub']) || empty($data['password'])) {
@@ -51,13 +56,21 @@ $app->group('/accounts', function (RouteCollectorProxy $group) {
         ->withStatus(401);
     }
 
-    $accountData = $account->getAccount();
-    $response->getBody()->write(json_encode([
-      'userId'       => $account->getAccountNumericId(),
-      'npub'         => $npub,
-      'displayName'  => $accountData['nym'] ?? null,
-      'accountLevel' => $account->getAccountLevelInt(),
-    ]));
+    // dashboardGetAccountData -> dashboardGetCredits reads $_SESSION['usernpub']
+    // and writes $_SESSION['sd_credits']. Set the session var transiently so
+    // the helper works unmodified, then restore.
+    $prevNpub = $_SESSION['usernpub'] ?? null;
+    $_SESSION['usernpub'] = $npub;
+    try {
+      $data = dashboardGetAccountData($link, $account);
+    } finally {
+      if ($prevNpub === null) {
+        unset($_SESSION['usernpub']);
+      } else {
+        $_SESSION['usernpub'] = $prevNpub;
+      }
+    }
+    $response->getBody()->write(json_encode($data));
     return $response
       ->withHeader('Content-Type', 'application/json')
       ->withStatus(200);
@@ -99,13 +112,20 @@ $app->group('/accounts', function (RouteCollectorProxy $group) {
         ->withStatus(403);
     }
 
-    $data = $account->getAccount();
-    $response->getBody()->write(json_encode([
-      'userId'       => $account->getAccountNumericId(),
-      'npub'         => $npub,
-      'displayName'  => $data['nym'] ?? null,
-      'accountLevel' => $account->getAccountLevelInt(),
-    ]));
+    // See /login route above — same transient $_SESSION['usernpub'] pattern.
+    global $link;
+    $prevNpub = $_SESSION['usernpub'] ?? null;
+    $_SESSION['usernpub'] = $npub;
+    try {
+      $data = dashboardGetAccountData($link, $account);
+    } finally {
+      if ($prevNpub === null) {
+        unset($_SESSION['usernpub']);
+      } else {
+        $_SESSION['usernpub'] = $prevNpub;
+      }
+    }
+    $response->getBody()->write(json_encode($data));
     return $response
       ->withHeader('Content-Type', 'application/json')
       ->withStatus(200);
@@ -153,13 +173,20 @@ $app->group('/accounts', function (RouteCollectorProxy $group) {
         ->withStatus(403);
     }
 
-    $accountData = $account->getAccount();
-    $response->getBody()->write(json_encode([
-      'userId'       => $account->getAccountNumericId(),
-      'npub'         => $npub,
-      'displayName'  => $accountData['nym'] ?? null,
-      'accountLevel' => $account->getAccountLevelInt(),
-    ]));
+    // See /login route above — same transient $_SESSION['usernpub'] pattern.
+    global $link;
+    $prevNpub = $_SESSION['usernpub'] ?? null;
+    $_SESSION['usernpub'] = $npub;
+    try {
+      $data = dashboardGetAccountData($link, $account);
+    } finally {
+      if ($prevNpub === null) {
+        unset($_SESSION['usernpub']);
+      } else {
+        $_SESSION['usernpub'] = $prevNpub;
+      }
+    }
+    $response->getBody()->write(json_encode($data));
     return $response
       ->withHeader('Content-Type', 'application/json')
       ->withStatus(200);
