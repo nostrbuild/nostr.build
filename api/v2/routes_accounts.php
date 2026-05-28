@@ -21,26 +21,22 @@ use Slim\Routing\RouteCollectorProxy;
  * R2 bucket resolved. Consumed by the accounts Worker's backup workflow
  * (enumerate step) via POST /accounts/dashboard/backup-manifest.
  *
- * Files are resolved as paid-tier (S3Service::resolveBackupBucket): in a paid
- * account ALL media lives in the -pro/-pro-av/-pro-data buckets, and the feature
- * only runs for paid users — so resolution is correct regardless of CURRENT plan
- * state (expired paid accounts too). Pure DB pass, no per-file S3 HEAD. The
- * -pro/-pro-av image ambiguity is handled at download time by the Worker
- * (GET -pro, fall back to -pro-av on 404).
+ * Pure DB pass — no S3 here at all. The Worker derives each file's R2 bucket
+ * from its mime + the base bucket (R2_BUCKET env): image -> -pro (falling back
+ * to -pro-av on a 404 at download), video/audio -> -pro-av, everything else ->
+ * -pro-data. Paid-tier buckets always, since the feature is paid-only (expired
+ * paid accounts included).
  *
  * Returns a list of:
- *   [ id, sourceBucket, sourceKey, size, mime, uploadedAt, displayName, folderId ]
+ *   [ id, sourceKey, size, mime, uploadedAt, displayName, folderId ]
  * ordered by (created_at, id) ASC so the downstream packer/zip is deterministic.
  */
 function backupManifestForNpub(
   string $npub,
   ?array $filterKinds,
   array $folderSelection,
-  mysqli $link,
-  array $awsConfig
+  mysqli $link
 ): array {
-  $s3 = new S3Service($awsConfig);
-
   // Media-kind filter — subset of image|video|audio|document; null/empty = all.
   $mimeWhere = '';
   if (is_array($filterKinds) && count($filterKinds) > 0) {
@@ -106,15 +102,11 @@ function backupManifestForNpub(
 
   $files = [];
   foreach ($rows as $row) {
-    $resolved = $s3->resolveBackupBucket((string) $row['image'], $row['mime_type'] ?? null);
-    if ($resolved === null) {
-      continue; // media type with no paid bucket — not backable
-    }
+    // R2 stores objects by basename; the Worker picks the bucket from the mime.
     $title = isset($row['title']) ? trim((string) $row['title']) : '';
     $files[] = [
       'id' => (string) $row['id'],
-      'sourceBucket' => $resolved['bucket'],
-      'sourceKey' => $resolved['objectName'],
+      'sourceKey' => basename((string) $row['image']),
       'size' => (int) ($row['file_size'] ?? 0),
       'mime' => (string) ($row['mime_type'] ?? 'application/octet-stream'),
       'uploadedAt' => !empty($row['created_at']) ? strtotime((string) $row['created_at']) : 0,
@@ -1696,7 +1688,7 @@ $app->group('/accounts', function (RouteCollectorProxy $group) {
       : ['kind' => 'all'];
 
     try {
-      $files = backupManifestForNpub($npub, $filterKinds, $folderSelection, $link, $awsConfig);
+      $files = backupManifestForNpub($npub, $filterKinds, $folderSelection, $link);
     } catch (\Throwable $e) {
       error_log('backup-manifest failed: ' . $e->getMessage());
       $response->getBody()->write(json_encode(['error' => 'manifest-failed']));
