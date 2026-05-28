@@ -16,6 +16,116 @@ use Psr\Http\Message\ServerRequestInterface as Request;
 use Slim\Routing\RouteCollectorProxy;
 
 /**
+ * Build the backup source-file manifest for a user: every NON-FREE (paid-bucket)
+ * media file, filtered by media kind + folder selection, each with its canonical
+ * R2 bucket resolved. Consumed by the accounts Worker's backup workflow
+ * (enumerate step) via POST /accounts/dashboard/backup-manifest.
+ *
+ * Files are resolved as paid-tier (S3Service::resolveBackupBucket): in a paid
+ * account ALL media lives in the -pro/-pro-av/-pro-data buckets, and the feature
+ * only runs for paid users — so resolution is correct regardless of CURRENT plan
+ * state (expired paid accounts too). Pure DB pass, no per-file S3 HEAD. The
+ * -pro/-pro-av image ambiguity is handled at download time by the Worker
+ * (GET -pro, fall back to -pro-av on 404).
+ *
+ * Returns a list of:
+ *   [ id, sourceBucket, sourceKey, size, mime, uploadedAt, displayName, folderId ]
+ * ordered by (created_at, id) ASC so the downstream packer/zip is deterministic.
+ */
+function backupManifestForNpub(
+  string $npub,
+  ?array $filterKinds,
+  array $folderSelection,
+  mysqli $link,
+  array $awsConfig
+): array {
+  $s3 = new S3Service($awsConfig);
+
+  // Media-kind filter — subset of image|video|audio|document; null/empty = all.
+  $mimeWhere = '';
+  if (is_array($filterKinds) && count($filterKinds) > 0) {
+    $clauses = [];
+    foreach ($filterKinds as $kind) {
+      switch ($kind) {
+        case 'image':
+          $clauses[] = "mime_type LIKE 'image%'";
+          break;
+        case 'video':
+          $clauses[] = "mime_type LIKE 'video%'";
+          break;
+        case 'audio':
+          $clauses[] = "mime_type LIKE 'audio%'";
+          break;
+        case 'document':
+          // Everything that isn't image/video/audio (documents, archives, text…).
+          $clauses[] = "(mime_type NOT LIKE 'image%' AND mime_type NOT LIKE 'video%' AND mime_type NOT LIKE 'audio%')";
+          break;
+      }
+    }
+    if (count($clauses) > 0) {
+      $mimeWhere = ' AND (' . implode(' OR ', $clauses) . ')';
+    }
+  }
+
+  // Folder selection — all | include(folderIds) | exclude(folderIds).
+  $folderWhere = '';
+  $folderParams = [];
+  $folderTypes = '';
+  $kind = $folderSelection['kind'] ?? 'all';
+  if ($kind === 'include' || $kind === 'exclude') {
+    $ids = array_values(array_filter(
+      array_map('intval', $folderSelection['folderIds'] ?? []),
+      fn ($n) => $n > 0
+    ));
+    if (count($ids) > 0) {
+      $placeholders = implode(',', array_fill(0, count($ids), '?'));
+      $folderTypes = str_repeat('i', count($ids));
+      $folderParams = $ids;
+      $folderWhere = $kind === 'include'
+        ? " AND folder_id IN ({$placeholders})"
+        : " AND (folder_id IS NULL OR folder_id NOT IN ({$placeholders}))";
+    }
+  }
+
+  $sql = "SELECT id, image, file_size, mime_type, created_at, folder_id, title
+          FROM users_images
+          WHERE usernpub = ?{$mimeWhere}{$folderWhere}
+          ORDER BY created_at ASC, id ASC";
+
+  $stmt = $link->prepare($sql);
+  if (!$stmt) {
+    throw new Exception('backup-manifest prepare failed: ' . $link->error);
+  }
+  $types = 's' . $folderTypes;
+  $params = array_merge([$npub], $folderParams);
+  $stmt->bind_param($types, ...$params);
+  $stmt->execute();
+  $result = $stmt->get_result();
+  $rows = $result->fetch_all(MYSQLI_ASSOC);
+  $stmt->close();
+
+  $files = [];
+  foreach ($rows as $row) {
+    $resolved = $s3->resolveBackupBucket((string) $row['image'], $row['mime_type'] ?? null);
+    if ($resolved === null) {
+      continue; // media type with no paid bucket — not backable
+    }
+    $title = isset($row['title']) ? trim((string) $row['title']) : '';
+    $files[] = [
+      'id' => (string) $row['id'],
+      'sourceBucket' => $resolved['bucket'],
+      'sourceKey' => $resolved['objectName'],
+      'size' => (int) ($row['file_size'] ?? 0),
+      'mime' => (string) ($row['mime_type'] ?? 'application/octet-stream'),
+      'uploadedAt' => !empty($row['created_at']) ? strtotime((string) $row['created_at']) : 0,
+      'displayName' => $title !== '' ? $title : basename((string) $row['image']),
+      'folderId' => $row['folder_id'] !== null ? (int) $row['folder_id'] : null,
+    ];
+  }
+  return $files;
+}
+
+/**
  * New route group for the accounts.nostr.build Worker BFF.
  *
  * Mounted behind HmacAuthMiddleware (with-body, default NB_HMAC_SECRETS) so
@@ -1558,4 +1668,42 @@ $app->group('/accounts', function (RouteCollectorProxy $group) {
       }
     }
   })->add(new ClientInfoMiddleware());
+
+  // POST /api/v2/accounts/dashboard/backup-manifest — source-file manifest for
+  // the accounts Worker's backup workflow (enumerate step). HMAC-gated (group);
+  // identity via X-Accounts-Npub. Body: { filterKinds?: string[]|null,
+  // folderSelection: {kind:'all'|'include'|'exclude', folderIds?:int[]} }.
+  // Returns { files: [...] } — see backupManifestForNpub.
+  $group->post('/dashboard/backup-manifest', function (Request $request, Response $response) {
+    global $link;
+    global $awsConfig;
+
+    $npub = trim((string) ($request->getHeaderLine('X-Accounts-Npub') ?? ''));
+    if ($npub === '') {
+      $response->getBody()->write(json_encode(['error' => 'missing-identity']));
+      return $response->withHeader('Content-Type', 'application/json')->withStatus(400);
+    }
+
+    $data = json_decode((string) $request->getBody(), true);
+    if (!is_array($data)) {
+      $data = [];
+    }
+    $filterKinds = (isset($data['filterKinds']) && is_array($data['filterKinds']))
+      ? array_values(array_filter($data['filterKinds'], 'is_string'))
+      : null;
+    $folderSelection = (isset($data['folderSelection']) && is_array($data['folderSelection']))
+      ? $data['folderSelection']
+      : ['kind' => 'all'];
+
+    try {
+      $files = backupManifestForNpub($npub, $filterKinds, $folderSelection, $link, $awsConfig);
+    } catch (\Throwable $e) {
+      error_log('backup-manifest failed: ' . $e->getMessage());
+      $response->getBody()->write(json_encode(['error' => 'manifest-failed']));
+      return $response->withHeader('Content-Type', 'application/json')->withStatus(500);
+    }
+
+    $response->getBody()->write(json_encode(['files' => $files]));
+    return $response->withHeader('Content-Type', 'application/json')->withStatus(200);
+  });
 })->add(new HmacAuthMiddleware());

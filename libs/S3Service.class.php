@@ -503,6 +503,29 @@ class S3Service
     ];
   }
 
+  /**
+   * Resolve the canonical R2 bucket + object name for a backup SOURCE object.
+   *
+   * Always resolves as paid-tier: in a paid account ALL media lives in the
+   * -pro / -pro-av / -pro-data buckets, and the backup feature only runs for
+   * paid users — so we read from there regardless of the account's CURRENT plan
+   * state (expired paid accounts included). Pure name resolution, no HEAD, so
+   * the manifest stays a fast DB-only pass even for very large libraries.
+   *
+   * Images are ambiguous between '-pro' and '-pro-av' (§5.6.2): this returns the
+   * '-pro' candidate, and the Worker's source read (we are downloading) falls
+   * back to the '-pro-av' sibling on a 404. Returns null only for media types
+   * with no paid bucket (getBucketSuffix throws) — those aren't backable.
+   */
+  public function resolveBackupBucket(string $objectKey, ?string $mimeType): ?array
+  {
+    try {
+      return $this->getR2BucketAndObjectNames($objectKey, $mimeType, true);
+    } catch (\Throwable $e) {
+      return null;
+    }
+  }
+
   private function getE2BucketAndObjectNames(string $objectKey, string | null $mimeType = 'application/octet-stream', bool $paidAccount = false): array
   {
     // Validate the objectKey to ensure it contains a '/'
