@@ -122,6 +122,10 @@ function dashboardGetAccountData($link, $account): array
   // handler returning 502 "bad-upstream"). Fix once, at the source.
   return [
     "userId" => (int) $info['id'],
+    // Stable per-user identity (users.uuid_id). The accounts Worker keys its
+    // Durable Objects / session cookie / webhooks on this, not on the
+    // autoincrement id (re-import-unstable) or the npub (mutable attribute).
+    "uuidId" => $info['uuid_id'] ?? null,
     // Coerce nullable `nym` to an empty string so the client never sees a
     // null where the type promises a string. Same pattern used a few lines
     // down for default_folder.

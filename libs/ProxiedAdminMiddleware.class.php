@@ -1,6 +1,7 @@
 <?php
 
 require_once __DIR__ . '/../config.php';
+require_once __DIR__ . '/utils.funcs.php'; // resolveIdentityNpub()
 
 use Psr\Http\Server\MiddlewareInterface;
 use Psr\Http\Message\ResponseInterface as Response;
@@ -37,7 +38,7 @@ class ProxiedAdminMiddleware implements MiddlewareInterface
   {
     global $link;
 
-    $npub = trim((string) $request->getHeaderLine('X-Accounts-Npub'));
+    $npub = resolveIdentityNpub($request);
     // Cheap format sanity: every legitimate npub starts with `npub1`. Block
     // empty / malformed before doing the SQL hit. Length cap mirrors the
     // existing /admin/users/* endpoints.

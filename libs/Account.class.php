@@ -120,6 +120,40 @@ class Account
   }
 
   /**
+   * Build an Account from the stable `uuid_id` instead of the npub. Resolves
+   * uuid_id -> usernpub, then constructs through the normal npub path so all
+   * existing (npub-keyed) Account logic keeps working unchanged. Returns null
+   * when no account has that uuid. Used by the accounts Worker, which addresses
+   * users by their stable uuid (npub is a mutable attribute).
+   *
+   * @param string $uuid
+   * @param mysqli $db
+   * @return self|null
+   */
+  public static function fromUuid(string $uuid, mysqli $db): ?self
+  {
+    $uuid = trim($uuid);
+    if ($uuid === '') {
+      return null;
+    }
+    $stmt = $db->prepare("SELECT usernpub FROM users WHERE uuid_id = ? LIMIT 1");
+    if (!$stmt) {
+      throw new Exception("Error preparing statement: " . $db->error);
+    }
+    try {
+      $stmt->bind_param('s', $uuid);
+      $stmt->execute();
+      $row = $stmt->get_result()->fetch_assoc();
+    } finally {
+      $stmt->close();
+    }
+    if (!$row || empty($row['usernpub'])) {
+      return null;
+    }
+    return new self((string) $row['usernpub'], $db);
+  }
+
+  /**
    * Summary of fetchAccountData
    * @throws \Exception
    * @return void
@@ -761,6 +795,18 @@ class Account
   public function getAccountNumericId(): ?int
   {
     return $this->account['id'] ?? null;
+  }
+
+  /**
+   * Get the account's stable uuid (users.uuid_id). Unlike the autoincrement
+   * `id` (reassigned on a DB re-import) and the npub (a mutable attribute), this
+   * is the durable per-user identity the accounts Worker keys its Durable
+   * Objects / cookies / webhooks on.
+   * @return string|null
+   */
+  public function getAccountUuid(): ?string
+  {
+    return $this->account['uuid_id'] ?? null;
   }
 
   /**

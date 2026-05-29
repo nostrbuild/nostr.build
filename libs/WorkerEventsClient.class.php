@@ -69,7 +69,7 @@ class WorkerEventsClient
   /**
    * Files added/removed/moved/edited under a user's account.
    *
-   * @param int           $userId   Target user (`Account::getAccountNumericId()`).
+   * @param string        $uuid     Target user (`Account::getAccountUuid()`).
    * @param string[]|null $folders  Folder names hint — narrows client-side
    *                                invalidation. Null/empty ⇒ "I don't know,
    *                                invalidate everything."
@@ -79,14 +79,14 @@ class WorkerEventsClient
    * @param int           $edited   wire envelope.
    */
   public function emitFilesChanged(
-    int $userId,
+    string $uuid,
     ?array $folders = null,
     int $added = 0,
     int $removed = 0,
     int $moved = 0,
     int $edited = 0
   ): void {
-    $envelope = ['type' => 'files-changed', 'userId' => $userId];
+    $envelope = ['type' => 'files-changed', 'uuid' => $uuid];
     if ($folders !== null && count($folders) > 0) {
       $envelope['folders'] = array_values($folders);
     }
@@ -107,16 +107,16 @@ class WorkerEventsClient
    * will refetch. Both null ⇒ bare bump ("something profile-shaped
    * changed, refetch").
    *
-   * @param int                $userId
+   * @param string             $uuid
    * @param array<string,mixed>|null $fields   Partial ProfileSnapshot.
    * @param string[]|null      $changed  Field names that changed.
    */
   public function emitProfileChanged(
-    int $userId,
+    string $uuid,
     ?array $fields = null,
     ?array $changed = null
   ): void {
-    $envelope = ['type' => 'profile-changed', 'userId' => $userId];
+    $envelope = ['type' => 'profile-changed', 'uuid' => $uuid];
     if ($fields !== null  && count($fields) > 0)  $envelope['fields']  = $fields;
     if ($changed !== null && count($changed) > 0) $envelope['changed'] = array_values($changed);
     $this->emit($envelope);
@@ -124,22 +124,22 @@ class WorkerEventsClient
 
   /** Folder list mutated. Pass at most the deltas you know. */
   public function emitFoldersChanged(
-    int $userId,
+    string $uuid,
     ?array $added = null,
     ?array $removed = null,
     ?array $renamed = null
   ): void {
-    $envelope = ['type' => 'folders-changed', 'userId' => $userId];
+    $envelope = ['type' => 'folders-changed', 'uuid' => $uuid];
     if ($added !== null   && count($added) > 0)   $envelope['added']   = array_values($added);
     if ($removed !== null && count($removed) > 0) $envelope['removed'] = array_values($removed);
     if ($renamed !== null && count($renamed) > 0) $envelope['renamed'] = array_values($renamed);
     $this->emit($envelope);
   }
 
-  /** Force-logout: every device for $userId clears its cache and bounces to /login. */
-  public function emitBanned(int $userId): void
+  /** Force-logout: every device for $uuid clears its cache and bounces to /login. */
+  public function emitBanned(string $uuid): void
   {
-    $this->emit(['type' => 'banned', 'userId' => $userId]);
+    $this->emit(['type' => 'banned', 'uuid' => $uuid]);
   }
 
   private function emit(array $envelope): void
@@ -185,7 +185,7 @@ class WorkerEventsClient
     }
     if ($status < 200 || $status >= 300) {
       error_log(
-        "WorkerEventsClient: webhook HTTP {$status} for type={$envelope['type']} userId={$envelope['userId']}: " .
+        "WorkerEventsClient: webhook HTTP {$status} for type={$envelope['type']} uuid={$envelope['uuid']}: " .
         (is_string($resp) ? $resp : '')
       );
     }

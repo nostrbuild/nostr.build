@@ -381,3 +381,41 @@ function generateUniqueCode()
   // Concatenate the segments with dashes
   return strtoupper($segment1 . '-' . $segment2 . '-' . $segment3);
 }
+
+/**
+ * Resolve the acting user's npub for a Worker-proxied request.
+ *
+ * The Worker forwards BOTH headers for common (cookie-authed) user tasks:
+ *   - X-Accounts-Npub: the session's npub. HMAC-trusted (only the Worker can
+ *     set it), so we use it directly — the fast path, no DB hit. This is the
+ *     same value PHP keyed on before the uuid rekey.
+ *   - X-Accounts-Uuid: the stable users.uuid_id. Used only when npub isn't sent
+ *     (resolved uuid_id → usernpub). It's the durable identity and the long-term
+ *     replacement once the DB keys by uuid natively, at which point the Worker
+ *     can stop sending npub.
+ *
+ * Returns '' when neither yields an npub, so existing `=== ''` identity guards
+ * in the routes fire unchanged.
+ */
+function resolveIdentityNpub($request): string
+{
+  global $link;
+
+  // Fast path: npub already provided, no lookup needed.
+  $npub = trim((string) $request->getHeaderLine('X-Accounts-Npub'));
+  if ($npub !== '') {
+    return $npub;
+  }
+
+  // Fallback: resolve from the stable uuid.
+  $uuid = trim((string) $request->getHeaderLine('X-Accounts-Uuid'));
+  if ($uuid === '') {
+    return '';
+  }
+  $stmt = $link->prepare("SELECT usernpub FROM users WHERE uuid_id = ? LIMIT 1");
+  $stmt->bind_param('s', $uuid);
+  $stmt->execute();
+  $row = $stmt->get_result()->fetch_assoc();
+  $stmt->close();
+  return is_array($row) && !empty($row['usernpub']) ? (string) $row['usernpub'] : '';
+}

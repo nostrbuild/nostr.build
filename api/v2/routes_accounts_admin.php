@@ -132,6 +132,7 @@ function aaUserSnapshot(Account $account): array
   return [
     'npub'               => $account->getNpub(),
     'userId'             => $account->getAccountNumericId(),
+    'uuidId'             => $account->getAccountUuid(),
     'nym'                => $info['nym'] ?? null,
     'pfpUrl'             => $info['ppic'] ?? null,
     'acctlevel'          => (int) ($info['acctlevel'] ?? 0),
@@ -166,11 +167,11 @@ function aaUserSnapshot(Account $account): array
  *  gates could see old values. PHP's per-route middleware does fresh SQL
  *  reads, so the security boundary holds either way; this is just snapshot
  *  hygiene. */
-function aaEmitProfileChanged(?int $targetUserId, array $changed, ?array $fields = null): void
+function aaEmitProfileChanged(?string $targetUuid, array $changed, ?array $fields = null): void
 {
-  if ($targetUserId === null) return;
+  if ($targetUuid === null) return;
   try {
-    (new WorkerEventsClient())->emitProfileChanged($targetUserId, $fields, $changed);
+    (new WorkerEventsClient())->emitProfileChanged($targetUuid, $fields, $changed);
   } catch (\Throwable $e) {
     error_log('admin/users: emitProfileChanged failed: ' . $e->getMessage());
   }
@@ -186,10 +187,22 @@ $app->group('/accounts/admin/users', function (RouteCollectorProxy $group) {
    */
   $group->get('/lookup', function (Request $request, Response $response) {
     global $link;
-    $npub = aaValidNpub($request->getQueryParams()['npub'] ?? null);
-    if ($npub === null) return aaError($response, 'invalid-npub', 400);
+    // Search term is either an npub (starts with `npub1`) or a uuid — detect by
+    // prefix and resolve the right way. npub1… → by npub; otherwise by uuid_id.
+    $q = trim((string) ($request->getQueryParams()['q'] ?? ''));
+    if ($q === '' || strlen($q) > 255) return aaError($response, 'invalid-query', 400);
 
-    $account = new Account($npub, $link);
+    if (str_starts_with($q, 'npub1')) {
+      $npub = aaValidNpub($q);
+      if ($npub === null) return aaError($response, 'invalid-query', 400);
+      $account = new Account($npub, $link);
+    } else {
+      if (!preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/', $q)) {
+        return aaError($response, 'invalid-query', 400);
+      }
+      $account = Account::fromUuid($q, $link);
+      if ($account === null) return aaError($response, 'not-found', 404);
+    }
     if (!$account->accountExists()) return aaError($response, 'not-found', 404);
 
     return aaJson($response, aaUserSnapshot($account));
@@ -236,7 +249,7 @@ $app->group('/accounts/admin/users', function (RouteCollectorProxy $group) {
 
     // adminSetPlan re-fetches account data; remainingDays is fresh here.
     aaEmitProfileChanged(
-      $account->getAccountNumericId(),
+      $account->getAccountUuid(),
       ['accountLevel', 'remainingDays'],
       [
         'accountLevel'  => $result['level'],
@@ -282,7 +295,7 @@ $app->group('/accounts/admin/users', function (RouteCollectorProxy $group) {
     }
 
     aaEmitProfileChanged(
-      $account->getAccountNumericId(),
+      $account->getAccountUuid(),
       ['remainingDays'],
       ['remainingDays' => $account->getRemainingSubscriptionDays()],
     );
@@ -322,7 +335,7 @@ $app->group('/accounts/admin/users', function (RouteCollectorProxy $group) {
     }
 
     aaEmitProfileChanged(
-      $account->getAccountNumericId(),
+      $account->getAccountUuid(),
       ['remainingDays'],
       ['remainingDays' => $account->getRemainingSubscriptionDays()],
     );
@@ -365,7 +378,7 @@ $app->group('/accounts/admin/users', function (RouteCollectorProxy $group) {
     }
 
     aaEmitProfileChanged(
-      $account->getAccountNumericId(),
+      $account->getAccountUuid(),
       ['npubVerified'],
       ['npubVerified' => $verified],
     );
@@ -408,7 +421,7 @@ $app->group('/accounts/admin/users', function (RouteCollectorProxy $group) {
     }
 
     aaEmitProfileChanged(
-      $account->getAccountNumericId(),
+      $account->getAccountUuid(),
       ['allowNostrLogin'],
       ['allowNostrLogin' => $allow],
     );
@@ -455,10 +468,10 @@ $app->group('/accounts/admin/users', function (RouteCollectorProxy $group) {
     // Optional force-logout: clears every active session for the target
     // user. Done via the existing `banned` event arm; not a literal ban,
     // just reusing the broadcast-and-close machinery.
-    $targetUserId = $account->getAccountNumericId();
-    if ($killSessions && $targetUserId !== null) {
+    $targetUuid = $account->getAccountUuid();
+    if ($killSessions && $targetUuid !== null) {
       try {
-        (new WorkerEventsClient())->emitBanned($targetUserId);
+        (new WorkerEventsClient())->emitBanned($targetUuid);
       } catch (\Throwable $e) {
         error_log('admin/users/password-reset: emitBanned failed: ' . $e->getMessage());
       }

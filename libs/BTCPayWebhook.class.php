@@ -167,10 +167,10 @@ class BTCPayWebhook
           // the DB, and each device refetches it. Failure is logged-only:
           // a webhook-fanout hiccup must not roll back a paid invoice.
           try {
-            $userId = $account->getAccountNumericId();
-            if ($userId !== null) {
+            $uuid = $account->getAccountUuid();
+            if ($uuid !== null) {
               (new WorkerEventsClient())->emitProfileChanged(
-                $userId,
+                $uuid,
                 null,
                 ['accountLevel', 'remainingDays']
               );

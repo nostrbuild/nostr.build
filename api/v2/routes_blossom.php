@@ -89,12 +89,12 @@ $app->group('/blossom', function (RouteCollectorProxy $group) {
       // this user updates its grid + storage indicator without waiting for
       // the staleTime refetch. Swallowed failures — see WorkerEventsClient.
       try {
-        $userId = $account->getAccountNumericId();
-        if ($userId !== null) {
+        $uuid = $account->getAccountUuid();
+        if ($uuid !== null) {
           $events = new WorkerEventsClient();
           $folders = !empty($accountDefaultFolder) ? [$accountDefaultFolder] : null;
-          $events->emitFilesChanged($userId, $folders, added: 1);
-          $events->emitProfileChanged($userId);
+          $events->emitFilesChanged($uuid, $folders, added: 1);
+          $events->emitProfileChanged($uuid);
         }
       } catch (\Throwable $e) {
         error_log('blossom upload: WorkerEventsClient failed: ' . $e->getMessage());

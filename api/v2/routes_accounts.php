@@ -233,6 +233,37 @@ $app->group('/accounts', function (RouteCollectorProxy $group) {
       ->withStatus(200);
   });
 
+  // GET /api/v2/accounts/uuid-by-npub?npub=... — npub → stable uuid_id, for the
+  // accounts Worker's "Login with DM" flow: it resolves the DO key (uuid) for an
+  // npub at dm-start, and again at dm-verify BEFORE proving the code (so it does
+  // not run the verifyNpub side effect of /nostr-dm-login first). Bare lookup —
+  // no login gating, no side effects. 404 when no account has that npub.
+  $group->get('/uuid-by-npub', function (Request $request, Response $response) {
+    global $link;
+    $npub = trim((string) ($request->getQueryParams()['npub'] ?? ''));
+    if ($npub === '') {
+      $response->getBody()->write(json_encode(['error' => 'missing npub']));
+      return $response
+        ->withHeader('Content-Type', 'application/json')
+        ->withStatus(400);
+    }
+    $stmt = $link->prepare("SELECT uuid_id FROM users WHERE usernpub = ? LIMIT 1");
+    $stmt->bind_param('s', $npub);
+    $stmt->execute();
+    $row = $stmt->get_result()->fetch_assoc();
+    $stmt->close();
+    if (!is_array($row) || empty($row['uuid_id'])) {
+      $response->getBody()->write(json_encode(['error' => 'not found']));
+      return $response
+        ->withHeader('Content-Type', 'application/json')
+        ->withStatus(404);
+    }
+    $response->getBody()->write(json_encode(['uuidId' => $row['uuid_id']]));
+    return $response
+      ->withHeader('Content-Type', 'application/json')
+      ->withStatus(200);
+  });
+
   // POST /api/v2/accounts/nostr-dm-login — finalize a "Login with DM" flow.
   // The accounts Worker calls this only after it has matched the one-time code
   // it DM'd to the user, so the Worker is HMAC-trusted to vouch for npub
@@ -301,7 +332,7 @@ $app->group('/accounts', function (RouteCollectorProxy $group) {
     // GET /api/v2/accounts/dashboard/profile
     $sub->get('/profile', function (Request $request, Response $response) {
       global $link;
-      $npub = trim((string) ($request->getHeaderLine('X-Accounts-Npub') ?? ''));
+      $npub = resolveIdentityNpub($request);
       if ($npub === '') {
         $response->getBody()->write(json_encode(['error' => 'missing-identity']));
         return $response
@@ -338,7 +369,7 @@ $app->group('/accounts', function (RouteCollectorProxy $group) {
     // GET /api/v2/accounts/dashboard/folders
     $sub->get('/folders', function (Request $request, Response $response) {
       global $link;
-      $npub = trim((string) ($request->getHeaderLine('X-Accounts-Npub') ?? ''));
+      $npub = resolveIdentityNpub($request);
       if ($npub === '') {
         $response->getBody()->write(json_encode(['error' => 'missing-identity']));
         return $response
@@ -387,7 +418,7 @@ $app->group('/accounts', function (RouteCollectorProxy $group) {
     // GET /api/v2/accounts/dashboard/files
     $sub->get('/files', function (Request $request, Response $response) {
       global $link;
-      $npub = trim((string) ($request->getHeaderLine('X-Accounts-Npub') ?? ''));
+      $npub = resolveIdentityNpub($request);
       if ($npub === '') {
         $response->getBody()->write(json_encode(['error' => 'missing-identity']));
         return $response
@@ -438,7 +469,7 @@ $app->group('/accounts', function (RouteCollectorProxy $group) {
     $sub->post('/media/delete', function (Request $request, Response $response) {
       global $link;
       global $awsConfig;
-      $npub = trim((string) ($request->getHeaderLine('X-Accounts-Npub') ?? ''));
+      $npub = resolveIdentityNpub($request);
       if ($npub === '') {
         $response->getBody()->write(json_encode(['error' => 'missing-identity']));
         return $response
@@ -479,7 +510,7 @@ $app->group('/accounts', function (RouteCollectorProxy $group) {
     $sub->post('/media/share', function (Request $request, Response $response) {
       global $link;
       global $awsConfig;
-      $npub = trim((string) ($request->getHeaderLine('X-Accounts-Npub') ?? ''));
+      $npub = resolveIdentityNpub($request);
       if ($npub === '') {
         $response->getBody()->write(json_encode(['error' => 'missing-identity']));
         return $response
@@ -546,7 +577,7 @@ $app->group('/accounts', function (RouteCollectorProxy $group) {
     $sub->post('/media/move', function (Request $request, Response $response) {
       global $link;
       global $awsConfig;
-      $npub = trim((string) ($request->getHeaderLine('X-Accounts-Npub') ?? ''));
+      $npub = resolveIdentityNpub($request);
       if ($npub === '') {
         $response->getBody()->write(json_encode(['error' => 'missing-identity']));
         return $response
@@ -592,7 +623,7 @@ $app->group('/accounts', function (RouteCollectorProxy $group) {
     $sub->post('/media/import', function (Request $request, Response $response) {
       global $link;
       global $awsConfig;
-      $npub = trim((string) ($request->getHeaderLine('X-Accounts-Npub') ?? ''));
+      $npub = resolveIdentityNpub($request);
       if ($npub === '') {
         $response->getBody()->write(json_encode(['error' => 'missing-identity']));
         return $response
@@ -659,7 +690,7 @@ $app->group('/accounts', function (RouteCollectorProxy $group) {
     // POST /api/v2/accounts/dashboard/nostrland/activate
     $sub->post('/nostrland/activate', function (Request $request, Response $response) {
       global $link;
-      $npub = trim((string) ($request->getHeaderLine('X-Accounts-Npub') ?? ''));
+      $npub = resolveIdentityNpub($request);
       if ($npub === '') {
         $response->getBody()->write(json_encode(['error' => 'missing-identity']));
         return $response
@@ -725,7 +756,7 @@ $app->group('/accounts', function (RouteCollectorProxy $group) {
     // POST /api/v2/accounts/dashboard/folders/create
     $sub->post('/folders/create', function (Request $request, Response $response) {
       global $link;
-      $npub = trim((string) ($request->getHeaderLine('X-Accounts-Npub') ?? ''));
+      $npub = resolveIdentityNpub($request);
       if ($npub === '') {
         $response->getBody()->write(json_encode(['error' => 'missing-identity']));
         return $response
@@ -775,7 +806,7 @@ $app->group('/accounts', function (RouteCollectorProxy $group) {
     $sub->post('/folders/rename', function (Request $request, Response $response) {
       global $link;
       global $awsConfig;
-      $npub = trim((string) ($request->getHeaderLine('X-Accounts-Npub') ?? ''));
+      $npub = resolveIdentityNpub($request);
       if ($npub === '') {
         $response->getBody()->write(json_encode(['error' => 'missing-identity']));
         return $response
@@ -830,7 +861,7 @@ $app->group('/accounts', function (RouteCollectorProxy $group) {
     $sub->post('/folders/delete', function (Request $request, Response $response) {
       global $link;
       global $awsConfig;
-      $npub = trim((string) ($request->getHeaderLine('X-Accounts-Npub') ?? ''));
+      $npub = resolveIdentityNpub($request);
       if ($npub === '') {
         $response->getBody()->write(json_encode(['error' => 'missing-identity']));
         return $response
@@ -876,7 +907,7 @@ $app->group('/accounts', function (RouteCollectorProxy $group) {
     $sub->post('/media/metadata', function (Request $request, Response $response) {
       global $link;
       global $awsConfig;
-      $npub = trim((string) ($request->getHeaderLine('X-Accounts-Npub') ?? ''));
+      $npub = resolveIdentityNpub($request);
       if ($npub === '') {
         $response->getBody()->write(json_encode(['error' => 'missing-identity']));
         return $response
@@ -922,7 +953,7 @@ $app->group('/accounts', function (RouteCollectorProxy $group) {
     // POST /api/v2/accounts/dashboard/profile
     $sub->post('/profile', function (Request $request, Response $response) {
       global $link;
-      $npub = trim((string) ($request->getHeaderLine('X-Accounts-Npub') ?? ''));
+      $npub = resolveIdentityNpub($request);
       if ($npub === '') {
         $response->getBody()->write(json_encode(['error' => 'missing-identity']));
         return $response
@@ -990,7 +1021,7 @@ $app->group('/accounts', function (RouteCollectorProxy $group) {
     // also syncs to Blossom. No-op when already verified (returns 200).
     $sub->post('/npub/mark-verified', function (Request $request, Response $response) {
       global $link;
-      $npub = trim((string) ($request->getHeaderLine('X-Accounts-Npub') ?? ''));
+      $npub = resolveIdentityNpub($request);
       if ($npub === '') {
         $response->getBody()->write(json_encode(['error' => 'missing-identity']));
         return $response
@@ -1034,7 +1065,7 @@ $app->group('/accounts', function (RouteCollectorProxy $group) {
     // POST /api/v2/accounts/dashboard/profile/password
     $sub->post('/profile/password', function (Request $request, Response $response) {
       global $link;
-      $npub = trim((string) ($request->getHeaderLine('X-Accounts-Npub') ?? ''));
+      $npub = resolveIdentityNpub($request);
       if ($npub === '') {
         $response->getBody()->write(json_encode(['error' => 'missing-identity']));
         return $response
@@ -1100,7 +1131,7 @@ $app->group('/accounts', function (RouteCollectorProxy $group) {
     $sub->post('/media/poster', function (Request $request, Response $response) {
       global $link;
       global $awsConfig;
-      $npub = trim((string) ($request->getHeaderLine('X-Accounts-Npub') ?? ''));
+      $npub = resolveIdentityNpub($request);
       if ($npub === '') {
         return dashboardError($response, 'missing-identity', 400);
       }
@@ -1191,7 +1222,7 @@ $app->group('/accounts', function (RouteCollectorProxy $group) {
     // PHP session for the legacy Permission class), mirroring /media/share.
     $sub->post('/nostr/publish', function (Request $request, Response $response) {
       global $link;
-      $npub = trim((string) ($request->getHeaderLine('X-Accounts-Npub') ?? ''));
+      $npub = resolveIdentityNpub($request);
       if ($npub === '') {
         return dashboardError($response, 'missing-identity', 400);
       }
@@ -1306,7 +1337,7 @@ $app->group('/accounts', function (RouteCollectorProxy $group) {
     $sub->post('/ai/generate', function (Request $request, Response $response) {
       global $link;
       global $awsConfig;
-      $npub = trim((string) ($request->getHeaderLine('X-Accounts-Npub') ?? ''));
+      $npub = resolveIdentityNpub($request);
       if ($npub === '') {
         return dashboardError($response, 'missing-identity', 400);
       }
@@ -1400,7 +1431,7 @@ $app->group('/accounts', function (RouteCollectorProxy $group) {
     // POST /multipart — create multipart upload.
     $mp->post('', function (Request $request, Response $response) {
       global $link;
-      $npub = trim((string) ($request->getHeaderLine('X-Accounts-Npub') ?? ''));
+      $npub = resolveIdentityNpub($request);
       if ($npub === '') {
         return jsonResponse($response, 'error', 'missing-identity', new stdClass(), 400);
       }
@@ -1444,7 +1475,7 @@ $app->group('/accounts', function (RouteCollectorProxy $group) {
 
     // GET /multipart/{uploadId}/{partNumber}?key=... — sign one part URL.
     $mp->get('/{uploadId}/{partNumber:[0-9]+}', function (Request $request, Response $response, array $args) {
-      $npub = trim((string) ($request->getHeaderLine('X-Accounts-Npub') ?? ''));
+      $npub = resolveIdentityNpub($request);
       if ($npub === '') {
         return jsonResponse($response, 'error', 'missing-identity', new stdClass(), 400);
       }
@@ -1477,7 +1508,7 @@ $app->group('/accounts', function (RouteCollectorProxy $group) {
 
     // GET /multipart/{uploadId}/status?key=... — completion-status probe.
     $mp->get('/{uploadId}/status', function (Request $request, Response $response, array $args) {
-      $npub = trim((string) ($request->getHeaderLine('X-Accounts-Npub') ?? ''));
+      $npub = resolveIdentityNpub($request);
       if ($npub === '') {
         return jsonResponse($response, 'error', 'missing-identity', new stdClass(), 400);
       }
@@ -1521,7 +1552,7 @@ $app->group('/accounts', function (RouteCollectorProxy $group) {
 
     // GET /multipart/{uploadId}?key=... — list uploaded parts.
     $mp->get('/{uploadId}', function (Request $request, Response $response, array $args) {
-      $npub = trim((string) ($request->getHeaderLine('X-Accounts-Npub') ?? ''));
+      $npub = resolveIdentityNpub($request);
       if ($npub === '') {
         return jsonResponse($response, 'error', 'missing-identity', new stdClass(), 400);
       }
@@ -1553,7 +1584,7 @@ $app->group('/accounts', function (RouteCollectorProxy $group) {
 
     // POST /multipart/{uploadId}/complete?key=... — finalize.
     $mp->post('/{uploadId}/complete', function (Request $request, Response $response, array $args) {
-      $npub = trim((string) ($request->getHeaderLine('X-Accounts-Npub') ?? ''));
+      $npub = resolveIdentityNpub($request);
       if ($npub === '') {
         return jsonResponse($response, 'error', 'missing-identity', new stdClass(), 400);
       }
@@ -1586,7 +1617,7 @@ $app->group('/accounts', function (RouteCollectorProxy $group) {
 
     // DELETE /multipart/{uploadId}?key=... — abort.
     $mp->delete('/{uploadId}', function (Request $request, Response $response, array $args) {
-      $npub = trim((string) ($request->getHeaderLine('X-Accounts-Npub') ?? ''));
+      $npub = resolveIdentityNpub($request);
       if ($npub === '') {
         return jsonResponse($response, 'error', 'missing-identity', new stdClass(), 400);
       }
@@ -1625,7 +1656,7 @@ $app->group('/accounts', function (RouteCollectorProxy $group) {
     global $awsConfig;
     require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/MultimediaUpload.class.php';
 
-    $npub = trim((string) ($request->getHeaderLine('X-Accounts-Npub') ?? ''));
+    $npub = resolveIdentityNpub($request);
     if ($npub === '') {
       return uppyResponse($response, 'error', 'missing-identity', new stdClass(), 400);
     }
@@ -1670,7 +1701,7 @@ $app->group('/accounts', function (RouteCollectorProxy $group) {
     global $link;
     global $awsConfig;
 
-    $npub = trim((string) ($request->getHeaderLine('X-Accounts-Npub') ?? ''));
+    $npub = resolveIdentityNpub($request);
     if ($npub === '') {
       $response->getBody()->write(json_encode(['error' => 'missing-identity']));
       return $response->withHeader('Content-Type', 'application/json')->withStatus(400);
