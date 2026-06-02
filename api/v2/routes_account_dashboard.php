@@ -338,7 +338,7 @@ function dashboardGenerateAIImage(string $model, string $prompt, string $title, 
   return dashboardBuildReturnFile($fileData);
 }
 
-function dashboardGenerateSDCoreImage(string $prompt, string $negativePrompt, string $ar, string $preset, int $seed, Account $account, $link, $awsConfig): array
+function dashboardGenerateStabilityImage(string $endpoint, ?string $sdModel, string $prompt, string $negativePrompt, string $ar, string $preset, int $seed, string $title, Account $account, $link, $awsConfig): array
 {
   // Validate parameters
   if (empty($prompt) || strlen($prompt) > 10000) {
@@ -359,7 +359,7 @@ function dashboardGenerateSDCoreImage(string $prompt, string $negativePrompt, st
 
   $s3 = new S3Service($awsConfig);
   $apiBase = substr($_SERVER['AI_GEN_API_ENDPOINT'], 0, strrpos($_SERVER['AI_GEN_API_ENDPOINT'], '/'));
-  $apiUrl = $apiBase . '/sd/core';
+  $apiUrl = $apiBase . $endpoint;
 
   $usernpub = $account->getNpub();
   $level = $account->getAccountLevelInt();
@@ -373,9 +373,13 @@ function dashboardGenerateSDCoreImage(string $prompt, string $negativePrompt, st
     "user_sub_period" => $subscriptionPeriod,
     "prompt" => $prompt,
   ];
+  // Only the /sd/sd3 endpoint takes a bare model id (sd3.5-*); core + ultra are
+  // fixed by their endpoint.
+  if ($sdModel !== null) $requestBodyArray['model'] = $sdModel;
   if (!empty($negativePrompt)) $requestBodyArray['negative_prompt'] = $negativePrompt;
   if (!empty($ar)) $requestBodyArray['aspect_ratio'] = $ar;
-  if (!empty($preset)) $requestBodyArray['style_preset'] = $preset;
+  // The /sd/sd3 endpoint has no style_preset field; only core + ultra accept it.
+  if (!empty($preset) && $endpoint !== '/sd/sd3') $requestBodyArray['style_preset'] = $preset;
   if ($seed > 0) $requestBodyArray['seed'] = $seed;
 
   $requestBody = json_encode($requestBodyArray);
@@ -409,10 +413,15 @@ function dashboardGenerateSDCoreImage(string $prompt, string $negativePrompt, st
 
   $httpCode = curl_getinfo($ch, CURLINFO_RESPONSE_CODE);
   $contentType = curl_getinfo($ch, CURLINFO_CONTENT_TYPE);
-  if ($httpCode !== 200 && $contentType === 'application/json') {
-    throw new \Exception("SD Core Image generation failed: HTTP {$httpCode} - {$response}");
-  }
   $ch = null;
+  if ($httpCode === 402) {
+    // Worker ledger refused the debit — surface as insufficient credits (the
+    // route maps code 402 to a user-facing error instead of a generic 500).
+    throw new \Exception('insufficient_credits', 402);
+  }
+  if ($httpCode !== 200 && $contentType === 'application/json') {
+    throw new \Exception("Stability image generation failed: HTTP {$httpCode} - {$response}");
+  }
 
   $transactionId = $customHeaders['x-sd-transaction-id'] ?? '';
 
@@ -432,18 +441,25 @@ function dashboardGenerateSDCoreImage(string $prompt, string $negativePrompt, st
     'tmp_name' => realpath($tempFile),
     'error' => UPLOAD_ERR_OK,
     'size' => filesize($tempFile),
-    'title' => '',
+    'title' => $title ?? '',
     'ai_prompt' => $prompt ?? '',
   ]]);
 
   [$status, $code, $message] = $upload->uploadFiles();
   if (!$status) {
-    throw new \Exception("Failed to upload SD Core generated image: {$message} {$code}");
+    throw new \Exception("Failed to upload Stability generated image: {$message} {$code}");
   }
 
   $fileData = $upload->getUploadedFiles();
   if (empty($fileData)) {
     throw new \Exception("Failed to import media from URL");
+  }
+
+  // Sync the session credit cache from the worker's authoritative
+  // x-sd-available-balance header. Replaces the old hardcoded `-= 3` in the
+  // route, which was wrong for the 4-/7-/8-credit SD3.5 + Ultra models.
+  if (isset($customHeaders['x-sd-available-balance']) && is_numeric($customHeaders['x-sd-available-balance'])) {
+    $_SESSION['sd_credits'] = intval($customHeaders['x-sd-available-balance']);
   }
 
   $mediaId = $fileData[0]['name'];
@@ -693,24 +709,14 @@ $app->group('/account/dashboard', function (RouteCollectorProxy $group) {
 
     $body = $request->getParsedBody();
 
-    // Check model-specific permissions
-    $creatorsModels = ["@cf/bytedance/stable-diffusion-xl-lightning", "@cf/stabilityai/stable-diffusion-xl-base-1.0"];
-    if (isset($body['model']) && in_array($body['model'], $creatorsModels)) {
-      if (!$perm->validatePermissionsLevelAny(2, 1, 10, 99)) {
-        return dashboardError($response, "You do not have permission to generate AI images using the {$body['model']} model", 403);
-      }
-    }
-    $advancedModels = ["@cf/black-forest-labs/flux-1-schnell"];
-    if (isset($body['model']) && in_array($body['model'], $advancedModels)) {
-      if (!$perm->validatePermissionsLevelAny(1, 10, 99)) {
-        return dashboardError($response, "You do not have permission to generate AI images using the {$body['model']} model", 403);
-      }
-    }
-
     if (empty($body['model']) || empty($body['prompt']) || !isset($body['title'])) {
       return dashboardError($response, 'Missing required parameters');
     }
 
+    // Per-MODEL tier access is enforced upstream by the account.nostr.build
+    // Worker via the Flagship `ai-studio-policy` flag (the only layer that can
+    // read Flagship). PHP keeps the coarse paid-tier + expiry guards above and
+    // just routes the request to the right generation backend.
     $model = $body['model'];
     $prompt = $body['prompt'];
     $title = $body['title'];
@@ -718,20 +724,33 @@ $app->group('/account/dashboard', function (RouteCollectorProxy $group) {
     $ar = $body['aspect_ratio'] ?? '';
     $preset = $body['style_preset'] ?? '';
 
-    if ($model === "@sd/core" && intval($_SESSION['sd_credits'] ?? 0) <= 3) {
-      return dashboardError($response, 'You do not have enough credits to generate AI images');
-    }
+    // Stability (priced) models route to dedicated worker endpoints. The bare
+    // worker model id differs from the app-facing "@sd/..." string; null means
+    // the endpoint fixes the model (core, ultra).
+    $stabilityRoutes = [
+      "@sd/core"              => ['/sd/core',  null],
+      "@sd/sd3.5-large"       => ['/sd/sd3',   'sd3.5-large'],
+      "@sd/sd3.5-medium"      => ['/sd/sd3',   'sd3.5-medium'],
+      "@sd/sd3.5-large-turbo" => ['/sd/sd3',   'sd3.5-large-turbo'],
+      "@sd/ultra"             => ['/sd/ultra', null],
+    ];
 
     try {
-      if ($model === "@sd/core") {
-        $aiImage = dashboardGenerateSDCoreImage($prompt, $negativePrompt, $ar, $preset, 0, $account, $link, $awsConfig);
-        $_SESSION['sd_credits'] -= 3;
+      if (isset($stabilityRoutes[$model])) {
+        [$endpoint, $sdModel] = $stabilityRoutes[$model];
+        $aiImage = dashboardGenerateStabilityImage($endpoint, $sdModel, $prompt, $negativePrompt, $ar, $preset, 0, $title, $account, $link, $awsConfig);
       } else {
+        // Cloudflare Workers AI models (@cf/...) — free, prompt-only passthrough.
         $aiImage = dashboardGenerateAIImage($model, $prompt, $title, $link, $awsConfig);
       }
       return dashboardJson($response, $aiImage);
     } catch (\Throwable $e) {
       error_log($e->getMessage());
+      // Surface the worker's insufficient-credits signal (402) instead of a
+      // generic 500 so the composer can show a useful message.
+      if ($e->getCode() === 402) {
+        return dashboardError($response, 'You do not have enough credits to generate AI images', 402);
+      }
       return dashboardError($response, 'Failed to generate AI image', 500);
     }
   });
