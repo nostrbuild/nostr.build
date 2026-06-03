@@ -1428,6 +1428,32 @@ $app->group('/accounts', function (RouteCollectorProxy $group) {
         }
       }
     });
+
+    // GET /api/v2/accounts/dashboard/credits/history — the signed-in user's AI
+    // credit ledger (read-only passthrough to the worker via Credits). Mirrors
+    // routes_account_dashboard.php:605, but the BFF has no PHP session, so the
+    // user is identified from the request identity headers and the npub is
+    // passed straight into Credits (its Account derives level + sub period).
+    $sub->get('/credits/history', function (Request $request, Response $response) {
+      global $link;
+      $npub = resolveIdentityNpub($request);
+      if ($npub === '') {
+        return dashboardError($response, 'missing-identity', 400);
+      }
+      $params = $request->getQueryParams();
+      try {
+        $apiBase = substr($_SERVER['AI_GEN_API_ENDPOINT'], 0, strrpos($_SERVER['AI_GEN_API_ENDPOINT'], '/'));
+        $credits = new Credits($npub, $apiBase, $_SERVER['AI_GEN_API_HMAC_KEY'], $link);
+        $txType = $params['type'] ?? 'all';
+        $txLimit = isset($params['limit']) ? min(500, max(1, intval($params['limit']))) : null;
+        $txOffset = isset($params['offset']) ? max(0, intval($params['offset'])) : null;
+        $txHistory = $credits->getTransactionsHistory($txType, $txLimit, $txOffset);
+        return dashboardJson($response, $txHistory);
+      } catch (\Throwable $e) {
+        error_log($e->getMessage());
+        return dashboardError($response, 'Failed to get credits transaction history', 500);
+      }
+    });
   });
 
   // Multipart S3 — large files. Mirrors api/v2/routes_s3.php /multipart/*
