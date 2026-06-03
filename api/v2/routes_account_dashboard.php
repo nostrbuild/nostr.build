@@ -434,7 +434,7 @@ function dashboardGenerateStabilityImage(string $endpoint, ?string $sdModel, str
   if (in_array($contentType, ['image/png', 'image/jpeg', 'image/webp'])) {
     file_put_contents($tempFile, $response);
   } else {
-    throw new \Exception("SD Core Image generation failed: Unexpected content type: {$contentType}");
+    throw new \Exception("Stability image generation failed: Unexpected content type: {$contentType}");
   }
 
   $upload = new MultimediaUpload($link, $s3, true, $_SESSION['usernpub'], $awsConfig);

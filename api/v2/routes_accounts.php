@@ -1395,23 +1395,20 @@ $app->group('/accounts', function (RouteCollectorProxy $group) {
         }
 
         if ($model === '@sd/core') {
-          $aiImage = dashboardGenerateSDCoreImage(
-            $prompt,
-            $negativePrompt,
-            $ar,
-            $preset,
-            0,
-            $account,
-            $link,
-            $awsConfig,
-          );
-          $_SESSION['sd_credits'] -= 3;
+          // The SD-core generator was generalized to dashboardGenerateStabilityImage;
+          // it now syncs $_SESSION['sd_credits'] from the worker's authoritative
+          // x-sd-available-balance header, so there is no manual decrement here.
+          $aiImage = dashboardGenerateStabilityImage('/sd/core', null, $prompt, $negativePrompt, $ar, $preset, 0, $title, $account, $link, $awsConfig);
         } else {
-          $aiImage = dashboardGenerateAIImage($model, $prompt, $title, $link, $awsConfig);
+          $aiImage = dashboardGenerateAIImage($model, $prompt, $title, $negativePrompt, $link, $awsConfig);
         }
         return dashboardJson($response, $aiImage);
       } catch (\Throwable $e) {
         error_log($e->getMessage());
+        // Surface the worker's insufficient-credits signal (402) instead of 500.
+        if ($e->getCode() === 402) {
+          return dashboardError($response, 'You do not have enough credits to generate AI images', 402);
+        }
         return dashboardError($response, 'Failed to generate AI image', 500);
       } finally {
         if ($prevNpub === null) {
