@@ -1394,12 +1394,22 @@ $app->group('/accounts', function (RouteCollectorProxy $group) {
           }
         }
 
-        if ($model === '@sd/core') {
-          // The SD-core generator was generalized to dashboardGenerateStabilityImage;
-          // it now syncs $_SESSION['sd_credits'] from the worker's authoritative
-          // x-sd-available-balance header, so there is no manual decrement here.
-          $aiImage = dashboardGenerateStabilityImage('/sd/core', null, $prompt, $negativePrompt, $ar, $preset, 0, $title, $account, $link, $awsConfig);
+        // Stability (priced) models route to dedicated worker endpoints; the bare
+        // worker model id differs from the app-facing "@sd/..." string. null = the
+        // endpoint fixes the model (core, ultra). The SD generators sync
+        // $_SESSION['sd_credits'] from the worker's x-sd-available-balance header.
+        $stabilityRoutes = [
+          '@sd/core'              => ['/sd/core',  null],
+          '@sd/sd3.5-large'       => ['/sd/sd3',   'sd3.5-large'],
+          '@sd/sd3.5-medium'      => ['/sd/sd3',   'sd3.5-medium'],
+          '@sd/sd3.5-large-turbo' => ['/sd/sd3',   'sd3.5-large-turbo'],
+          '@sd/ultra'             => ['/sd/ultra', null],
+        ];
+        if (isset($stabilityRoutes[$model])) {
+          [$endpoint, $sdModel] = $stabilityRoutes[$model];
+          $aiImage = dashboardGenerateStabilityImage($endpoint, $sdModel, $prompt, $negativePrompt, $ar, $preset, 0, $title, $account, $link, $awsConfig);
         } else {
+          // Cloudflare Workers AI models (@cf/...) — prompt-only passthrough.
           $aiImage = dashboardGenerateAIImage($model, $prompt, $title, $negativePrompt, $link, $awsConfig);
         }
         return dashboardJson($response, $aiImage);

@@ -714,14 +714,24 @@ $app->group('/account/dashboard', function (RouteCollectorProxy $group) {
 
     $body = $request->getParsedBody();
 
+    // Check model-specific permissions
+    $creatorsModels = ["@cf/bytedance/stable-diffusion-xl-lightning", "@cf/stabilityai/stable-diffusion-xl-base-1.0"];
+    if (isset($body['model']) && in_array($body['model'], $creatorsModels)) {
+      if (!$perm->validatePermissionsLevelAny(2, 1, 10, 99)) {
+        return dashboardError($response, "You do not have permission to generate AI images using the {$body['model']} model", 403);
+      }
+    }
+    $advancedModels = ["@cf/black-forest-labs/flux-1-schnell"];
+    if (isset($body['model']) && in_array($body['model'], $advancedModels)) {
+      if (!$perm->validatePermissionsLevelAny(1, 10, 99)) {
+        return dashboardError($response, "You do not have permission to generate AI images using the {$body['model']} model", 403);
+      }
+    }
+
     if (empty($body['model']) || empty($body['prompt']) || !isset($body['title'])) {
       return dashboardError($response, 'Missing required parameters');
     }
 
-    // Per-MODEL tier access is enforced upstream by the account.nostr.build
-    // Worker via the Flagship `ai-studio-policy` flag (the only layer that can
-    // read Flagship). PHP keeps the coarse paid-tier + expiry guards above and
-    // just routes the request to the right generation backend.
     $model = $body['model'];
     $prompt = $body['prompt'];
     $title = $body['title'];
@@ -729,34 +739,22 @@ $app->group('/account/dashboard', function (RouteCollectorProxy $group) {
     $ar = $body['aspect_ratio'] ?? '';
     $preset = $body['style_preset'] ?? '';
 
-    // Stability (priced) models route to dedicated worker endpoints. The bare
-    // worker model id differs from the app-facing "@sd/..." string; null means
-    // the endpoint fixes the model (core, ultra).
-    $stabilityRoutes = [
-      "@sd/core"              => ['/sd/core',  null],
-      "@sd/sd3.5-large"       => ['/sd/sd3',   'sd3.5-large'],
-      "@sd/sd3.5-medium"      => ['/sd/sd3',   'sd3.5-medium'],
-      "@sd/sd3.5-large-turbo" => ['/sd/sd3',   'sd3.5-large-turbo'],
-      "@sd/ultra"             => ['/sd/ultra', null],
-    ];
+    if ($model === "@sd/core" && intval($_SESSION['sd_credits'] ?? 0) <= 3) {
+      return dashboardError($response, 'You do not have enough credits to generate AI images');
+    }
 
     try {
-      if (isset($stabilityRoutes[$model])) {
-        [$endpoint, $sdModel] = $stabilityRoutes[$model];
-        $aiImage = dashboardGenerateStabilityImage($endpoint, $sdModel, $prompt, $negativePrompt, $ar, $preset, 0, $title, $account, $link, $awsConfig);
+      if ($model === "@sd/core") {
+        // dashboardGenerateSDCoreImage was generalized to dashboardGenerateStabilityImage;
+        // it now syncs $_SESSION['sd_credits'] from the worker's x-sd-available-balance
+        // header, so there is no manual decrement here.
+        $aiImage = dashboardGenerateStabilityImage('/sd/core', null, $prompt, $negativePrompt, $ar, $preset, 0, $title, $account, $link, $awsConfig);
       } else {
-        // Cloudflare Workers AI models (@cf/...) — free. Forwards the negative
-        // prompt for the models that accept it (worker strips it for the rest).
         $aiImage = dashboardGenerateAIImage($model, $prompt, $title, $negativePrompt, $link, $awsConfig);
       }
       return dashboardJson($response, $aiImage);
     } catch (\Throwable $e) {
       error_log($e->getMessage());
-      // Surface the worker's insufficient-credits signal (402) instead of a
-      // generic 500 so the composer can show a useful message.
-      if ($e->getCode() === 402) {
-        return dashboardError($response, 'You do not have enough credits to generate AI images', 402);
-      }
       return dashboardError($response, 'Failed to generate AI image', 500);
     }
   });
