@@ -271,15 +271,20 @@ function dashboardImportFromURL(string $url, string $folder, string $title, stri
   return dashboardBuildReturnFile($fileData);
 }
 
-function dashboardGenerateAIImage(string $model, string $prompt, string $title, $link, $awsConfig): array
+function dashboardGenerateAIImage(string $model, string $prompt, string $title, string $negativePrompt, $link, $awsConfig): array
 {
   $s3 = new S3Service($awsConfig);
   $apiUrl = $_SERVER['AI_GEN_API_ENDPOINT'];
-  $requestBody = json_encode([
+  $requestBodyArray = [
     "prompt" => $prompt,
     "model" => $model,
     "npub" => $_SESSION['usernpub'],
-  ]);
+  ];
+  // Only the SD-family CF models + Leonardo Phoenix accept a negative prompt;
+  // the worker's per-model schema strips it for the rest, so forwarding it when
+  // present is safe.
+  if (!empty($negativePrompt)) $requestBodyArray['negative_prompt'] = $negativePrompt;
+  $requestBody = json_encode($requestBodyArray);
 
   $bearer = signApiRequest($_SERVER['AI_GEN_API_HMAC_KEY'], $apiUrl, 'POST', $requestBody);
 
@@ -740,8 +745,9 @@ $app->group('/account/dashboard', function (RouteCollectorProxy $group) {
         [$endpoint, $sdModel] = $stabilityRoutes[$model];
         $aiImage = dashboardGenerateStabilityImage($endpoint, $sdModel, $prompt, $negativePrompt, $ar, $preset, 0, $title, $account, $link, $awsConfig);
       } else {
-        // Cloudflare Workers AI models (@cf/...) — free, prompt-only passthrough.
-        $aiImage = dashboardGenerateAIImage($model, $prompt, $title, $link, $awsConfig);
+        // Cloudflare Workers AI models (@cf/...) — free. Forwards the negative
+        // prompt for the models that accept it (worker strips it for the rest).
+        $aiImage = dashboardGenerateAIImage($model, $prompt, $title, $negativePrompt, $link, $awsConfig);
       }
       return dashboardJson($response, $aiImage);
     } catch (\Throwable $e) {
