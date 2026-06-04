@@ -112,6 +112,38 @@ $app->group('/internal/plans', function (RouteCollectorProxy $group) {
     }
   });
 
+  // Resolve a referral code to the referrer's public identity (npub + nym + pfp)
+  // so the in-app /plans page can show a "Referred by" card, exactly like the
+  // legacy plans/index.php did. Returns 404 for an unknown/invalid code.
+  $group->get('/referrer', function (Request $request, Response $response) {
+    global $link;
+    $code = trim((string)($request->getQueryParams()['code'] ?? ''));
+    if ($code === '' || !preg_match('/^[A-F0-9]{4}-[A-F0-9]{4}-[A-F0-9]{4}$/', $code)) {
+      $response->getBody()->write(json_encode(['ok' => false, 'error' => 'invalid-code']));
+      return $response->withStatus(400)->withHeader('Content-Type', 'application/json');
+    }
+    try {
+      // Same validity gate the legacy page used (valid level, not expired).
+      $npub = findNpubByReferralCode($link, $code);
+      if (empty($npub)) {
+        $response->getBody()->write(json_encode(['ok' => false, 'error' => 'not-found']));
+        return $response->withStatus(404)->withHeader('Content-Type', 'application/json');
+      }
+      $acct = (new Account($npub, $link))->getAccount();
+      $response->getBody()->write(json_encode([
+        'ok' => true,
+        'npub' => $npub,
+        'nym' => $acct['nym'] ?? null,
+        'ppic' => $acct['ppic'] ?? null,
+      ]));
+      return $response->withHeader('Content-Type', 'application/json');
+    } catch (\Throwable $e) {
+      error_log('internal/plans/referrer error: ' . $e->getMessage());
+      $response->getBody()->write(json_encode(['ok' => false, 'error' => 'lookup-failed']));
+      return $response->withStatus(500)->withHeader('Content-Type', 'application/json');
+    }
+  });
+
   // Active promotions (perPlan + global) for the in-app checkout display. The
   // Worker applies the discount math in TS; PHP stays the data source.
   $group->get('/promotions', function (Request $request, Response $response) {
