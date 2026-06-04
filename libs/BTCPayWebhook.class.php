@@ -69,10 +69,25 @@ class BTCPayWebhook
     }
     */
 
+    // Hand off to the shared fulfillment core (also used by the Worker-facing
+    // /internal/plans/activate endpoint during the dual-run migration).
+    return $this->fulfillInvoiceById($payload->invoiceId);
+  }
+
+  /**
+   * Fulfill a (potentially settled) invoice by id: fetch it from BTCPay, verify
+   * settlement + amount, then apply the plan / credits-topup / referral split and
+   * emit the profile-changed signal. Shared by processWebhook (after BTCPay-Sig
+   * verification) and the Worker /internal/plans/activate endpoint (HMAC-authed
+   * by middleware). Idempotent — setPlan short-circuits and credit topups dedupe
+   * by invoiceId, so a duplicate call from the dual-run webhook + Worker is safe.
+   */
+  public function fulfillInvoiceById(string $invoiceId): bool
+  {
     // Get the invoice
     $invoice = null;
     try {
-      $invoice = $this->getInvoice($payload->invoiceId);
+      $invoice = $this->getInvoice($invoiceId);
     } catch (Exception $e) {
       error_log("Failed to fetch invoice data: " . $e . PHP_EOL);
       return false;
@@ -146,10 +161,15 @@ class BTCPayWebhook
         error_log("Purchase price: " . $purchasePrice . PHP_EOL);
 
         $apiBase = substr($_SERVER['AI_GEN_API_ENDPOINT'], 0, strrpos($_SERVER['AI_GEN_API_ENDPOINT'], '/'));
-        $credits = new Credits($userNpub, $apiBase, $_SERVER['AI_GEN_API_HMAC_KEY'], $link);
         if ($orderType === 'credits-topup') {
-          // Apply credits based on the invoice
-          $credits->applyCreditsBasedOnInvoiceId(invoice: $invoice);
+          // Standalone credit top-ups are owned by the account Worker, which
+          // applies them DIRECTLY to the AI worker ledger (the credit source of
+          // truth). PHP only applies plan-bundled credits (below via setPlan).
+          // No-op here so the dual-run PHP webhook does not double-handle the
+          // topup (and so we don't hit the stale Credits path). Idempotency is
+          // guaranteed regardless by the ledger's (invoiceId, type) constraint.
+          error_log("[INFO] credits-topup {$orderId}: handled by account Worker; PHP no-op." . PHP_EOL);
+          return true;
         } else {
           // Create a new account instance
           $account = new Account($userNpub, $link);

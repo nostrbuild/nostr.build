@@ -18,7 +18,7 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/BTCPayClient.class.php';
  */
 class Credits
 {
-  private int $pricePerCredit = 50;
+  private float $pricePerCredit = 0.01;
   private string $userNpub;
   private string $baseApiUrl;
   private string $apiKey;
@@ -248,17 +248,18 @@ class Credits
         throw new Exception('Invalid invoice user.');
       }
 
-      // Verify that the invoice paid amount is correct and matches the credits
-      $price = isset($metadata['purchasePrice']) ? (int)$metadata['purchasePrice'] : -1;
+      // Verify the invoice metadata is self-consistent: purchasePrice must equal
+      // credits × per-credit price. Float-tolerant on purpose — pricePerCredit and
+      // the amount can be fractional dollars, so a strict int/float `!==` would
+      // always mismatch and wrongly reject.
+      $price = isset($metadata['purchasePrice']) ? (float)$metadata['purchasePrice'] : -1.0;
       $expectedPrice = $purchasedCredits * $this->pricePerCredit;
-
-      // Compare the actual amount paid with the purchase price
-      if ($price !== $expectedPrice) {
+      if (abs($price - $expectedPrice) > 0.00001) {
         throw new Exception('Invalid invoice price.');
       }
 
-      // Ensure that settled invoice amount is equal to the purchase price
-      if (!BTCPayClient::amountEqual($price, $invoice->getAmount())) {
+      // Ensure the settled invoice amount equals the purchase price.
+      if (!BTCPayClient::amountEqualString((string)$price, $invoice->getAmount())) {
         error_log("The actual amount paid is less than the purchase price." . PHP_EOL);
         throw new Exception('Invalid invoice amount.');
       }
