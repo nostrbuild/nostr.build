@@ -94,7 +94,7 @@ $perm = new Permission();
     </p>
     <h3 id="accounts">Accounts</h3>
     <section class="paragraph para_square">
-      <a href="/plans/"><img class="about_img img_square" src="https://cdn.nostr.build/assets/primo_nostr.png" alt="nostr.build account logo" width="80" /></a>
+      <a href="https://account.nostr.build/plans"><img class="about_img img_square" src="https://cdn.nostr.build/assets/primo_nostr.png" alt="nostr.build account logo" width="80" /></a>
       <p>
         nostr.build offers accounts with premium features charged annually.
         Accounts can be purchased with a lighting wallet or Bitcoin. Proceeds
@@ -105,7 +105,7 @@ $perm = new Permission();
 
     <p>
       ** Purchasing an account not only gives you premium features, you're also supporting a free, no ads, open source service for nostr!<br />
-      ** Purchase an account <a class="ref_link" href="/plans/">HERE!</a><br /><br />
+      ** Purchase an account <a class="ref_link" href="https://account.nostr.build/plans">HERE!</a><br /><br />
 
       <b>Account features include:</b><br />
       - <font color="#D3D3D3">Global CDN network:</font> super fast access for all media including videos<br />
@@ -118,7 +118,7 @@ $perm = new Permission();
       - <font color="#D3D3D3">Creators Page:</font> lets you make your media publically available on the popular <a class="ref_link" href="https://nostr.build/creators/" target="_blank">nostr.build Creators page</a><br />
       - <font color="#D3D3D3">AI Enhanced Search (coming soon):</font> search any free media ever uploaded to nostr.build with AI enhanced labels and keywords<br />
       - <font color="#D3D3D3">All media must align to nostr.build's</font> <a class="ref_link" href="https://nostr.build/tos/" target="_blank">Terms of Service</a> <br />
-      ** See all <a class="ref_link" href="/plans/">nostr.build Plans</a> and features<br />
+      ** See all <a class="ref_link" href="https://account.nostr.build/plans">nostr.build Plans</a> and features<br />
     </p>
 
     <figure class="img_container double_img">

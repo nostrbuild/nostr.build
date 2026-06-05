@@ -1,4 +1,7 @@
 <?php
+// Cutover: this path is now served by the account.nostr.build app.
+header("location: https://account.nostr.build/plans");
+exit;
 /*
 This path will only be used for the new user sign-up, while we will have a separate path for existing users to upgrade their plan.
 The new user sign-up will be a 4-step process:

@@ -1,4 +1,7 @@
 <?php
+// Cutover: this path is now served by the account.nostr.build app.
+header("location: https://account.nostr.build/features");
+exit;
 require_once $_SERVER['DOCUMENT_ROOT'] . '/SiteConfig.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/Plans.class.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/permissions.class.php';

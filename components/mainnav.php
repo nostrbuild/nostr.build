@@ -42,11 +42,11 @@ SVG;
     <?= $svg_logo ?>
   </a>
   <div class="center_buttons">
-    <a href="/plans/" class="nav_button">
+    <a href="https://account.nostr.build/plans" class="nav_button">
       <?= $svg_plans_icon ?>
       Plans
     </a>
-    <a href="/features" class="nav_button">
+    <a href="https://account.nostr.build/features" class="nav_button">
       <?= $svg_builder_icon ?>
       Features
     </a>
@@ -79,11 +79,11 @@ SVG;
     </a>
   </div>
   <?php if ($perm->isGuest()) : ?>
-    <a href="/login" class="nav_button login_button">
+    <a href="https://account.nostr.build/login" class="nav_button login_button">
       Signup/Login
     </a>
   <?php else : ?>
-    <a href="/account/" class="nav_button login_button">
+    <a href="https://account.nostr.build/" class="nav_button login_button">
       Account
       <img src="<?= $ppic ?>" alt="user image" style="width:33px;height:33px;border-radius:50%;">
     </a>
@@ -95,13 +95,13 @@ SVG;
 </header>
 <nav>
   <div class="menu">
-    <a href="/plans/" class="nav_button">
+    <a href="https://account.nostr.build/plans" class="nav_button">
       <span>
         <?= $svg_plans_icon ?>
       </span>
       Plans
     </a>
-    <a href="/features" class="nav_button">
+    <a href="https://account.nostr.build/features" class="nav_button">
       <span>
         <?= $svg_builder_icon ?>
       </span>
@@ -153,13 +153,13 @@ SVG;
       Blossom
     </a>
     <?php if ($perm->isGuest()) : ?>
-      <a href="/login" class="nav_button login_button login_desktop">
+      <a href="https://account.nostr.build/login" class="nav_button login_button login_desktop">
         <span>
           Signup/Login
         </span>
       </a>
     <?php else : ?>
-      <a href="/account/" class="nav_button login_button login_desktop">
+      <a href="https://account.nostr.build/" class="nav_button login_button login_desktop">
         <span style="display: flex; align-items: center;">
           <span style="margin-right: 10px;">Account</span>
           <img src="<?= $ppic ?>" alt="user image" style="width:33px;height:33px;border-radius:50%">

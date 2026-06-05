@@ -280,9 +280,9 @@ SVG;
 			<div class="drag-area">
 				<div class="drag-area_header">
 					<h2 class="drag-area_title text-white">Create an account or log into your existing account to upload media</h2>
-					<a href="/login/" class="upload_button">Log in</a>
-					<a href="/plans/" class="upload_button">Plans</a>
-					<a href="/features/" class="upload_button">Features</a>
+					<a href="https://account.nostr.build/login" class="upload_button">Log in</a>
+					<a href="https://account.nostr.build/plans" class="upload_button">Plans</a>
+					<a href="https://account.nostr.build/features" class="upload_button">Features</a>
 				</div>
 			</div>
 		<?php endif; ?>

@@ -1,4 +1,7 @@
 <?php
+// Cutover: this path is now served by the account.nostr.build app.
+header("location: https://account.nostr.build/login");
+exit;
 // Include config, session, and Permission class files
 require_once $_SERVER['DOCUMENT_ROOT'] . '/config.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/permissions.class.php';
