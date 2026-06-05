@@ -47,10 +47,55 @@ $app->group('/btcpay', function (RouteCollectorProxy $group) {
 // reach them. Full paths: POST /api/v2/internal/plans/activate,
 // GET /api/v2/internal/plans/promotions.
 $app->group('/internal/plans', function (RouteCollectorProxy $group) {
-  // Activate a settled invoice. The Worker's PaymentWorkflow calls this after
-  // its webhook confirms settlement; it runs the SAME fulfillment core as the
-  // PHP webhook (setPlan / credits-topup / referral + emitProfileChanged), and
-  // is idempotent, so dual-run double-fire is safe.
+  // Dumb plan mutation. The account Worker is the AUTHORITATIVE settlement
+  // source: its PaymentWorkflow receives the BTCPay webhook, classifies on the
+  // real paid BTC amount (paid-in-full = greenlight), and holds the verified
+  // order facts (uuid/plan/period) in its own ledger. So PHP does NOT re-read
+  // the invoice, re-check the amount, or resolve identity from metadata here -
+  // it just applies the plan to the stable uuid. Idempotent (setPlan
+  // short-circuits an already-applied plan). This replaces /activate +
+  // fulfillInvoiceById for the in-app flow; keep PHP a dumb API.
+  $group->post('/set-plan', function (Request $request, Response $response) {
+    global $link;
+    $data = json_decode($request->getBody()->getContents(), true);
+    $uuid = is_array($data) ? trim((string)($data['uuid'] ?? '')) : '';
+    $plan = is_array($data) ? (int)($data['plan'] ?? 0) : 0;
+    $period = is_array($data) ? (string)($data['period'] ?? '1y') : '1y';
+    $new = is_array($data) && !empty($data['new']);
+    if ($uuid === '' || $plan <= 0) {
+      $response->getBody()->write(json_encode(['ok' => false, 'error' => 'uuid and plan required']));
+      return $response->withStatus(400)->withHeader('Content-Type', 'application/json');
+    }
+    try {
+      $account = Account::fromUuid($uuid, $link);
+      if ($account === null) {
+        $response->getBody()->write(json_encode(['ok' => false, 'error' => 'no-such-account']));
+        return $response->withStatus(404)->withHeader('Content-Type', 'application/json');
+      }
+      // setPlan reports whether it actually applied; relay it (+ the resulting
+      // level/expiry) so the Worker can park a PAID-but-not-applied order for an
+      // admin instead of silently marking it active.
+      $status = $account->setPlan($plan, $period, $new);
+      $acct = $account->getAccount();
+      $response->getBody()->write(json_encode([
+        'ok' => true,
+        'status' => $status,
+        'npub' => $account->getNpub(),
+        'level' => (int)($acct['acctlevel'] ?? 0),
+        'planUntil' => $acct['plan_until_date'] ?? null,
+      ]));
+      return $response->withStatus(200)->withHeader('Content-Type', 'application/json');
+    } catch (\Throwable $e) {
+      error_log('internal/plans/set-plan error: ' . $e->getMessage());
+      $response->getBody()->write(json_encode(['ok' => false, 'error' => 'set-plan failed']));
+      return $response->withStatus(500)->withHeader('Content-Type', 'application/json');
+    }
+  });
+
+  // Activate a settled invoice. LEGACY/UNUSED by the in-app flow now: the Worker
+  // calls /set-plan above with its own verified facts instead of having PHP
+  // re-derive everything from the invoice. Left in place (the PHP webhook still
+  // references fulfillInvoiceById) but no longer on the in-app settlement path.
   $group->post('/activate', function (Request $request, Response $response) {
     $data = json_decode($request->getBody()->getContents(), true);
     $invoiceId = is_array($data) ? (string)($data['invoiceId'] ?? '') : '';
@@ -130,11 +175,14 @@ $app->group('/internal/plans', function (RouteCollectorProxy $group) {
         return $response->withStatus(404)->withHeader('Content-Type', 'application/json');
       }
       $acct = (new Account($npub, $link))->getAccount();
+      // `level` lets the Worker apply the signup referral split itself (only
+      // levels 1/2/10 earn) without PHP owning that credit logic - keep PHP dumb.
       $response->getBody()->write(json_encode([
         'ok' => true,
         'npub' => $npub,
         'nym' => $acct['nym'] ?? null,
         'ppic' => $acct['ppic'] ?? null,
+        'level' => (int)($acct['acctlevel'] ?? 0),
       ]));
       return $response->withHeader('Content-Type', 'application/json');
     } catch (\Throwable $e) {

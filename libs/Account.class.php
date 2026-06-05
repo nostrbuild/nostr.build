@@ -1112,7 +1112,16 @@ class Account
    * @throws \Exception
    * @return void
    */
-  public function setPlan(int $planLevel, string $period = '1y', bool $new = true): void
+  /**
+   * Apply/renew a plan. Returns the outcome so a caller (the account Worker,
+   * which is the authoritative settlement source) can tell a PAID-but-not-applied
+   * order from a real success:
+   *   'applied'                 - the DB row was updated.
+   *   'noop-current'            - already at the intended state (idempotent re-run).
+   *   'rejected-renewal-window' - renewal blocked: too many days remaining.
+   *   'rejected-no-change'      - the renewal WHERE guard matched no row.
+   */
+  public function setPlan(int $planLevel, string $period = '1y', bool $new = true): string
   {
     // Refresh account data to ensure we have latest DB state for deterministic calculations
     $this->fetchAccountData();
@@ -1129,14 +1138,19 @@ class Account
     if ($new === false && $this->getRemainingSubscriptionDays() > $safeRenewDays) {
       error_log("Cannot renew plan when remaining subscription days is more than {$safeRenewDays} days, current remaining days: " .
         $this->getRemainingSubscriptionDays() . " days for npub: " . $this->npub);
-      return;
+      return 'rejected-renewal-window';
     }
 
     // Calculate what the plan should be to check if already applied (idempotent behavior)
     $hasExistingPlan = !empty($this->account['plan_until_date']);
     
-    // For deterministic behavior: treat as renewal if plan already exists, regardless of $new parameter
-    $isActuallyNew = $new && !$hasExistingPlan;
+    // `$new` already encodes the intent: a NEW TERM (signup OR upgrade) starts
+    // today; a renewal ($new=false) extends the existing term. Upgrades
+    // legitimately have an existing plan, so do NOT re-collapse them into a
+    // renewal - the proration already credited their unused time toward a fresh
+    // term. Every caller classifies a same-level purchase as 'renewal'
+    // ($new=false), so this never resets a renewing user's remaining time.
+    $isActuallyNew = $new;
     $isExpiredPlan = $this->isExpired();
     
     $expectedStartDate = ($isActuallyNew || $isExpiredPlan) ? date('Y-m-d') : $this->account['plan_start_date'];
@@ -1171,7 +1185,7 @@ class Account
          ($isExpiredPlan && $currentEndDate == $expectedEndDate && $currentStartDate == $expectedStartDate) ||
          (!$isActuallyNew && !$isExpiredPlan && $currentEndDate == $expectedEndDate))) {
       error_log("Plan already set to expected state - skipping update (idempotent behavior) for npub: " . $this->npub);
-      return;
+      return 'noop-current';
     }
 
     // Proceed with update since plan doesn't match expected state
@@ -1197,6 +1211,7 @@ class Account
       throw new Exception("Error preparing statement: " . $this->db->error);
     }
 
+    $status = 'applied';
     try {
       error_log("Account data: " . print_r($this->account, true));
       error_log("Plan start date: $planStartDate, Plan end date: $planEndDate" . PHP_EOL);
@@ -1208,6 +1223,10 @@ class Account
       }
 
       if ($stmt->affected_rows === 0) {
+        // The conditional renewal WHERE guard (plan_until_date < now+181d) matched
+        // no row: the order was PAID but the plan did NOT change. Signal it so the
+        // Worker parks an admin exception instead of marking the order active.
+        $status = 'rejected-no-change';
         error_log("Notice: No rows updated for npub: " . $this->npub .
           ", new: " . ($new ? 'true' : 'false') .
           ", remaining days: " . $this->getRemainingSubscriptionDays());
@@ -1235,6 +1254,8 @@ class Account
       $newData = $this->getAccountInfo();
       $this->blossomFrontEndAPI->updateAccount($this->npub, $newData);
     }
+
+    return $status;
   }
 
 
