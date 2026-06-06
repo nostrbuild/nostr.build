@@ -143,6 +143,7 @@ Table: identified_csam_cases
                     WHEN ncmec_report_id IS NOT NULL 
                     AND ncmec_report_id NOT LIKE 'TEST_%' 
                     AND ncmec_report_id NOT LIKE 'FALSE_MATCH' 
+                    AND ncmec_report_id NOT LIKE 'ERROR' 
                     THEN 1 
                 END) AS total_reported
         FROM 
@@ -288,7 +289,7 @@ Table: identified_csam_cases
       // Submit NCMEC Report Button (if ncmec_report_id is null or report ID starts with TEST_)
       // Show below buttons if only report id is not 'FALSE_MATCH'
       if ($ncmec_report_id !== 'FALSE_MATCH') {
-        if (empty($ncmec_report_id) || strpos($ncmec_report_id, 'TEST_') === 0 || $ncmec_report_id === 'Null: Technical Error') {
+        if (empty($ncmec_report_id) || strpos($ncmec_report_id, 'TEST_') === 0 || $ncmec_report_id === 'Null: Technical Error' || $ncmec_report_id === 'ERROR') {
           echo ' <button style="margin:3px" class="btn btn-sm btn-danger submit-report-btn" data-incident-id="' . htmlspecialchars($id) . '" data-test-report="false">Submit NCMEC Report</button>';
         }
 
