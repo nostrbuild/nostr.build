@@ -39,7 +39,7 @@ if (isset($_POST['searchFile'])) {
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>nostr.build - Admin Moderation</title>
-  <link rel="stylesheet" href="/styles/twbuild.css?v=ec16da4b842295cf8fd28e26368a49ca">
+  <link rel="stylesheet" href="/styles/twbuild.css?v=c2a0b200b17cadb080bcc332cd27567a">
   <link rel="icon" href="https://cdn.nostr.build/assets/primo_nostr.png">
   <style>
     [x-cloak] { display: none !important; }
@@ -567,141 +567,79 @@ if (isset($_POST['searchFile'])) {
       if (rejectAllBanBtn) {
         rejectAllBanBtn.addEventListener('click', async function(e) {
           e.preventDefault();
-          
+
           const npub = rejectAllBanBtn.getAttribute('data-npub');
           if (!npub) {
             alert('Error: No npub found');
             return;
           }
-          
-          // Collect all media IDs that are NOT already rejected or csam
-          const mediaIds = Array.from(document.querySelectorAll('[data-id]'))
-            .filter(el => {
-              const status = el.getAttribute('data-status');
-              return status !== 'rejected' && status !== 'csam';
-            })
-            .map(el => el.getAttribute('data-id'));
-          
-          if (mediaIds.length === 0) {
-            alert('No media items to reject.');
-            return;
-          }
-          
+
           const confirmed = await showDangerConfirmDialog({
             title: '🚨 REJECT ALL & BAN USER',
-            message: `You are about to BAN this user and PERMANENTLY DELETE all ${mediaIds.length} media item(s).`,
-            warning: 'THIS ACTION CANNOT BE UNDONE! The user will be banned first, then ALL their media will be permanently deleted one by one. The files cannot be re-uploaded.',
-            checkboxLabel: `I understand this will BAN the user and PERMANENTLY DELETE all ${mediaIds.length} item(s)`
+            message: 'You are about to BAN this user and PERMANENTLY DELETE every media file they own (server-side, no matter how many).',
+            warning: 'THIS ACTION CANNOT BE UNDONE! The user is banned first, then ALL their uploads are deleted in batches.',
+            checkboxLabel: 'I understand this will BAN the user and PERMANENTLY DELETE all their media'
           });
-          
+
           if (!confirmed) return;
-          
-          // Disable the button
+
           rejectAllBanBtn.disabled = true;
-          
-          // Show progress modal
-          progressModal.show('Banning User & Rejecting All Media');
-          
-          // STEP 1: Ban the user FIRST using the first media item
-          progressModal.update(0, mediaIds.length + 1, 'Step 1: Banning user...', `Using media ID: ${mediaIds[0]}`);
-          progressModal.log('Initiating user ban...');
-          
-          try {
-            const banResponse = await fetch('/api/v2/admin/moderation/status', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/x-www-form-urlencoded',
-              },
-              credentials: 'same-origin',
-              body: 'id=' + encodeURIComponent(mediaIds[0]) + '&status=ban',
-            });
-            
-            const banData = await banResponse.json();
-            
-            if (!banData.success) {
-              progressModal.log('Failed to ban user: ' + banData.error, true);
-              progressModal.complete(false, 'Failed to ban user. Operation aborted.');
+          progressModal.show('Banning User & Deleting All Media');
+          progressModal.update(0, 1, 'Banning user & starting purge...', npub);
+
+          let cursor = 0, total = null, deleted = 0, failed = 0, banned = false;
+
+          while (true) {
+            let data;
+            try {
+              const res = await fetch('/api/v2/admin/moderation/ban-purge', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'same-origin',
+                body: JSON.stringify({ npub: npub, after_id: cursor, limit: 25 }),
+              });
+              if (!res.ok) throw new Error('HTTP ' + res.status);
+              data = await res.json();
+            } catch (error) {
+              progressModal.log('Batch error after #' + cursor + ': ' + error.message + ' — retrying in 2s', true);
+              await new Promise(resolve => setTimeout(resolve, 2000));
+              continue; // ban + deletes are idempotent; safe to retry the same cursor
+            }
+
+            if (data.error) {
+              progressModal.log('Aborted: ' + data.error, true);
+              progressModal.complete(false, 'Aborted: ' + data.error);
               rejectAllBanBtn.disabled = false;
               return;
             }
-            
-            progressModal.log('User banned successfully!');
-            
-            // Remove the first item from the list (it was already deleted by the ban)
-            const remainingIds = mediaIds.slice(1);
-            
-            // Update UI for the first item
-            const firstItem = document.querySelector(`[data-id="${mediaIds[0]}"]`);
-            if (firstItem) {
-              firstItem.style.opacity = '0.5';
-              firstItem.style.transform = 'scale(0.9)';
-              setTimeout(() => firstItem.remove(), 300);
+
+            if (data.banned && !banned) { banned = true; progressModal.log('User banned.'); }
+            if (total === null && data.total !== null && data.total !== undefined) {
+              total = data.total;
+              progressModal.log('Deleting ' + total + ' media item(s)...');
             }
-            
-            if (remainingIds.length === 0) {
-              progressModal.complete(true, 'User banned and all media deleted!');
-              return;
-            }
-            
-            // STEP 2: Reject remaining media one by one
-            progressModal.log(`Proceeding to reject ${remainingIds.length} remaining item(s)...`);
-            
-            let successCount = 1; // Count the ban as first success
-            let errorCount = 0;
-            
-            for (let i = 0; i < remainingIds.length; i++) {
-              const id = remainingIds[i];
-              
-              progressModal.update(i + 2, mediaIds.length + 1, `Step 2: Rejecting media ${i + 1} of ${remainingIds.length}...`, `Item ID: ${id}`);
-              
-              try {
-                const response = await fetch('/api/v2/admin/moderation/status', {
-                  method: 'POST',
-                  headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded',
-                  },
-                  credentials: 'same-origin',
-                  body: 'id=' + encodeURIComponent(id) + '&status=rejected',
-                });
-                
-                const data = await response.json();
-                
-                if (data.success) {
-                  successCount++;
-                  // Remove the item from UI
-                  const item = document.querySelector(`[data-id="${id}"]`);
-                  if (item) {
-                    item.style.opacity = '0.5';
-                    item.style.transform = 'scale(0.9)';
-                    setTimeout(() => item.remove(), 300);
-                  }
-                } else {
-                  errorCount++;
-                  progressModal.log(`Error rejecting item ${id}: ${data.error}`, true);
-                }
-              } catch (error) {
-                errorCount++;
-                progressModal.log(`Network error on item ${id}: ${error.message}`, true);
-              }
-              
-              // Small delay to avoid overwhelming the server
-              if (i < remainingIds.length - 1) {
-                await new Promise(resolve => setTimeout(resolve, 150));
-              }
-            }
-            
-            // Show completion
-            if (errorCount === 0) {
-              progressModal.complete(true, `User banned and ${successCount} media item(s) deleted!`);
-            } else {
-              progressModal.complete(false, `Completed with ${errorCount} error(s). User banned, ${successCount} item(s) deleted.`);
-            }
-            
-          } catch (error) {
-            progressModal.log('Network error during ban: ' + error.message, true);
-            progressModal.complete(false, 'Network error. Please try again.');
-            rejectAllBanBtn.disabled = false;
+
+            deleted += data.succeeded;
+            failed += data.failed;
+            cursor = data.cursor;
+
+            (data.results || []).forEach(r => {
+              if (!r.ok) progressModal.log('Failed #' + r.id + ': ' + (r.error || 'unknown'), true);
+            });
+
+            progressModal.update(deleted + failed, total || (deleted + failed),
+              'Deleting media... ' + deleted + ' deleted' + (failed ? ', ' + failed + ' failed' : ''),
+              'cursor #' + cursor);
+
+            if (!data.more) break;
           }
+
+          if (failed === 0) {
+            progressModal.complete(true, 'User banned. Deleted ' + deleted + ' media item(s).');
+          } else {
+            progressModal.complete(false, 'User banned. Deleted ' + deleted + ', ' + failed + ' failed — re-run to retry the rest.');
+          }
+          setTimeout(() => window.location.reload(), 2000);
         });
       }
 
@@ -1328,7 +1266,7 @@ if (isset($_POST['searchFile'])) {
 
       document.querySelectorAll('.lookup-ip-btn').forEach(btn => {
         btn.addEventListener('click', () => {
-          openIpLookup(btn.getAttribute('data-id'), btn.getAttribute('data-usernpub'));
+          openIpLookup(btn.getAttribute('data-upload-id'), btn.getAttribute('data-usernpub'));
         });
       });
     });
@@ -1851,7 +1789,7 @@ if (isset($_POST['searchFile'])) {
                   Ban User
                 </button>
 
-                <button type="button" data-id="<?= $row['id'] ?>" data-usernpub="<?= htmlspecialchars($usernpub, ENT_QUOTES) ?>" class="lookup-ip-btn w-full px-2 py-1.5 bg-slate-700 hover:bg-slate-600 text-white text-xs font-semibold rounded transition-colors flex items-center justify-center gap-1">
+                <button type="button" data-upload-id="<?= $row['id'] ?>" data-usernpub="<?= htmlspecialchars($usernpub, ENT_QUOTES) ?>" class="lookup-ip-btn w-full px-2 py-1.5 bg-slate-700 hover:bg-slate-600 text-white text-xs font-semibold rounded transition-colors flex items-center justify-center gap-1">
                   <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-4.35-4.35M11 19a8 8 0 100-16 8 8 0 000 16z"/></svg>
                   Lookup &amp; Block
                 </button>

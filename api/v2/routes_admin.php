@@ -82,6 +82,169 @@ function adminOnlyMiddleware(): callable
 // Moderation routes — admin OR canModerate
 // =============================================================================
 
+/**
+ * Delete a set of uploads, orphan-safely: S3 object first, then one
+ * consolidated Cloudflare purge, per-hash blossom bans, a single multi-row
+ * rejected_files insert, and finally the uploads_data delete. Shared by
+ * /admin/moderation/reject-batch and /admin/moderation/ban-purge so the two
+ * paths can never drift. $ids must already be validated as positive ints.
+ * Returns a per-id result list: [{id, ok, error?}].
+ */
+function rejectUploadsByIds(mysqli $link, array $awsConfig, array $ids): array
+{
+  if ($ids === []) {
+    return [];
+  }
+
+  // Single SELECT to fetch every row's filename + type + blossom_hash. Any
+  // id not found here will be reported as a failure in the result map.
+  $placeholders = implode(',', array_fill(0, count($ids), '?'));
+  $stmt = $link->prepare(
+    "SELECT id, filename, type, blossom_hash
+       FROM uploads_data
+      WHERE id IN ($placeholders)"
+  );
+  $stmt->bind_param(str_repeat('i', count($ids)), ...$ids);
+  $stmt->execute();
+  $rs = $stmt->get_result();
+  /** @var array<int,array{filename:string,type:string,blossom_hash:?string}> $rows */
+  $rows = [];
+  while ($r = $rs->fetch_assoc()) {
+    $rows[(int) $r['id']] = [
+      'filename' => (string) $r['filename'],
+      'type' => (string) ($r['type'] ?? ''),
+      'blossom_hash' => $r['blossom_hash'] !== null ? (string) $r['blossom_hash'] : null,
+    ];
+  }
+  $rs->free();
+  $stmt->close();
+
+  /** @var list<array{id:int,ok:bool,error?:string}> $results */
+  $results = [];
+  $foundIds = [];      // ids we actually processed (subset of $ids)
+  $purgeBatch = [];    // CF cache keys (filename or filename|sha256)
+  $blossomHashes = []; // distinct blossom hashes to ban
+  $rejectedRows = [];  // [filename, type] tuples for rejected_files insert
+
+  $s3 = new S3Service($awsConfig);
+
+  foreach ($ids as $id) {
+    if (!isset($rows[$id])) {
+      $results[] = ['id' => $id, 'ok' => false, 'error' => 'Upload not found'];
+      continue;
+    }
+    $row = $rows[$id];
+    $filename = $row['filename'];
+    $type     = $row['type'];
+
+    $objectKey = match ($type) {
+      'picture' => 'i/' . $filename,
+      'profile' => 'i/p/' . $filename,
+      default   => 'av/' . $filename,
+    };
+
+    // CRITICAL ORDERING: S3 delete first, DB delete last. If we ever lose
+    // the uploads_data row but leave the S3 object behind, the file becomes
+    // an unreferenced orphan we can never find again. So an S3 failure here
+    // SKIPS the rest of the per-item bookkeeping (no rejected_files insert,
+    // no DELETE) — the DB row is preserved as our pointer for retry.
+    // (deleteFromS3 already swallows AWS exceptions internally and reports
+    //  via boolean return; NoSuchKey counts as success.)
+    $s3DeleteOk = false;
+    $currentSha256 = '';
+    try {
+      $currentSha256 = $s3->getS3ObjectHash(objectKey: $objectKey, paidAccount: false);
+      $s3DeleteOk    = $s3->deleteFromS3(objectKey: $objectKey, paidAccount: false) === true;
+    } catch (\Throwable $e) {
+      error_log("rejectUploadsByIds S3 exception for id {$id} ({$filename}): " . $e->getMessage());
+    }
+
+    if (!$s3DeleteOk) {
+      error_log("rejectUploadsByIds: S3 delete failed for id {$id} ({$filename}); preserving DB row for retry");
+      $results[] = [
+        'id' => $id,
+        'ok' => false,
+        'error' => 'S3 delete failed — DB row preserved for retry',
+      ];
+      continue;
+    }
+
+    $purgeBatch[] = $currentSha256 !== '' ? "{$filename}|{$currentSha256}" : $filename;
+    if ($row['blossom_hash'] !== null && $row['blossom_hash'] !== '') {
+      $blossomHashes[$row['blossom_hash']] = true;
+    }
+
+    $foundIds[] = $id;
+    $rejectedRows[] = [$filename, $type];
+    $results[] = ['id' => $id, 'ok' => true];
+  }
+
+  // Consolidated Cloudflare purge — one call per batch instead of per item.
+  if ($purgeBatch !== []) {
+    try {
+      $purger = new CloudflarePurger($_SERVER['NB_API_SECRET'], $_SERVER['NB_API_PURGE_URL']);
+      $purger->purgeFiles($purgeBatch);
+    } catch (\Throwable $e) {
+      error_log('rejectUploadsByIds CF purge error: ' . $e->getMessage());
+    }
+  }
+
+  // Per-hash blossom ban. No bulk surface upstream; sequential calls.
+  if ($blossomHashes !== []) {
+    $blossomAPI = new BlossomFrontEndAPI($_SERVER['BLOSSOM_API_URL'], $_SERVER['BLOSSOM_API_KEY']);
+    foreach (array_keys($blossomHashes) as $hash) {
+      try {
+        $blossomAPI->banMedia($hash);
+      } catch (\Throwable $e) {
+        error_log("rejectUploadsByIds blossom ban failed for hash {$hash}: " . $e->getMessage());
+      }
+    }
+  }
+
+  if ($foundIds !== []) {
+    // Single multi-row INSERT into rejected_files.
+    $valuesSql = implode(',', array_fill(0, count($rejectedRows), '(?, ?)'));
+    $insTypes  = str_repeat('ss', count($rejectedRows));
+    $insArgs   = [];
+    foreach ($rejectedRows as [$fn, $tp]) { $insArgs[] = $fn; $insArgs[] = $tp; }
+    try {
+      $stmt = $link->prepare("INSERT INTO rejected_files (filename, type) VALUES $valuesSql");
+      $stmt->bind_param($insTypes, ...$insArgs);
+      $stmt->execute();
+      $stmt->close();
+    } catch (\Throwable $e) {
+      // If the bulk insert fails, the DELETE below is still safe (the file
+      // is gone from S3 already). Log loudly so a sweeper can backfill.
+      error_log('rejectUploadsByIds rejected_files insert failed: ' . $e->getMessage()
+        . ' — affected filenames: ' . implode(',', array_column($rejectedRows, 0)));
+    }
+
+    // Single DELETE for the whole batch.
+    $delPlaceholders = implode(',', array_fill(0, count($foundIds), '?'));
+    try {
+      $stmt = $link->prepare("DELETE FROM uploads_data WHERE id IN ($delPlaceholders)");
+      $stmt->bind_param(str_repeat('i', count($foundIds)), ...$foundIds);
+      $stmt->execute();
+      $stmt->close();
+    } catch (\Throwable $e) {
+      // This one matters — if we can't delete the row, the upload reappears
+      // in admin queues. Mark all in-batch ids as failed so the caller
+      // retries.
+      error_log('rejectUploadsByIds uploads_data delete failed: ' . $e->getMessage());
+      $foundSet = array_flip($foundIds);
+      foreach ($results as &$r) {
+        if (isset($foundSet[$r['id']])) {
+          $r['ok'] = false;
+          $r['error'] = 'Database delete failed';
+        }
+      }
+      unset($r);
+    }
+  }
+
+  return $results;
+}
+
 $app->group('/admin/moderation', function (RouteCollectorProxy $group) {
 
   /**
@@ -242,151 +405,7 @@ $app->group('/admin/moderation', function (RouteCollectorProxy $group) {
       return adminError($response, "Too many IDs, max $MAX_REJECT_BATCH per request");
     }
 
-    // Single SELECT to fetch every row's filename + type + blossom_hash. Any
-    // id not found here will be reported as a failure in the result map.
-    $placeholders = implode(',', array_fill(0, count($ids), '?'));
-    $stmt = $link->prepare(
-      "SELECT id, filename, type, blossom_hash
-         FROM uploads_data
-        WHERE id IN ($placeholders)"
-    );
-    $stmt->bind_param(str_repeat('i', count($ids)), ...$ids);
-    $stmt->execute();
-    $rs = $stmt->get_result();
-    /** @var array<int,array{filename:string,type:string,blossom_hash:?string}> $rows */
-    $rows = [];
-    while ($r = $rs->fetch_assoc()) {
-      $rows[(int) $r['id']] = [
-        'filename' => (string) $r['filename'],
-        'type' => (string) ($r['type'] ?? ''),
-        'blossom_hash' => $r['blossom_hash'] !== null ? (string) $r['blossom_hash'] : null,
-      ];
-    }
-    $rs->free();
-    $stmt->close();
-
-    /** @var list<array{id:int,ok:bool,error?:string}> $results */
-    $results = [];
-    $foundIds = [];      // ids we actually processed (subset of $ids)
-    $purgeBatch = [];    // CF cache keys (filename or filename|sha256)
-    $blossomHashes = []; // distinct blossom hashes to ban
-    $rejectedRows = [];  // [filename, type] tuples for rejected_files insert
-
-    $s3 = new S3Service($awsConfig);
-
-    foreach ($ids as $id) {
-      if (!isset($rows[$id])) {
-        $results[] = ['id' => $id, 'ok' => false, 'error' => 'Upload not found'];
-        continue;
-      }
-      $row = $rows[$id];
-      $filename = $row['filename'];
-      $type     = $row['type'];
-
-      $objectKey = match ($type) {
-        'picture' => 'i/' . $filename,
-        'profile' => 'i/p/' . $filename,
-        default   => 'av/' . $filename,
-      };
-
-      // CRITICAL ORDERING: S3 delete first, DB delete last. If we ever lose
-      // the uploads_data row but leave the S3 object behind, the file becomes
-      // an unreferenced orphan we can never find again. So an S3 failure here
-      // SKIPS the rest of the per-item bookkeeping (no rejected_files insert,
-      // no DELETE) — the DB row is preserved as our pointer for retry.
-      // (deleteFromS3 already swallows AWS exceptions internally and reports
-      //  via boolean return; NoSuchKey counts as success.)
-      $s3DeleteOk = false;
-      $currentSha256 = '';
-      try {
-        $currentSha256 = $s3->getS3ObjectHash(objectKey: $objectKey, paidAccount: false);
-        $s3DeleteOk    = $s3->deleteFromS3(objectKey: $objectKey, paidAccount: false) === true;
-      } catch (\Throwable $e) {
-        error_log("reject-batch S3 exception for id {$id} ({$filename}): " . $e->getMessage());
-      }
-
-      if (!$s3DeleteOk) {
-        error_log("reject-batch: S3 delete failed for id {$id} ({$filename}); preserving DB row for retry");
-        $results[] = [
-          'id' => $id,
-          'ok' => false,
-          'error' => 'S3 delete failed — DB row preserved for retry',
-        ];
-        continue;
-      }
-
-      $purgeBatch[] = $currentSha256 !== '' ? "{$filename}|{$currentSha256}" : $filename;
-      if ($row['blossom_hash'] !== null && $row['blossom_hash'] !== '') {
-        $blossomHashes[$row['blossom_hash']] = true;
-      }
-
-      $foundIds[] = $id;
-      $rejectedRows[] = [$filename, $type];
-      $results[] = ['id' => $id, 'ok' => true];
-    }
-
-    // Consolidated Cloudflare purge — one call per batch instead of per item.
-    if ($purgeBatch !== []) {
-      try {
-        $purger = new CloudflarePurger($_SERVER['NB_API_SECRET'], $_SERVER['NB_API_PURGE_URL']);
-        $purger->purgeFiles($purgeBatch);
-      } catch (\Throwable $e) {
-        error_log('reject-batch CF purge error: ' . $e->getMessage());
-      }
-    }
-
-    // Per-hash blossom ban. No bulk surface upstream; sequential calls.
-    if ($blossomHashes !== []) {
-      $blossomAPI = new BlossomFrontEndAPI($_SERVER['BLOSSOM_API_URL'], $_SERVER['BLOSSOM_API_KEY']);
-      foreach (array_keys($blossomHashes) as $hash) {
-        try {
-          $blossomAPI->banMedia($hash);
-        } catch (\Throwable $e) {
-          error_log("reject-batch blossom ban failed for hash {$hash}: " . $e->getMessage());
-        }
-      }
-    }
-
-    if ($foundIds !== []) {
-      // Single multi-row INSERT into rejected_files.
-      $valuesSql = implode(',', array_fill(0, count($rejectedRows), '(?, ?)'));
-      $insTypes  = str_repeat('ss', count($rejectedRows));
-      $insArgs   = [];
-      foreach ($rejectedRows as [$fn, $tp]) { $insArgs[] = $fn; $insArgs[] = $tp; }
-      try {
-        $stmt = $link->prepare("INSERT INTO rejected_files (filename, type) VALUES $valuesSql");
-        $stmt->bind_param($insTypes, ...$insArgs);
-        $stmt->execute();
-        $stmt->close();
-      } catch (\Throwable $e) {
-        // If the bulk insert fails, the DELETE below is still safe (the file
-        // is gone from S3 already). Log loudly so a sweeper can backfill.
-        error_log('reject-batch rejected_files insert failed: ' . $e->getMessage()
-          . ' — affected filenames: ' . implode(',', array_column($rejectedRows, 0)));
-      }
-
-      // Single DELETE for the whole batch.
-      $delPlaceholders = implode(',', array_fill(0, count($foundIds), '?'));
-      try {
-        $stmt = $link->prepare("DELETE FROM uploads_data WHERE id IN ($delPlaceholders)");
-        $stmt->bind_param(str_repeat('i', count($foundIds)), ...$foundIds);
-        $stmt->execute();
-        $stmt->close();
-      } catch (\Throwable $e) {
-        // This one matters — if we can't delete the row, the upload reappears
-        // in admin queues. Mark all in-batch ids as failed so the caller
-        // retries.
-        error_log('reject-batch uploads_data delete failed: ' . $e->getMessage());
-        $foundSet = array_flip($foundIds);
-        foreach ($results as &$r) {
-          if (isset($foundSet[$r['id']])) {
-            $r['ok'] = false;
-            $r['error'] = 'Database delete failed';
-          }
-        }
-        unset($r);
-      }
-    }
+    $results = rejectUploadsByIds($link, $awsConfig, $ids);
 
     $succeeded = 0;
     $failed = 0;
@@ -400,6 +419,92 @@ $app->group('/admin/moderation', function (RouteCollectorProxy $group) {
       'succeeded' => $succeeded,
       'failed' => $failed,
       'results' => $results,
+    ]);
+  });
+
+  /**
+   * POST /admin/moderation/ban-purge   body: { npub, after_id, limit (max 50) }
+   * Ban a user and delete ALL their media server-side, in keyset batches, so a
+   * user with tens of thousands of uploads is handled without a request
+   * timeout and without the old 500-row DOM cap. The first call (after_id == 0)
+   * writes the ban and returns the total count; the caller then polls with the
+   * returned cursor until { more: false }. Admin-only (destructive).
+   */
+  $group->post('/ban-purge', function (Request $request, Response $response) {
+    global $link, $awsConfig;
+    @set_time_limit(0);
+
+    $perm = new Permission();
+    if (!$perm->isAdmin()) {
+      return adminError($response, 'Unauthorized: ban-purge requires admin privileges', 403);
+    }
+
+    $body    = $request->getParsedBody();
+    $npub    = trim($body['npub'] ?? '');
+    $afterId = (int) ($body['after_id'] ?? 0);
+    $limit   = max(1, min(50, (int) ($body['limit'] ?? 25)));
+
+    if (!preg_match('/^npub1[a-z0-9]{20,90}$/', $npub)) {
+      return adminError($response, 'Invalid npub');
+    }
+
+    $banned = false;
+    $total  = null;
+    if ($afterId === 0) {
+      // Ban once, on the first batch. Ban writes are best-effort but logged;
+      // the purge proceeds regardless so media still gets removed.
+      try {
+        (new LegacyBlacklist($link))->add($npub, null, null, 'BANNED');
+      } catch (\Throwable $e) {
+        error_log("ban-purge blacklist add failed for {$npub}: " . $e->getMessage());
+      }
+      try {
+        $blossomAPI = new BlossomFrontEndAPI($_SERVER['BLOSSOM_API_URL'], $_SERVER['BLOSSOM_API_KEY']);
+        $blossomAPI->banUser($npub);
+      } catch (\Throwable $e) {
+        error_log("ban-purge blossom banUser failed for {$npub}: " . $e->getMessage());
+      }
+      $banned = true;
+
+      $cStmt = $link->prepare("SELECT COUNT(*) AS c FROM uploads_data WHERE usernpub = ?");
+      $cStmt->bind_param('s', $npub);
+      $cStmt->execute();
+      $total = (int) ($cStmt->get_result()->fetch_assoc()['c'] ?? 0);
+      $cStmt->close();
+    }
+
+    // Next page of this npub's uploads. Keyset on id ASC: successfully deleted
+    // rows fall out of the table, and any row that fails to delete keeps an id
+    // <= cursor so the next call (id > cursor) skips it — no infinite loop.
+    $stmt = $link->prepare(
+      "SELECT id FROM uploads_data WHERE usernpub = ? AND id > ? ORDER BY id ASC LIMIT ?"
+    );
+    $stmt->bind_param('sii', $npub, $afterId, $limit);
+    $stmt->execute();
+    $rs = $stmt->get_result();
+    $ids = [];
+    while ($r = $rs->fetch_assoc()) {
+      $ids[] = (int) $r['id'];
+    }
+    $stmt->close();
+
+    $results = rejectUploadsByIds($link, $awsConfig, $ids);
+
+    $succeeded = 0;
+    $failed = 0;
+    foreach ($results as $r) {
+      $r['ok'] ? $succeeded++ : $failed++;
+    }
+
+    return adminJson($response, [
+      'banned'    => $banned,
+      'total'     => $total,
+      'cursor'    => $ids === [] ? $afterId : max($ids),
+      'scanned'   => count($ids),
+      'succeeded' => $succeeded,
+      'failed'    => $failed,
+      'more'      => count($ids) === $limit,
+      'results'   => $results,
     ]);
   });
 
@@ -1504,6 +1609,28 @@ $app->group('/admin/users', function (RouteCollectorProxy $group) {
 // Mass delete routes — admin only
 // =============================================================================
 
+/**
+ * HEAD-check a video poster URL. Returns true only on HTTP 200.
+ * Missing posters redirect (302) at the origin, so anything != 200 = missing.
+ * Cache-busted to avoid a stale CDN 302 masking a freshly-uploaded poster.
+ */
+function posterBackfillHasPoster(string $posterUrl): bool
+{
+  $bust = $posterUrl . '?cb=' . substr(hash('sha256', $posterUrl . uniqid('', true)), 0, 12);
+  $ch = curl_init($bust);
+  curl_setopt_array($ch, [
+    CURLOPT_NOBODY => true,
+    CURLOPT_FOLLOWLOCATION => false,
+    CURLOPT_RETURNTRANSFER => true,
+    CURLOPT_TIMEOUT => 10,
+    CURLOPT_CONNECTTIMEOUT => 5,
+    CURLOPT_HTTPHEADER => ['Cache-Control: no-cache', 'Pragma: no-cache'],
+  ]);
+  curl_exec($ch);
+  $code = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
+  return $code === 200;
+}
+
 $app->group('/admin/media', function (RouteCollectorProxy $group) {
 
   /**
@@ -1596,6 +1723,181 @@ $app->group('/admin/media', function (RouteCollectorProxy $group) {
     }
 
     return adminSuccess($response, ['deleted' => count($fileList)]);
+  });
+
+  /**
+   * GET /admin/media/poster-backfill?npub=...
+   * List all video files for an npub (pro/v.nostr.build). The browser batches
+   * these and POSTs them back; the per-video missing-poster check happens at
+   * process time. Cheap: a single indexed query, no HTTP.
+   */
+  $group->get('/poster-backfill', function (Request $request, Response $response) {
+    global $link;
+
+    $params = $request->getQueryParams();
+
+    // Scan-all init: return the total video count for the progress bar.
+    if (!empty($params['all'])) {
+      $res = $link->query("SELECT COUNT(*) AS c FROM users_images WHERE mime_type LIKE 'video%'");
+      $row = $res->fetch_assoc();
+      return adminJson($response, ['total' => (int) $row['c']]);
+    }
+
+    $npub = trim($params['npub'] ?? '');
+    if (!preg_match('/^npub1[a-z0-9]{20,90}$/', $npub)) {
+      return adminError($response, 'Invalid npub');
+    }
+
+    $stmt = $link->prepare(
+      "SELECT id, image FROM users_images
+       WHERE usernpub = ? AND mime_type LIKE 'video%'
+       ORDER BY created_at ASC"
+    );
+    $stmt->bind_param('s', $npub);
+    $stmt->execute();
+    $result = $stmt->get_result();
+
+    $videos = [];
+    while ($row = $result->fetch_assoc()) {
+      $videos[] = ['id' => (int) $row['id'], 'image' => $row['image']];
+    }
+    $stmt->close();
+
+    return adminJson($response, [
+      'npub'   => $npub,
+      'count'  => count($videos),
+      'videos' => $videos,
+    ]);
+  });
+
+  /**
+   * POST /admin/media/poster-backfill   body: { npub, ids: [int, ...max 5] }
+   * For each id: confirm it's a video owned by npub, HEAD-check its poster, and
+   * if missing run the production VideoPosterExtractor against the public CDN
+   * URL. Per-id try/catch so one bad video can't sink the batch; returns a
+   * per-id result the browser uses to drive progress and retries.
+   */
+  $group->post('/poster-backfill', function (Request $request, Response $response) {
+    global $link, $awsConfig;
+    @set_time_limit(0);
+
+    $body = $request->getParsedBody();
+    $npub = trim($body['npub'] ?? '');
+    $ids  = $body['ids'] ?? [];
+
+    if (!preg_match('/^npub1[a-z0-9]{20,90}$/', $npub)) {
+      return adminError($response, 'Invalid npub');
+    }
+    if (!is_array($ids) || count($ids) === 0) {
+      return adminError($response, 'ids is required');
+    }
+    if (count($ids) > 10) {
+      return adminError($response, 'Max 10 ids per batch');
+    }
+
+    require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/db/UsersImages.class.php';
+    require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/VideoPosterExtractor.class.php';
+
+    $usersImages = new UsersImages($link);
+    $extractor   = new VideoPosterExtractor($awsConfig, $usersImages);
+
+    $results = [];
+    foreach ($ids as $rawId) {
+      $id = (int) $rawId;
+      try {
+        $file = $usersImages->getFile($npub, $id);
+        if (empty($file) || empty($file['image'])) {
+          $results[] = ['id' => $id, 'status' => 'failed', 'message' => 'not found for npub'];
+          continue;
+        }
+        $image = $file['image'];
+        if (!preg_match('/^[A-Za-z0-9_-]+\.[A-Za-z0-9]+$/', $image)) {
+          $results[] = ['id' => $id, 'status' => 'failed', 'message' => 'unexpected filename'];
+          continue;
+        }
+        if (strncmp((string) ($file['mime_type'] ?? ''), 'video', 5) !== 0) {
+          $results[] = ['id' => $id, 'status' => 'skipped', 'message' => 'not a video'];
+          continue;
+        }
+
+        if (posterBackfillHasPoster("https://v.nostr.build/{$image}/poster.jpg")) {
+          $results[] = ['id' => $id, 'status' => 'skipped', 'message' => 'has poster'];
+          continue;
+        }
+
+        $ok = $extractor->extractAndUpload("https://v.nostr.build/{$image}", $image, $id, $npub);
+        $results[] = $ok
+          ? ['id' => $id, 'status' => 'created', 'message' => $image]
+          : ['id' => $id, 'status' => 'failed', 'message' => 'extraction failed'];
+      } catch (\Throwable $e) {
+        $results[] = ['id' => $id, 'status' => 'failed', 'message' => substr($e->getMessage(), 0, 200)];
+      }
+    }
+
+    return adminJson($response, ['results' => $results]);
+  });
+
+  /**
+   * POST /admin/media/poster-backfill-all   body: { after_id, limit: max 10 }
+   * Cursor-paginated scan across ALL paid-subscriber videos, oldest first
+   * (id ASC keyset). The browser stores only { after_id, counters } so a
+   * 50k+ run survives a crash without holding the whole list client-side.
+   * Same per-id HEAD-then-extract logic as the single-npub route.
+   */
+  $group->post('/poster-backfill-all', function (Request $request, Response $response) {
+    global $link, $awsConfig;
+    @set_time_limit(0);
+
+    $body    = $request->getParsedBody();
+    $afterId = (int) ($body['after_id'] ?? 0);
+    $limit   = (int) ($body['limit'] ?? 10);
+    $limit   = max(1, min(10, $limit));
+
+    $stmt = $link->prepare(
+      "SELECT id, image, usernpub FROM users_images
+       WHERE mime_type LIKE 'video%' AND id > ?
+       ORDER BY id ASC LIMIT ?"
+    );
+    $stmt->bind_param('ii', $afterId, $limit);
+    $stmt->execute();
+    $rows = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+    $stmt->close();
+
+    require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/db/UsersImages.class.php';
+    require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/VideoPosterExtractor.class.php';
+
+    $usersImages = new UsersImages($link);
+    $extractor   = new VideoPosterExtractor($awsConfig, $usersImages);
+
+    $results = [];
+    $cursor  = $afterId;
+    foreach ($rows as $row) {
+      $id     = (int) $row['id'];
+      $cursor = $id;
+      $image  = $row['image'];
+      $npub   = $row['usernpub'];
+      try {
+        if (!preg_match('/^[A-Za-z0-9_-]+\.[A-Za-z0-9]+$/', $image)) {
+          $results[] = ['id' => $id, 'image' => $image, 'npub' => $npub, 'status' => 'failed', 'message' => 'unexpected filename'];
+          continue;
+        }
+        if (posterBackfillHasPoster("https://v.nostr.build/{$image}/poster.jpg")) {
+          $results[] = ['id' => $id, 'image' => $image, 'npub' => $npub, 'status' => 'skipped', 'message' => 'has poster'];
+          continue;
+        }
+        $ok = $extractor->extractAndUpload("https://v.nostr.build/{$image}", $image, $id, $npub);
+        $results[] = ['id' => $id, 'image' => $image, 'npub' => $npub, 'status' => $ok ? 'created' : 'failed', 'message' => $ok ? '' : 'extraction failed'];
+      } catch (\Throwable $e) {
+        $results[] = ['id' => $id, 'image' => $image, 'npub' => $npub, 'status' => 'failed', 'message' => substr($e->getMessage(), 0, 200)];
+      }
+    }
+
+    return adminJson($response, [
+      'results' => $results,
+      'cursor'  => $cursor,
+      'scanned' => count($rows),
+      'more'    => count($rows) === $limit,
+    ]);
   });
 
 })->add(adminOnlyMiddleware());
