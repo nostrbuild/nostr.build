@@ -27,6 +27,8 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/HmacAuthMiddleware.class.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/ProxiedAdminMiddleware.class.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/Account.class.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/WorkerEventsClient.class.php';
+require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/IpAccessControl.class.php';
+require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/LegacyBlacklist.class.php';
 require_once __DIR__ . '/helper_functions.php';
 
 require $_SERVER['DOCUMENT_ROOT'] . '/vendor/autoload.php';
@@ -591,6 +593,191 @@ $app->group('/accounts/admin/nl-activations', function (RouteCollectorProxy $gro
       'activations'           => $activations,
     ]);
   });
+})
+  ->add(new ProxiedAdminMiddleware())
+  ->add(new HmacAuthMiddleware());
+
+// ----- IP & Access Control group --------------------------------------------
+// Worker-proxied backend for the account.nostr.build "IP & Access" admin tool.
+// Mounted at /api/v2/accounts/admin/security/*. Same auth stack as above
+// (HMAC + ProxiedAdmin). Delegates all CIDR/range math + dedup to
+// IpAccessControl; legacy npub/ip bans to LegacyBlacklist; WHOIS to CymruWhois.
+// Response shapes mirror the TS Zod schemas in src/server/handlers/admin/security.ts.
+
+$app->group('/accounts/admin/security', function (RouteCollectorProxy $group) {
+
+  // ---- Blocklist (CIDR) ----
+
+  $group->get('/blocklist', function (Request $request, Response $response) {
+    global $link;
+    $q = $request->getQueryParams();
+    $opts = [
+      'limit'       => isset($q['limit']) ? (int) $q['limit'] : 100,
+      'offset'      => isset($q['offset']) ? (int) $q['offset'] : 0,
+      'active_only' => !empty($q['active_only']),
+    ];
+    if (isset($q['source']) && $q['source'] !== '') $opts['source'] = (string) $q['source'];
+    if (isset($q['q']) && $q['q'] !== '') $opts['q'] = (string) $q['q'];
+    $iac = new IpAccessControl($link);
+    return aaJson($response, [
+      'rows'   => $iac->listBlocks($opts),
+      'total'  => $iac->countBlocks($opts['source'] ?? null, $opts['active_only'], $opts['q'] ?? ''),
+      'limit'  => $opts['limit'],
+      'offset' => $opts['offset'],
+    ]);
+  });
+
+  $group->post('/blocklist', function (Request $request, Response $response) {
+    global $link;
+    $body = json_decode((string) $request->getBody(), true);
+    if (!is_array($body)) return aaError($response, 'invalid-body', 400);
+    $cidr = trim((string) ($body['cidr'] ?? ''));
+    if ($cidr === '') return aaError($response, 'cidr is required', 400);
+    $reason = isset($body['reason']) ? trim((string) $body['reason']) : null;
+    $source = isset($body['source']) && $body['source'] !== '' ? (string) $body['source'] : 'manual';
+    $expiresAt = isset($body['expires_at']) && $body['expires_at'] !== '' ? (string) $body['expires_at'] : null;
+    if ($expiresAt !== null && strtotime($expiresAt) === false) return aaError($response, 'Invalid expires_at format', 400);
+    try {
+      $iac = new IpAccessControl($link);
+      $id = $iac->addBlock($cidr, $reason ?: null, $source, $expiresAt);
+      if ($id === null) return aaError($response, 'Duplicate range — this CIDR is already blocked', 409);
+      return aaJson($response, ['success' => true, 'id' => $id, 'cidr' => IpAccessControl::normalizeCidr($cidr)]);
+    } catch (InvalidArgumentException $e) {
+      return aaError($response, $e->getMessage(), 422);
+    } catch (\Throwable $e) {
+      error_log('aa security blocklist add: ' . $e->getMessage());
+      return aaError($response, 'Failed to add block', 500);
+    }
+  });
+
+  $group->post('/blocklist/bulk', function (Request $request, Response $response) {
+    global $link;
+    $body = json_decode((string) $request->getBody(), true);
+    if (!is_array($body)) return aaError($response, 'invalid-body', 400);
+    $source = trim((string) ($body['source'] ?? ''));
+    if ($source === '') return aaError($response, 'source is required', 400);
+    $cidrs = $body['cidrs'] ?? [];
+    if (!is_array($cidrs)) return aaError($response, 'cidrs must be an array', 400);
+    $reason = isset($body['reason']) && $body['reason'] !== '' ? (string) $body['reason'] : null;
+    try {
+      $count = (new IpAccessControl($link))->replaceBySource($source, $cidrs, $reason);
+      return aaJson($response, ['success' => true, 'count' => $count, 'source' => $source]);
+    } catch (InvalidArgumentException $e) {
+      return aaError($response, $e->getMessage(), 422);
+    } catch (\Throwable $e) {
+      error_log('aa security blocklist bulk: ' . $e->getMessage());
+      return aaError($response, 'Bulk replace failed', 500);
+    }
+  });
+
+  $group->delete('/blocklist/{id:[0-9]+}', function (Request $request, Response $response, array $args) {
+    global $link;
+    $id = (int) $args['id'];
+    if (!(new IpAccessControl($link))->removeBlock($id)) return aaError($response, 'Block not found', 404);
+    return aaJson($response, ['success' => true, 'id' => $id]);
+  });
+
+  // ---- Whitelist (per-user override) ----
+
+  $group->get('/whitelist', function (Request $request, Response $response) {
+    global $link;
+    $q = $request->getQueryParams();
+    $opts = [
+      'limit'       => isset($q['limit']) ? (int) $q['limit'] : 100,
+      'offset'      => isset($q['offset']) ? (int) $q['offset'] : 0,
+      'active_only' => !empty($q['active_only']),
+    ];
+    if (isset($q['q']) && $q['q'] !== '') $opts['q'] = (string) $q['q'];
+    $iac = new IpAccessControl($link);
+    return aaJson($response, [
+      'rows'   => $iac->listWhitelist($opts),
+      'total'  => $iac->countWhitelist($opts),
+      'limit'  => $opts['limit'],
+      'offset' => $opts['offset'],
+    ]);
+  });
+
+  $group->post('/whitelist', function (Request $request, Response $response) {
+    global $link;
+    $body = json_decode((string) $request->getBody(), true);
+    if (!is_array($body)) return aaError($response, 'invalid-body', 400);
+    $userId = trim((string) ($body['user_id'] ?? ''));
+    if ($userId === '') return aaError($response, 'user_id is required', 400);
+    $reason = isset($body['reason']) ? trim((string) $body['reason']) : null;
+    $expiresAt = isset($body['expires_at']) && $body['expires_at'] !== '' ? (string) $body['expires_at'] : null;
+    if ($expiresAt !== null && strtotime($expiresAt) === false) return aaError($response, 'Invalid expires_at format', 400);
+    try {
+      (new IpAccessControl($link))->addToWhitelist($userId, $reason ?: null, $expiresAt);
+      return aaJson($response, ['success' => true, 'user_id' => $userId]);
+    } catch (InvalidArgumentException $e) {
+      return aaError($response, $e->getMessage(), 422);
+    } catch (\Throwable $e) {
+      error_log('aa security whitelist add: ' . $e->getMessage());
+      return aaError($response, 'Failed to add whitelist entry', 500);
+    }
+  });
+
+  $group->delete('/whitelist/{userId}', function (Request $request, Response $response, array $args) {
+    global $link;
+    $userId = (string) $args['userId'];
+    if (!(new IpAccessControl($link))->removeFromWhitelist($userId)) return aaError($response, 'Whitelist entry not found', 404);
+    return aaJson($response, ['success' => true, 'user_id' => $userId]);
+  });
+
+  // ---- Legacy npub/IP blacklist ----
+
+  $group->get('/legacy-blacklist', function (Request $request, Response $response) {
+    global $link;
+    $q = $request->getQueryParams();
+    $opts = [
+      'q'      => isset($q['q']) ? (string) $q['q'] : '',
+      'limit'  => isset($q['limit']) ? (int) $q['limit'] : 100,
+      'offset' => isset($q['offset']) ? (int) $q['offset'] : 0,
+    ];
+    $bl = new LegacyBlacklist($link);
+    return aaJson($response, [
+      'rows'   => $bl->list($opts),
+      'total'  => $bl->count($opts['q']),
+      'limit'  => $opts['limit'],
+      'offset' => $opts['offset'],
+      'q'      => $opts['q'],
+    ]);
+  });
+
+  $group->post('/legacy-blacklist', function (Request $request, Response $response) {
+    global $link;
+    $body = json_decode((string) $request->getBody(), true);
+    if (!is_array($body)) return aaError($response, 'invalid-body', 400);
+    $npub = isset($body['npub']) ? trim((string) $body['npub']) : '';
+    $ip = isset($body['ip']) ? trim((string) $body['ip']) : '';
+    $ua = isset($body['user_agent']) ? trim((string) $body['user_agent']) : '';
+    $reason = isset($body['reason']) ? trim((string) $body['reason']) : '';
+    if ($npub === '' && $ip === '') return aaError($response, 'Provide npub and/or ip', 400);
+    try {
+      $id = (new LegacyBlacklist($link))->add(
+        $npub !== '' ? $npub : null,
+        $ip !== '' ? $ip : null,
+        $ua !== '' ? $ua : null,
+        $reason !== '' ? $reason : null,
+      );
+      return aaJson($response, ['success' => true, 'id' => $id]);
+    } catch (InvalidArgumentException $e) {
+      return aaError($response, $e->getMessage(), 422);
+    } catch (\Throwable $e) {
+      error_log('aa security legacy add: ' . $e->getMessage());
+      return aaError($response, 'Failed to add blacklist entry', 500);
+    }
+  });
+
+  $group->delete('/legacy-blacklist/{id:[0-9]+}', function (Request $request, Response $response, array $args) {
+    global $link;
+    $id = (int) $args['id'];
+    if (!(new LegacyBlacklist($link))->removeById($id)) return aaError($response, 'Blacklist entry not found', 404);
+    return aaJson($response, ['success' => true, 'id' => $id]);
+  });
+
+  // WHOIS is app-native (Team Cymru over DoH in the Worker) — no PHP route.
+
 })
   ->add(new ProxiedAdminMiddleware())
   ->add(new HmacAuthMiddleware());

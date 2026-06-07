@@ -1195,37 +1195,6 @@ $app->group('/admin/security', function (RouteCollectorProxy $group) {
     return adminSuccess($response, ['id' => $id]);
   });
 
-  /**
-   * POST /admin/security/blocklist/bulk
-   * Body: { source, cidrs: string[], reason? }
-   * Replaces ALL entries under `source` with `cidrs` (validate-all-then-swap,
-   * transactional). The natural hook for a threat-feed importer.
-   */
-  $group->post('/blocklist/bulk', function (Request $request, Response $response) {
-    global $link;
-    $body = $request->getParsedBody() ?? [];
-    $source = trim((string) ($body['source'] ?? ''));
-    if ($source === '') {
-      return adminError($response, 'source is required');
-    }
-    $cidrs = $body['cidrs'] ?? [];
-    if (!is_array($cidrs)) {
-      return adminError($response, 'cidrs must be an array');
-    }
-    $reason = isset($body['reason']) && $body['reason'] !== '' ? (string) $body['reason'] : null;
-
-    try {
-      $iac = new IpAccessControl($link);
-      $count = $iac->replaceBySource($source, $cidrs, $reason);
-      return adminJson($response, ['success' => true, 'count' => $count, 'source' => $source]);
-    } catch (InvalidArgumentException $e) {
-      return adminError($response, $e->getMessage(), 422);
-    } catch (\Throwable $e) {
-      error_log('Admin blocklist bulk error: ' . $e->getMessage());
-      return adminError($response, 'Bulk replace failed', 500);
-    }
-  });
-
   // -------------------------------------------------------------------------
   // Whitelist CRUD
   // -------------------------------------------------------------------------

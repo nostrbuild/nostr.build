@@ -364,16 +364,19 @@ final class IpAccessControl
     // =========================================================================
 
   /**
-   * @param array{source?:string,active_only?:bool,limit?:int,offset?:int} $opts
-   * @return list<array<string,mixed>>
+   * Shared WHERE clause for blocklist list/count so paginated `total` always
+   * reflects the exact same filter as the rows.
+   *
+   * @param array{source?:string,active_only?:bool,q?:string} $opts
+   * @return array{0:string,1:string,2:list<mixed>} [whereSql (incl. leading " WHERE " or ""), types, values]
    */
-  public function listBlocks(array $opts = []): array
+  private function blockFilter(array $opts): array
   {
     $where = [];
     $types = '';
     $values = [];
 
-    if (isset($opts['source'])) {
+    if (isset($opts['source']) && $opts['source'] !== '') {
       $where[] = 'source = ?';
       $types .= 's';
       $values[] = $opts['source'];
@@ -381,11 +384,29 @@ final class IpAccessControl
     if (!empty($opts['active_only'])) {
       $where[] = '(expires_at IS NULL OR expires_at > NOW())';
     }
+    if (isset($opts['q']) && trim((string) $opts['q']) !== '') {
+      $like = '%' . trim((string) $opts['q']) . '%';
+      $where[] = '(cidr LIKE ? OR reason LIKE ? OR source LIKE ?)';
+      $types .= 'sss';
+      array_push($values, $like, $like, $like);
+    }
+
+    return [$where ? ' WHERE ' . implode(' AND ', $where) : '', $types, $values];
+  }
+
+  /**
+   * @param array{source?:string,active_only?:bool,q?:string,limit?:int,offset?:int} $opts
+   *   q — substring match on cidr / reason / source.
+   * @return list<array<string,mixed>>
+   */
+  public function listBlocks(array $opts = []): array
+  {
+    [$where, $types, $values] = $this->blockFilter($opts);
 
     $sql = 'SELECT id, INET6_NTOA(start_ip) AS start_ip, INET6_NTOA(end_ip) AS end_ip,
                        cidr, reason, source, banned_at, expires_at
                   FROM ip_blocklist'
-      . ($where ? ' WHERE ' . implode(' AND ', $where) : '')
+      . $where
       . ' ORDER BY banned_at DESC LIMIT ? OFFSET ?';
 
     $types .= 'ii';
@@ -395,13 +416,20 @@ final class IpAccessControl
     return $this->fetchAll($sql, $types, $values);
   }
 
-  public function countBlocks(?string $source = null): int
+  /**
+   * Count blocklist rows. The `$source`-only signature is kept for back-compat;
+   * pass $activeOnly/$q to mirror a filtered listBlocks() call so the pager's
+   * total matches the rows shown.
+   */
+  public function countBlocks(?string $source = null, bool $activeOnly = false, string $q = ''): int
   {
-    if ($source === null) {
-      $row = $this->fetchOne('SELECT COUNT(*) AS c FROM ip_blocklist', '', []);
-    } else {
-      $row = $this->fetchOne('SELECT COUNT(*) AS c FROM ip_blocklist WHERE source = ?', 's', [$source]);
-    }
+    $opts = [];
+    if ($source !== null && $source !== '') $opts['source'] = $source;
+    if ($activeOnly) $opts['active_only'] = true;
+    if ($q !== '') $opts['q'] = $q;
+
+    [$where, $types, $values] = $this->blockFilter($opts);
+    $row = $this->fetchOne('SELECT COUNT(*) AS c FROM ip_blocklist' . $where, $types, $values);
     return (int) ($row['c'] ?? 0);
   }
 
@@ -466,22 +494,58 @@ final class IpAccessControl
   }
 
   /**
-   * @param array{active_only?:bool,limit?:int,offset?:int} $opts
+   * Shared WHERE clause for whitelist list/count.
+   *
+   * @param array{active_only?:bool,q?:string} $opts
+   * @return array{0:string,1:string,2:list<mixed>} [whereSql, types, values]
+   */
+  private function whitelistFilter(array $opts): array
+  {
+    $where = [];
+    $types = '';
+    $values = [];
+
+    if (!empty($opts['active_only'])) {
+      $where[] = '(expires_at IS NULL OR expires_at > NOW())';
+    }
+    if (isset($opts['q']) && trim((string) $opts['q']) !== '') {
+      $like = '%' . trim((string) $opts['q']) . '%';
+      $where[] = '(user_id LIKE ? OR reason LIKE ?)';
+      $types .= 'ss';
+      array_push($values, $like, $like);
+    }
+
+    return [$where ? ' WHERE ' . implode(' AND ', $where) : '', $types, $values];
+  }
+
+  /**
+   * @param array{active_only?:bool,q?:string,limit?:int,offset?:int} $opts
+   *   q — substring match on user_id / reason.
    * @return list<array<string,mixed>>
    */
   public function listWhitelist(array $opts = []): array
   {
-    $sql = 'SELECT user_id, reason, added_at, expires_at FROM ip_whitelist';
-    if (!empty($opts['active_only'])) {
-      $sql .= ' WHERE expires_at IS NULL OR expires_at > NOW()';
-    }
-    $sql .= ' ORDER BY added_at DESC LIMIT ? OFFSET ?';
+    [$where, $types, $values] = $this->whitelistFilter($opts);
 
-    return $this->fetchAll(
-      $sql,
-      'ii',
-      [$this->clampLimit($opts['limit'] ?? 100), max(0, (int) ($opts['offset'] ?? 0))],
-    );
+    $sql = 'SELECT user_id, reason, added_at, expires_at FROM ip_whitelist'
+      . $where
+      . ' ORDER BY added_at DESC LIMIT ? OFFSET ?';
+
+    $types .= 'ii';
+    $values[] = $this->clampLimit($opts['limit'] ?? 100);
+    $values[] = max(0, (int) ($opts['offset'] ?? 0));
+
+    return $this->fetchAll($sql, $types, $values);
+  }
+
+  /**
+   * @param array{active_only?:bool,q?:string} $opts
+   */
+  public function countWhitelist(array $opts = []): int
+  {
+    [$where, $types, $values] = $this->whitelistFilter($opts);
+    $row = $this->fetchOne('SELECT COUNT(*) AS c FROM ip_whitelist' . $where, $types, $values);
+    return (int) ($row['c'] ?? 0);
   }
 
     // =========================================================================
