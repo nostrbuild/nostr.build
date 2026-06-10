@@ -49,6 +49,12 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/DeleteMedia.class.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/db/BlacklistTable.class.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/db/RejectedFilesTable.class.php';
 
+// Tor exit-list upkeep: one stat() per request; if the cached list is stale
+// (>6h) one worker per server is elected via flock to re-download it AFTER
+// the response is flushed (fastcgi_finish_request in the shutdown fn).
+require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/TorExitList.class.php';
+(new TorExitList())->maybeScheduleRefresh();
+
 use DI\Container;
 use Slim\Factory\AppFactory;
 use Slim\Middleware\ContentLengthMiddleware;

@@ -3,6 +3,7 @@
 require_once __DIR__ . '/../../SiteConfig.php';
 require_once __DIR__ . '/../utils.funcs.php';
 require_once __DIR__ . '/../IpAccessControl.class.php';
+require_once __DIR__ . '/../TorExitList.class.php';
 
 class UploadValidator
 {
@@ -110,6 +111,26 @@ class UploadValidator
           // Fail open on infrastructure errors so a transient DB problem
           // doesn't take down uploads. Block decisions log loudly above.
           error_log('IP blocklist check failed (allowing upload): ' . $e->getMessage());
+        }
+
+        // Tor exit-node gate: accounts without an active paid plan cannot
+        // upload via Tor ($pro === true means valid, non-expired plan — see
+        // the blocklist rationale above). The per-npub ip_whitelist override
+        // applies here too, and the check fails open like the one above.
+        // List upkeep is scheduled from api/v2/index.php; the extra schedule
+        // call here makes the feature self-healing if that hook ever moves.
+        try {
+          $torList = new TorExitList();
+          $torList->maybeScheduleRefresh();
+          if ($torList->contains($clientIp)) {
+            $iacTor = new IpAccessControl($this->uploadsData->getDb());
+            if ($userNpub === '' || !$iacTor->isWhitelisted($userNpub)) {
+              error_log('Tor exit upload blocked: ' . $clientIp . ' (npub: ' . ($userNpub !== '' ? $userNpub : 'anon') . ')');
+              return [false, 403, 'Access denied'];
+            }
+          }
+        } catch (\Throwable $e) {
+          error_log('Tor exit check failed (allowing upload): ' . $e->getMessage());
         }
       }
     }
