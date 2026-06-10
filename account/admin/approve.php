@@ -39,7 +39,7 @@ if (isset($_POST['searchFile'])) {
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>nostr.build - Admin Moderation</title>
-  <link rel="stylesheet" href="/styles/twbuild.css?v=c2a0b200b17cadb080bcc332cd27567a">
+  <link rel="stylesheet" href="/styles/twbuild.css?v=8d449c7a945db43abd8555039f19a051">
   <link rel="icon" href="https://cdn.nostr.build/assets/primo_nostr.png">
   <style>
     [x-cloak] { display: none !important; }
