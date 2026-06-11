@@ -2319,7 +2319,7 @@ function banUserAndDeleteUpload(mysqli $link, S3Service $s3, BlossomFrontEndAPI 
  * Full CSAM workflow: archive evidence, blacklist, delete.
  * Returns true on success, or an error message string on failure.
  */
-function processCsamReport($link, S3Service $s3, BlossomFrontEndAPI $blossomAPI, array $csamReportingConfig, int $id, string $filename, string $type): string|bool
+function processCsamReport($link, S3Service $s3, BlossomFrontEndAPI $blossomAPI, array $csamReportingConfig, int $id, string $filename, string $type, ?string $reportingNpub = null): string|bool
 {
   $file_sha256_hash = pathinfo($filename, PATHINFO_FILENAME);
   $objectName = match ($type) {
@@ -2376,9 +2376,11 @@ function processCsamReport($link, S3Service $s3, BlossomFrontEndAPI $blossomAPI,
 
   unlink($tempFile);
 
-  // Store case info in DB
+  // Store case info in DB. The reporting npub comes from the session for the
+  // legacy admin pages; Worker-proxied callers (routes_accounts_admin.php)
+  // have no PHP session and pass it explicitly via $reportingNpub.
   $stmt = $link->prepare("INSERT INTO identified_csam_cases (identified_by_npub, evidence_location_url, file_sha256_hash, logs) VALUES (?, ?, ?, ?)");
-  $evidenceReportingNpub = $_SESSION['usernpub'];
+  $evidenceReportingNpub = $reportingNpub ?? ($_SESSION['usernpub'] ?? 'unknown');
   $evidenceLocationURL = "{$csamReportingConfig['r2EndPoint']}/{$csamReportingConfig['r2EvidenceBucket']}/{$file_sha256_hash}/";
   $evidenceJSONLogs = json_encode($logsJSON);
   $stmt->bind_param("ssss", $evidenceReportingNpub, $evidenceLocationURL, $file_sha256_hash, $evidenceJSONLogs);

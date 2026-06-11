@@ -781,3 +781,782 @@ $app->group('/accounts/admin/security', function (RouteCollectorProxy $group) {
 })
   ->add(new ProxiedAdminMiddleware())
   ->add(new HmacAuthMiddleware());
+
+// ----- CSAM Reporting group ---------------------------------------------------
+// Worker-proxied backend for the "CSAM Reporting" admin tool (the
+// admin_csam_cases.php port). Mounted at /api/v2/accounts/admin/csam/*; same
+// auth stack (HMAC + ProxiedAdmin → admin-only).
+//
+// IMPORTANT division of labor: the NCMEC CyberTipline submission itself now
+// runs in the WORKER (TS port; evidence read straight from R2). PHP keeps the
+// thin data endpoints over identified_csam_cases (the Worker has no direct
+// DB), the guarded record-submission write, the unblacklist flow, and the
+// offender enumerations with their npub mass-delete SQL guards. Engine
+// helpers (csamCaseAllowsOffenderCleanup, extractOffenderNpubFromLogs,
+// isLikelyValidNpub, NCMECReportHandler) come from routes_admin.php /
+// NCMECReportHandler.class.php — loaded before this file by index.php.
+
+$app->group('/accounts/admin/csam', function (RouteCollectorProxy $group) {
+
+  /**
+   * GET /accounts/admin/csam/cases?page=&limit=&hash=
+   * Paginated case list (newest first). `hash` = file_sha256_hash prefix
+   * search. Row payload excludes the heavy JSON columns; `GET /case/{id}`
+   * fetches one case in full.
+   */
+  $group->get('/cases', function (Request $request, Response $response) {
+    global $link;
+    $q = $request->getQueryParams();
+    $limit = max(1, min(200, (int) ($q['limit'] ?? 50)));
+    $page  = max(0, (int) ($q['page'] ?? 0));
+    $start = $page * $limit;
+    $hash  = isset($q['hash']) ? trim((string) $q['hash']) : '';
+
+    if ($hash !== '') {
+      if (!preg_match('/^[a-f0-9]{1,64}$/i', $hash)) {
+        return aaError($response, 'Invalid hash prefix', 400);
+      }
+      $like = $hash . '%';
+      $cnt = $link->prepare('SELECT COUNT(*) AS c FROM identified_csam_cases WHERE file_sha256_hash LIKE ?');
+      $cnt->bind_param('s', $like);
+      $cnt->execute();
+      $total = (int) ($cnt->get_result()->fetch_assoc()['c'] ?? 0);
+      $cnt->close();
+
+      $stmt = $link->prepare(
+        'SELECT id, timestamp, identified_by_npub, file_sha256_hash, ncmec_report_id,
+                (ncmec_submitted_report IS NOT NULL) AS has_report
+           FROM identified_csam_cases
+          WHERE file_sha256_hash LIKE ?
+          ORDER BY id DESC LIMIT ?, ?'
+      );
+      $stmt->bind_param('sii', $like, $start, $limit);
+    } else {
+      $total = (int) ($link->query('SELECT COUNT(*) AS c FROM identified_csam_cases')->fetch_assoc()['c'] ?? 0);
+      $stmt = $link->prepare(
+        'SELECT id, timestamp, identified_by_npub, file_sha256_hash, ncmec_report_id,
+                (ncmec_submitted_report IS NOT NULL) AS has_report
+           FROM identified_csam_cases
+          ORDER BY id DESC LIMIT ?, ?'
+      );
+      $stmt->bind_param('ii', $start, $limit);
+    }
+    $stmt->execute();
+    $rs = $stmt->get_result();
+    $rows = [];
+    while ($r = $rs->fetch_assoc()) {
+      $rows[] = [
+        'id' => (int) $r['id'],
+        'timestamp' => (string) $r['timestamp'],
+        'identified_by_npub' => (string) ($r['identified_by_npub'] ?? ''),
+        'file_sha256_hash' => (string) ($r['file_sha256_hash'] ?? ''),
+        'ncmec_report_id' => $r['ncmec_report_id'] !== null ? (string) $r['ncmec_report_id'] : null,
+        'has_report' => (bool) $r['has_report'],
+      ];
+    }
+    $stmt->close();
+
+    return aaJson($response, ['rows' => $rows, 'total' => $total, 'page' => $page, 'limit' => $limit]);
+  });
+
+  /**
+   * GET /accounts/admin/csam/case/{id}
+   * One case in full — logs + submitted report JSON + evidence location. The
+   * Worker uses this for the per-case viewers, the NCMEC report build, and
+   * the never-double-report idempotency re-check before each submission.
+   */
+  $group->get('/case/{id:[0-9]+}', function (Request $request, Response $response, array $args) {
+    global $link;
+    $id = (int) $args['id'];
+    $stmt = $link->prepare('SELECT * FROM identified_csam_cases WHERE id = ?');
+    $stmt->bind_param('i', $id);
+    $stmt->execute();
+    $row = $stmt->get_result()->fetch_assoc();
+    $stmt->close();
+    if ($row === null) {
+      return aaError($response, 'Case not found', 404);
+    }
+    return aaJson($response, [
+      'id' => (int) $row['id'],
+      'timestamp' => (string) $row['timestamp'],
+      'identified_by_npub' => (string) ($row['identified_by_npub'] ?? ''),
+      'evidence_location_url' => (string) ($row['evidence_location_url'] ?? ''),
+      'file_sha256_hash' => (string) ($row['file_sha256_hash'] ?? ''),
+      'logs' => $row['logs'] !== null ? (string) $row['logs'] : null,
+      'ncmec_report_id' => $row['ncmec_report_id'] !== null ? (string) $row['ncmec_report_id'] : null,
+      'ncmec_submitted_report' => $row['ncmec_submitted_report'] !== null ? (string) $row['ncmec_submitted_report'] : null,
+    ]);
+  });
+
+  /**
+   * POST /accounts/admin/csam/record-submission
+   * {incidentId, reportId, report} — the Worker records the NCMEC outcome
+   * here after submitting (TEST_/numeric/ERROR semantics are computed Worker-
+   * side). GUARD: a real (numeric) report id is never overwritten with a
+   * different value — double-submission protection at the write layer.
+   */
+  $group->post('/record-submission', function (Request $request, Response $response) {
+    global $link;
+    $body = json_decode((string) $request->getBody(), true);
+    if (!is_array($body)) return aaError($response, 'invalid-body', 400);
+    $incidentId = (int) ($body['incidentId'] ?? 0);
+    $reportId = trim((string) ($body['reportId'] ?? ''));
+    $report = $body['report'] ?? null;
+    if ($incidentId <= 0 || $reportId === '' || strlen($reportId) > 64) {
+      return aaError($response, 'Invalid parameters', 400);
+    }
+
+    $stmt = $link->prepare('SELECT ncmec_report_id FROM identified_csam_cases WHERE id = ?');
+    $stmt->bind_param('i', $incidentId);
+    $stmt->execute();
+    $row = $stmt->get_result()->fetch_assoc();
+    $stmt->close();
+    if ($row === null) {
+      return aaError($response, 'Case not found', 404);
+    }
+    $existing = $row['ncmec_report_id'] !== null ? (string) $row['ncmec_report_id'] : null;
+    if ($existing !== null && is_numeric($existing) && $existing !== $reportId) {
+      return aaError($response, 'Case already has a submitted NCMEC report id', 409);
+    }
+
+    $reportJson = $report !== null ? json_encode($report) : null;
+    $stmt = $link->prepare('UPDATE identified_csam_cases SET ncmec_report_id = ?, ncmec_submitted_report = ? WHERE id = ?');
+    $stmt->bind_param('ssi', $reportId, $reportJson, $incidentId);
+    $stmt->execute();
+    $stmt->close();
+
+    return aaJson($response, ['success' => true, 'incidentId' => $incidentId, 'reportId' => $reportId]);
+  });
+
+  /**
+   * POST /accounts/admin/csam/unblacklist  {incidentId, npub, incidentTime}
+   * PhotoDNA false-match path. Deliberately SLIM (DB + blossom only): the
+   * WORKER derives npub/incidentTime from the case logs (the same parsing the
+   * NCMEC report build uses) and passes them in; PHP removes the blacklist
+   * rows written around the incident time, unbans from blossom, and marks the
+   * case FALSE_MATCH. Mirrors NCMECReportHandler::unBlacklistUser without
+   * dragging the NCMEC client into this path.
+   */
+  $group->post('/unblacklist', function (Request $request, Response $response) {
+    global $link;
+    $body = json_decode((string) $request->getBody(), true);
+    if (!is_array($body)) return aaError($response, 'invalid-body', 400);
+    $incidentId = (int) ($body['incidentId'] ?? 0);
+    $npub = aaValidNpub($body['npub'] ?? null);
+    $incidentTime = trim((string) ($body['incidentTime'] ?? ''));
+    if ($incidentId <= 0 || $npub === null || $incidentTime === '' || strtotime($incidentTime) === false) {
+      return aaError($response, 'Invalid parameters', 400);
+    }
+
+    // Belt: never clear a case that already has a real (numeric) report id.
+    $stmt = $link->prepare('SELECT ncmec_report_id FROM identified_csam_cases WHERE id = ?');
+    $stmt->bind_param('i', $incidentId);
+    $stmt->execute();
+    $row = $stmt->get_result()->fetch_assoc();
+    $stmt->close();
+    if ($row === null) {
+      return aaError($response, 'Case not found', 404);
+    }
+    if ($row['ncmec_report_id'] !== null && is_numeric((string) $row['ncmec_report_id'])) {
+      return aaError($response, 'Case already has a submitted NCMEC report id', 409);
+    }
+
+    try {
+      $reason = 'PhotoDNA CSAM Match API Match';
+      $timestamp = date('Y-m-d H:i:s', strtotime($incidentTime));
+      $timestampStart = date('Y-m-d H:i:s', strtotime($timestamp . ' -10 minutes'));
+      $timestampEnd = date('Y-m-d H:i:s', strtotime($timestamp . ' +10 minutes'));
+
+      $affectedRows = (new LegacyBlacklist($link))
+        ->removeByNpubReasonInWindow($npub, $reason, $timestampStart, $timestampEnd);
+
+      $blossomAPI = new BlossomFrontEndAPI($_SERVER['BLOSSOM_API_URL'], $_SERVER['BLOSSOM_API_KEY']);
+      $blossomAPI->unbanUser($npub);
+
+      // Mark the case FALSE_MATCH even when no blacklist row was in range
+      // (same semantics as the legacy handler).
+      $stmt = $link->prepare("UPDATE identified_csam_cases SET ncmec_report_id = 'FALSE_MATCH', ncmec_submitted_report = '{}' WHERE id = ?");
+      $stmt->bind_param('i', $incidentId);
+      $stmt->execute();
+      $stmt->close();
+
+      return aaJson($response, [
+        'success' => true,
+        'incidentId' => $incidentId,
+        'removed' => (int) $affectedRows,
+      ]);
+    } catch (\Throwable $e) {
+      error_log('aa csam unblacklist error: ' . $e->getMessage());
+      return aaError($response, 'Error unblacklisting user', 500);
+    }
+  });
+
+  /**
+   * GET /accounts/admin/csam/unsubmitted?days=
+   * Unsubmitted case ids from the past N days (SQL mirrors the legacy
+   * endpoint, sentinels included). The CsamReportWorkflow enumerates here.
+   */
+  $group->get('/unsubmitted', function (Request $request, Response $response) {
+    global $link;
+    $params = $request->getQueryParams();
+    $days = isset($params['days']) ? min(90, max(1, intval($params['days']))) : 7;
+
+    $sql = "SELECT id FROM identified_csam_cases
+            WHERE timestamp >= DATE_SUB(NOW(), INTERVAL ? DAY)
+              AND (ncmec_report_id IS NULL
+                   OR ncmec_report_id LIKE 'TEST_%'
+                   OR ncmec_report_id = 'Null: Technical Error')
+            ORDER BY timestamp ASC";
+    $stmt = $link->prepare($sql);
+    $stmt->bind_param('i', $days);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $ids = [];
+    while ($row = $result->fetch_assoc()) {
+      $ids[] = (int) $row['id'];
+    }
+    $stmt->close();
+
+    return aaJson($response, ['ids' => $ids, 'count' => count($ids), 'days' => $days]);
+  });
+
+  /**
+   * GET /accounts/admin/csam/offender-uploads/{caseId}
+   * Mirrors the legacy endpoint: delete-eligible check + offender npub
+   * extraction + the SQL anonymous-upload guards.
+   */
+  $group->get('/offender-uploads/{caseId:[0-9]+}', function (Request $request, Response $response, array $args) {
+    global $link;
+    $caseId = (int) $args['caseId'];
+
+    $stmt = $link->prepare('SELECT logs, ncmec_report_id FROM identified_csam_cases WHERE id = ?');
+    $stmt->bind_param('i', $caseId);
+    $stmt->execute();
+    $caseRow = $stmt->get_result()->fetch_assoc();
+    $stmt->close();
+
+    if ($caseRow === null) {
+      return aaError($response, 'Case not found', 404);
+    }
+
+    $reportId = (string) ($caseRow['ncmec_report_id'] ?? '');
+    if (!csamCaseAllowsOffenderCleanup($reportId)) {
+      return aaError($response, 'Case is not in a delete-eligible state (need numeric NCMEC report id or EVIDENCE_EXPIRED).', 422);
+    }
+
+    $npub = extractOffenderNpubFromLogs($caseRow['logs']);
+    if ($npub === null || !isLikelyValidNpub($npub)) {
+      return aaError($response, 'Unable to determine offender npub from case logs.', 422);
+    }
+
+    $stmt = $link->prepare(
+      "SELECT id, filename, type, approval_status
+         FROM uploads_data
+        WHERE usernpub = ?
+          AND usernpub <> ''
+          AND usernpub IS NOT NULL
+          AND approval_status NOT IN ('rejected', 'csam')
+        ORDER BY upload_date DESC"
+    );
+    $stmt->bind_param('s', $npub);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $uploads = [];
+    while ($r = $result->fetch_assoc()) {
+      $uploads[] = [
+        'id' => (int) $r['id'],
+        'filename' => (string) $r['filename'],
+        'type' => (string) $r['type'],
+        'approval_status' => (string) $r['approval_status'],
+      ];
+    }
+    $stmt->close();
+
+    return aaJson($response, [
+      'caseId' => $caseId,
+      'reportId' => $reportId,
+      'npub' => $npub,
+      'count' => count($uploads),
+      'uploads' => $uploads,
+    ]);
+  });
+
+  /**
+   * GET /accounts/admin/csam/submitted-offenders?days=
+   * Mirrors the legacy endpoint (numeric-report-id final guard + npub
+   * re-validation + single grouped SELECT).
+   */
+  $group->get('/submitted-offenders', function (Request $request, Response $response) {
+    global $link;
+    $params = $request->getQueryParams();
+    $days = isset($params['days']) ? min(90, max(1, (int) $params['days'])) : 7;
+
+    $stmt = $link->prepare(
+      "SELECT id, logs, ncmec_report_id
+         FROM identified_csam_cases
+        WHERE timestamp >= DATE_SUB(NOW(), INTERVAL ? DAY)
+          AND ncmec_report_id IS NOT NULL
+          AND ncmec_report_id NOT LIKE 'TEST_%'
+          AND ncmec_report_id <> 'FALSE_MATCH'
+          AND ncmec_report_id <> 'Null: Technical Error'
+        ORDER BY timestamp ASC"
+    );
+    $stmt->bind_param('i', $days);
+    $stmt->execute();
+    $result = $stmt->get_result();
+
+    $offenderMap = [];
+    while ($r = $result->fetch_assoc()) {
+      if (!is_numeric((string) $r['ncmec_report_id'])) continue;
+      $npub = extractOffenderNpubFromLogs($r['logs']);
+      if ($npub === null) continue;
+      if (!isset($offenderMap[$npub])) {
+        $offenderMap[$npub] = ['case_ids' => [], 'report_ids' => []];
+      }
+      $offenderMap[$npub]['case_ids'][]   = (int) $r['id'];
+      $offenderMap[$npub]['report_ids'][] = (string) $r['ncmec_report_id'];
+    }
+    $stmt->close();
+
+    $offenders = [];
+    $totalUploads = 0;
+    if ($offenderMap !== []) {
+      $npubs = array_values(array_filter(array_keys($offenderMap), 'isLikelyValidNpub'));
+
+      $uploadsByNpub = [];
+      if ($npubs !== []) {
+        $placeholders = implode(',', array_fill(0, count($npubs), '?'));
+        $listStmt = $link->prepare(
+          "SELECT id, filename, type, usernpub
+             FROM uploads_data
+            WHERE usernpub IN ($placeholders)
+              AND usernpub <> ''
+              AND usernpub IS NOT NULL
+              AND approval_status NOT IN ('rejected', 'csam')
+            ORDER BY upload_date DESC"
+        );
+        $listStmt->bind_param(str_repeat('s', count($npubs)), ...$npubs);
+        $listStmt->execute();
+        $rs = $listStmt->get_result();
+        while ($u = $rs->fetch_assoc()) {
+          $uploadsByNpub[(string) $u['usernpub']][] = [
+            'id' => (int) $u['id'],
+            'filename' => (string) $u['filename'],
+            'type' => (string) $u['type'],
+          ];
+        }
+        $rs->free();
+        $listStmt->close();
+      }
+
+      foreach ($offenderMap as $npub => $info) {
+        if (!isLikelyValidNpub($npub)) continue;
+        $uploads = $uploadsByNpub[$npub] ?? [];
+        $totalUploads += count($uploads);
+        $offenders[] = [
+          'npub' => $npub,
+          'case_ids' => $info['case_ids'],
+          'report_ids' => $info['report_ids'],
+          'uploads' => $uploads,
+          'remaining_count' => count($uploads),
+        ];
+      }
+    }
+
+    return aaJson($response, [
+      'days' => $days,
+      'total_offenders' => count($offenders),
+      'total_uploads' => $totalUploads,
+      'offenders' => $offenders,
+    ]);
+  });
+
+})
+  ->add(new ProxiedAdminMiddleware())
+  ->add(new HmacAuthMiddleware());
+
+// ----- Uploads Moderation group ----------------------------------------------
+// Worker-proxied backend for the "Uploads Moderation" admin tool (the
+// approve.php port). Mounted at /api/v2/accounts/admin/moderation/*; same auth
+// stack (HMAC + ProxiedAdmin → admin-only, fresh acctlevel=99 DB read).
+//
+// Delegates the composite mutations to the engine helpers defined in
+// routes_admin.php — index.php loads that file BEFORE this one, so the global
+// functions (rejectUploadsByIds, deleteAndRejectUpload, banUserAndDeleteUpload,
+// processCsamReport) are in scope at request time.
+//
+// NOTE: unlike the legacy /admin/moderation/* routes, the per-action
+// `new Permission()` session checks are intentionally absent — the PHP session
+// is empty on HMAC-proxied calls; ProxiedAdminMiddleware is the canonical gate
+// for every action here, including ban/csam (admin-only by construction).
+
+$app->group('/accounts/admin/moderation', function (RouteCollectorProxy $group) {
+
+  /**
+   * GET /accounts/admin/moderation/queue
+   * JSON reader for the moderation queue (approve.php rendered this list
+   * server-side; the app needs rows). Modes, mirroring approve.php exactly:
+   *   (default)         pending uploads, paginated (?page=, ?limit= ≤204)
+   *   ?filename=<pfx>   filename prefix search, ANY status, capped 500
+   *   ?npub=<npub>      ALL of one npub's media (any status), capped 500 —
+   *                     the view that unlocks the bulk actions in the UI
+   * Rows carry computed url/thumb so the app doesn't duplicate SiteConfig.
+   */
+  $group->get('/queue', function (Request $request, Response $response) {
+    global $link;
+    $q = $request->getQueryParams();
+    $searchFile = isset($q['filename']) ? trim((string) $q['filename']) : '';
+    $searchNpub = isset($q['npub']) ? trim((string) $q['npub']) : '';
+    $SEARCH_LIMIT = 500;
+
+    $total = null;
+    if ($searchFile !== '') {
+      if (strlen($searchFile) > 128 || str_contains($searchFile, '%') || str_contains($searchFile, '_')) {
+        return aaError($response, 'Invalid filename prefix', 400);
+      }
+      $stmt = $link->prepare("SELECT id, filename, type, usernpub, approval_status FROM uploads_data WHERE filename LIKE ? ORDER BY upload_date DESC LIMIT ?");
+      $like = $searchFile . '%';
+      $stmt->bind_param('si', $like, $SEARCH_LIMIT);
+    } elseif ($searchNpub !== '') {
+      if (aaValidNpub($searchNpub) === null) {
+        return aaError($response, 'Invalid npub', 400);
+      }
+      $stmt = $link->prepare("SELECT id, filename, type, usernpub, approval_status FROM uploads_data WHERE usernpub = ? ORDER BY upload_date DESC LIMIT ?");
+      $stmt->bind_param('si', $searchNpub, $SEARCH_LIMIT);
+    } else {
+      $limit = max(1, min(204, (int) ($q['limit'] ?? 60)));
+      $page  = max(0, (int) ($q['page'] ?? 0));
+      $start = $page * $limit;
+      $stmt = $link->prepare("SELECT id, filename, type, usernpub, approval_status FROM uploads_data WHERE approval_status = 'pending' ORDER BY upload_date DESC LIMIT ?, ?");
+      $stmt->bind_param('ii', $start, $limit);
+      $cnt = $link->query("SELECT COUNT(*) AS c FROM uploads_data WHERE approval_status = 'pending'");
+      $total = (int) (($cnt ? $cnt->fetch_assoc() : null)['c'] ?? 0);
+    }
+
+    $stmt->execute();
+    $rs = $stmt->get_result();
+    $rows = [];
+    while ($r = $rs->fetch_assoc()) {
+      $type = (string) $r['type'];
+      $filename = (string) $r['filename'];
+      // URL mapping mirrors approve.php; unknown types are skipped there too.
+      [$urlBase, $thumbBase, $media] = match ($type) {
+        'picture' => [SiteConfig::getFullyQualifiedUrl('image'), SiteConfig::getThumbnailUrl('image'), 'image'],
+        'profile' => [SiteConfig::getFullyQualifiedUrl('profile_picture'), SiteConfig::getThumbnailUrl('profile_picture'), 'image'],
+        'video'   => [SiteConfig::getFullyQualifiedUrl('video'), SiteConfig::getThumbnailUrl('video'), 'video'],
+        default   => [null, null, null],
+      };
+      if ($urlBase === null) {
+        continue;
+      }
+      $rows[] = [
+        'id' => (int) $r['id'],
+        'filename' => $filename,
+        'type' => $type,
+        'media' => $media,
+        'usernpub' => (string) $r['usernpub'],
+        'approval_status' => (string) $r['approval_status'],
+        'url' => $urlBase . $filename,
+        'thumb' => $thumbBase . $filename,
+      ];
+    }
+    $stmt->close();
+
+    return aaJson($response, ['rows' => $rows, 'total' => $total, 'count' => count($rows)]);
+  });
+
+  /**
+   * GET /accounts/admin/moderation/upload-info/{id}
+   * Thin DB read: filename/type/npub for one upload. The Worker uses it to
+   * derive the sha256 prefix, then reads the R2 upload logs ITSELF (app-side
+   * S3 API) and extracts IP candidates there — R2 log fetching deliberately
+   * does not happen in PHP on this path.
+   */
+  $group->get('/upload-info/{id:[0-9]+}', function (Request $request, Response $response, array $args) {
+    global $link;
+    $id = (int) $args['id'];
+
+    $stmt = $link->prepare('SELECT filename, type, usernpub FROM uploads_data WHERE id = ?');
+    $stmt->bind_param('i', $id);
+    $stmt->execute();
+    $row = $stmt->get_result()->fetch_assoc();
+    $stmt->close();
+
+    if ($row === null) {
+      return aaError($response, 'Upload not found', 404);
+    }
+
+    return aaJson($response, [
+      'uploadId' => $id,
+      'filename' => (string) ($row['filename'] ?? ''),
+      'type' => (string) ($row['type'] ?? ''),
+      'usernpub' => (string) ($row['usernpub'] ?? ''),
+    ]);
+  });
+
+  /**
+   * POST /accounts/admin/moderation/status  {id, status}
+   * Single-upload status change (approved | rejected | adult | ban | csam).
+   * Same engine paths as the legacy /admin/moderation/status.
+   */
+  $group->post('/status', function (Request $request, Response $response) {
+    global $link, $awsConfig, $csamReportingConfig;
+
+    $body = json_decode((string) $request->getBody(), true);
+    if (!is_array($body)) {
+      return aaError($response, 'invalid-body', 400);
+    }
+    $id = (int) ($body['id'] ?? 0);
+    $status = (string) ($body['status'] ?? '');
+    $allowed = ['approved', 'rejected', 'adult', 'ban', 'csam'];
+    if ($id <= 0 || !in_array($status, $allowed, true)) {
+      return aaError($response, 'Invalid parameters', 400);
+    }
+
+    $stmt = $link->prepare("SELECT filename, type FROM uploads_data WHERE id = ?");
+    $stmt->bind_param('i', $id);
+    $stmt->execute();
+    $stmt->bind_result($filename, $type);
+    $stmt->fetch();
+    $stmt->close();
+
+    if ($filename === null) {
+      return aaError($response, 'Upload not found', 404);
+    }
+
+    $s3 = new S3Service($awsConfig);
+    $blossomAPI = new BlossomFrontEndAPI($_SERVER['BLOSSOM_API_URL'], $_SERVER['BLOSSOM_API_KEY']);
+
+    if ($status === 'rejected') {
+      if (!deleteAndRejectUpload($link, $s3, $blossomAPI, $id, $filename, $type)) {
+        return aaError($response, 'Reject failed (S3 delete error). The upload was preserved for retry.', 500);
+      }
+    } elseif ($status === 'ban') {
+      // Ban writes land first inside the helper — even on a false return the
+      // user IS banned; only the file cleanup needs a retry.
+      if (!banUserAndDeleteUpload($link, $s3, $blossomAPI, $csamReportingConfig, $id, $filename, $type)) {
+        return aaError($response, 'User was banned but file delete failed. Retry the reject action to clean up.', 500);
+      }
+    } elseif ($status === 'csam') {
+      // Evidence-first ordering lives inside processCsamReport (archive →
+      // case row → bans → delete). Reporting npub comes from the HMAC headers
+      // (no PHP session on proxied calls).
+      $adminNpub = $request->getAttribute('admin_npub');
+      $result = processCsamReport($link, $s3, $blossomAPI, $csamReportingConfig, $id, $filename, $type, is_string($adminNpub) ? $adminNpub : null);
+      if ($result !== true) {
+        return aaError($response, is_string($result) ? $result : 'CSAM processing failed', 500);
+      }
+    } else {
+      // approved or adult — plain status update.
+      $stmt = $link->prepare("UPDATE uploads_data SET approval_status = ? WHERE id = ?");
+      $stmt->bind_param('si', $status, $id);
+      $stmt->execute();
+      $stmt->close();
+    }
+
+    return aaJson($response, ['success' => true, 'id' => $id, 'status' => $status]);
+  });
+
+  /**
+   * POST /accounts/admin/moderation/approve-all  {ids: [...]} (≤1000)
+   * Bulk approve — single UPDATE, pending rows only.
+   */
+  $group->post('/approve-all', function (Request $request, Response $response) {
+    global $link;
+
+    $body = json_decode((string) $request->getBody(), true);
+    if (!is_array($body) || !isset($body['ids']) || !is_array($body['ids'])) {
+      return aaError($response, 'Invalid payload, expecting an "ids" array', 400);
+    }
+
+    $ids = array_values(array_filter(array_map('intval', $body['ids']), fn ($id) => $id > 0));
+    if ($ids === []) {
+      return aaError($response, 'No valid IDs provided', 400);
+    }
+    if (count($ids) > 1000) {
+      return aaError($response, 'Too many IDs, max 1000 per request', 400);
+    }
+
+    $placeholders = implode(',', array_fill(0, count($ids), '?'));
+    $sql = "UPDATE uploads_data SET approval_status='approved' WHERE id IN ($placeholders) AND approval_status='pending'";
+    $stmt = $link->prepare($sql);
+    $stmt->bind_param(str_repeat('i', count($ids)), ...$ids);
+
+    if (!$stmt->execute()) {
+      $error = $stmt->error;
+      $stmt->close();
+      error_log('aa moderation approve-all error: ' . $error);
+      return aaError($response, 'Database error', 500);
+    }
+    $count = $stmt->affected_rows;
+    $stmt->close();
+
+    return aaJson($response, ['success' => true, 'count' => $count]);
+  });
+
+  /**
+   * POST /accounts/admin/moderation/adult-batch  {ids: [...]} (≤1000)
+   * Bulk mark-as-adult — single UPDATE, any current status (mirrors the legacy
+   * "Mark All as Adult" per-id loop, consolidated). The ModerationWorkflow
+   * drives this in chunks for the npub-view bulk action.
+   */
+  $group->post('/adult-batch', function (Request $request, Response $response) {
+    global $link;
+
+    $body = json_decode((string) $request->getBody(), true);
+    if (!is_array($body) || !isset($body['ids']) || !is_array($body['ids'])) {
+      return aaError($response, 'Invalid payload, expecting an "ids" array', 400);
+    }
+
+    $ids = array_values(array_filter(array_map('intval', $body['ids']), fn ($id) => $id > 0));
+    if ($ids === []) {
+      return aaError($response, 'No valid IDs provided', 400);
+    }
+    if (count($ids) > 1000) {
+      return aaError($response, 'Too many IDs, max 1000 per request', 400);
+    }
+
+    $placeholders = implode(',', array_fill(0, count($ids), '?'));
+    $stmt = $link->prepare("UPDATE uploads_data SET approval_status='adult' WHERE id IN ($placeholders)");
+    $stmt->bind_param(str_repeat('i', count($ids)), ...$ids);
+
+    if (!$stmt->execute()) {
+      $error = $stmt->error;
+      $stmt->close();
+      error_log('aa moderation adult-batch error: ' . $error);
+      return aaError($response, 'Database error', 500);
+    }
+    $count = $stmt->affected_rows;
+    $stmt->close();
+
+    return aaJson($response, ['success' => true, 'count' => $count]);
+  });
+
+  /**
+   * POST /accounts/admin/moderation/reject-batch  {ids: [...]} (≤30)
+   * Batch reject — per-item S3 delete → one consolidated CF purge → blossom
+   * hash bans → multi-row rejected_files INSERT → one DELETE. Per-id results.
+   * The ModerationWorkflow drives this in pages for mass operations.
+   */
+  $group->post('/reject-batch', function (Request $request, Response $response) {
+    global $link, $awsConfig;
+
+    $MAX_REJECT_BATCH = 30;
+
+    $body = json_decode((string) $request->getBody(), true);
+    if (!is_array($body) || !isset($body['ids']) || !is_array($body['ids'])) {
+      return aaError($response, 'Invalid payload, expecting an "ids" array', 400);
+    }
+
+    $ids = array_values(array_unique(array_filter(
+      array_map('intval', $body['ids']),
+      fn (int $id): bool => $id > 0,
+    )));
+    if ($ids === []) {
+      return aaError($response, 'No valid IDs provided', 400);
+    }
+    if (count($ids) > $MAX_REJECT_BATCH) {
+      return aaError($response, "Too many IDs, max $MAX_REJECT_BATCH per request", 400);
+    }
+
+    $results = rejectUploadsByIds($link, $awsConfig, $ids);
+
+    $succeeded = 0;
+    $failed = 0;
+    foreach ($results as $r) {
+      $r['ok'] ? $succeeded++ : $failed++;
+    }
+
+    return aaJson($response, [
+      'success' => $failed === 0,
+      'processed' => count($results),
+      'succeeded' => $succeeded,
+      'failed' => $failed,
+      'results' => $results,
+    ]);
+  });
+
+  /**
+   * POST /accounts/admin/moderation/ban-purge  {npub, after_id, limit ≤50}
+   * One keyset page of "ban npub + delete ALL their media". First call
+   * (after_id=0) writes the ban (legacy blacklist + blossom banUser) and
+   * returns the total; subsequent calls walk the cursor until more=false.
+   * The npub regex is the mass-delete guard: an empty/garbage npub can never
+   * sweep anonymous uploads. The ModerationWorkflow drives this loop.
+   */
+  $group->post('/ban-purge', function (Request $request, Response $response) {
+    global $link, $awsConfig;
+    @set_time_limit(0);
+
+    $body = json_decode((string) $request->getBody(), true);
+    if (!is_array($body)) {
+      return aaError($response, 'invalid-body', 400);
+    }
+    $npub    = trim((string) ($body['npub'] ?? ''));
+    $afterId = (int) ($body['after_id'] ?? 0);
+    $limit   = max(1, min(50, (int) ($body['limit'] ?? 25)));
+
+    if (!preg_match('/^npub1[a-z0-9]{20,90}$/', $npub)) {
+      return aaError($response, 'Invalid npub', 400);
+    }
+
+    $banned = false;
+    $total  = null;
+    if ($afterId === 0) {
+      try {
+        (new LegacyBlacklist($link))->add($npub, null, null, 'BANNED');
+      } catch (\Throwable $e) {
+        error_log("aa ban-purge blacklist add failed for {$npub}: " . $e->getMessage());
+      }
+      try {
+        $blossomAPI = new BlossomFrontEndAPI($_SERVER['BLOSSOM_API_URL'], $_SERVER['BLOSSOM_API_KEY']);
+        $blossomAPI->banUser($npub);
+      } catch (\Throwable $e) {
+        error_log("aa ban-purge blossom banUser failed for {$npub}: " . $e->getMessage());
+      }
+      $banned = true;
+
+      $cStmt = $link->prepare("SELECT COUNT(*) AS c FROM uploads_data WHERE usernpub = ?");
+      $cStmt->bind_param('s', $npub);
+      $cStmt->execute();
+      $total = (int) ($cStmt->get_result()->fetch_assoc()['c'] ?? 0);
+      $cStmt->close();
+    }
+
+    // Keyset on id ASC: deleted rows fall out; failures keep id <= cursor so
+    // the next page (id > cursor) skips them — no infinite loop.
+    $stmt = $link->prepare(
+      "SELECT id FROM uploads_data WHERE usernpub = ? AND id > ? ORDER BY id ASC LIMIT ?"
+    );
+    $stmt->bind_param('sii', $npub, $afterId, $limit);
+    $stmt->execute();
+    $rs = $stmt->get_result();
+    $ids = [];
+    while ($r = $rs->fetch_assoc()) {
+      $ids[] = (int) $r['id'];
+    }
+    $stmt->close();
+
+    $results = rejectUploadsByIds($link, $awsConfig, $ids);
+
+    $succeeded = 0;
+    $failed = 0;
+    foreach ($results as $r) {
+      $r['ok'] ? $succeeded++ : $failed++;
+    }
+
+    return aaJson($response, [
+      'banned'    => $banned,
+      'total'     => $total,
+      'cursor'    => $ids === [] ? $afterId : max($ids),
+      'scanned'   => count($ids),
+      'succeeded' => $succeeded,
+      'failed'    => $failed,
+      'more'      => count($ids) === $limit,
+      'results'   => $results,
+    ]);
+  });
+
+})
+  ->add(new ProxiedAdminMiddleware())
+  ->add(new HmacAuthMiddleware());
