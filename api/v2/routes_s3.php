@@ -311,8 +311,11 @@ $app->group('/s3', function (RouteCollectorProxy $group) {
   });
 })->add(function ($request, $handler) use ($perm) {
   // Authentication middleware - same as account routes
-  // Creator, Advanced+
-  if (!$perm->validateLoggedin() || !$perm->validatePermissionsLevelAny(1, 10, 99)) {
+  // Every upload-eligible tier: Creator (1), Professional (2), Purist (3),
+  // Starter (5), Advanced (10), Admin (99). The account dashboard routes any
+  // >= 40MB file to this multipart path for all of these tiers, so gating it
+  // to Creator/Advanced+ 401'd Professional and Purist large uploads.
+  if (!$perm->validateLoggedin() || !$perm->validatePermissionsLevelAny(1, 2, 3, 5, 10, 99)) {
     error_log('User not authenticated or authorized');
     $response = new Slim\Psr7\Response();
     return jsonResponse($response, 'error', 'User not authenticated or authorized', new stdClass(), 401);
