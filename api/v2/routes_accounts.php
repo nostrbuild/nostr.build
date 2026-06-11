@@ -1456,10 +1456,10 @@ $app->group('/accounts', function (RouteCollectorProxy $group) {
     });
   });
 
-  // Multipart S3 — large files. Mirrors api/v2/routes_s3.php /multipart/*
-  // (production: session-cookie auth + permission level 1/10/99). Here we
-  // identify the user via X-Accounts-Npub and call S3Multipart with the npub
-  // explicitly. Each route still gates on the same account-level whitelist.
+  // Multipart S3 — large files. Mirrors api/v2/routes_s3.php /multipart/*.
+  // Here we identify the user via X-Accounts-Npub and call S3Multipart with
+  // the npub explicitly. Create gates on the upload-eligible account levels;
+  // the account dashboard routes any >= 40MB file here for all of them.
   $group->group('/uploads/multipart', function (RouteCollectorProxy $mp) {
     // POST /multipart — create multipart upload.
     $mp->post('', function (Request $request, Response $response) {
@@ -1479,9 +1479,21 @@ $app->group('/accounts', function (RouteCollectorProxy $group) {
         if (!$account->accountExists()) {
           return jsonResponse($response, 'error', 'not-found', new stdClass(), 404);
         }
+        // Creator (1), Professional (2), Purist (3), Advanced
+        // (10), Admin (99) — every upload-eligible tier. Gating this to
+        // 1/10/99 was what 403'd Professional/Purist large uploads.
         $level = (int) $account->getAccountLevel()->value;
-        if (!in_array($level, [1, 10, 99], true)) {
+        if (!in_array($level, [1, 2, 3, 10, 99], true)) {
           return jsonResponse($response, 'error', 'forbidden', new stdClass(), 403);
+        }
+        // Per-file size gate at initiation, mirroring the XHR path's
+        // UploadValidator: hasSufficientStorageSpace() bounds by remaining
+        // storage and, for Purist, the 450MB per-file cap. App bundles
+        // deployed before the client sent `size` omit it — skip the check
+        // then instead of failing every large upload in the deploy window.
+        $size = isset($data['size']) && is_numeric($data['size']) ? (int) $data['size'] : 0;
+        if ($size > 0 && !$account->hasSufficientStorageSpace($size)) {
+          return jsonResponse($response, 'error', 'File size exceeds the limit of ' . formatSizeUnits($account->getPerFileUploadLimit()), new stdClass(), 413);
         }
         $s3Multipart = $this->get('s3Multipart');
         $result = $s3Multipart->createMultipartUpload(
