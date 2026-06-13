@@ -889,6 +889,48 @@ $app->group('/accounts/admin/csam', function (RouteCollectorProxy $group) {
   });
 
   /**
+   * POST /accounts/admin/csam/record-case
+   * {evidenceLocationUrl, fileSha256Hash, logs} — insert a CSAM case after the
+   * Worker has archived the evidence (media + logs → evidence bucket). The
+   * identified_by_npub is taken from the verified admin (ProxiedAdminMiddleware),
+   * never the body. Idempotent: a case already on file for this hash is returned
+   * as-is so a Workflow retry / re-report never creates a duplicate.
+   */
+  $group->post('/record-case', function (Request $request, Response $response) {
+    global $link;
+    $body = json_decode((string) $request->getBody(), true);
+    if (!is_array($body)) return aaError($response, 'invalid-body', 400);
+    $hash = trim((string) ($body['fileSha256Hash'] ?? ''));
+    $evidenceUrl = (string) ($body['evidenceLocationUrl'] ?? '');
+    $logs = array_key_exists('logs', $body) && $body['logs'] !== null ? (string) $body['logs'] : null;
+    if ($hash === '' || $evidenceUrl === '') {
+      return aaError($response, 'Invalid parameters', 400);
+    }
+
+    $adminNpub = $request->getAttribute('admin_npub');
+    $identifiedBy = is_string($adminNpub) && $adminNpub !== '' ? $adminNpub : 'unknown';
+
+    $sel = $link->prepare('SELECT id FROM identified_csam_cases WHERE file_sha256_hash = ? ORDER BY id ASC LIMIT 1');
+    $sel->bind_param('s', $hash);
+    $sel->execute();
+    $existing = $sel->get_result()->fetch_assoc();
+    $sel->close();
+    if ($existing !== null) {
+      return aaJson($response, ['id' => (int) $existing['id'], 'existed' => true]);
+    }
+
+    $stmt = $link->prepare(
+      'INSERT INTO identified_csam_cases (identified_by_npub, evidence_location_url, file_sha256_hash, logs) VALUES (?, ?, ?, ?)'
+    );
+    $stmt->bind_param('ssss', $identifiedBy, $evidenceUrl, $hash, $logs);
+    $stmt->execute();
+    $newId = (int) $link->insert_id;
+    $stmt->close();
+
+    return aaJson($response, ['id' => $newId, 'existed' => false]);
+  });
+
+  /**
    * POST /accounts/admin/csam/record-submission
    * {incidentId, reportId, report} — the Worker records the NCMEC outcome
    * here after submitting (TEST_/numeric/ERROR semantics are computed Worker-
@@ -1180,10 +1222,13 @@ $app->group('/accounts/admin/csam', function (RouteCollectorProxy $group) {
 // approve.php port). Mounted at /api/v2/accounts/admin/moderation/*; same auth
 // stack (HMAC + ProxiedAdmin → admin-only, fresh acctlevel=99 DB read).
 //
-// Delegates the composite mutations to the engine helpers defined in
-// routes_admin.php — index.php loads that file BEFORE this one, so the global
-// functions (rejectUploadsByIds, deleteAndRejectUpload, banUserAndDeleteUpload,
-// processCsamReport) are in scope at request time.
+// THIN SQL ONLY. The byte-work for destructive actions (S3/R2/E2 deletion,
+// blossom ban fan-out, CDN purge, CSAM evidence) now runs in the Worker; these
+// routes are pure DB reads/writes (rows / ban-purge-page / delete-rows /
+// blacklist-add / adult-batch / status=approved|adult). The composite engine
+// helpers in routes_admin.php (rejectUploadsByIds, deleteAndRejectUpload,
+// processCsamReport, …) are NO LONGER called from here — they remain only for
+// the legacy admin .php pages that hit routes_admin.php directly.
 //
 // NOTE: unlike the legacy /admin/moderation/* routes, the per-action
 // `new Permission()` session checks are intentionally absent — the PHP session
@@ -1296,11 +1341,14 @@ $app->group('/accounts/admin/moderation', function (RouteCollectorProxy $group) 
 
   /**
    * POST /accounts/admin/moderation/status  {id, status}
-   * Single-upload status change (approved | rejected | adult | ban | csam).
-   * Same engine paths as the legacy /admin/moderation/status.
+   * THIN reclassification only — approved | adult (a plain UPDATE). The
+   * destructive actions (rejected | ban | csam) are now orchestrated in the
+   * Worker (S3/R2/E2 deletion, blossom ban fan-out, CDN purge, CSAM evidence)
+   * and persist via the thin DB endpoints below (/rows, /delete-rows,
+   * /blacklist-add, /csam/record-case). They no longer pass through this route.
    */
   $group->post('/status', function (Request $request, Response $response) {
-    global $link, $awsConfig, $csamReportingConfig;
+    global $link;
 
     $body = json_decode((string) $request->getBody(), true);
     if (!is_array($body)) {
@@ -1308,53 +1356,227 @@ $app->group('/accounts/admin/moderation', function (RouteCollectorProxy $group) 
     }
     $id = (int) ($body['id'] ?? 0);
     $status = (string) ($body['status'] ?? '');
-    $allowed = ['approved', 'rejected', 'adult', 'ban', 'csam'];
-    if ($id <= 0 || !in_array($status, $allowed, true)) {
-      return aaError($response, 'Invalid parameters', 400);
+    if ($id <= 0 || !in_array($status, ['approved', 'adult'], true)) {
+      return aaError($response, 'Invalid parameters (thin status accepts approved|adult only)', 400);
     }
 
-    $stmt = $link->prepare("SELECT filename, type FROM uploads_data WHERE id = ?");
-    $stmt->bind_param('i', $id);
+    $stmt = $link->prepare("UPDATE uploads_data SET approval_status = ? WHERE id = ?");
+    $stmt->bind_param('si', $status, $id);
     $stmt->execute();
-    $stmt->bind_result($filename, $type);
-    $stmt->fetch();
     $stmt->close();
 
-    if ($filename === null) {
-      return aaError($response, 'Upload not found', 404);
-    }
-
-    $s3 = new S3Service($awsConfig);
-    $blossomAPI = new BlossomFrontEndAPI($_SERVER['BLOSSOM_API_URL'], $_SERVER['BLOSSOM_API_KEY']);
-
-    if ($status === 'rejected') {
-      if (!deleteAndRejectUpload($link, $s3, $blossomAPI, $id, $filename, $type)) {
-        return aaError($response, 'Reject failed (S3 delete error). The upload was preserved for retry.', 500);
-      }
-    } elseif ($status === 'ban') {
-      // Ban writes land first inside the helper — even on a false return the
-      // user IS banned; only the file cleanup needs a retry.
-      if (!banUserAndDeleteUpload($link, $s3, $blossomAPI, $csamReportingConfig, $id, $filename, $type)) {
-        return aaError($response, 'User was banned but file delete failed. Retry the reject action to clean up.', 500);
-      }
-    } elseif ($status === 'csam') {
-      // Evidence-first ordering lives inside processCsamReport (archive →
-      // case row → bans → delete). Reporting npub comes from the HMAC headers
-      // (no PHP session on proxied calls).
-      $adminNpub = $request->getAttribute('admin_npub');
-      $result = processCsamReport($link, $s3, $blossomAPI, $csamReportingConfig, $id, $filename, $type, is_string($adminNpub) ? $adminNpub : null);
-      if ($result !== true) {
-        return aaError($response, is_string($result) ? $result : 'CSAM processing failed', 500);
-      }
-    } else {
-      // approved or adult — plain status update.
-      $stmt = $link->prepare("UPDATE uploads_data SET approval_status = ? WHERE id = ?");
-      $stmt->bind_param('si', $status, $id);
-      $stmt->execute();
-      $stmt->close();
-    }
-
     return aaJson($response, ['success' => true, 'id' => $id, 'status' => $status]);
+  });
+
+  /**
+   * POST /accounts/admin/moderation/rows  {ids:int[]}
+   * Thin read: the (filename, type, blossom_hash, usernpub) the Worker needs to
+   * locate + ban the bytes before tearing an upload down. Missing ids are
+   * simply absent from the response (the Worker treats them as already-gone).
+   */
+  $group->post('/rows', function (Request $request, Response $response) {
+    global $link;
+    $body = json_decode((string) $request->getBody(), true);
+    if (!is_array($body) || !isset($body['ids']) || !is_array($body['ids'])) {
+      return aaError($response, 'Invalid payload, expecting an "ids" array', 400);
+    }
+    $ids = array_values(array_unique(array_filter(
+      array_map('intval', $body['ids']),
+      fn (int $i): bool => $i > 0,
+    )));
+    if ($ids === []) {
+      return aaJson($response, ['rows' => []]);
+    }
+    if (count($ids) > 5000) {
+      return aaError($response, 'Too many IDs, max 5000 per request', 400);
+    }
+    $placeholders = implode(',', array_fill(0, count($ids), '?'));
+    $stmt = $link->prepare(
+      "SELECT id, filename, type, blossom_hash, usernpub FROM uploads_data WHERE id IN ($placeholders)"
+    );
+    $stmt->bind_param(str_repeat('i', count($ids)), ...$ids);
+    $stmt->execute();
+    $rs = $stmt->get_result();
+    $rows = [];
+    while ($r = $rs->fetch_assoc()) {
+      $rows[] = [
+        'id' => (int) $r['id'],
+        'filename' => (string) $r['filename'],
+        'type' => (string) ($r['type'] ?? ''),
+        'blossom_hash' => $r['blossom_hash'] !== null ? (string) $r['blossom_hash'] : null,
+        'usernpub' => $r['usernpub'] !== null ? (string) $r['usernpub'] : null,
+      ];
+    }
+    $rs->free();
+    $stmt->close();
+    return aaJson($response, ['rows' => $rows]);
+  });
+
+  /**
+   * POST /accounts/admin/moderation/ban-purge-page  {npub, after_id, limit}
+   * Thin keyset read of ONE page of an npub's uploads (read-only — the ban
+   * writes + media teardown happen in the Worker). Keeps the anonymous-sweep
+   * SQL guard as defense-in-depth behind the npub-format check.
+   */
+  $group->post('/ban-purge-page', function (Request $request, Response $response) {
+    global $link;
+    $body = json_decode((string) $request->getBody(), true);
+    if (!is_array($body)) {
+      return aaError($response, 'invalid-body', 400);
+    }
+    $npub    = trim((string) ($body['npub'] ?? ''));
+    $afterId = (int) ($body['after_id'] ?? 0);
+    $limit   = max(1, min(50, (int) ($body['limit'] ?? 30)));
+    if (!preg_match('/^npub1[a-z0-9]{20,90}$/', $npub)) {
+      return aaError($response, 'Invalid npub', 400);
+    }
+
+    $total = null;
+    if ($afterId === 0) {
+      $cStmt = $link->prepare("SELECT COUNT(*) AS c FROM uploads_data WHERE usernpub = ?");
+      $cStmt->bind_param('s', $npub);
+      $cStmt->execute();
+      $total = (int) ($cStmt->get_result()->fetch_assoc()['c'] ?? 0);
+      $cStmt->close();
+    }
+
+    // Keyset on id ASC: deleted rows fall out; failures keep id <= cursor so the
+    // next page (id > cursor) skips them — no infinite loop.
+    $stmt = $link->prepare(
+      "SELECT id, filename, type, blossom_hash FROM uploads_data
+        WHERE usernpub = ? AND usernpub <> '' AND usernpub IS NOT NULL AND id > ?
+        ORDER BY id ASC LIMIT ?"
+    );
+    $stmt->bind_param('sii', $npub, $afterId, $limit);
+    $stmt->execute();
+    $rs = $stmt->get_result();
+    $rows = [];
+    while ($r = $rs->fetch_assoc()) {
+      $rows[] = [
+        'id' => (int) $r['id'],
+        'filename' => (string) $r['filename'],
+        'type' => (string) ($r['type'] ?? ''),
+        'blossom_hash' => $r['blossom_hash'] !== null ? (string) $r['blossom_hash'] : null,
+        'usernpub' => $npub,
+      ];
+    }
+    $stmt->close();
+
+    $cursor = $rows === [] ? $afterId : max(array_column($rows, 'id'));
+    return aaJson($response, [
+      'total'  => $total,
+      'rows'   => $rows,
+      'cursor' => $cursor,
+      'more'   => count($rows) === $limit,
+    ]);
+  });
+
+  /**
+   * POST /accounts/admin/moderation/delete-rows  {rows:[{id,filename,type}]}
+   * Thin DB-last write: record each filename in rejected_files (idempotent —
+   * insert only if absent, no unique key on the table) then DELETE the
+   * uploads_data rows. The caller has already removed the bytes, so this is the
+   * final step of S3-delete-first / DB-row-last.
+   */
+  $group->post('/delete-rows', function (Request $request, Response $response) {
+    global $link;
+    $body = json_decode((string) $request->getBody(), true);
+    if (!is_array($body) || !isset($body['rows']) || !is_array($body['rows'])) {
+      return aaError($response, 'Invalid payload, expecting a "rows" array', 400);
+    }
+    $rows = [];
+    foreach ($body['rows'] as $r) {
+      if (!is_array($r)) continue;
+      $id = (int) ($r['id'] ?? 0);
+      $filename = (string) ($r['filename'] ?? '');
+      $type = (string) ($r['type'] ?? '');
+      if ($id > 0 && $filename !== '') {
+        $rows[] = ['id' => $id, 'filename' => $filename, 'type' => $type];
+      }
+    }
+    if ($rows === []) {
+      return aaJson($response, ['success' => true, 'deleted' => 0]);
+    }
+    if (count($rows) > 5000) {
+      return aaError($response, 'Too many rows, max 5000 per request', 400);
+    }
+
+    // rejected_files: insert each filename only if not already present (the
+    // table has no unique key; this keeps Workflow retries idempotent).
+    $insStmt = $link->prepare(
+      "INSERT INTO rejected_files (filename, type)
+         SELECT ?, ? FROM DUAL
+          WHERE NOT EXISTS (SELECT 1 FROM rejected_files WHERE filename = ?)"
+    );
+    foreach ($rows as $r) {
+      try {
+        $insStmt->bind_param('sss', $r['filename'], $r['type'], $r['filename']);
+        $insStmt->execute();
+      } catch (\Throwable $e) {
+        error_log('aa delete-rows rejected_files insert failed for ' . $r['filename'] . ': ' . $e->getMessage());
+      }
+    }
+    $insStmt->close();
+
+    // uploads_data: single batch DELETE (the critical write).
+    $ids = array_column($rows, 'id');
+    $placeholders = implode(',', array_fill(0, count($ids), '?'));
+    $delStmt = $link->prepare("DELETE FROM uploads_data WHERE id IN ($placeholders)");
+    $delStmt->bind_param(str_repeat('i', count($ids)), ...$ids);
+    if (!$delStmt->execute()) {
+      $err = $delStmt->error;
+      $delStmt->close();
+      error_log('aa delete-rows uploads_data delete failed: ' . $err);
+      return aaError($response, 'Database delete failed', 500);
+    }
+    $deleted = $delStmt->affected_rows;
+    $delStmt->close();
+
+    return aaJson($response, ['success' => true, 'deleted' => $deleted]);
+  });
+
+  /**
+   * POST /accounts/admin/moderation/blacklist-add  {entries:[{npub,ip,ua,reason}]}
+   * Thin npub/ip blacklist write for ban + CSAM offender bans. Deduped on
+   * (npub, reason) so Workflow retries don't pile duplicate rows (no unique key
+   * on the table). LegacyBlacklist::add does the normalization + ip validation.
+   */
+  $group->post('/blacklist-add', function (Request $request, Response $response) {
+    global $link;
+    $body = json_decode((string) $request->getBody(), true);
+    if (!is_array($body) || !isset($body['entries']) || !is_array($body['entries'])) {
+      return aaError($response, 'Invalid payload, expecting an "entries" array', 400);
+    }
+    if (count($body['entries']) > 5000) {
+      return aaError($response, 'Too many entries, max 5000 per request', 400);
+    }
+    $bl = new LegacyBlacklist($link);
+    $added = 0;
+    foreach ($body['entries'] as $e) {
+      if (!is_array($e)) continue;
+      $npub = isset($e['npub']) ? (string) $e['npub'] : '';
+      $ip = isset($e['ip']) && $e['ip'] !== null ? (string) $e['ip'] : null;
+      $ua = isset($e['ua']) && $e['ua'] !== null ? (string) $e['ua'] : null;
+      $reason = isset($e['reason']) ? (string) $e['reason'] : 'BANNED';
+
+      if ($npub !== '') {
+        $dStmt = $link->prepare('SELECT 1 FROM blacklist WHERE npub = ? AND reason = ? LIMIT 1');
+        $dStmt->bind_param('ss', $npub, $reason);
+        $dStmt->execute();
+        $exists = $dStmt->get_result()->fetch_assoc() !== null;
+        $dStmt->close();
+        if ($exists) {
+          continue;
+        }
+      }
+      try {
+        $bl->add($npub, $ip, $ua, $reason);
+        $added++;
+      } catch (\Throwable $ex) {
+        error_log('aa blacklist-add failed for ' . $npub . ': ' . $ex->getMessage());
+      }
+    }
+    return aaJson($response, ['success' => true, 'added' => $added]);
   });
 
   /**
@@ -1430,131 +1652,6 @@ $app->group('/accounts/admin/moderation', function (RouteCollectorProxy $group) 
     $stmt->close();
 
     return aaJson($response, ['success' => true, 'count' => $count]);
-  });
-
-  /**
-   * POST /accounts/admin/moderation/reject-batch  {ids: [...]} (≤30)
-   * Batch reject — per-item S3 delete → one consolidated CF purge → blossom
-   * hash bans → multi-row rejected_files INSERT → one DELETE. Per-id results.
-   * The ModerationWorkflow drives this in pages for mass operations.
-   */
-  $group->post('/reject-batch', function (Request $request, Response $response) {
-    global $link, $awsConfig;
-
-    $MAX_REJECT_BATCH = 30;
-
-    $body = json_decode((string) $request->getBody(), true);
-    if (!is_array($body) || !isset($body['ids']) || !is_array($body['ids'])) {
-      return aaError($response, 'Invalid payload, expecting an "ids" array', 400);
-    }
-
-    $ids = array_values(array_unique(array_filter(
-      array_map('intval', $body['ids']),
-      fn (int $id): bool => $id > 0,
-    )));
-    if ($ids === []) {
-      return aaError($response, 'No valid IDs provided', 400);
-    }
-    if (count($ids) > $MAX_REJECT_BATCH) {
-      return aaError($response, "Too many IDs, max $MAX_REJECT_BATCH per request", 400);
-    }
-
-    $results = rejectUploadsByIds($link, $awsConfig, $ids);
-
-    $succeeded = 0;
-    $failed = 0;
-    foreach ($results as $r) {
-      $r['ok'] ? $succeeded++ : $failed++;
-    }
-
-    return aaJson($response, [
-      'success' => $failed === 0,
-      'processed' => count($results),
-      'succeeded' => $succeeded,
-      'failed' => $failed,
-      'results' => $results,
-    ]);
-  });
-
-  /**
-   * POST /accounts/admin/moderation/ban-purge  {npub, after_id, limit ≤50}
-   * One keyset page of "ban npub + delete ALL their media". First call
-   * (after_id=0) writes the ban (legacy blacklist + blossom banUser) and
-   * returns the total; subsequent calls walk the cursor until more=false.
-   * The npub regex is the mass-delete guard: an empty/garbage npub can never
-   * sweep anonymous uploads. The ModerationWorkflow drives this loop.
-   */
-  $group->post('/ban-purge', function (Request $request, Response $response) {
-    global $link, $awsConfig;
-    @set_time_limit(0);
-
-    $body = json_decode((string) $request->getBody(), true);
-    if (!is_array($body)) {
-      return aaError($response, 'invalid-body', 400);
-    }
-    $npub    = trim((string) ($body['npub'] ?? ''));
-    $afterId = (int) ($body['after_id'] ?? 0);
-    $limit   = max(1, min(50, (int) ($body['limit'] ?? 25)));
-
-    if (!preg_match('/^npub1[a-z0-9]{20,90}$/', $npub)) {
-      return aaError($response, 'Invalid npub', 400);
-    }
-
-    $banned = false;
-    $total  = null;
-    if ($afterId === 0) {
-      try {
-        (new LegacyBlacklist($link))->add($npub, null, null, 'BANNED');
-      } catch (\Throwable $e) {
-        error_log("aa ban-purge blacklist add failed for {$npub}: " . $e->getMessage());
-      }
-      try {
-        $blossomAPI = new BlossomFrontEndAPI($_SERVER['BLOSSOM_API_URL'], $_SERVER['BLOSSOM_API_KEY']);
-        $blossomAPI->banUser($npub);
-      } catch (\Throwable $e) {
-        error_log("aa ban-purge blossom banUser failed for {$npub}: " . $e->getMessage());
-      }
-      $banned = true;
-
-      $cStmt = $link->prepare("SELECT COUNT(*) AS c FROM uploads_data WHERE usernpub = ?");
-      $cStmt->bind_param('s', $npub);
-      $cStmt->execute();
-      $total = (int) ($cStmt->get_result()->fetch_assoc()['c'] ?? 0);
-      $cStmt->close();
-    }
-
-    // Keyset on id ASC: deleted rows fall out; failures keep id <= cursor so
-    // the next page (id > cursor) skips them — no infinite loop.
-    $stmt = $link->prepare(
-      "SELECT id FROM uploads_data WHERE usernpub = ? AND id > ? ORDER BY id ASC LIMIT ?"
-    );
-    $stmt->bind_param('sii', $npub, $afterId, $limit);
-    $stmt->execute();
-    $rs = $stmt->get_result();
-    $ids = [];
-    while ($r = $rs->fetch_assoc()) {
-      $ids[] = (int) $r['id'];
-    }
-    $stmt->close();
-
-    $results = rejectUploadsByIds($link, $awsConfig, $ids);
-
-    $succeeded = 0;
-    $failed = 0;
-    foreach ($results as $r) {
-      $r['ok'] ? $succeeded++ : $failed++;
-    }
-
-    return aaJson($response, [
-      'banned'    => $banned,
-      'total'     => $total,
-      'cursor'    => $ids === [] ? $afterId : max($ids),
-      'scanned'   => count($ids),
-      'succeeded' => $succeeded,
-      'failed'    => $failed,
-      'more'      => count($ids) === $limit,
-      'results'   => $results,
-    ]);
   });
 
 })
