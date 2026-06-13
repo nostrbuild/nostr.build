@@ -151,10 +151,8 @@ function rejectUploadsByIds(mysqli $link, array $awsConfig, array $ids): array
     // (deleteFromS3 already swallows AWS exceptions internally and reports
     //  via boolean return; NoSuchKey counts as success.)
     $s3DeleteOk = false;
-    $currentSha256 = '';
     try {
-      $currentSha256 = $s3->getS3ObjectHash(objectKey: $objectKey, paidAccount: false);
-      $s3DeleteOk    = $s3->deleteFromS3(objectKey: $objectKey, paidAccount: false) === true;
+      $s3DeleteOk = $s3->deleteFromS3(objectKey: $objectKey, paidAccount: false) === true;
     } catch (\Throwable $e) {
       error_log("rejectUploadsByIds S3 exception for id {$id} ({$filename}): " . $e->getMessage());
     }
@@ -169,7 +167,7 @@ function rejectUploadsByIds(mysqli $link, array $awsConfig, array $ids): array
       continue;
     }
 
-    $purgeBatch[] = $currentSha256 !== '' ? "{$filename}|{$currentSha256}" : $filename;
+    $purgeBatch[] = $filename;
     if ($row['blossom_hash'] !== null && $row['blossom_hash'] !== '') {
       $blossomHashes[$row['blossom_hash']] = true;
     }
@@ -1692,8 +1690,7 @@ $app->group('/admin/media', function (RouteCollectorProxy $group) {
         $objectName = ($type === 'video')
           ? 'av/' . $filename
           : (($type === 'profile') ? 'i/p/' . $filename : 'i/' . $filename);
-        $currentSha256 = $s3->getS3ObjectHash(objectKey: $objectName, paidAccount: false);
-        $purgeBatch[] = !empty($currentSha256) ? "{$filename}|{$currentSha256}" : $filename;
+        $purgeBatch[] = $filename;
         $s3->deleteFromS3(objectKey: $objectName, paidAccount: false);
       }
 
@@ -2209,9 +2206,7 @@ function deleteAndRejectUpload(mysqli $link, S3Service $s3, BlossomFrontEndAPI $
   // success), false on AWS error. It catches its own exceptions internally,
   // so the outer try/catch only fires if something pre-S3 throws.
   $s3DeleteOk = false;
-  $currentSha256 = '';
   try {
-    $currentSha256 = $s3->getS3ObjectHash(objectKey: $objectName, paidAccount: false);
     $s3DeleteOk = $s3->deleteFromS3(objectKey: $objectName, paidAccount: false) === true;
   } catch (\Throwable $e) {
     error_log("deleteAndRejectUpload S3 exception for id {$id} ({$filename}): " . $e->getMessage());
@@ -2226,7 +2221,7 @@ function deleteAndRejectUpload(mysqli $link, S3Service $s3, BlossomFrontEndAPI $
   // entry that expires on its own; never a reason to keep the DB row.
   try {
     $purger = new CloudflarePurger($_SERVER['NB_API_SECRET'], $_SERVER['NB_API_PURGE_URL']);
-    $purgeFilename = $currentSha256 !== '' ? "{$filename}|{$currentSha256}" : $filename;
+    $purgeFilename = $filename;
     $result = $purger->purgeFiles([$purgeFilename]);
     if ($result !== false) {
       error_log(json_encode($result));
