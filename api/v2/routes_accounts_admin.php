@@ -1272,7 +1272,20 @@ $app->group('/accounts/admin/moderation', function (RouteCollectorProxy $group) 
       $limit = max(1, min(204, (int) ($q['limit'] ?? 60)));
       $page  = max(0, (int) ($q['page'] ?? 0));
       $start = $page * $limit;
-      $stmt = $link->prepare("SELECT id, filename, type, usernpub, approval_status FROM uploads_data WHERE approval_status = 'pending' ORDER BY upload_date DESC LIMIT ?, ?");
+      // Group each uploader's pending media together (the hover-highlight then
+      // lights the whole group); newest-first within a group. idx_optimization
+      // (approval_status, …) filters to the pending set first — which is
+      // AI-pre-filtered and small (~hundreds of rows) — so the usernpub/date
+      // filesort over it is negligible. Deliberately NO (…,usernpub,…) index:
+      // not worth the write cost on this 3M-row, write-hot table to save a
+      // sub-ms sort over a tiny set.
+      $stmt = $link->prepare(
+        "SELECT id, filename, type, usernpub, approval_status
+           FROM uploads_data
+          WHERE approval_status = 'pending'
+          ORDER BY usernpub, upload_date DESC
+          LIMIT ?, ?"
+      );
       $stmt->bind_param('ii', $start, $limit);
       $cnt = $link->query("SELECT COUNT(*) AS c FROM uploads_data WHERE approval_status = 'pending'");
       $total = (int) (($cnt ? $cnt->fetch_assoc() : null)['c'] ?? 0);
