@@ -26,6 +26,7 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/config.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/HmacAuthMiddleware.class.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/ProxiedAdminMiddleware.class.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/Account.class.php';
+require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/db/UsersImagesFolders.class.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/WorkerEventsClient.class.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/IpAccessControl.class.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/LegacyBlacklist.class.php';
@@ -122,15 +123,45 @@ function aaParseNlActivation(mixed $raw): array
   ];
 }
 
+/** Normalised media-usage block for the admin snapshot. One aggregate query
+ *  (getTotalStats) yields the per-type counts + sizes AND the storage total,
+ *  so this costs a single extra round-trip on top of the lookup. Works for
+ *  expired accounts — users_images rows survive expiry, the query keys on
+ *  usernpub only. getTotalStats uses inconsistent key names for the tail
+ *  categories (documentCount / archiveCount / otherCount), normalised here. */
+function aaMediaStats(mysqli $link, string $npub): array
+{
+  $s = (new UsersImagesFolders($link))->getTotalStats($npub);
+  $s = is_array($s) ? $s : [];
+  $n = static fn(string $k): int => (int) ($s[$k] ?? 0);
+  return [
+    'total'        => $n('all'),            'totalSize'     => $n('allSize'),
+    'images'       => $n('images'),         'imagesSize'    => $n('imageSize'),
+    'gifs'         => $n('gifs'),           'gifsSize'      => $n('gifSize'),
+    'videos'       => $n('videos'),         'videosSize'    => $n('videoSize'),
+    'audio'        => $n('audio'),          'audioSize'     => $n('audioSize'),
+    'documents'    => $n('documentCount'),  'documentsSize' => $n('documentSize'),
+    'archives'     => $n('archiveCount'),   'archivesSize'  => $n('archiveSize'),
+    'others'       => $n('otherCount'),     'othersSize'    => $n('otherSize'),
+    'publicCount'  => $n('publicCount'),
+  ];
+}
+
 /** Build the lookup response payload from an Account. Mirrors the field
  *  names the TS handler validates against. */
-function aaUserSnapshot(Account $account): array
+function aaUserSnapshot(Account $account, mysqli $link): array
 {
   $info = $account->getAccountInfo();
   // NL status: parse the stored JSON for tier name + tier-ends timestamp,
   // so the admin doesn't have to read raw blobs. eligible/activated come
   // straight from getAccountInfo (mirrors what the profile endpoint returns).
   $nl = aaParseNlActivation($info['nl_sub_activation_return_value'] ?? null);
+  // Storage: getAccountInfo already computed both of these (used = SUM over
+  // users_images, limit = plan tier + addons), so surfacing them is free.
+  // Unlimited tiers (admin) report PHP_INT_MAX — send null + a flag so the
+  // client never tries to render a bar or a meaningless percentage.
+  $limitRaw = (int) ($info['storage_space_limit'] ?? 0);
+  $unlimited = $limitRaw === PHP_INT_MAX;
   return [
     'npub'               => $account->getNpub(),
     'userId'             => $account->getAccountNumericId(),
@@ -155,6 +186,11 @@ function aaUserSnapshot(Account $account): array
     'nlSubActivationId'  => $info['nl_sub_activation_id'] ?? null,
     'nlSubTier'          => $nl['tier'],
     'nlSubTierEndsAt'    => $nl['tierEndsAt'],
+    // Storage + media usage (works for active and expired accounts alike).
+    'storageUsed'        => (int) ($info['used_storage_space'] ?? 0),
+    'storageLimit'       => $unlimited ? null : $limitRaw,
+    'storageUnlimited'   => $unlimited,
+    'media'              => aaMediaStats($link, $account->getNpub()),
   ];
 }
 
@@ -207,7 +243,96 @@ $app->group('/accounts/admin/users', function (RouteCollectorProxy $group) {
     }
     if (!$account->accountExists()) return aaError($response, 'not-found', 404);
 
-    return aaJson($response, aaUserSnapshot($account));
+    return aaJson($response, aaUserSnapshot($account, $link));
+  });
+
+  /**
+   * GET /accounts/admin/users/overview
+   * Default landing stats for the User Management tool — shown before the
+   * admin looks anyone up. Three LIMIT-bounded reads over the (small) users
+   * table; the client caches the result (short staleTime) so navigating
+   * back to the tool doesn't re-hit the DB. No input.
+   */
+  $group->get('/overview', function (Request $request, Response $response) {
+    global $link;
+
+    // ----- Recently expired paid plans (last 30 days, newest-first) -----
+    // Paid tiers only (1..10 covers Creator/Pro/Purist/Viewer/Starter/Advanced;
+    // excludes Free=0 and staff 89/99 which have no meaningful expiry).
+    $recentlyExpired = [];
+    $sql = "SELECT usernpub, uuid_id, nym, ppic, acctlevel, plan_until_date
+            FROM users
+            WHERE acctlevel BETWEEN 1 AND 10
+              AND plan_until_date IS NOT NULL
+              AND plan_until_date < CURDATE()
+              AND plan_until_date >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)
+            ORDER BY plan_until_date DESC
+            LIMIT 20";
+    if ($res = $link->query($sql)) {
+      while ($row = $res->fetch_assoc()) {
+        $recentlyExpired[] = [
+          'npub'          => $row['usernpub'],
+          'uuidId'        => $row['uuid_id'],
+          'nym'           => $row['nym'],
+          'pfpUrl'        => $row['ppic'],
+          'acctlevel'     => (int) $row['acctlevel'],
+          'planUntilDate' => $row['plan_until_date'],
+        ];
+      }
+      $res->free();
+    }
+
+    // ----- Newest accounts (ordered by PK = creation order, so this rides
+    // the primary index instead of a created_at filesort) -----
+    $newestAccounts = [];
+    $sql = "SELECT usernpub, uuid_id, nym, ppic, acctlevel, created_at
+            FROM users
+            ORDER BY id DESC
+            LIMIT 20";
+    if ($res = $link->query($sql)) {
+      while ($row = $res->fetch_assoc()) {
+        $newestAccounts[] = [
+          'npub'      => $row['usernpub'],
+          'uuidId'    => $row['uuid_id'],
+          'nym'       => $row['nym'],
+          'pfpUrl'    => $row['ppic'],
+          'acctlevel' => (int) $row['acctlevel'],
+          'createdAt' => $row['created_at'],
+        ];
+      }
+      $res->free();
+    }
+
+    // ----- Plan distribution (one grouped scan over users) -----
+    // active/expired split is only meaningful for paid tiers; for Free/staff
+    // it stays 0 and the client just shows the total.
+    $planDistribution = [];
+    $sql = "SELECT acctlevel,
+              COUNT(*) AS total,
+              SUM(CASE WHEN acctlevel BETWEEN 1 AND 10
+                        AND plan_until_date >= CURDATE() THEN 1 ELSE 0 END) AS active,
+              SUM(CASE WHEN acctlevel BETWEEN 1 AND 10
+                        AND (plan_until_date IS NULL OR plan_until_date < CURDATE()) THEN 1 ELSE 0 END) AS expired
+            FROM users
+            GROUP BY acctlevel
+            ORDER BY acctlevel";
+    if ($res = $link->query($sql)) {
+      while ($row = $res->fetch_assoc()) {
+        $planDistribution[] = [
+          'level'   => (int) $row['acctlevel'],
+          'total'   => (int) $row['total'],
+          'active'  => (int) $row['active'],
+          'expired' => (int) $row['expired'],
+        ];
+      }
+      $res->free();
+    }
+
+    return aaJson($response, [
+      'recentlyExpired'  => $recentlyExpired,
+      'newestAccounts'   => $newestAccounts,
+      'planDistribution' => $planDistribution,
+    ]);
   });
 
   /**
