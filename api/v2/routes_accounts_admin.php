@@ -282,6 +282,56 @@ $app->group('/accounts/admin/users', function (RouteCollectorProxy $group) {
       $res->free();
     }
 
+    // ----- Expiring soon (paid plans lapsing within 14 days, soonest-first) ---
+    // The proactive mirror of recentlyExpired — catch churn before it happens.
+    $expiringSoon = [];
+    $sql = "SELECT usernpub, uuid_id, nym, ppic, acctlevel, plan_until_date
+            FROM users
+            WHERE acctlevel BETWEEN 1 AND 10
+              AND plan_until_date IS NOT NULL
+              AND plan_until_date >= CURDATE()
+              AND plan_until_date <= DATE_ADD(CURDATE(), INTERVAL 14 DAY)
+            ORDER BY plan_until_date ASC
+            LIMIT 20";
+    if ($res = $link->query($sql)) {
+      while ($row = $res->fetch_assoc()) {
+        $expiringSoon[] = [
+          'npub'          => $row['usernpub'],
+          'uuidId'        => $row['uuid_id'],
+          'nym'           => $row['nym'],
+          'pfpUrl'        => $row['ppic'],
+          'acctlevel'     => (int) $row['acctlevel'],
+          'planUntilDate' => $row['plan_until_date'],
+        ];
+      }
+      $res->free();
+    }
+
+    // ----- Oldest expired (longest-lapsed paid plans, oldest-first) -----
+    // Win-back / storage-reclaim triage: accounts expired long ago whose media
+    // still survives. No time window — we want the oldest, full stop.
+    $oldestExpired = [];
+    $sql = "SELECT usernpub, uuid_id, nym, ppic, acctlevel, plan_until_date
+            FROM users
+            WHERE acctlevel BETWEEN 1 AND 10
+              AND plan_until_date IS NOT NULL
+              AND plan_until_date < CURDATE()
+            ORDER BY plan_until_date ASC
+            LIMIT 20";
+    if ($res = $link->query($sql)) {
+      while ($row = $res->fetch_assoc()) {
+        $oldestExpired[] = [
+          'npub'          => $row['usernpub'],
+          'uuidId'        => $row['uuid_id'],
+          'nym'           => $row['nym'],
+          'pfpUrl'        => $row['ppic'],
+          'acctlevel'     => (int) $row['acctlevel'],
+          'planUntilDate' => $row['plan_until_date'],
+        ];
+      }
+      $res->free();
+    }
+
     // ----- Newest accounts (ordered by PK = creation order, so this rides
     // the primary index instead of a created_at filesort) -----
     $newestAccounts = [];
@@ -329,7 +379,9 @@ $app->group('/accounts/admin/users', function (RouteCollectorProxy $group) {
     }
 
     return aaJson($response, [
+      'expiringSoon'     => $expiringSoon,
       'recentlyExpired'  => $recentlyExpired,
+      'oldestExpired'    => $oldestExpired,
       'newestAccounts'   => $newestAccounts,
       'planDistribution' => $planDistribution,
     ]);
