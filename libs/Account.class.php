@@ -1659,6 +1659,41 @@ class Account
   }
 
   /**
+   * Set the account's add-on storage allowance (bytes), added on top of the
+   * plan tier's base limit by getStorageSpaceLimit(). Absolute SET, not an
+   * increment, so it's idempotent. Pass 0 to remove the add-on.
+   *
+   * Deliberately NOT admin-scoped: this is the single primitive for changing
+   * add-on storage. Today the admin tool calls it; a future paid "buy add-on
+   * storage" flow can reuse it directly (e.g. setAddonStorage(current + bought))
+   * without duplicating the persistence path.
+   *
+   * @param int $bytes non-negative add-on allowance in bytes
+   * @return int the persisted add-on byte value
+   * @throws InvalidArgumentException on a negative value
+   * @throws Exception on DB failure / unknown user
+   */
+  public function setAddonStorage(int $bytes): int
+  {
+    if ($bytes < 0) {
+      throw new InvalidArgumentException("addon storage must be >= 0: $bytes");
+    }
+    $stmt = $this->db->prepare("UPDATE users SET addon_storage = ? WHERE usernpub = ?");
+    if (!$stmt) throw new Exception("prepare failed: " . $this->db->error);
+    try {
+      $stmt->bind_param('is', $bytes, $this->npub);
+      if (!$stmt->execute()) throw new Exception("execute failed: " . $stmt->error);
+      if ($stmt->affected_rows === 0 && !$this->accountExists()) {
+        throw new Exception("user not found");
+      }
+    } finally {
+      $stmt->close();
+    }
+    $this->fetchAccountData();
+    return $bytes;
+  }
+
+  /**
    * Generate a strong random password, persist both legacy hashes, and
    * return the plaintext to the caller exactly ONCE. The plaintext is
    * never logged or stored anywhere else — the caller (admin route) is

@@ -190,6 +190,9 @@ function aaUserSnapshot(Account $account, mysqli $link): array
     'storageUsed'        => (int) ($info['used_storage_space'] ?? 0),
     'storageLimit'       => $unlimited ? null : $limitRaw,
     'storageUnlimited'   => $unlimited,
+    // Add-on storage (bytes) granted on top of the plan tier — drives the
+    // admin add-on panel's "current" value.
+    'storageAddon'       => $account->getAccountAdditionStorage(),
     'media'              => aaMediaStats($link, $account->getNpub()),
   ];
 }
@@ -519,6 +522,49 @@ $app->group('/accounts/admin/users', function (RouteCollectorProxy $group) {
       ['remainingDays' => $account->getRemainingSubscriptionDays()],
     );
     return aaJson($response, ['ok' => true, 'planUntilDate' => $newEnd]);
+  });
+
+  /**
+   * POST /accounts/admin/users/addon-storage
+   * Body: { npub, blocks: 0..1000 }  (each block = 10 GiB)
+   * Sets the account's add-on storage allowance, added on top of the plan
+   * tier limit. Absolute SET (idempotent); blocks=0 removes the add-on.
+   */
+  $group->post('/addon-storage', function (Request $request, Response $response) {
+    global $link;
+    $body = json_decode((string) $request->getBody(), true);
+    if (!is_array($body)) return aaError($response, 'invalid-body', 400);
+
+    $npub = aaValidNpub($body['npub'] ?? null);
+    $blocks = isset($body['blocks']) && is_int($body['blocks']) ? $body['blocks'] : null;
+
+    if ($npub === null) return aaError($response, 'invalid-npub', 400);
+    if ($blocks === null || $blocks < 0 || $blocks > 1000) {
+      return aaError($response, 'invalid-blocks', 400);
+    }
+
+    $adminNpub = (string) $request->getAttribute('admin_npub');
+    if ($adminNpub !== '' && $adminNpub === $npub) {
+      return aaError($response, 'self-modify-forbidden', 403);
+    }
+
+    $account = new Account($npub, $link);
+    if (!$account->accountExists()) return aaError($response, 'not-found', 404);
+
+    // 10 GiB per block. blocks <= 1000 → <= 10 TiB, comfortably within int64.
+    $bytes = $blocks * 10 * 1024 * 1024 * 1024;
+    try {
+      $stored = $account->setAddonStorage($bytes);
+    } catch (\InvalidArgumentException $e) {
+      return aaError($response, 'invalid-input', 400, ['detail' => $e->getMessage()]);
+    } catch (\Throwable $e) {
+      error_log("admin/users/addon-storage failed for {$npub}: " . $e->getMessage());
+      return aaError($response, 'server-error', 500);
+    }
+
+    // Invalidate the target's profile so their storage quota updates live.
+    aaEmitProfileChanged($account->getAccountUuid(), ['storage']);
+    return aaJson($response, ['ok' => true, 'addonBytes' => $stored, 'blocks' => $blocks]);
   });
 
   /**
