@@ -62,6 +62,15 @@ $app->group('/internal/plans', function (RouteCollectorProxy $group) {
     $plan = is_array($data) ? (int)($data['plan'] ?? 0) : 0;
     $period = is_array($data) ? (string)($data['period'] ?? '1y') : '1y';
     $new = is_array($data) && !empty($data['new']);
+    // Downgrade-on-renew: the Worker computed the exact new expiry (purchased
+    // term + converted bonus days). setPlan stores it verbatim AFTER re-checking
+    // the invariants. Absent for renewal/upgrade/signup (PHP computes the date).
+    $planUntilOverride = is_array($data) && isset($data['planUntilOverride'])
+      ? trim((string)$data['planUntilOverride'])
+      : null;
+    if ($planUntilOverride === '') {
+      $planUntilOverride = null;
+    }
     if ($uuid === '' || $plan <= 0) {
       $response->getBody()->write(json_encode(['ok' => false, 'error' => 'uuid and plan required']));
       return $response->withStatus(400)->withHeader('Content-Type', 'application/json');
@@ -75,7 +84,7 @@ $app->group('/internal/plans', function (RouteCollectorProxy $group) {
       // setPlan reports whether it actually applied; relay it (+ the resulting
       // level/expiry) so the Worker can park a PAID-but-not-applied order for an
       // admin instead of silently marking it active.
-      $status = $account->setPlan($plan, $period, $new);
+      $status = $account->setPlan($plan, $period, $new, $planUntilOverride);
       $acct = $account->getAccount();
       $response->getBody()->write(json_encode([
         'ok' => true,

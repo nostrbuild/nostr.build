@@ -1121,17 +1121,97 @@ class Account
    *   'rejected-renewal-window' - renewal blocked: too many days remaining.
    *   'rejected-no-change'      - the renewal WHERE guard matched no row.
    */
-  public function setPlan(int $planLevel, string $period = '1y', bool $new = true): string
+  public function setPlan(int $planLevel, string $period = '1y', bool $new = true, ?string $planUntilOverride = null): string
   {
     // Refresh account data to ensure we have latest DB state for deterministic calculations
     $this->fetchAccountData();
-    
+
     $safeRenewDays = 181; // 180 days + 1 day buffer
     error_log("Setting plan level: $planLevel, period: $period, new: " . ($new ? 'true' : 'false') . PHP_EOL);
 
     // Validate and sanitize period input
     if (!in_array($period, ['1y', '2y', '3y'])) {
       $period = '1y';
+    }
+
+    // Downgrade-on-renew: the account Worker computed the exact new expiry
+    // (purchased term + the converted bonus days from the user's remaining
+    // value, see #/lib/plans/downgrade). We store it VERBATIM - the Worker is the
+    // authoritative settlement source - but the INVARIANTS stay here: it must be
+    // a genuine downgrade, the account must be inside the renewal window, and the
+    // date must be a sane near-future value. Self-contained branch so the normal
+    // signup/renewal/upgrade date math below is untouched.
+    if ($planUntilOverride !== null) {
+      require_once __DIR__ . '/Plans.class.php';
+      $currentLevel = (int)($this->account['acctlevel'] ?? 0);
+      // Tier RANK is by PRICE, not by the acctlevel integer (Creator=1,
+      // Professional=2, Purist=3, Advanced=10 - NOT rank-ordered). Compare the
+      // same originalPrices the app's isDowngradeTarget uses.
+      $currentPrice = Plans::$originalPrices[$currentLevel] ?? 0;
+      $targetPrice = Plans::$originalPrices[$planLevel] ?? 0;
+
+      // Parse + bound the explicit expiry the Worker computed.
+      $overrideTs = strtotime($planUntilOverride);
+      if ($overrideTs === false) {
+        error_log("set-plan override rejected: unparseable date '{$planUntilOverride}' for npub: " . $this->npub);
+        return 'rejected-bad-date';
+      }
+      $today = date('Y-m-d');
+      $maxDate = date('Y-m-d', strtotime($today . ' +4 years +60 days'));
+      $overrideEnd = date('Y-m-d', $overrideTs);
+      if ($overrideEnd <= $today || $overrideEnd > $maxDate) {
+        error_log("set-plan override rejected: date '{$overrideEnd}' out of bounds for npub: " . $this->npub);
+        return 'rejected-bad-date';
+      }
+
+      // Idempotent re-run FIRST: a workflow retry AFTER a successful apply lands
+      // here with the level already == target, which the downgrade check below
+      // would otherwise mistake for a non-downgrade. Already at target tier +
+      // period + expiry → success no-op.
+      $existingEnd = $this->account['plan_until_date'] ?? null;
+      if ($currentLevel === $planLevel
+          && $existingEnd !== null && substr((string)$existingEnd, 0, 10) === $overrideEnd
+          && ($this->account['subscription_period'] ?? '1y') === $period) {
+        error_log("set-plan override noop (already applied) for npub: " . $this->npub);
+        return 'noop-current';
+      }
+
+      // Must be a genuine downgrade BY PRICE (strictly cheaper, sold tier).
+      if ($targetPrice <= 0 || $targetPrice >= $currentPrice) {
+        error_log("set-plan override rejected: target {$planLevel} (\${$targetPrice}) is not a downgrade from current {$currentLevel} (\${$currentPrice}) for npub: " . $this->npub);
+        return 'rejected-not-downgrade';
+      }
+
+      // Inside the renewal window (defence in depth; the app gates the same).
+      if ($this->getRemainingSubscriptionDays() > $safeRenewDays) {
+        error_log("set-plan override rejected: outside renewal window for npub: " . $this->npub);
+        return 'rejected-renewal-window';
+      }
+
+      $overrideStart = $today;
+      $stmt = $this->db->prepare("UPDATE users SET acctlevel = ?, plan_start_date = ?, plan_until_date = ?, subscription_period = ? WHERE usernpub = ?");
+      if (!$stmt) {
+        throw new Exception("Error preparing statement: " . $this->db->error);
+      }
+      try {
+        if (!$stmt->bind_param('issss', $planLevel, $overrideStart, $overrideEnd, $period, $this->npub)) {
+          throw new Exception("Error binding parameters: " . $stmt->error);
+        }
+        if (!$stmt->execute()) {
+          throw new Exception("Error executing statement: " . $stmt->error);
+        }
+        if ($stmt->affected_rows === 0) {
+          error_log("set-plan override: no rows updated for npub: " . $this->npub);
+          return 'rejected-no-change';
+        }
+        $this->fetchAccountData();
+      } finally {
+        $stmt->close();
+        // Keep Blossom in sync with the new tier/expiry (same as the normal path).
+        $newData = $this->getAccountInfo();
+        $this->blossomFrontEndAPI->updateAccount($this->npub, $newData);
+      }
+      return 'applied';
     }
 
     // Prevent renewal if too much time remaining (business rule enforcement)

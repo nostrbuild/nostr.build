@@ -109,6 +109,48 @@ function dashboardListFiles(string $folderName, $link, $start = null, $limit = n
   return array_map('buildFileListEntry', $imgArray);
 }
 
+// Files for the logged-in user that exceed $minBytes, across ALL folders
+// (users_images is keyed by npub, not folder). Backs the downgrade-to-Purist
+// per-file gate (450 MiB). Mirrors UsersImages::getFiles' associated_notes
+// subquery so buildFileListEntry yields the same shape the file list uses.
+// Capped: a downgrade-eligible library is tiny (the storage gate already requires
+// the account be near-empty before this is consulted).
+function dashboardListOversizedFiles(int $minBytes, $link): array
+{
+  $npub = $_SESSION['usernpub'];
+  $sql = "
+        SELECT
+            ui.*,
+            (SELECT GROUP_CONCAT(CONCAT(uni.note_id, ':', UNIX_TIMESTAMP(unn.created_at)))
+             FROM users_nostr_images uni
+             LEFT JOIN users_nostr_notes unn ON uni.note_id = unn.note_id
+             WHERE uni.image_id = ui.id) AS associated_notes
+        FROM users_images ui
+        WHERE ui.usernpub = ? AND ui.file_size > ?
+        ORDER BY ui.file_size DESC
+        LIMIT 200
+  ";
+  // Throw (→ HTTP 5xx) on any DB failure rather than returning []: the Worker
+  // treats a non-2xx as "can't verify → block the Purist downgrade", whereas an
+  // empty 200 would be read as "no oversized files → allow", masking the failure
+  // and letting a >450 MiB file slip onto Purist.
+  $stmt = $link->prepare($sql);
+  if (!$stmt) {
+    throw new Exception('oversized-files prepare failed: ' . $link->error);
+  }
+  $stmt->bind_param('si', $npub, $minBytes);
+  if (!$stmt->execute()) {
+    $err = $stmt->error;
+    $stmt->close();
+    throw new Exception('oversized-files execute failed: ' . $err);
+  }
+  $result = $stmt->get_result();
+  $rows = $result ? $result->fetch_all(MYSQLI_ASSOC) : [];
+  $stmt->close();
+
+  return array_map('buildFileListEntry', $rows);
+}
+
 function dashboardGetAccountData($link, $account): array
 {
   $credits = dashboardGetCredits($link);
@@ -528,6 +570,22 @@ $app->group('/account/dashboard', function (RouteCollectorProxy $group) {
 
     $files = dashboardListFiles($folder, $link, $start, $limit, $filter);
     apiTimingLog('route /files handler', $__t);
+    return dashboardJson($response, $files);
+  });
+
+  // GET /files/oversized?minBytes=N - files over a per-file byte cap, across ALL
+  // folders. Backs the downgrade-to-Purist per-file gate (the account Worker
+  // calls this when a user tries to switch to Purist; only files > 450 MiB block).
+  $group->get('/files/oversized', function (Request $request, Response $response) {
+    $__t = hrtime(true);
+    global $link;
+    $params = $request->getQueryParams();
+    $minBytes = isset($params['minBytes']) ? intval($params['minBytes']) : 0;
+    if ($minBytes <= 0) {
+      return dashboardError($response, 'Missing or invalid minBytes parameter');
+    }
+    $files = dashboardListOversizedFiles($minBytes, $link);
+    apiTimingLog('route /files/oversized handler', $__t);
     return dashboardJson($response, $files);
   });
 
