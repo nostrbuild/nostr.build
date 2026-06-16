@@ -1,4 +1,10 @@
 <?php
+
+// Cutover: this path is now served by the account.nostr.build app.
+header("location: https://account.nostr.build/about");
+exit;
+
+
 require_once $_SERVER['DOCUMENT_ROOT'] . '/config.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/permissions.class.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/db/UploadsData.class.php';

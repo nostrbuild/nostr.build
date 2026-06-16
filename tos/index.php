@@ -1,4 +1,8 @@
 <?php
+// Cutover: this path is now served by the account.nostr.build app.
+header("location: https://account.nostr.build/tos");
+exit;
+
 require_once $_SERVER['DOCUMENT_ROOT'] . '/config.php';
 ?>
 <!DOCTYPE html>
