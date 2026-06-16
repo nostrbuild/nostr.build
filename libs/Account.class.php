@@ -488,6 +488,35 @@ class Account
   }
 
   /**
+   * Record the user's acceptance of the Terms of Service + Privacy Policy.
+   *
+   * Clickwrap evidence: the app gates account creation on an explicit "I agree"
+   * checkbox, then passes the accepted document version (the documents' effective
+   * date, e.g. "2026-06-15") here. We stamp the version + a server timestamp on
+   * the user row so assent is provable and version-aware (a newer version than
+   * the stored one is the signal to ask the user to re-accept).
+   *
+   * @param string $version The accepted legal-document version identifier.
+   * @return void
+   */
+  public function recordLegalAcceptance(string $version): void
+  {
+    $sql = "UPDATE users SET legal_accepted_at = NOW(), legal_version = ? WHERE usernpub = ?";
+    $stmt = $this->db->prepare($sql);
+    if (!$stmt) {
+      throw new Exception("Error preparing legal-acceptance statement: " . $this->db->error);
+    }
+    try {
+      $stmt->bind_param('ss', $version, $this->npub);
+      if (!$stmt->execute()) {
+        throw new Exception("Database error recording legal acceptance: " . $this->db->error);
+      }
+    } finally {
+      $stmt->close();
+    }
+  }
+
+  /**
    * Summary of accountExists
    * @return bool
    */

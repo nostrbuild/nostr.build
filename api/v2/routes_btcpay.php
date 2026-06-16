@@ -154,6 +154,17 @@ $app->group('/internal/plans', function (RouteCollectorProxy $group) {
       // level 0, allow_npub_login=1 (new signups always enable Nostr login).
       $account->createAccount($password, 0, $npubVerified, 1);
       $uuid = $account->getAccountUuid();
+      // Record clickwrap acceptance of the Terms + Privacy (version owned by the
+      // Worker, which is where the documents live). Non-fatal: a missing column
+      // before the migration is applied must never block account creation.
+      $legalVersion = is_array($data) ? trim((string)($data['legalVersion'] ?? '')) : '';
+      if ($legalVersion !== '') {
+        try {
+          $account->recordLegalAcceptance($legalVersion);
+        } catch (\Throwable $e) {
+          error_log('internal/plans/signup legal-acceptance record failed: ' . $e->getMessage());
+        }
+      }
       $response->getBody()->write(json_encode(['ok' => true, 'uuid' => $uuid, 'npub' => $npub]));
       return $response->withStatus(200)->withHeader('Content-Type', 'application/json');
     } catch (DuplicateUserException $e) {
