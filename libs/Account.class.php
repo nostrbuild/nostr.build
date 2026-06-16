@@ -930,7 +930,17 @@ class Account
     }
     $this->fetchAccountData();
     // Keep Blossom in sync with the now-free tier (same as setPlan does).
-    $this->blossomFrontEndAPI->updateAccount($this->npub, $this->getAccountInfo());
+    // Best-effort: the terminal DB reset above has already committed and is the
+    // source of truth. A Blossom transport failure must NOT throw out of this
+    // method — the media rows were already deleted by finalize-deletion BEFORE
+    // this runs, so a throw here would leave the account un-finalizable (bytes +
+    // rows gone, yet still acctlevel>0 / deletion_status='pending' with no live
+    // workflow to retry). Blossom reconciles on the next sync.
+    try {
+      $this->blossomFrontEndAPI->updateAccount($this->npub, $this->getAccountInfo());
+    } catch (\Throwable $e) {
+      error_log('wipeForDeletion: Blossom sync failed for ' . $this->npub . ': ' . $e->getMessage());
+    }
   }
 
   /**
@@ -1823,6 +1833,14 @@ class Account
       $stmt->close();
     }
     $this->fetchAccountData();
+    // Reactivation cancels a pending self-service deletion — exactly as setPlan
+    // does (the user's only self-service exit is renew/upgrade; an admin grant of
+    // more time is the same "this account is staying" signal). Without this, a
+    // now-active account keeps deletion_status='pending' and the user is walled
+    // to the deletion-pending screen until someone separately clicks cancel.
+    if (($this->account['deletion_status'] ?? 'none') === 'pending') {
+      $this->cancelDeletion();
+    }
     return $newEnd;
   }
 
@@ -1865,6 +1883,10 @@ class Account
       $stmt->close();
     }
     $this->fetchAccountData();
+    // Reactivation cancels a pending deletion (see adminExtendSubscription).
+    if (($this->account['deletion_status'] ?? 'none') === 'pending') {
+      $this->cancelDeletion();
+    }
     return $normalized;
   }
 

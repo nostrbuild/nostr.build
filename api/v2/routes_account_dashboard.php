@@ -200,6 +200,12 @@ function dashboardGetAccountData($link, $account): array
     // unix seconds (the app converts to a countdown).
     "deletionStatus" => $info['deletion_status'] ?? 'none',
     "deletionDeleteAfter" => !empty($info['delete_after']) ? strtotime($info['delete_after']) : null,
+    // Whole days since the paid plan lapsed (0 while active / never-expired).
+    // remaining_subscription_days clamps to 0 on expiry, so it can't tell
+    // "expired yesterday" from "expired 2 years ago" — this exposes that gap so
+    // the dashboard can surface the delete-account CTA only for long-dead
+    // accounts (>365 days). Admins/moderators report 0 (never eligible).
+    "daysPastExpiration" => $account->getDaysPastSubscriptionExpiration(),
   ];
 }
 

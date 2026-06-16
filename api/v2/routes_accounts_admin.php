@@ -480,10 +480,18 @@ $app->group('/accounts/admin/users', function (RouteCollectorProxy $group) {
       return aaError($response, 'server-error', 500);
     }
 
+    // Reactivation clears any pending deletion (adminExtendSubscription did it in
+    // the DB) — mirror that into the DO snapshot so the user's deletion banner /
+    // forced redirect clears without a PHP refetch. An active account's status is
+    // always 'none'; emitting it is a no-op when nothing was pending.
     aaEmitProfileChanged(
       $account->getAccountUuid(),
-      ['remainingDays'],
-      ['remainingDays' => $account->getRemainingSubscriptionDays()],
+      ['remainingDays', 'deletionStatus', 'deletionDeleteAfter'],
+      [
+        'remainingDays' => $account->getRemainingSubscriptionDays(),
+        'deletionStatus' => 'none',
+        'deletionDeleteAfter' => null,
+      ],
     );
     return aaJson($response, ['ok' => true, 'planUntilDate' => $newEnd]);
   });
@@ -520,10 +528,16 @@ $app->group('/accounts/admin/users', function (RouteCollectorProxy $group) {
       return aaError($response, 'server-error', 500);
     }
 
+    // Reactivation clears any pending deletion (adminSetExpiryDate did it in the
+    // DB) — mirror it into the DO snapshot (see /extend).
     aaEmitProfileChanged(
       $account->getAccountUuid(),
-      ['remainingDays'],
-      ['remainingDays' => $account->getRemainingSubscriptionDays()],
+      ['remainingDays', 'deletionStatus', 'deletionDeleteAfter'],
+      [
+        'remainingDays' => $account->getRemainingSubscriptionDays(),
+        'deletionStatus' => 'none',
+        'deletionDeleteAfter' => null,
+      ],
     );
     return aaJson($response, ['ok' => true, 'planUntilDate' => $newEnd]);
   });

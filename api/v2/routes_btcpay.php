@@ -279,6 +279,45 @@ $app->group('/internal/account', function (RouteCollectorProxy $group) {
     }
   });
 
+  // Same as /request-deletion but WITHOUT a password — the Worker's Nostr re-auth
+  // path. The Worker has already proven cryptographically (a fresh NIP-07
+  // signature or a one-time DM code, the SAME proof the npub-verify flow uses)
+  // that the session owner controls this account's npub, AND that the account has
+  // nostr login enabled — so the fresh key proof REPLACES the password as the
+  // re-auth factor. PHP still re-checks isExpired() inside requestDeletion() and
+  // stays idempotent (a repeat keeps the original deadline). Trust rests on the
+  // shared service HMAC (only the Worker can reach this), exactly like
+  // /finalize-deletion and /dashboard/npub/mark-verified.
+  $group->post('/request-deletion-verified', function (Request $request, Response $response) {
+    global $link;
+    $data = json_decode($request->getBody()->getContents(), true);
+    $uuid = is_array($data) ? trim((string)($data['uuid'] ?? '')) : '';
+    if ($uuid === '') {
+      $response->getBody()->write(json_encode(['ok' => false, 'error' => 'uuid required']));
+      return $response->withStatus(400)->withHeader('Content-Type', 'application/json');
+    }
+    try {
+      $account = Account::fromUuid($uuid, $link);
+      if ($account === null) {
+        $response->getBody()->write(json_encode(['ok' => false, 'error' => 'no-such-account']));
+        return $response->withStatus(404)->withHeader('Content-Type', 'application/json');
+      }
+      $status = $account->requestDeletion();
+      $deleteAfter = $account->getDeletionDeleteAfter();
+      $response->getBody()->write(json_encode([
+        'ok' => true,
+        'status' => $status, // 'pending' | 'noop-pending' | 'rejected-not-expired'
+        'deletionStatus' => $account->getDeletionStatus(),
+        'deleteAfter' => $deleteAfter !== null ? strtotime($deleteAfter) : null,
+      ]));
+      return $response->withStatus(200)->withHeader('Content-Type', 'application/json');
+    } catch (\Throwable $e) {
+      error_log('internal/account/request-deletion-verified error: ' . $e->getMessage());
+      $response->getBody()->write(json_encode(['ok' => false, 'error' => 'request-deletion failed']));
+      return $response->withStatus(500)->withHeader('Content-Type', 'application/json');
+    }
+  });
+
   // The Worker's DeletionWorkflow wake-check: it sleeps the 30-day window, then
   // reads this before doing anything. 'pending' + due => proceed; anything else
   // (renewed/admin-cancelled, or not yet due) => the workflow exits without
