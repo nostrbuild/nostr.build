@@ -237,8 +237,8 @@ $app->add(function (Request $request, RequestHandler $handler): Response {
 
   $currentPath = $request->getUri()->getPath();
 
-  // Never allow CORS for session-authenticated routes (dashboard + admin)
-  if (preg_match('#^/api/v2/(account/dashboard|admin)(/|$)#', $currentPath)) {
+  // Never allow CORS for the session-authenticated admin routes
+  if (preg_match('#^/api/v2/admin(/|$)#', $currentPath)) {
     return $response;
   }
 
@@ -276,7 +276,7 @@ require_once __DIR__ . '/routes_gifs.php'; // Include gif routes
 require_once __DIR__ . '/routes_blossom.php'; // Include blossom routes
 require_once __DIR__ . '/routes_accounts.php'; // Include accounts BFF routes
 require_once __DIR__ . '/routes_s3.php'; // Include S3 multipart upload routes
-require_once __DIR__ . '/routes_account_dashboard.php'; // Include account dashboard routes
+require_once __DIR__ . '/routes_account_dashboard.php'; // Account dashboard shared helpers (used by the /accounts BFF subgroup; no routes of its own)
 require_once __DIR__ . '/routes_admin.php'; // Include admin API routes
 require_once __DIR__ . '/routes_accounts_admin.php'; // Proxied admin routes (Worker → PHP via HMAC + npub-level check)
 apiTimingLog('all route files loaded', $__routesStart);

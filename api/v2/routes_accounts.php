@@ -465,6 +465,50 @@ $app->group('/accounts', function (RouteCollectorProxy $group) {
         ->withStatus(200);
     });
 
+    // GET /api/v2/accounts/dashboard/files/oversized?minBytes=N
+    // Files for the logged-in user that exceed minBytes, across ALL folders.
+    // Backs the downgrade-to-Purist per-file gate (only files > 450 MiB block the
+    // switch). Reuses dashboardListOversizedFiles (defined in
+    // routes_account_dashboard.php), which reads $_SESSION['usernpub'] — so set it
+    // transiently here exactly like the /files route does. Throws (→ 500) on a DB
+    // failure so the Worker treats "can't verify" as blocked, never a silent pass.
+    $sub->get('/files/oversized', function (Request $request, Response $response) {
+      global $link;
+      $npub = resolveIdentityNpub($request);
+      if ($npub === '') {
+        $response->getBody()->write(json_encode(['error' => 'missing-identity']));
+        return $response
+          ->withHeader('Content-Type', 'application/json')
+          ->withStatus(400);
+      }
+
+      $params = $request->getQueryParams();
+      $minBytes = isset($params['minBytes']) ? intval($params['minBytes']) : 0;
+      if ($minBytes <= 0) {
+        $response->getBody()->write(json_encode(['error' => 'invalid-minBytes']));
+        return $response
+          ->withHeader('Content-Type', 'application/json')
+          ->withStatus(400);
+      }
+
+      $prevNpub = $_SESSION['usernpub'] ?? null;
+      $_SESSION['usernpub'] = $npub;
+      try {
+        $files = dashboardListOversizedFiles($minBytes, $link);
+      } finally {
+        if ($prevNpub === null) {
+          unset($_SESSION['usernpub']);
+        } else {
+          $_SESSION['usernpub'] = $prevNpub;
+        }
+      }
+
+      $response->getBody()->write(json_encode($files));
+      return $response
+        ->withHeader('Content-Type', 'application/json')
+        ->withStatus(200);
+    });
+
     // POST /api/v2/accounts/dashboard/media/delete
     $sub->post('/media/delete', function (Request $request, Response $response) {
       global $link;
