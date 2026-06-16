@@ -218,3 +218,143 @@ $app->group('/internal/plans', function (RouteCollectorProxy $group) {
     }
   });
 })->add(new HmacAuthMiddleware());
+
+// Worker-facing internal account-lifecycle endpoints (HMAC-authed, same shared
+// NB_HMAC_SECRETS as /internal/plans). Account deletion is orchestrated by the
+// Worker; PHP stays a dumb setter that records the pending state + re-checks the
+// expired invariant. Full paths: POST /api/v2/internal/account/request-deletion,
+// POST /api/v2/internal/account/cancel-deletion.
+$app->group('/internal/account', function (RouteCollectorProxy $group) {
+  // Mark an EXPIRED account for deletion (30-day reversible window). The Worker
+  // has already validated eligibility + the user's re-auth/typed-phrase; PHP
+  // re-checks isExpired() (defence in depth) and is idempotent (a repeat keeps
+  // the original deadline). 'rejected-not-expired' => the Worker surfaces an
+  // error instead of pretending it scheduled.
+  $group->post('/request-deletion', function (Request $request, Response $response) {
+    global $link;
+    $data = json_decode($request->getBody()->getContents(), true);
+    $uuid = is_array($data) ? trim((string)($data['uuid'] ?? '')) : '';
+    // Re-auth proof: the user's current password. The Worker has already checked
+    // the session + typed phrase; PHP verifies the password against the stored
+    // hash (defence in depth) before scheduling an irreversible deletion.
+    $password = is_array($data) ? (string)($data['password'] ?? '') : '';
+    if ($uuid === '') {
+      $response->getBody()->write(json_encode(['ok' => false, 'error' => 'uuid required']));
+      return $response->withStatus(400)->withHeader('Content-Type', 'application/json');
+    }
+    try {
+      $account = Account::fromUuid($uuid, $link);
+      if ($account === null) {
+        $response->getBody()->write(json_encode(['ok' => false, 'error' => 'no-such-account']));
+        return $response->withStatus(404)->withHeader('Content-Type', 'application/json');
+      }
+      if ($password === '' || !$account->verifyPassword($password)) {
+        $response->getBody()->write(json_encode(['ok' => false, 'error' => 'bad-password']));
+        return $response->withStatus(401)->withHeader('Content-Type', 'application/json');
+      }
+      $status = $account->requestDeletion();
+      $deleteAfter = $account->getDeletionDeleteAfter();
+      $response->getBody()->write(json_encode([
+        'ok' => true,
+        'status' => $status, // 'pending' | 'noop-pending' | 'rejected-not-expired'
+        'deletionStatus' => $account->getDeletionStatus(),
+        'deleteAfter' => $deleteAfter !== null ? strtotime($deleteAfter) : null,
+      ]));
+      return $response->withStatus(200)->withHeader('Content-Type', 'application/json');
+    } catch (\Throwable $e) {
+      error_log('internal/account/request-deletion error: ' . $e->getMessage());
+      $response->getBody()->write(json_encode(['ok' => false, 'error' => 'request-deletion failed']));
+      return $response->withStatus(500)->withHeader('Content-Type', 'application/json');
+    }
+  });
+
+  // The Worker's DeletionWorkflow wake-check: it sleeps the 30-day window, then
+  // reads this before doing anything. 'pending' + due => proceed; anything else
+  // (renewed/admin-cancelled, or not yet due) => the workflow exits without
+  // touching media. This replaces the old cron work-list (the workflow owns the
+  // timer now).
+  $group->get('/deletion-state', function (Request $request, Response $response) {
+    global $link;
+    $uuid = trim((string)($request->getQueryParams()['uuid'] ?? ''));
+    if ($uuid === '') {
+      $response->getBody()->write(json_encode(['ok' => false, 'error' => 'uuid required']));
+      return $response->withStatus(400)->withHeader('Content-Type', 'application/json');
+    }
+    try {
+      $account = Account::fromUuid($uuid, $link);
+      if ($account === null) {
+        $response->getBody()->write(json_encode(['ok' => false, 'error' => 'no-such-account']));
+        return $response->withStatus(404)->withHeader('Content-Type', 'application/json');
+      }
+      $deleteAfter = $account->getDeletionDeleteAfter();
+      $deleteAfterTs = $deleteAfter !== null ? strtotime($deleteAfter) : null;
+      // Terminal safety net for the expired-only invariant: NEVER report a
+      // now-active account as due, even if its deletion_status is somehow still
+      // 'pending'. A paid reactivation (renew/upgrade/downgrade) clears the flag
+      // in setPlan, but isExpired() is the irreversible-step guard in case any
+      // cancel hook is ever missed — the Worker must not wipe a paying customer.
+      $due = $account->getDeletionStatus() === 'pending'
+        && $deleteAfterTs !== null && $deleteAfterTs <= time()
+        && $account->isExpired();
+      $response->getBody()->write(json_encode([
+        'ok' => true,
+        'deletionStatus' => $account->getDeletionStatus(),
+        'deleteAfter' => $deleteAfterTs,
+        'due' => $due,
+      ]));
+      return $response->withHeader('Content-Type', 'application/json');
+    } catch (\Throwable $e) {
+      error_log('internal/account/deletion-state error: ' . $e->getMessage());
+      $response->getBody()->write(json_encode(['ok' => false, 'error' => 'deletion-state failed']));
+      return $response->withStatus(500)->withHeader('Content-Type', 'application/json');
+    }
+  });
+
+  // Terminal finalize, called by the DeletionWorkflow AFTER it has deleted the
+  // user's media bytes from R2+E2. DB-ONLY: drop the users_images + folders rows
+  // and reset the account to a blank free shell (keeps npub + login). PHP no
+  // longer does any S3 work for deletion - the Worker owns the byte-deletion.
+  // Re-checks 'pending' so a renewed/cancelled account is never finalized.
+  $group->post('/finalize-deletion', function (Request $request, Response $response) {
+    global $link;
+    $data = json_decode($request->getBody()->getContents(), true);
+    $uuid = is_array($data) ? trim((string)($data['uuid'] ?? '')) : '';
+    if ($uuid === '') {
+      $response->getBody()->write(json_encode(['ok' => false, 'error' => 'uuid required']));
+      return $response->withStatus(400)->withHeader('Content-Type', 'application/json');
+    }
+    try {
+      $account = Account::fromUuid($uuid, $link);
+      if ($account === null) {
+        $response->getBody()->write(json_encode(['ok' => false, 'error' => 'no-such-account']));
+        return $response->withStatus(404)->withHeader('Content-Type', 'application/json');
+      }
+      if ($account->getDeletionStatus() !== 'pending' || !$account->isExpired()) {
+        // Cancelled/renewed/reactivated (or already finalized) - no-op,
+        // idempotent. The isExpired() guard mirrors /deletion-state: a paid
+        // account is never wiped, even on a race where it reactivated between the
+        // wake-check and this terminal call.
+        $response->getBody()->write(json_encode(['ok' => true, 'status' => 'not-pending']));
+        return $response->withHeader('Content-Type', 'application/json');
+      }
+      $npub = $account->getNpub();
+      // DB-only row cleanup (bytes already gone, deleted by the Worker). The
+      // media catalog rows + the user's folders.
+      foreach (['users_images', 'users_images_folders'] as $table) {
+        $del = $link->prepare("DELETE FROM {$table} WHERE usernpub = ?");
+        $del->bind_param('s', $npub);
+        $del->execute();
+        $del->close();
+      }
+      // Reset the profile to a blank free shell (keeps npub + login).
+      $account->wipeForDeletion();
+
+      $response->getBody()->write(json_encode(['ok' => true, 'status' => 'finalized']));
+      return $response->withHeader('Content-Type', 'application/json');
+    } catch (\Throwable $e) {
+      error_log('internal/account/finalize-deletion error: ' . $e->getMessage());
+      $response->getBody()->write(json_encode(['ok' => false, 'error' => 'finalize-deletion failed']));
+      return $response->withStatus(500)->withHeader('Content-Type', 'application/json');
+    }
+  });
+})->add(new HmacAuthMiddleware());

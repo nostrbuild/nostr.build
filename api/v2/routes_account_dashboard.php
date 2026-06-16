@@ -191,6 +191,11 @@ function dashboardGetAccountData($link, $account): array
     "nlSubEligible" => $info['nl_sub_eligible'] ?? false,
     "nlSubActivated" => $info['nl_sub_activated'] ?? false,
     "nlSubInfo" => $info['nl_sub_info'] ?? null,
+    // Self-service account-deletion lifecycle. Defaults tolerate a DB that
+    // predates the deletion_* columns (reads as "not pending"). deleteAfter is
+    // unix seconds (the app converts to a countdown).
+    "deletionStatus" => $info['deletion_status'] ?? 'none',
+    "deletionDeleteAfter" => !empty($info['delete_after']) ? strtotime($info['delete_after']) : null,
   ];
 }
 

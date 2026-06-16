@@ -36,7 +36,19 @@ desc users;
 | nl_sub_activated_date  | datetime     | YES  |     | NULL              |                   |
 | nl_sub_activation_id   | varchar(255) | YES  |     | NULL              |                   |
 | nl_sub_activation_return_value | json | YES  |     | NULL              |                   |
+| deletion_status        | varchar(10)  | NO   |     | none              |                   |
+| deletion_requested_at  | datetime     | YES  |     | NULL              |                   |
+| delete_after           | datetime     | YES  |     | NULL              |                   |
 +------------------------+--------------+------+-----+-------------------+-------------------+
+(deletion_* columns added for self-service account deletion — see
+ requestDeletion/cancelDeletion below. Run this migration before enabling the
+ enable-account-deletion flag — copy the statement as-is:
+
+ALTER TABLE users
+  ADD COLUMN deletion_status varchar(10) NOT NULL DEFAULT 'none',
+  ADD COLUMN deletion_requested_at datetime NULL,
+  ADD COLUMN delete_after datetime NULL;
+)
 
  desc users_images;
 +--------------+--------------+------+-----+------------------------------+-------------------+
@@ -765,6 +777,133 @@ class Account
     }
   }
 
+  // =========================================================================
+  // ACCOUNT DELETION (self-service, EXPIRED-accounts-only, 30-day window)
+  // -------------------------------------------------------------------------
+  // The account Worker orchestrates the lifecycle (validates eligibility +
+  // re-auth + typed phrase, kicks the final backup, runs the media purge, then
+  // performs the terminal WIPE). PHP just records the pending state + deadline
+  // and re-checks the expired invariant. This is NOT deleteAccount() above (a
+  // hard row DELETE): the terminal step is a wipe-to-free that keeps usernpub +
+  // the row + login intact, so these methods never touch the npub.
+  // =========================================================================
+
+  public function getDeletionStatus(): string
+  {
+    return $this->account['deletion_status'] ?? 'none';
+  }
+
+  public function getDeletionDeleteAfter(): ?string
+  {
+    return $this->account['delete_after'] ?? null;
+  }
+
+  /**
+   * Mark an EXPIRED account for deletion: a reversible window (default 30 days)
+   * after which the Worker wipes it. Idempotent — a repeat request keeps the
+   * original deadline. Returns 'pending' (newly scheduled), 'noop-pending'
+   * (already scheduled), or 'rejected-not-expired' (active plan; never schedule
+   * — active accounts are out of scope this iteration).
+   * @throws \Exception on DB failure
+   */
+  public function requestDeletion(int $windowDays = 30): string
+  {
+    $this->fetchAccountData();
+    if (!$this->isExpired()) {
+      return 'rejected-not-expired';
+    }
+    if (($this->account['deletion_status'] ?? 'none') === 'pending') {
+      return 'noop-pending';
+    }
+    $now = date('Y-m-d H:i:s');
+    $deleteAfter = date('Y-m-d H:i:s', strtotime("+{$windowDays} days"));
+    $stmt = $this->db->prepare(
+      "UPDATE users SET deletion_status = 'pending', deletion_requested_at = ?, delete_after = ? WHERE usernpub = ?"
+    );
+    if (!$stmt) {
+      throw new Exception("Error preparing statement: " . $this->db->error);
+    }
+    try {
+      if (!$stmt->bind_param('sss', $now, $deleteAfter, $this->npub)) {
+        throw new Exception("Error binding parameters: " . $stmt->error);
+      }
+      if (!$stmt->execute()) {
+        throw new Exception("Error executing statement: " . $stmt->error);
+      }
+    } finally {
+      $stmt->close();
+    }
+    $this->fetchAccountData();
+    return 'pending';
+  }
+
+  /**
+   * Clear a pending deletion (back to normal). Two callers: a successful
+   * renewal/upgrade (the user's only self-service exit, hooked in setPlan) and
+   * the admin override (legal hold / user asked for more time / support).
+   * Idempotent + safe when nothing is pending. Uses its own UPDATE because
+   * updateAccount() skips null-valued fields (it can't reset to NULL).
+   * @throws \Exception on DB failure
+   */
+  public function cancelDeletion(): void
+  {
+    $stmt = $this->db->prepare(
+      "UPDATE users SET deletion_status = 'none', deletion_requested_at = NULL, delete_after = NULL WHERE usernpub = ?"
+    );
+    if (!$stmt) {
+      throw new Exception("Error preparing statement: " . $this->db->error);
+    }
+    try {
+      if (!$stmt->bind_param('s', $this->npub)) {
+        throw new Exception("Error binding parameters: " . $stmt->error);
+      }
+      if (!$stmt->execute()) {
+        throw new Exception("Error executing statement: " . $stmt->error);
+      }
+    } finally {
+      $stmt->close();
+    }
+    $this->account['deletion_status'] = 'none';
+    $this->account['deletion_requested_at'] = null;
+    $this->account['delete_after'] = null;
+  }
+
+  /**
+   * Terminal account-deletion WIPE (the 30-day timer elapsed): reset the account
+   * to an empty free shell while KEEPING usernpub + the row + login intact. Blanks
+   * the profile view fields (nym/wallet/ppic), drops to free (acctlevel 0), clears
+   * the plan dates, and clears the deletion flags. This is NOT deleteAccount() (a
+   * hard row DELETE) and NEVER touches usernpub/uuid_id/password - the user can
+   * still log in afterward, to a blank free account. The MEDIA purge is done
+   * separately (ImageCatalogManager::deleteAllUserImages) BEFORE this is called.
+   * @throws \Exception on DB failure
+   */
+  public function wipeForDeletion(): void
+  {
+    $stmt = $this->db->prepare(
+      "UPDATE users SET nym = NULL, wallet = NULL, ppic = NULL, acctlevel = 0,
+         plan_start_date = NULL, plan_until_date = NULL, subscription_period = NULL,
+         deletion_status = 'none', deletion_requested_at = NULL, delete_after = NULL
+       WHERE usernpub = ?"
+    );
+    if (!$stmt) {
+      throw new Exception("Error preparing statement: " . $this->db->error);
+    }
+    try {
+      if (!$stmt->bind_param('s', $this->npub)) {
+        throw new Exception("Error binding parameters: " . $stmt->error);
+      }
+      if (!$stmt->execute()) {
+        throw new Exception("Error executing statement: " . $stmt->error);
+      }
+    } finally {
+      $stmt->close();
+    }
+    $this->fetchAccountData();
+    // Keep Blossom in sync with the now-free tier (same as setPlan does).
+    $this->blossomFrontEndAPI->updateAccount($this->npub, $this->getAccountInfo());
+  }
+
   /**
    * Is Account NostrLand Plus Subscription eligible?
    * @return bool
@@ -1205,6 +1344,16 @@ class Account
           return 'rejected-no-change';
         }
         $this->fetchAccountData();
+
+        // Self-service deletion exit: a successful downgrade-on-renew reactivates
+        // the account, which is the user's ONLY way to cancel a pending deletion
+        // (same hook as the normal renewal/upgrade path below). WITHOUT this, a
+        // downgraded account keeps deletion_status='pending' and the Worker's
+        // DeletionWorkflow would wipe a now-paying customer. Idempotent no-op
+        // when nothing is pending.
+        if (($this->account['deletion_status'] ?? 'none') === 'pending') {
+          $this->cancelDeletion();
+        }
       } finally {
         $stmt->close();
         // Keep Blossom in sync with the new tier/expiry (same as the normal path).
@@ -1313,7 +1462,15 @@ class Account
       } else {
         // Refresh local account data after successful DB update to maintain consistency
         $this->fetchAccountData();
-        
+
+        // Self-service deletion exit: a successful renewal/upgrade reactivates
+        // the account, which is the user's ONLY way to cancel a pending deletion
+        // (the danger-zone copy warns them cancel = pay). Idempotent no-op when
+        // nothing is pending.
+        if (($this->account['deletion_status'] ?? 'none') === 'pending') {
+          $this->cancelDeletion();
+        }
+
         // Trigger NostrLand renewal activation if eligible and previously activated
         if (!$isActuallyNew) { // Only for renewals, not new accounts
           try {

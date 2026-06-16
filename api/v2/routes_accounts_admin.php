@@ -180,6 +180,10 @@ function aaUserSnapshot(Account $account, mysqli $link): array
     'banned'             => (bool) ($info['banned'] ?? false),
     'banReason'          => (string) ($info['ban_reason'] ?? ''),
     'createdAt'          => $info['created_at'] ?? null,
+    // Self-service deletion lifecycle (so the admin can see + cancel a pending
+    // deletion). deleteAfter is unix seconds. Defaults tolerate a pre-migration DB.
+    'deletionStatus'     => $info['deletion_status'] ?? 'none',
+    'deletionDeleteAfter' => !empty($info['delete_after']) ? strtotime($info['delete_after']) : null,
     'nlSubEligible'      => (bool) ($info['nl_sub_eligible'] ?? false),
     'nlSubActivated'     => (bool) ($info['nl_sub_activated'] ?? false),
     'nlSubActivatedDate' => $info['nl_sub_activated_date'] ?? null,
@@ -651,6 +655,40 @@ $app->group('/accounts/admin/users', function (RouteCollectorProxy $group) {
       ['allowNostrLogin' => $allow],
     );
     return aaJson($response, ['ok' => true, 'allowNpubLogin' => $allow]);
+  });
+
+  /**
+   * POST /accounts/admin/users/cancel-deletion
+   * Body: { npub }
+   * Admin override: cancel a pending self-service account deletion WITHOUT
+   * requiring a renewal/payment (legal hold, user asked for more time, support).
+   * The user's own cancel path is renew/upgrade; this is the staff escape hatch.
+   * Idempotent (safe when nothing is pending).
+   */
+  $group->post('/cancel-deletion', function (Request $request, Response $response) {
+    global $link;
+    $body = json_decode((string) $request->getBody(), true);
+    if (!is_array($body)) return aaError($response, 'invalid-body', 400);
+
+    $npub = aaValidNpub($body['npub'] ?? null);
+    if ($npub === null) return aaError($response, 'invalid-npub', 400);
+
+    $account = new Account($npub, $link);
+    if (!$account->accountExists()) return aaError($response, 'not-found', 404);
+
+    try {
+      $account->cancelDeletion();
+    } catch (\Throwable $e) {
+      error_log("admin/users/cancel-deletion failed for {$npub}: " . $e->getMessage());
+      return aaError($response, 'server-error', 500);
+    }
+
+    aaEmitProfileChanged(
+      $account->getAccountUuid(),
+      ['deletionStatus', 'deletionDeleteAfter'],
+      ['deletionStatus' => 'none', 'deletionDeleteAfter' => null],
+    );
+    return aaJson($response, ['ok' => true, 'deletionStatus' => 'none']);
   });
 
   /**
