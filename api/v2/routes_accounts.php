@@ -465,14 +465,17 @@ $app->group('/accounts', function (RouteCollectorProxy $group) {
         ->withStatus(200);
     });
 
-    // GET /api/v2/accounts/dashboard/files/oversized?minBytes=N
-    // Files for the logged-in user that exceed minBytes, across ALL folders.
-    // Backs the downgrade-to-Purist per-file gate (only files > 450 MiB block the
-    // switch). Reuses dashboardListOversizedFiles (defined in
-    // routes_account_dashboard.php), which reads $_SESSION['usernpub'] — so set it
-    // transiently here exactly like the /files route does. Throws (→ 500) on a DB
-    // failure so the Worker treats "can't verify" as blocked, never a silent pass.
-    $sub->get('/files/oversized', function (Request $request, Response $response) {
+    // GET /api/v2/accounts/dashboard/files/downgrade-ineligible?targetLevel=N
+    // Files the logged-in user owns that the DOWNGRADE TARGET tier can't host,
+    // across ALL folders: wrong MIME for the tier (the SAME getAllowedMimesArray
+    // allow-list the uploader enforces) OR — Purist only — over the 450 MiB
+    // per-file cap. Each file carries a `reason` ('type' | 'size'). Backs the
+    // user-initiated "Check my files" downgrade gate. Reuses
+    // dashboardListDowngradeIneligibleFiles (routes_account_dashboard.php), which
+    // reads $_SESSION['usernpub'] — set it transiently like the /files route does.
+    // Throws (→ 500) on a DB failure so the Worker treats "can't verify" as
+    // blocked, never a silent pass.
+    $sub->get('/files/downgrade-ineligible', function (Request $request, Response $response) {
       global $link;
       $npub = resolveIdentityNpub($request);
       if ($npub === '') {
@@ -483,9 +486,10 @@ $app->group('/accounts', function (RouteCollectorProxy $group) {
       }
 
       $params = $request->getQueryParams();
-      $minBytes = isset($params['minBytes']) ? intval($params['minBytes']) : 0;
-      if ($minBytes <= 0) {
-        $response->getBody()->write(json_encode(['error' => 'invalid-minBytes']));
+      $targetLevel = isset($params['targetLevel']) ? intval($params['targetLevel']) : 0;
+      // Only the sold, downgradable tiers (Creator/Pro/Purist/Advanced).
+      if (!in_array($targetLevel, [1, 2, 3, 10], true)) {
+        $response->getBody()->write(json_encode(['error' => 'invalid-targetLevel']));
         return $response
           ->withHeader('Content-Type', 'application/json')
           ->withStatus(400);
@@ -494,7 +498,7 @@ $app->group('/accounts', function (RouteCollectorProxy $group) {
       $prevNpub = $_SESSION['usernpub'] ?? null;
       $_SESSION['usernpub'] = $npub;
       try {
-        $files = dashboardListOversizedFiles($minBytes, $link);
+        $files = dashboardListDowngradeIneligibleFiles($targetLevel, $link);
       } finally {
         if ($prevNpub === null) {
           unset($_SESSION['usernpub']);

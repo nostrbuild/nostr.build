@@ -113,15 +113,29 @@ function dashboardListFiles(string $folderName, $link, $start = null, $limit = n
   return array_map('buildFileListEntry', $imgArray);
 }
 
-// Files for the logged-in user that exceed $minBytes, across ALL folders
-// (users_images is keyed by npub, not folder). Backs the downgrade-to-Purist
-// per-file gate (450 MiB). Mirrors UsersImages::getFiles' associated_notes
-// subquery so buildFileListEntry yields the same shape the file list uses.
-// Capped: a downgrade-eligible library is tiny (the storage gate already requires
-// the account be near-empty before this is consulted).
-function dashboardListOversizedFiles(int $minBytes, $link): array
+// Files the logged-in user owns that the DOWNGRADE TARGET tier can't host, across
+// ALL folders (users_images is keyed by npub, not folder). A file is ineligible
+// when its MIME isn't in the target tier's allow-list (getAllowedMimesArray — the
+// SAME gate the uploader enforces, so this never drifts) OR — Purist (3) only — it
+// exceeds the 450 MiB per-file cap. Each row carries a `reason`:
+//   'type' = the tier doesn't accept this file type (e.g. ZIP on Pro, PDF on Purist)
+//   'size' = the type is fine but the file is over Purist's per-file cap
+// Mirrors UsersImages::getFiles' associated_notes subquery so buildFileListEntry
+// yields the same shape the file list uses (proper type icons in the UI). Capped at
+// 200; a downgrade-eligible library is tiny (the storage gate gates first).
+function dashboardListDowngradeIneligibleFiles(int $targetLevel, $link): array
 {
   $npub = $_SESSION['usernpub'];
+
+  // The exact MIME allow-list the uploader enforces for the target tier.
+  $allowed = array_keys(getAllowedMimesArray($targetLevel));
+  // Purist (3) is the only tier with a per-file size cap (450 MiB). Others: none.
+  $cap = ($targetLevel === 3) ? (450 * 1024 * 1024) : null;
+
+  $placeholders = implode(',', array_fill(0, count($allowed), '?'));
+  // COALESCE so a NULL/empty stored MIME is treated as "not allowed" (block, never
+  // silently pass an unverifiable file).
+  $sizeClause = $cap !== null ? ' OR ui.file_size > ?' : '';
   $sql = "
         SELECT
             ui.*,
@@ -130,29 +144,43 @@ function dashboardListOversizedFiles(int $minBytes, $link): array
              LEFT JOIN users_nostr_notes unn ON uni.note_id = unn.note_id
              WHERE uni.image_id = ui.id) AS associated_notes
         FROM users_images ui
-        WHERE ui.usernpub = ? AND ui.file_size > ?
+        WHERE ui.usernpub = ?
+          AND (COALESCE(ui.mime_type, '') NOT IN ($placeholders)$sizeClause)
         ORDER BY ui.file_size DESC
         LIMIT 200
   ";
   // Throw (→ HTTP 5xx) on any DB failure rather than returning []: the Worker
-  // treats a non-2xx as "can't verify → block the Purist downgrade", whereas an
-  // empty 200 would be read as "no oversized files → allow", masking the failure
-  // and letting a >450 MiB file slip onto Purist.
+  // treats a non-2xx as "can't verify → block the downgrade", whereas an empty 200
+  // would be read as "all files supported → allow", masking the failure and letting
+  // an unsupported file slip onto the smaller tier.
   $stmt = $link->prepare($sql);
   if (!$stmt) {
-    throw new Exception('oversized-files prepare failed: ' . $link->error);
+    throw new Exception('downgrade-ineligible prepare failed: ' . $link->error);
   }
-  $stmt->bind_param('si', $npub, $minBytes);
+  // Bind: npub (s), each allowed MIME (s…), then the cap (i) when present.
+  $types = 's' . str_repeat('s', count($allowed)) . ($cap !== null ? 'i' : '');
+  $bindArgs = array_merge([$npub], $allowed);
+  if ($cap !== null) {
+    $bindArgs[] = $cap;
+  }
+  $stmt->bind_param($types, ...$bindArgs);
   if (!$stmt->execute()) {
     $err = $stmt->error;
     $stmt->close();
-    throw new Exception('oversized-files execute failed: ' . $err);
+    throw new Exception('downgrade-ineligible execute failed: ' . $err);
   }
   $result = $stmt->get_result();
   $rows = $result ? $result->fetch_all(MYSQLI_ASSOC) : [];
   $stmt->close();
 
-  return array_map('buildFileListEntry', $rows);
+  // A row is here because its type is unsupported OR it's oversized. Type wins the
+  // label (a wrong-type file can never fit the tier, regardless of size).
+  $allowedSet = array_flip($allowed);
+  return array_map(function (array $row) use ($allowedSet): array {
+    $entry = buildFileListEntry($row);
+    $entry['reason'] = isset($allowedSet[$row['mime_type'] ?? '']) ? 'size' : 'type';
+    return $entry;
+  }, $rows);
 }
 
 function dashboardGetAccountData($link, $account): array
