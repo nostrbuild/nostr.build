@@ -1,5 +1,5 @@
 <?php
-// Redirect to a new signup page
-header("Location: /plans/");
+// Registration is handled by the account.nostr.build app. Point straight at it
+// (previously this bounced through /plans/).
+header('Location: https://account.nostr.build/plans');
 exit;
-// Path: register/index.php

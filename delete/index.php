@@ -19,10 +19,10 @@
 
 		<script src="/scripts/dist/delete.js?v=5cb53a70241da212beb449b42229d79d" defer></script>
 
-		<link rel="stylesheet" href="/styles/index.css?v=16013407201d48c976a65d9ea88a77a3" />
+		<link rel="stylesheet" href="/styles/index.css?v=5b9f346f2037f65228c8d5b6f42ee2aa" />
 		<link rel="stylesheet" href="/styles/header.css?v=19cde718a50bd676387bbe7e9e24c639" />
 
-		<link href="/styles/twbuild.css?v=8d449c7a945db43abd8555039f19a051" rel="stylesheet">
+		<link href="/styles/twbuild.css?v=7ddcbf6a1c5fc518a722c9e66b3070f5" rel="stylesheet">
 
 		<title>nostr.build Delete Media</title>
 	</head>

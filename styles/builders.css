@@ -174,3 +174,18 @@ h1 {
 		max-height: 414px;
 	}
 }
+
+/* Creators index header */
+.creators_title {
+	padding: 40px 0 8px;
+}
+
+.creators_subtitle {
+	width: 100%;
+	margin: 0 0 32px;
+	font-weight: 400;
+	font-size: 15px;
+	line-height: 1.6;
+	color: #a58ead;
+	text-align: left;
+}

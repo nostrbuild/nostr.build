@@ -67,10 +67,10 @@ $morePages = $result->num_rows > $perpage ? true : false;
 	<meta name="msapplication-TileColor" content="#9f00a7">
 	<meta name="theme-color" content="#ffffff">
 
-	<link rel="stylesheet" href="/styles/index.css?v=16013407201d48c976a65d9ea88a77a3" />
-	<link rel="stylesheet" href="/styles/profile.css?v=ded26f9ac31e7492f67e6da9c95a14e2" />
+	<link rel="stylesheet" href="/styles/index.css?v=5b9f346f2037f65228c8d5b6f42ee2aa" />
+	<link rel="stylesheet" href="/styles/profile.css?v=f37768cc1536176145f323500785bf9b" />
 	<link rel="stylesheet" href="/styles/header.css?v=19cde718a50bd676387bbe7e9e24c639" />
-	<link rel="stylesheet" href="/styles/twbuild.css?v=8d449c7a945db43abd8555039f19a051" />
+	<link rel="stylesheet" href="/styles/twbuild.css?v=7ddcbf6a1c5fc518a722c9e66b3070f5" />
 
 	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/lightgallery/2.7.2/css/lightgallery-bundle.min.css" integrity="sha512-nUqPe0+ak577sKSMThGcKJauRI7ENhKC2FQAOOmdyCYSrUh0GnwLsZNYqwilpMmplN+3nO3zso8CWUgu33BDag==" crossorigin="anonymous" referrerpolicy="no-referrer" />
 

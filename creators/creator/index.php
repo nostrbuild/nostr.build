@@ -88,10 +88,10 @@ if (!empty($rows)) {
 	<meta name="msapplication-TileColor" content="#9f00a7">
 	<meta name="theme-color" content="#ffffff">
 
-	<link rel="stylesheet" href="/styles/index.css?v=16013407201d48c976a65d9ea88a77a3" />
-	<link rel="stylesheet" href="/styles/profile.css?v=ded26f9ac31e7492f67e6da9c95a14e2" />
+	<link rel="stylesheet" href="/styles/index.css?v=5b9f346f2037f65228c8d5b6f42ee2aa" />
+	<link rel="stylesheet" href="/styles/profile.css?v=f37768cc1536176145f323500785bf9b" />
 	<link rel="stylesheet" href="/styles/header.css?v=19cde718a50bd676387bbe7e9e24c639" />
-	<link rel="stylesheet" href="/styles/twbuild.css?v=8d449c7a945db43abd8555039f19a051" />
+	<link rel="stylesheet" href="/styles/twbuild.css?v=7ddcbf6a1c5fc518a722c9e66b3070f5" />
 
 	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/lightgallery/2.7.2/css/lightgallery-bundle.min.css" integrity="sha512-nUqPe0+ak577sKSMThGcKJauRI7ENhKC2FQAOOmdyCYSrUh0GnwLsZNYqwilpMmplN+3nO3zso8CWUgu33BDag==" crossorigin="anonymous" referrerpolicy="no-referrer" />
 
@@ -152,17 +152,11 @@ if (!empty($rows)) {
 			</h1>
 			<a class="donate_button text-lg" href="lightning:<?= htmlentities($wallet) ?>">Donate ⚡</a>
 			<div class="flex justify-center w-full">
-				<span class="isolate inline-flex rounded-md shadow-sm">
-					<button style="<?= $display === 'image' ? 'background-color: #efefef;' : '' ?>" type="button" class="relative inline-flex items-center rounded-l-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-10">
-						<a href="/creators/creator/?user=<?= htmlentities($userId) ?>&display=image">Images (<?= $availableCategories['image'] ?? 0 ?>)</a>
-					</button>
-					<button style="<?= $display === 'video' ? 'background-color: #efefef;' : '' ?>" type="button" class="relative -ml-px inline-flex items-center bg-white px-3 py-2 text-sm font-semibold text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-10">
-						<a href="/creators/creator/?user=<?= htmlentities($userId) ?>&display=video">Videos (<?= $availableCategories['video'] ?? 0 ?>)</a>
-					</button>
-					<button style="<?= $display === 'audio' ? 'background-color: #efefef;' : '' ?>" type="button" class="relative -ml-px inline-flex items-center rounded-r-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-10">
-						<a href="/creators/creator/?user=<?= htmlentities($userId) ?>&display=audio">Audio (<?= $availableCategories['audio'] ?? 0 ?>)</a>
-					</button>
-				</span>
+				<nav class="media_tabs" aria-label="Media categories">
+					<a class="media_tab<?= $display === 'image' ? ' is-active' : '' ?>" href="/creators/creator/?user=<?= htmlentities($userId) ?>&display=image">Images <span class="media_tab_count"><?= $availableCategories['image'] ?? 0 ?></span></a>
+					<a class="media_tab<?= $display === 'video' ? ' is-active' : '' ?>" href="/creators/creator/?user=<?= htmlentities($userId) ?>&display=video">Videos <span class="media_tab_count"><?= $availableCategories['video'] ?? 0 ?></span></a>
+					<a class="media_tab<?= $display === 'audio' ? ' is-active' : '' ?>" href="/creators/creator/?user=<?= htmlentities($userId) ?>&display=audio">Audio <span class="media_tab_count"><?= $availableCategories['audio'] ?? 0 ?></span></a>
+				</nav>
 			</div>
 		</section>
 

@@ -1,6 +1,6 @@
 <footer>
   <div style="padding-bottom: 1rem;">
-	<a href="https://nostr.build/about" class="ref_link" target="_blank">About</a> | <a href="https://nostr.build/plans" class="ref_link" target="_blank">Plans</a> | <a href="https://nostr.build/builders" class="ref_link" target="_blank">Builders</a> | <a href="https://nostr.build/edu" class="ref_link" target="_blank">Edu</a>
+	<a href="https://account.nostr.build/about" class="ref_link" target="_blank">About</a> | <a href="https://account.nostr.build/plans" class="ref_link" target="_blank">Plans</a> | <a href="https://nostr.build/builders" class="ref_link" target="_blank">Builders</a> | <a href="https://nostr.build/edu" class="ref_link" target="_blank">Edu</a>
   </div>
 	<nav>
 		<div class="footer_contributors">

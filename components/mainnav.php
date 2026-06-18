@@ -134,7 +134,7 @@ SVG;
       </span>
       Shop
     </a>
-    <a href="/about" class="nav_button">
+    <a href="https://account.nostr.build/about" class="nav_button">
       <span>
         <?= $svg_about_icon ?>
       </span>
