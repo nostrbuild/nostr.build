@@ -7,7 +7,6 @@ $baseDir = dirname($vendorDir);
 
 return array(
     'kornrunner\\Blurhash\\' => array($vendorDir . '/kornrunner/blurhash/src'),
-    'ToshY\\BunnyNet\\' => array($vendorDir . '/toshy/bunnynet-php/src'),
     'Symfony\\Polyfill\\Mbstring\\' => array($vendorDir . '/symfony/polyfill-mbstring'),
     'Symfony\\Polyfill\\Ctype\\' => array($vendorDir . '/symfony/polyfill-ctype'),
     'Symfony\\Component\\Process\\' => array($vendorDir . '/symfony/process'),
@@ -24,7 +23,6 @@ return array(
     'Psr\\Http\\Message\\' => array($vendorDir . '/psr/http-factory/src', $vendorDir . '/psr/http-message/src'),
     'Psr\\Http\\Client\\' => array($vendorDir . '/psr/http-client/src'),
     'Psr\\Container\\' => array($vendorDir . '/psr/container/src'),
-    'Nyholm\\Psr7\\' => array($vendorDir . '/nyholm/psr7/src'),
     'Laravel\\SerializableClosure\\' => array($vendorDir . '/laravel/serializable-closure/src'),
     'JmesPath\\' => array($vendorDir . '/mtdowling/jmespath.php/src'),
     'Invoker\\' => array($vendorDir . '/php-di/invoker/src'),
@@ -35,6 +33,5 @@ return array(
     'Fig\\Http\\Message\\' => array($vendorDir . '/fig/http-message-util/src'),
     'FastRoute\\' => array($vendorDir . '/nikic/fast-route/src'),
     'DI\\' => array($vendorDir . '/php-di/php-di/src'),
-    'BTCPayServer\\' => array($vendorDir . '/btcpayserver/btcpayserver-greenfield-php/src'),
     'Aws\\' => array($vendorDir . '/aws/aws-sdk-php/src'),
 );

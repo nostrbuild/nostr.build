@@ -70,13 +70,6 @@ $awsConfig = [
     'upload' => $r2UploadConfig,
 ];
 
-$btcpayConfig = [
-    'apiKey'  => $_SERVER['BTCPAY_APIKEY'],
-    'host'    => $_SERVER['BTCPAY_HOST'],
-    'storeId' => $_SERVER['BTCPAY_STOREID'],
-    'secret'  => $_SERVER['BTCPAY_SECRET'],
-];
-
 $csamReportingConfig = [
     'r2AccessKey' => $_SERVER['CSAM_REPORTING_R2_AK'],
     'r2SecretKey' => $_SERVER['CSAM_REPORTING_R2_SK'],

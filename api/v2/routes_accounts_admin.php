@@ -222,6 +222,71 @@ function aaEmitProfileChanged(?string $targetUuid, array $changed, ?array $field
   }
 }
 
+// ----- CSAM offender-cleanup helpers -----
+// Relocated here from the now-removed routes_admin.php (the legacy session
+// admin area was deleted). The CSAM routes below are the only remaining
+// callers. Names are kept verbatim — isLikelyValidNpub is invoked as a
+// string callable in array_filter(), so it must not be renamed.
+
+/**
+ * A CSAM case is "delete-eligible" (offender confirmed, cleanup allowed) when
+ * its NCMEC report id is either a real numeric report id or the manual
+ * EVIDENCE_EXPIRED sentinel — i.e. the offender has been positively identified
+ * even if the formal submission couldn't go through. TEST_/FALSE_MATCH/
+ * Null:Technical Error/empty are NOT eligible.
+ */
+function csamCaseAllowsOffenderCleanup(?string $reportId): bool
+{
+  if ($reportId === null || $reportId === '') return false;
+  if ($reportId === 'EVIDENCE_EXPIRED') return true;
+  return is_numeric($reportId);
+}
+
+/**
+ * Tight npub-shape validator. Real bech32 npub is `npub1` + 58 bech32 chars
+ * (63 total). We allow [60, 100] to be tolerant of any future format drift but
+ * still reject empty / "anonymous" / "Unknown" / partial sentinels — anything
+ * that could land in `uploads_data.usernpub = ''` and bulk-match legacy
+ * anonymous uploads.
+ */
+function isLikelyValidNpub(?string $n): bool
+{
+  if ($n === null) return false;
+  $len = strlen($n);
+  return $len >= 60 && $len <= 100 && str_starts_with($n, 'npub1');
+}
+
+/**
+ * Pull the offender (uploader) npub out of an identified_csam_cases.logs JSON.
+ *
+ * Type 1 logs (filename-keyed): each entry has uploadNpub.
+ * Type 2 logs (evidenceData):   ReporteeName carries the npub.
+ *
+ * Returns null when the npub cannot be confidently identified as a real npub.
+ * Critical: the caller MUST treat null as "no actionable target" — never fall
+ * back to an empty-string match, which would sweep up every legacy anonymous
+ * upload (rows with usernpub = '' or NULL).
+ */
+function extractOffenderNpubFromLogs(?string $logsJson): ?string
+{
+  if ($logsJson === null || $logsJson === '') return null;
+  $data = json_decode($logsJson, true);
+  if (!is_array($data)) return null;
+
+  if (isset($data['evidenceData']['ReporteeName'])) {
+    $n = trim((string) $data['evidenceData']['ReporteeName']);
+    if (isLikelyValidNpub($n)) return $n;
+  }
+
+  foreach ($data as $entry) {
+    if (!is_array($entry)) continue;
+    $n = isset($entry['uploadNpub']) ? trim((string) $entry['uploadNpub']) : '';
+    if (isLikelyValidNpub($n)) return $n;
+  }
+
+  return null;
+}
+
 // ----- Routes -----
 
 $app->group('/accounts/admin/users', function (RouteCollectorProxy $group) {
@@ -1066,10 +1131,10 @@ $app->group('/accounts/admin/security', function (RouteCollectorProxy $group) {
 // runs in the WORKER (TS port; evidence read straight from R2). PHP keeps the
 // thin data endpoints over identified_csam_cases (the Worker has no direct
 // DB), the guarded record-submission write, the unblacklist flow, and the
-// offender enumerations with their npub mass-delete SQL guards. Engine
-// helpers (csamCaseAllowsOffenderCleanup, extractOffenderNpubFromLogs,
-// isLikelyValidNpub, NCMECReportHandler) come from routes_admin.php /
-// NCMECReportHandler.class.php — loaded before this file by index.php.
+// offender enumerations with their npub mass-delete SQL guards. The npub
+// engine helpers (csamCaseAllowsOffenderCleanup, extractOffenderNpubFromLogs,
+// isLikelyValidNpub) are defined at the top of this file; NCMECReportHandler
+// comes from NCMECReportHandler.class.php.
 
 $app->group('/accounts/admin/csam', function (RouteCollectorProxy $group) {
 
@@ -1500,12 +1565,12 @@ $app->group('/accounts/admin/csam', function (RouteCollectorProxy $group) {
 // THIN SQL ONLY. The byte-work for destructive actions (S3/R2/E2 deletion,
 // blossom ban fan-out, CDN purge, CSAM evidence) now runs in the Worker; these
 // routes are pure DB reads/writes (rows / ban-purge-page / delete-rows /
-// blacklist-add / adult-batch / status=approved|adult). The composite engine
-// helpers in routes_admin.php (rejectUploadsByIds, deleteAndRejectUpload,
-// processCsamReport, …) are NO LONGER called from here — they remain only for
-// the legacy admin .php pages that hit routes_admin.php directly.
+// blacklist-add / adult-batch / status=approved|adult). The old composite
+// engine helpers (rejectUploadsByIds, deleteAndRejectUpload, processCsamReport,
+// …) were removed together with the legacy session admin (routes_admin.php) and
+// the account/admin/*.php pages; the byte-work now runs in the Worker.
 //
-// NOTE: unlike the legacy /admin/moderation/* routes, the per-action
+// NOTE: unlike the old /admin/moderation/* routes, the per-action
 // `new Permission()` session checks are intentionally absent — the PHP session
 // is empty on HMAC-proxied calls; ProxiedAdminMiddleware is the canonical gate
 // for every action here, including ban/csam (admin-only by construction).

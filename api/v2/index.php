@@ -38,10 +38,7 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/S3Multipart.class.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/db/UploadsData.class.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/db/UsersImages.class.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/db/UsersImagesFolders.class.php';
-require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/BTCPayWebhook.class.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/Account.class.php';
-// Add GifBrowser class
-require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/GifBrowser.class.php';
 // Delete media class
 require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/DeleteMedia.class.php';
 
@@ -115,12 +112,6 @@ $container->set('accountClass', function () {
   };
 });
 
-// Setup GifBrowser
-$container->set('gifBrowser', function () {
-  global $link;
-  return new GifBrowser($link);
-});
-
 // Setup UploadsData
 $container->set('uploadsData', function () {
   global $link;
@@ -136,18 +127,6 @@ $container->set('blacklistTable', function () {
 $container->set('rejectedFilesTable', function () {
   global $link;
   return new RejectedFilesTable($link);
-});
-
-
-//Setup container for webhooks
-$container->set('btcpayWebhook', function () {
-  global $btcpayConfig;
-  return new BTCPayWebhook(
-    $btcpayConfig['apiKey'],
-    $btcpayConfig['host'],
-    $btcpayConfig['storeId'],
-    $btcpayConfig['secret']
-  );
 });
 
 // TODO: Move the following into its own file and clean-up here
@@ -237,11 +216,6 @@ $app->add(function (Request $request, RequestHandler $handler): Response {
 
   $currentPath = $request->getUri()->getPath();
 
-  // Never allow CORS for the session-authenticated admin routes
-  if (preg_match('#^/api/v2/admin(/|$)#', $currentPath)) {
-    return $response;
-  }
-
   foreach ($allowedOriginsAndPaths as $originPattern => $pathPatterns) {
     if (preg_match('#^' . $originPattern . '$#', $origin)) {
       foreach ($pathPatterns as $pathPattern) {
@@ -268,16 +242,11 @@ $app->addBodyParsingMiddleware();
 $__routesStart = hrtime(true);
 require_once __DIR__ . '/routes_upload.php'; // Include free upload routes
 require_once __DIR__ . '/routes_nip96.php'; // Include nip96 upload routes
-require_once __DIR__ . '/routes_uppy.php'; // Include uppy upload routes
-require_once __DIR__ . '/routes_account.php'; // Include pro account routes
 require_once __DIR__ . '/routes_btcpay.php'; // Include btcpay routes
-require_once __DIR__ . '/routes_banned.php'; // Include btcpay routes
-require_once __DIR__ . '/routes_gifs.php'; // Include gif routes
+require_once __DIR__ . '/routes_banned.php'; // Include banned-list routes
 require_once __DIR__ . '/routes_blossom.php'; // Include blossom routes
 require_once __DIR__ . '/routes_accounts.php'; // Include accounts BFF routes
-require_once __DIR__ . '/routes_s3.php'; // Include S3 multipart upload routes
 require_once __DIR__ . '/routes_account_dashboard.php'; // Account dashboard shared helpers (used by the /accounts BFF subgroup; no routes of its own)
-require_once __DIR__ . '/routes_admin.php'; // Include admin API routes
 require_once __DIR__ . '/routes_accounts_admin.php'; // Proxied admin routes (Worker → PHP via HMAC + npub-level check)
 apiTimingLog('all route files loaded', $__routesStart);
 

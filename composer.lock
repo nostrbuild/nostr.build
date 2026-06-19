@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "f3dfb358db76f43dad5f134784d200c3",
+    "content-hash": "c3d54525f131197e4075faa0fef02461",
     "packages": [
         {
             "name": "aws/aws-crt-php",
@@ -156,60 +156,6 @@
                 "source": "https://github.com/aws/aws-sdk-php/tree/3.379.11"
             },
             "time": "2026-05-01T18:16:33+00:00"
-        },
-        {
-            "name": "btcpayserver/btcpayserver-greenfield-php",
-            "version": "v2.9.0",
-            "source": {
-                "type": "git",
-                "url": "https://github.com/btcpayserver/btcpayserver-greenfield-php.git",
-                "reference": "60e6be57f9cd08dbe8f851d056358d1df9f07968"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://api.github.com/repos/btcpayserver/btcpayserver-greenfield-php/zipball/60e6be57f9cd08dbe8f851d056358d1df9f07968",
-                "reference": "60e6be57f9cd08dbe8f851d056358d1df9f07968",
-                "shasum": ""
-            },
-            "require": {
-                "ext-bcmath": "*",
-                "ext-curl": "*",
-                "ext-json": "*",
-                "ext-mbstring": "*",
-                "php": ">=8.0"
-            },
-            "require-dev": {
-                "friendsofphp/php-cs-fixer": "^3.0",
-                "phpunit/phpunit": "^9.5",
-                "vimeo/psalm": "^4.8",
-                "vlucas/phpdotenv": "^5.5"
-            },
-            "type": "library",
-            "autoload": {
-                "psr-4": {
-                    "BTCPayServer\\": "src/"
-                }
-            },
-            "notification-url": "https://packagist.org/downloads/",
-            "license": [
-                "MIT"
-            ],
-            "authors": [
-                {
-                    "name": "Wouter Samaey",
-                    "email": "wouter.samaey@storefront.be"
-                },
-                {
-                    "name": "Andreas Tasch",
-                    "email": "andy.tasch@gmail.com"
-                }
-            ],
-            "description": "BTCPay Server Greenfield API PHP client library.",
-            "support": {
-                "issues": "https://github.com/btcpayserver/btcpayserver-greenfield-php/issues",
-                "source": "https://github.com/btcpayserver/btcpayserver-greenfield-php/tree/v2.9.0"
-            },
-            "time": "2026-01-21T11:31:48+00:00"
         },
         {
             "name": "fig/http-message-util",
@@ -874,84 +820,6 @@
                 "source": "https://github.com/nikic/FastRoute/tree/master"
             },
             "time": "2018-02-13T20:26:39+00:00"
-        },
-        {
-            "name": "nyholm/psr7",
-            "version": "1.8.2",
-            "source": {
-                "type": "git",
-                "url": "https://github.com/Nyholm/psr7.git",
-                "reference": "a71f2b11690f4b24d099d6b16690a90ae14fc6f3"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://api.github.com/repos/Nyholm/psr7/zipball/a71f2b11690f4b24d099d6b16690a90ae14fc6f3",
-                "reference": "a71f2b11690f4b24d099d6b16690a90ae14fc6f3",
-                "shasum": ""
-            },
-            "require": {
-                "php": ">=7.2",
-                "psr/http-factory": "^1.0",
-                "psr/http-message": "^1.1 || ^2.0"
-            },
-            "provide": {
-                "php-http/message-factory-implementation": "1.0",
-                "psr/http-factory-implementation": "1.0",
-                "psr/http-message-implementation": "1.0"
-            },
-            "require-dev": {
-                "http-interop/http-factory-tests": "^0.9",
-                "php-http/message-factory": "^1.0",
-                "php-http/psr7-integration-tests": "^1.0",
-                "phpunit/phpunit": "^7.5 || ^8.5 || ^9.4",
-                "symfony/error-handler": "^4.4"
-            },
-            "type": "library",
-            "extra": {
-                "branch-alias": {
-                    "dev-master": "1.8-dev"
-                }
-            },
-            "autoload": {
-                "psr-4": {
-                    "Nyholm\\Psr7\\": "src/"
-                }
-            },
-            "notification-url": "https://packagist.org/downloads/",
-            "license": [
-                "MIT"
-            ],
-            "authors": [
-                {
-                    "name": "Tobias Nyholm",
-                    "email": "tobias.nyholm@gmail.com"
-                },
-                {
-                    "name": "Martijn van der Ven",
-                    "email": "martijn@vanderven.se"
-                }
-            ],
-            "description": "A fast PHP7 implementation of PSR-7",
-            "homepage": "https://tnyholm.se",
-            "keywords": [
-                "psr-17",
-                "psr-7"
-            ],
-            "support": {
-                "issues": "https://github.com/Nyholm/psr7/issues",
-                "source": "https://github.com/Nyholm/psr7/tree/1.8.2"
-            },
-            "funding": [
-                {
-                    "url": "https://github.com/Zegnat",
-                    "type": "github"
-                },
-                {
-                    "url": "https://github.com/nyholm",
-                    "type": "github"
-                }
-            ],
-            "time": "2024-09-09T07:06:30+00:00"
         },
         {
             "name": "paragonie/random_compat",
@@ -2298,68 +2166,6 @@
                 }
             ],
             "time": "2026-03-30T15:14:47+00:00"
-        },
-        {
-            "name": "toshy/bunnynet-php",
-            "version": "3.4.1",
-            "source": {
-                "type": "git",
-                "url": "https://github.com/ToshY/BunnyNet-PHP.git",
-                "reference": "132590bc7ffc213042f71d6de98c616915eb325b"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://api.github.com/repos/ToshY/BunnyNet-PHP/zipball/132590bc7ffc213042f71d6de98c616915eb325b",
-                "reference": "132590bc7ffc213042f71d6de98c616915eb325b",
-                "shasum": ""
-            },
-            "require": {
-                "ext-json": "*",
-                "nyholm/psr7": "^1.6.1",
-                "php": "^8.1",
-                "psr/http-client": "^1.0"
-            },
-            "require-dev": {
-                "friendsofphp/php-cs-fixer": "^3.13",
-                "phpmd/phpmd": "^2.13",
-                "phpro/grumphp": "^1.15 || ^2.0",
-                "phpstan/phpstan": "^1.9",
-                "phpunit/phpunit": "^10.0",
-                "rector/rector": "^0.15.1 || ^0.16.0 || ^0.17.0"
-            },
-            "type": "library",
-            "autoload": {
-                "psr-4": {
-                    "ToshY\\BunnyNet\\": "src/"
-                }
-            },
-            "notification-url": "https://packagist.org/downloads/",
-            "license": [
-                "MIT"
-            ],
-            "authors": [
-                {
-                    "name": "ToshY",
-                    "homepage": "https://github.com/ToshY"
-                }
-            ],
-            "description": "BunnyNet API client for PHP",
-            "keywords": [
-                "Bunny CDN PHP",
-                "Bunny PHP",
-                "Bunny.net",
-                "BunnyNet PHP client",
-                "BunnyNet-PHP",
-                "BunnyWay",
-                "BunnyWay-PHP",
-                "ToshY",
-                "bunnyCDN"
-            ],
-            "support": {
-                "issues": "https://github.com/ToshY/BunnyNet-PHP/issues",
-                "source": "https://github.com/ToshY/BunnyNet-PHP/tree/3.4.1"
-            },
-            "time": "2023-08-05T15:11:39+00:00"
         }
     ],
     "packages-dev": [

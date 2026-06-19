@@ -12,40 +12,11 @@ use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
 use Slim\Routing\RouteCollectorProxy;
 
-$app->group('/btcpay', function (RouteCollectorProxy $group) {
-  // Route to upload file(s) via form
-  $group->post('/webhook', function (Request $request, Response $response) {
-    // Get Raw Body
-    $body = $request->getBody()->getContents();
-    // Get Signature
-    $signature = $request->getHeaderLine('btcpay-sig');
-
-    try {
-      // Instantiate BTCPayWebhook
-      $webhook = $this->get('btcpayWebhook');
-      $check = $webhook->processWebhook($body, $signature);
-      if(!$check) {
-        return btcpayWebhookResponse($response, 'error', 'Webhook processing failed');
-      }
-
-      // Handle exceptions thrown by the MultimediaUpload class
-      return btcpayWebhookResponse($response, 'success', 'Webhook processed successfully');
-    } catch (\Exception $e) {
-      return btcpayWebhookResponse($response, 'error', $e->getMessage());
-    }
-  });
-
-  $group->get('/ping', function (Request $request, Response $response) {
-    $response->getBody()->write('pong');
-    return $response;
-  });
-});
-
 // Worker-facing internal plans endpoints (the account.nostr.build Worker calls
 // these during the dual-run migration). HMAC-authed via NB_HMAC_SECRETS — the
 // SAME shared secret the PHP->Worker events bridge uses — so only the Worker can
-// reach them. Full paths: POST /api/v2/internal/plans/activate,
-// GET /api/v2/internal/plans/promotions.
+// reach them. Full paths: POST /api/v2/internal/plans/{set-plan,signup},
+// GET /api/v2/internal/plans/{referrer,promotions}.
 $app->group('/internal/plans', function (RouteCollectorProxy $group) {
   // Dumb plan mutation. The account Worker is the AUTHORITATIVE settlement
   // source: its PaymentWorkflow receives the BTCPay webhook, classifies on the
@@ -97,29 +68,6 @@ $app->group('/internal/plans', function (RouteCollectorProxy $group) {
     } catch (\Throwable $e) {
       error_log('internal/plans/set-plan error: ' . $e->getMessage());
       $response->getBody()->write(json_encode(['ok' => false, 'error' => 'set-plan failed']));
-      return $response->withStatus(500)->withHeader('Content-Type', 'application/json');
-    }
-  });
-
-  // Activate a settled invoice. LEGACY/UNUSED by the in-app flow now: the Worker
-  // calls /set-plan above with its own verified facts instead of having PHP
-  // re-derive everything from the invoice. Left in place (the PHP webhook still
-  // references fulfillInvoiceById) but no longer on the in-app settlement path.
-  $group->post('/activate', function (Request $request, Response $response) {
-    $data = json_decode($request->getBody()->getContents(), true);
-    $invoiceId = is_array($data) ? (string)($data['invoiceId'] ?? '') : '';
-    if ($invoiceId === '') {
-      $response->getBody()->write(json_encode(['ok' => false, 'error' => 'invoiceId required']));
-      return $response->withStatus(400)->withHeader('Content-Type', 'application/json');
-    }
-    try {
-      $webhook = $this->get('btcpayWebhook');
-      $ok = $webhook->fulfillInvoiceById($invoiceId);
-      $response->getBody()->write(json_encode(['ok' => (bool)$ok]));
-      return $response->withStatus($ok ? 200 : 422)->withHeader('Content-Type', 'application/json');
-    } catch (\Throwable $e) {
-      error_log('internal/plans/activate error: ' . $e->getMessage());
-      $response->getBody()->write(json_encode(['ok' => false, 'error' => 'activation failed']));
       return $response->withStatus(500)->withHeader('Content-Type', 'application/json');
     }
   });
