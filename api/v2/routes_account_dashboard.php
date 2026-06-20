@@ -185,7 +185,6 @@ function dashboardListDowngradeIneligibleFiles(int $targetLevel, $link): array
 
 function dashboardGetAccountData($link, $account): array
 {
-  $credits = dashboardGetCredits($link);
   $info = $account->getAccountInfo();
 
   // Cast mysqli `fetch_assoc()` strings to their honest types at the
@@ -216,9 +215,6 @@ function dashboardGetAccountData($link, $account): array
     "storageUsed" => $info['used_storage_space'],
     "storageLimit" => $info['storage_space_limit'],
     "totalStorageLimit" => $info['storage_space_limit'] === PHP_INT_MAX ? "Unlimited" : formatSizeUnits($info['storage_space_limit']),
-    "availableCredits" => $credits['available'],
-    "debitedCredits" => $credits['debited'] ?? 0,
-    "creditedCredits" => $credits['credited'] ?? 0,
     "referralCode" => $account->getAccountReferralCode(),
     "nlSubEligible" => $info['nl_sub_eligible'] ?? false,
     "nlSubActivated" => $info['nl_sub_activated'] ?? false,
@@ -235,29 +231,6 @@ function dashboardGetAccountData($link, $account): array
     // accounts (>365 days). Admins/moderators report 0 (never eligible).
     "daysPastExpiration" => $account->getDaysPastSubscriptionExpiration(),
   ];
-}
-
-function dashboardGetCredits($link): array
-{
-  $__t = hrtime(true);
-  $apiBase = substr($_SERVER['AI_GEN_API_ENDPOINT'], 0, strrpos($_SERVER['AI_GEN_API_ENDPOINT'], '/'));
-  // Failure-tolerant: the credit API is a separate service and shouldn't take
-  // the entire profile endpoint down with it. A level-0 / expired user may
-  // legitimately not exist on the credit-API side yet, which used to surface
-  // as `Credits::fetchRequest` throwing "Unexpected HTTP code" and bubbling
-  // up — pre-fix the HMAC middleware then re-mapped that to a misleading 401.
-  // Treat any upstream error as zero balance so the profile still loads.
-  $defaultBalance = ['available' => 0, 'debited' => 0, 'credited' => 0];
-  try {
-    $credits = new Credits($_SESSION['usernpub'], $apiBase, $_SERVER['AI_GEN_API_HMAC_KEY'], $link);
-    $balance = $credits->getCreditsBalance();
-  } catch (\Throwable $e) {
-    error_log('dashboardGetCredits failed, defaulting to zero balance: ' . $e->getMessage());
-    $balance = $defaultBalance;
-  }
-  apiTimingLog('dashboardGetCredits: Credits API call', $__t);
-  $_SESSION['sd_credits'] = $balance['available'] ?? 0;
-  return $balance;
 }
 
 function dashboardGetMediaStats(string $mediaId, string $period, string $interval, string $groupBy, $link): string

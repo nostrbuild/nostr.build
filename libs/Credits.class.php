@@ -8,14 +8,15 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/Account.class.php';
 /**
  * Class Credits
  *
- * This class is responsible for managing credits within the application.
- * It provides methods to add, remove, and query credits for users.
+ * Thin client for the AI credit ledger. Credit reads (balance + history) and
+ * grants now run in the account.nostr.build Worker, straight against the shared
+ * ledger D1 — the only surviving use here is linking a generated media id onto
+ * its debit row after a PHP-side Stability generation.
  *
  * @package nostr.build.libs
  */
 class Credits
 {
-  private float $pricePerCredit = 0.01;
   private string $userNpub;
   private string $baseApiUrl;
   private string $apiKey;
@@ -37,73 +38,6 @@ class Credits
     $this->apiKey = $apiKey;
     $this->db = $db;
     $this->account = new Account($this->userNpub, $this->db);
-  }
-
-  private function getUserParameters(): array
-  {
-    return [
-      'user_npub' => $this->account->getNpub(),
-      'user_level' => $this->account->getAccountLevelInt(),
-      'user_sub_period' => $this->account->getSubscriptionPeriod()
-    ];
-  }
-
-  /**
-   * Retrieves the current credits balance.
-   *
-   * @return array An associative array containing the credits balance information.
-   */
-  public function getCreditsBalance(): array
-  {
-    $url = $this->baseApiUrl . '/sd/credits';
-    $userParams = $this->getUserParameters();
-    // Get user npub, level and subscription period
-    $userNpub = urlencode($userParams['user_npub'] ?? '');
-    $userLevel = urlencode("{$userParams['user_level']}" ?? '0');
-    $userSubPeriod = urlencode($userParams['user_sub_period'] ?? '1y');
-    // Constract the request url with query parameters
-    $url .= "?user_npub={$userNpub}&user_level={$userLevel}&user_sub_period={$userSubPeriod}";
-
-    return $this->fetchRequest($url);
-  }
-
-  /**
-   * Retrieves the transaction history.
-   *
-   * @param string $type The type of transactions to retrieve. Default is "all".
-   * @param int|null $limit The maximum number of transactions to retrieve. Default is null.
-   * @param int|null $offset The number of transactions to skip before starting to collect the result set. Default is null.
-   * @return array An array containing the transaction history.
-   */
-  public function getTransactionsHistory(string $type = "all", ?int $limit = null, ?int $offset = null): array
-  {
-    // Type can be "all", "credit", "debit"
-    $url = $this->baseApiUrl . "/sd/credits/{$type}";
-    $userParams = $this->getUserParameters();
-    // Get user npub, level and subscription period
-    $userNpub = urlencode($userParams['user_npub'] ?? '');
-    $userLevel = urlencode("{$userParams['user_level']}" ?? '0');
-    $userSubPeriod = urlencode($userParams['user_sub_period'] ?? '1y');
-    // Constract the request url with query parameters
-    $url .= "?user_npub={$userNpub}&user_level={$userLevel}&user_sub_period={$userSubPeriod}";
-    if (!empty($limit)) {
-      $offset = $offset ?? 0;
-      $url .= "&limit={$limit}&offset={$offset}";
-    }
-
-    return $this->fetchRequest($url);
-  }
-
-  public function getTransactionDetails(string $transactionId): array
-  {
-    $url = $this->baseApiUrl . "/sd/credits/tx/{$transactionId}";
-    return $this->fetchRequest($url);
-  }
-
-  public function getTransactionDetailsByMediaId(string $mediaId): array
-  {
-    $url = $this->baseApiUrl . "/sd/credits/tx/media/{$mediaId}";
-    return $this->fetchRequest($url);
   }
 
   public function updateTransactionWithMediaId(string $transactionId, string $mediaId): array
@@ -147,26 +81,6 @@ class Credits
     $ch = null;
 
     return json_decode($response, true);
-  }
-
-  static public function getInitBonusCredits(int $accountLevel, string $subPeriod = '1y'): int
-  {
-    $multiplier = match ($subPeriod) {
-      '1y' => 1.0,
-      '2y' => 1.5,
-      '3y' => 2.0,
-      default => 1
-    };
-    switch ($accountLevel) {
-      case 10: // Advanced
-        return 1000 * $multiplier;
-      case 1: // Creator
-        return 500 * $multiplier;
-      case 2:
-        return 250 * $multiplier;
-      default:
-        return 0;
-    }
   }
 }
 

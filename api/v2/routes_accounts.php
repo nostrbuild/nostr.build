@@ -158,20 +158,7 @@ $app->group('/accounts', function (RouteCollectorProxy $group) {
         ->withStatus(401);
     }
 
-    // dashboardGetAccountData -> dashboardGetCredits reads $_SESSION['usernpub']
-    // and writes $_SESSION['sd_credits']. Set the session var transiently so
-    // the helper works unmodified, then restore.
-    $prevNpub = $_SESSION['usernpub'] ?? null;
-    $_SESSION['usernpub'] = $npub;
-    try {
-      $data = dashboardGetAccountData($link, $account);
-    } finally {
-      if ($prevNpub === null) {
-        unset($_SESSION['usernpub']);
-      } else {
-        $_SESSION['usernpub'] = $prevNpub;
-      }
-    }
+    $data = dashboardGetAccountData($link, $account);
     $response->getBody()->write(json_encode($data));
     return $response
       ->withHeader('Content-Type', 'application/json')
@@ -346,20 +333,7 @@ $app->group('/accounts', function (RouteCollectorProxy $group) {
           ->withHeader('Content-Type', 'application/json')
           ->withStatus(404);
       }
-      // dashboardGetAccountData -> dashboardGetCredits reads $_SESSION['usernpub']
-      // and writes $_SESSION['sd_credits']. Set the session var transiently so
-      // the helper works unmodified, then restore.
-      $prevNpub = $_SESSION['usernpub'] ?? null;
-      $_SESSION['usernpub'] = $npub;
-      try {
-        $data = dashboardGetAccountData($link, $account);
-      } finally {
-        if ($prevNpub === null) {
-          unset($_SESSION['usernpub']);
-        } else {
-          $_SESSION['usernpub'] = $prevNpub;
-        }
-      }
+      $data = dashboardGetAccountData($link, $account);
       $response->getBody()->write(json_encode($data));
       return $response
         ->withHeader('Content-Type', 'application/json')
@@ -1380,8 +1354,7 @@ $app->group('/accounts', function (RouteCollectorProxy $group) {
     // across Stable AI Core (@sd/core, credit-gated) and Cloudflare Workers AI
     // models (@cf/...). Ported from routes_account_dashboard.php:654; the BFF
     // has no full PHP session, so the tier gates use Account directly (mirrors
-    // /nostr/publish) and dashboardGetCredits() is called explicitly to
-    // populate $_SESSION['sd_credits'] for the @sd/core helper to read.
+    // /nostr/publish). Insufficient credits are rejected by the worker (402).
     $sub->post('/ai/generate', function (Request $request, Response $response) {
       global $link;
       global $awsConfig;
@@ -1433,15 +1406,6 @@ $app->group('/accounts', function (RouteCollectorProxy $group) {
           return dashboardError($response, "You do not have permission to generate AI images using the {$model} model", 403);
         }
 
-        // @sd/core consumes credits — populate $_SESSION['sd_credits'] so the
-        // legacy generator can read it.
-        if ($model === '@sd/core') {
-          dashboardGetCredits($link);
-          if (intval($_SESSION['sd_credits'] ?? 0) <= 3) {
-            return dashboardError($response, 'You do not have enough credits to generate AI images');
-          }
-        }
-
         // Stability (priced) models route to dedicated worker endpoints; the bare
         // worker model id differs from the app-facing "@sd/..." string. null = the
         // endpoint fixes the model (core, ultra). The SD generators sync
@@ -1474,32 +1438,6 @@ $app->group('/accounts', function (RouteCollectorProxy $group) {
         } else {
           $_SESSION['usernpub'] = $prevNpub;
         }
-      }
-    });
-
-    // GET /api/v2/accounts/dashboard/credits/history — the signed-in user's AI
-    // credit ledger (read-only passthrough to the worker via Credits). Mirrors
-    // routes_account_dashboard.php:605, but the BFF has no PHP session, so the
-    // user is identified from the request identity headers and the npub is
-    // passed straight into Credits (its Account derives level + sub period).
-    $sub->get('/credits/history', function (Request $request, Response $response) {
-      global $link;
-      $npub = resolveIdentityNpub($request);
-      if ($npub === '') {
-        return dashboardError($response, 'missing-identity', 400);
-      }
-      $params = $request->getQueryParams();
-      try {
-        $apiBase = substr($_SERVER['AI_GEN_API_ENDPOINT'], 0, strrpos($_SERVER['AI_GEN_API_ENDPOINT'], '/'));
-        $credits = new Credits($npub, $apiBase, $_SERVER['AI_GEN_API_HMAC_KEY'], $link);
-        $txType = $params['type'] ?? 'all';
-        $txLimit = isset($params['limit']) ? min(500, max(1, intval($params['limit']))) : null;
-        $txOffset = isset($params['offset']) ? max(0, intval($params['offset'])) : null;
-        $txHistory = $credits->getTransactionsHistory($txType, $txLimit, $txOffset);
-        return dashboardJson($response, $txHistory);
-      } catch (\Throwable $e) {
-        error_log($e->getMessage());
-        return dashboardError($response, 'Failed to get credits transaction history', 500);
       }
     });
   });
