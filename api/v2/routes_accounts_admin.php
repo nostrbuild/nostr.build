@@ -30,6 +30,7 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/db/UsersImagesFolders.class.php'
 require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/WorkerEventsClient.class.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/IpAccessControl.class.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/LegacyBlacklist.class.php';
+require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/utils.funcs.php'; // getFileTypeFromName (canonical type map)
 require_once __DIR__ . '/helper_functions.php';
 
 require $_SERVER['DOCUMENT_ROOT'] . '/vendor/autoload.php';
@@ -2090,6 +2091,155 @@ $app->group('/accounts/admin/moderation', function (RouteCollectorProxy $group) 
     $stmt->close();
 
     return aaJson($response, ['success' => true, 'count' => $count]);
+  });
+
+})
+  ->add(new ProxiedAdminMiddleware())
+  ->add(new HmacAuthMiddleware());
+
+// ----- Account Review -------------------------------------------------------
+// Report-driven examination of a PAID account. Reads the SUBSCRIBED-user media
+// table users_images (NOT uploads_data, which is the free-upload moderation
+// queue). No approve/reject concepts here — this is forensic confirmation of a
+// report, by reported URL or by identifier.
+
+$app->group('/accounts/admin/account-review', function (RouteCollectorProxy $group) {
+
+  /**
+   * GET /accounts/admin/account-review/resolve?q=<url|npub|uuid>
+   * Turn a report into the owning account. npub/uuid resolve directly; a URL
+   * is matched to its users_images row by filename basename. Returns the full
+   * account snapshot (real latest ban reason, not the hardcoded one) and, for
+   * a URL, the matched item id to highlight in the gallery.
+   */
+  $group->get('/resolve', function (Request $request, Response $response) {
+    global $link;
+    $q = trim((string) ($request->getQueryParams()['q'] ?? ''));
+    if ($q === '' || strlen($q) > 2048) return aaError($response, 'invalid-query', 400);
+
+    $matchedItemId = null;
+    $npub = null;
+
+    if (str_starts_with($q, 'npub1')) {
+      $npub = aaValidNpub($q);
+      if ($npub === null) return aaError($response, 'invalid-query', 400);
+    } elseif (preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/', $q)) {
+      $acct = Account::fromUuid($q, $link);
+      if ($acct === null || !$acct->accountExists()) return aaError($response, 'not-found', 404);
+      $npub = $acct->getNpub();
+    } elseif (str_contains($q, '://')) {
+      // Reported URL → filename basename → users_images row. `image` stores the
+      // bare filename (the dashboard builds URLs as base . image), so an exact
+      // match rides its index instead of a basename scan.
+      $path = parse_url($q, PHP_URL_PATH);
+      $basename = is_string($path) ? pathinfo($path, PATHINFO_BASENAME) : '';
+      if ($basename === '') return aaError($response, 'invalid-query', 400);
+      $stmt = $link->prepare("SELECT id, usernpub FROM users_images WHERE image = ? ORDER BY id DESC LIMIT 1");
+      $stmt->bind_param('s', $basename);
+      $stmt->execute();
+      $hit = $stmt->get_result()->fetch_assoc();
+      $stmt->close();
+      if (!$hit) {
+        return aaJson($response, ['found' => false, 'note' => 'No paid-account media matches that URL.']);
+      }
+      $npub = (string) $hit['usernpub'];
+      $matchedItemId = (int) $hit['id'];
+    } else {
+      return aaError($response, 'invalid-query', 400);
+    }
+
+    $account = new Account($npub, $link);
+    if (!$account->accountExists()) return aaError($response, 'not-found', 404);
+
+    $snap = aaUserSnapshot($account, $link);
+    // Surface the REAL latest blacklist reason (the snapshot hardcodes one).
+    if (!empty($snap['banned'])) {
+      $bs = $link->prepare("SELECT reason FROM blacklist WHERE npub = ? ORDER BY id DESC LIMIT 1");
+      $bs->bind_param('s', $npub);
+      $bs->execute();
+      $br = $bs->get_result()->fetch_assoc();
+      $bs->close();
+      if ($br && $br['reason'] !== null) $snap['banReason'] = (string) $br['reason'];
+    }
+
+    return aaJson($response, ['found' => true, 'matchedItemId' => $matchedItemId, 'account' => $snap]);
+  });
+
+  /**
+   * GET /accounts/admin/account-review/media?npub=&cursor=&limit=
+   * ALL of the account's media from users_images across all folders (image,
+   * video, audio, document, archive, text, other), keyset-paginated newest
+   * first. url/thumb/type mirror the dashboard's buildFileListEntry: type is
+   * extension-derived (getFileTypeFromName), thumb is set for images only —
+   * the client derives video posters (url/poster.jpg) and renders icons for
+   * the rest.
+   */
+  $group->get('/media', function (Request $request, Response $response) {
+    global $link;
+    $p = $request->getQueryParams();
+    $npub = aaValidNpub($p['npub'] ?? null);
+    if ($npub === null) return aaError($response, 'invalid-npub', 400);
+    $limit  = max(1, min(200, (int) ($p['limit'] ?? 60)));
+    $cursor = max(0, (int) ($p['cursor'] ?? 0));
+
+    $where = "WHERE ui.usernpub = ?";
+    $types = 's';
+    $args  = [$npub];
+    if ($cursor > 0) {
+      $where .= " AND ui.id < ?";
+      $types .= 'i';
+      $args[] = $cursor;
+    }
+    $sql = "SELECT ui.id, ui.image, ui.mime_type, ui.file_size, ui.flag, ui.created_at
+              FROM users_images ui
+              $where
+             ORDER BY ui.id DESC
+             LIMIT ?";
+    $types .= 'i';
+    $args[] = $limit;
+
+    $stmt = $link->prepare($sql);
+    $stmt->bind_param($types, ...$args);
+    $stmt->execute();
+    $rs = $stmt->get_result();
+
+    $rows = [];
+    while ($r = $rs->fetch_assoc()) {
+      $filename = pathinfo((string) $r['image'], PATHINFO_BASENAME);
+      // Canonical type detection (mirrors buildFileListEntry): extension first,
+      // mime first-segment as the fallback.
+      $type = getFileTypeFromName((string) $r['image']);
+      if ($type === 'unknown') {
+        $type = explode('/', (string) $r['mime_type'])[0];
+      }
+      $ptype = 'professional_account_' . $type;
+      try {
+        $url   = SiteConfig::getFullyQualifiedUrl($ptype) . $filename;
+        // Real thumbnail for images only; video posters + other-type icons are
+        // derived client-side.
+        $thumb = $type === 'image' ? (SiteConfig::getThumbnailUrl($ptype) . $filename) : null;
+      } catch (\Throwable $e) {
+        // Unknown CDN mapping — fall back to the public path so the row still
+        // resolves rather than vanishing from the review.
+        $url   = SiteConfig::ACCESS_SCHEME . '://' . SiteConfig::DOMAIN_NAME . '/p/' . $filename;
+        $thumb = null;
+      }
+      $rows[] = [
+        'id'        => (int) $r['id'],
+        'filename'  => $filename,
+        'mediaType' => $type,
+        'mime'      => (string) $r['mime_type'],
+        'url'       => $url,
+        'thumb'     => $thumb,
+        'size'      => (int) ($r['file_size'] ?? 0),
+        'public'    => ((string) $r['flag'] === '1'),
+        'createdAt' => $r['created_at'],
+      ];
+    }
+    $stmt->close();
+
+    $nextCursor = count($rows) === $limit ? (int) $rows[count($rows) - 1]['id'] : null;
+    return aaJson($response, ['rows' => $rows, 'nextCursor' => $nextCursor]);
   });
 
 })
