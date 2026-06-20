@@ -491,9 +491,18 @@ $app->group('/accounts/admin/users', function (RouteCollectorProxy $group) {
     }
     $whereSql = $where ? ('WHERE ' . implode(' AND ', $where)) : '';
 
+    // blacklist has NO unique constraint on npub — a user can have many ban
+    // rows. Collapse to the latest ban per npub (MAX(id)) so each account
+    // shows once; that id is unique, keeping the keyset clean across pages.
     $sql = "SELECT b.id AS ban_id, b.npub, b.timestamp AS ban_timestamp, b.reason AS ban_reason,
                    u.uuid_id, u.nym, u.ppic, u.acctlevel, u.plan_until_date, u.created_at
               FROM blacklist b
+              INNER JOIN (
+                SELECT npub, MAX(id) AS max_id
+                  FROM blacklist
+                 WHERE npub IS NOT NULL
+                 GROUP BY npub
+              ) latest ON b.id = latest.max_id
               INNER JOIN users u ON b.npub = u.usernpub
               $whereSql
              ORDER BY b.id DESC
