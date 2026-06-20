@@ -460,6 +460,82 @@ $app->group('/accounts/admin/users', function (RouteCollectorProxy $group) {
   });
 
   /**
+   * GET /accounts/admin/users/banned?cursor=&limit=&q=
+   * Banned registered accounts only — blacklist ⋈ users. The INNER JOIN drops
+   * anonymous npub/IP-only bans that have no account. Keyset-paginated on the
+   * blacklist PK (newest ban first); `q` matches nym / npub / uuid. Returns the
+   * REAL per-row blacklist.reason (the single lookup hardcodes its reason).
+   */
+  $group->get('/banned', function (Request $request, Response $response) {
+    global $link;
+    $params = $request->getQueryParams();
+    $limit  = max(1, min(200, (int) ($params['limit'] ?? 50)));
+    $cursor = max(0, (int) ($params['cursor'] ?? 0)); // 0 = first page (no upper bound)
+    $q      = isset($params['q']) ? trim((string) $params['q']) : '';
+    if (strlen($q) > 255) return aaError($response, 'invalid-query', 400);
+
+    // Keyset cursor and search are both optional — build the WHERE dynamically.
+    $where = [];
+    $types = '';
+    $args  = [];
+    if ($cursor > 0) {
+      $where[] = 'b.id < ?';
+      $types  .= 'i';
+      $args[]  = $cursor;
+    }
+    if ($q !== '') {
+      $like    = '%' . $q . '%';
+      $where[] = '(u.nym LIKE ? OR b.npub LIKE ? OR u.uuid_id LIKE ?)';
+      $types  .= 'sss';
+      $args[]  = $like; $args[] = $like; $args[] = $like;
+    }
+    $whereSql = $where ? ('WHERE ' . implode(' AND ', $where)) : '';
+
+    $sql = "SELECT b.id AS ban_id, b.npub, b.timestamp AS ban_timestamp, b.reason AS ban_reason,
+                   u.uuid_id, u.nym, u.ppic, u.acctlevel, u.plan_until_date, u.created_at
+              FROM blacklist b
+              INNER JOIN users u ON b.npub = u.usernpub
+              $whereSql
+             ORDER BY b.id DESC
+             LIMIT ?";
+    $types .= 'i';
+    $args[] = $limit;
+
+    $stmt = $link->prepare($sql);
+    $stmt->bind_param($types, ...$args);
+    $stmt->execute();
+    $rs = $stmt->get_result();
+
+    $today = date('Y-m-d');
+    $rows = [];
+    while ($r = $rs->fetch_assoc()) {
+      $level = (int) $r['acctlevel'];
+      $until = $r['plan_until_date'] ?? null;
+      // Expiry only means something for paid tiers (1..10); Free/staff never expire.
+      $isExpired = $level >= 1 && $level <= 10 && (empty($until) || $until < $today);
+      $rows[] = [
+        'npub'          => (string) $r['npub'],
+        'uuidId'        => $r['uuid_id'],
+        'nym'           => $r['nym'],
+        'pfpUrl'        => $r['ppic'],
+        'acctlevel'     => $level,
+        'planUntilDate' => $until,
+        'createdAt'     => $r['created_at'],
+        'banTimestamp'  => (string) $r['ban_timestamp'],
+        'banReason'     => $r['ban_reason'] !== null ? (string) $r['ban_reason'] : '',
+        'isExpired'     => $isExpired,
+        'banId'         => (int) $r['ban_id'],
+      ];
+    }
+    $stmt->close();
+
+    // Another page exists only if this one filled; next cursor = last ban id.
+    $nextCursor = count($rows) === $limit ? (int) $rows[count($rows) - 1]['banId'] : null;
+
+    return aaJson($response, ['rows' => $rows, 'nextCursor' => $nextCursor]);
+  });
+
+  /**
    * POST /accounts/admin/users/plan
    * Body: { npub, level: 0..99, period: '1y'|'2y'|'3y' }
    * Sets the user's level + plan dates. Level 0 demotes to Free (clears plan dates).
