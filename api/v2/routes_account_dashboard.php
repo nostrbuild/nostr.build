@@ -427,6 +427,10 @@ function dashboardGenerateStabilityImage(string $endpoint, ?string $sdModel, str
   $usernpub = $account->getNpub();
   $level = $account->getAccountLevelInt();
   $subscriptionPeriod = $account->getSubscriptionPeriod();
+  // Stable per-user identity (users.uuid_id) — the worker keys the AI-credit
+  // ledger by this (npub is mutable). Sent alongside the npub, which the worker
+  // still forwards to Stability as the client-user header.
+  $userUuid = $account->getAccountUuid();
 
   $requestBodyArray = [
     "user_npub" => $usernpub,
@@ -436,6 +440,9 @@ function dashboardGenerateStabilityImage(string $endpoint, ?string $sdModel, str
     "user_sub_period" => $subscriptionPeriod,
     "prompt" => $prompt,
   ];
+  // Only send when present so an older account row without uuid_id still works
+  // (the worker falls back to npub-keying when user_uuid is absent).
+  if (!empty($userUuid)) $requestBodyArray['user_uuid'] = $userUuid;
   // Only the /sd/sd3 endpoint takes a bare model id (sd3.5-*); core + ultra are
   // fixed by their endpoint.
   if ($sdModel !== null) $requestBodyArray['model'] = $sdModel;

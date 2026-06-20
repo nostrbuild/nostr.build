@@ -145,8 +145,11 @@ $app->group('/internal/plans', function (RouteCollectorProxy $group) {
       $acct = (new Account($npub, $link))->getAccount();
       // `level` lets the Worker apply the signup referral split itself (only
       // levels 1/2/10 earn) without PHP owning that credit logic - keep PHP dumb.
+      // `uuid` is the stable ledger key the Worker credits the referrer bonus to
+      // (npub is mutable); server-to-server only — the public /plans card drops it.
       $response->getBody()->write(json_encode([
         'ok' => true,
+        'uuid' => $acct['uuid_id'] ?? null,
         'npub' => $npub,
         'nym' => $acct['nym'] ?? null,
         'ppic' => $acct['ppic'] ?? null,
