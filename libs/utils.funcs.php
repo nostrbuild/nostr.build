@@ -4,27 +4,35 @@ require __DIR__ . '/../vendor/autoload.php';
 use Hidehalo\Nanoid\Client;
 use Hidehalo\Nanoid\GeneratorInterface;
 
+// Extension → file type map. Single source of truth: getFileType() classifies
+// by it, and getFileTypeExtensions() exposes a type's extensions so callers
+// (e.g. the account-review type filter's SQL) can match it exactly. First
+// matching type wins, so overlapping extensions resolve in declaration order.
+const FILE_TYPE_EXTENSIONS = [
+  'image' => ['jpg', 'jpeg', 'png', 'apng', 'gif', 'webp', 'bmp', 'tiff', 'heic', 'heif', 'avif', 'jp2', 'jpx', 'jpm', 'jxr', 'jfif', 'ico'],
+  'audio' => ['mp3', 'ogg', 'wav', 'weba', 'aac', 'flac', 'aif', 'wma', 'm4a', 'm4b', 'm4p', 'm4r', 'mp2', 'mpa', 'mpga', 'mp4a', 'mpga', 'mpg', 'mpv2', 'mp2v', 'mpe', 'm2a', 'm2v', 'm2s', 'm2t', 'm2ts', 'm2v', 'm3a'],
+  'video' => ['mp4', 'webm', 'ogv', 'avi', 'wmv', 'mov', 'mpeg', '3gp', '3g2', 'flv', 'm4v', 'mkv', 'mpg', 'm2v', 'm4p', 'mp2', 'mpa', 'mpe', 'mpv', 'm2ts', 'mts', 'ts', 'mxf', 'asf', 'rm', 'rmvb', 'vob', 'f4v', 'm2v', 'm2ts', 'mts', 'ts', 'mxf', 'asf', 'rm', 'rmvb', 'vob', 'f4v'],
+  'archive' => ['zip', 'tar', 'gz', 'bz2', 'xz', 'lz', 'tar.gz', 'tar.bz', 'tar.xz'],
+  'document' => ['pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'odt', 'ods', 'odp', 'rtf'],
+  'text' => ['txt', 'html', 'css', 'js', 'json', 'xml', 'yaml', 'toml', 'md', 'tex', 'rst', 'adoc', 'org', 'texinfo', 'roff'],
+  'other' => ['svg', 'epub', 'mobi', 'psd'],
+];
+
 // Assign file types
 function getFileType(string $ext): string
 {
-  $fileTypes = [
-    'image' => ['jpg', 'jpeg', 'png', 'apng', 'gif', 'webp', 'bmp', 'tiff', 'heic', 'heif', 'avif', 'jp2', 'jpx', 'jpm', 'jxr', 'jfif', 'ico'],
-    'audio' => ['mp3', 'ogg', 'wav', 'weba', 'aac', 'flac', 'aif', 'wma', 'm4a', 'm4b', 'm4p', 'm4r', 'mp2', 'mpa', 'mpga', 'mp4a', 'mpga', 'mpg', 'mpv2', 'mp2v', 'mpe', 'm2a', 'm2v', 'm2s', 'm2t', 'm2ts', 'm2v', 'm3a'],
-    'video' => ['mp4', 'webm', 'ogv', 'avi', 'wmv', 'mov', 'mpeg', '3gp', '3g2', 'flv', 'm4v', 'mkv', 'mpg', 'm2v', 'm4p', 'mp2', 'mpa', 'mpe', 'mpv', 'm2ts', 'mts', 'ts', 'mxf', 'asf', 'rm', 'rmvb', 'vob', 'f4v', 'm2v', 'm2ts', 'mts', 'ts', 'mxf', 'asf', 'rm', 'rmvb', 'vob', 'f4v'],
-    'archive' => ['zip', 'tar', 'gz', 'bz2', 'xz', 'lz', 'tar.gz', 'tar.bz', 'tar.xz'],
-    'document' => ['pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'odt', 'ods', 'odp', 'rtf'],
-    'text' => ['txt', 'html', 'css', 'js', 'json', 'xml', 'yaml', 'toml', 'md', 'tex', 'rst', 'adoc', 'org', 'texinfo', 'roff'],
-    'other' => ['svg', 'epub', 'mobi', 'psd'],
-  ];
-  foreach ($fileTypes as $type => $extensions) {
-    if (in_array($ext, $extensions)) {
-      $fileType = $type;
-      break;
-    } else {
-      $fileType = 'unknown';
+  foreach (FILE_TYPE_EXTENSIONS as $type => $extensions) {
+    if (in_array($ext, $extensions, true)) {
+      return $type;
     }
   }
-  return $fileType;
+  return 'unknown';
+}
+
+// The unique extensions for one file type (empty for an unknown type).
+function getFileTypeExtensions(string $type): array
+{
+  return array_values(array_unique(FILE_TYPE_EXTENSIONS[$type] ?? []));
 }
 
 // Convenience function to get file type from the full name

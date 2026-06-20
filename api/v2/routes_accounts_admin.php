@@ -2103,6 +2103,42 @@ $app->group('/accounts/admin/moderation', function (RouteCollectorProxy $group) 
 // queue). No approve/reject concepts here — this is forensic confirmation of a
 // report, by reported URL or by identifier.
 
+/**
+ * Build one account-review media row from a users_images record (keys:
+ * id, image, mime_type, file_size, created_at). Mirrors the dashboard's
+ * buildFileListEntry: type is extension-derived (mime first-segment fallback),
+ * url from the per-type CDN base, thumb for images only — the client derives
+ * video posters + other-type icons.
+ */
+function aaReviewMediaRow(array $r): array
+{
+  $filename = pathinfo((string) $r['image'], PATHINFO_BASENAME);
+  $type = getFileTypeFromName((string) $r['image']);
+  if ($type === 'unknown') {
+    $type = explode('/', (string) $r['mime_type'])[0];
+  }
+  $ptype = 'professional_account_' . $type;
+  try {
+    $url   = SiteConfig::getFullyQualifiedUrl($ptype) . $filename;
+    $thumb = $type === 'image' ? (SiteConfig::getThumbnailUrl($ptype) . $filename) : null;
+  } catch (\Throwable $e) {
+    // Unknown CDN mapping — fall back to the public path so the row still
+    // resolves rather than vanishing from the review.
+    $url   = SiteConfig::ACCESS_SCHEME . '://' . SiteConfig::DOMAIN_NAME . '/p/' . $filename;
+    $thumb = null;
+  }
+  return [
+    'id'        => (int) $r['id'],
+    'filename'  => $filename,
+    'mediaType' => $type,
+    'mime'      => (string) $r['mime_type'],
+    'url'       => $url,
+    'thumb'     => $thumb,
+    'size'      => (int) ($r['file_size'] ?? 0),
+    'createdAt' => $r['created_at'],
+  ];
+}
+
 $app->group('/accounts/admin/account-review', function (RouteCollectorProxy $group) {
 
   /**
@@ -2118,6 +2154,7 @@ $app->group('/accounts/admin/account-review', function (RouteCollectorProxy $gro
     if ($q === '' || strlen($q) > 2048) return aaError($response, 'invalid-query', 400);
 
     $matchedItemId = null;
+    $matchedItem = null;
     $npub = null;
 
     if (str_starts_with($q, 'npub1')) {
@@ -2134,7 +2171,7 @@ $app->group('/accounts/admin/account-review', function (RouteCollectorProxy $gro
       $path = parse_url($q, PHP_URL_PATH);
       $basename = is_string($path) ? pathinfo($path, PATHINFO_BASENAME) : '';
       if ($basename === '') return aaError($response, 'invalid-query', 400);
-      $stmt = $link->prepare("SELECT id, usernpub FROM users_images WHERE image = ? ORDER BY id DESC LIMIT 1");
+      $stmt = $link->prepare("SELECT id, usernpub, image, mime_type, file_size, created_at FROM users_images WHERE image = ? ORDER BY id DESC LIMIT 1");
       $stmt->bind_param('s', $basename);
       $stmt->execute();
       $hit = $stmt->get_result()->fetch_assoc();
@@ -2144,6 +2181,9 @@ $app->group('/accounts/admin/account-review', function (RouteCollectorProxy $gro
       }
       $npub = (string) $hit['usernpub'];
       $matchedItemId = (int) $hit['id'];
+      // The matched media row, so the URL-match view renders it without a
+      // separate /media fetch.
+      $matchedItem = aaReviewMediaRow($hit);
     } else {
       return aaError($response, 'invalid-query', 400);
     }
@@ -2162,7 +2202,7 @@ $app->group('/accounts/admin/account-review', function (RouteCollectorProxy $gro
       if ($br && $br['reason'] !== null) $snap['banReason'] = (string) $br['reason'];
     }
 
-    return aaJson($response, ['found' => true, 'matchedItemId' => $matchedItemId, 'account' => $snap]);
+    return aaJson($response, ['found' => true, 'matchedItemId' => $matchedItemId, 'item' => $matchedItem, 'account' => $snap]);
   });
 
   /**
@@ -2190,7 +2230,57 @@ $app->group('/accounts/admin/account-review', function (RouteCollectorProxy $gro
       $types .= 'i';
       $args[] = $cursor;
     }
-    $sql = "SELECT ui.id, ui.image, ui.mime_type, ui.file_size, ui.flag, ui.created_at
+
+    // Optional filters (all keyset-safe: created_at + usernpub are indexed,
+    // the rest narrow within one user's rows). Type maps to the SAME extension
+    // lists getFileType() uses, matching the gallery's own categorisation —
+    // mime_type is unreliable here (defaults to application/octet-stream).
+    $type = strtolower(trim((string) ($p['type'] ?? '')));
+    if ($type !== '' && $type !== 'all') {
+      $exts = getFileTypeExtensions($type);
+      if ($exts) {
+        $likes = [];
+        foreach ($exts as $ext) {
+          $likes[] = "LOWER(ui.image) LIKE ?";
+          $types  .= 's';
+          $args[]  = '%.' . strtolower($ext);
+        }
+        $where .= " AND (" . implode(' OR ', $likes) . ")";
+      }
+    }
+    $from = trim((string) ($p['from'] ?? ''));
+    if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $from)) {
+      $where .= " AND ui.created_at >= ?";
+      $types .= 's';
+      $args[] = $from . ' 00:00:00';
+    }
+    $to = trim((string) ($p['to'] ?? ''));
+    if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $to)) {
+      $where .= " AND ui.created_at <= ?";
+      $types .= 's';
+      $args[] = $to . ' 23:59:59';
+    }
+    $minSize = max(0, (int) ($p['minSize'] ?? 0));
+    if ($minSize > 0) {
+      $where .= " AND ui.file_size >= ?";
+      $types .= 'i';
+      $args[] = $minSize;
+    }
+    $maxSize = max(0, (int) ($p['maxSize'] ?? 0));
+    if ($maxSize > 0) {
+      $where .= " AND ui.file_size <= ?";
+      $types .= 'i';
+      $args[] = $maxSize;
+    }
+    $fname = trim((string) ($p['filename'] ?? ''));
+    if ($fname !== '') {
+      // Escape LIKE wildcards in the user's term so it matches literally.
+      $where .= " AND ui.image LIKE ?";
+      $types .= 's';
+      $args[] = '%' . addcslashes($fname, '%_\\') . '%';
+    }
+
+    $sql = "SELECT ui.id, ui.image, ui.mime_type, ui.file_size, ui.created_at
               FROM users_images ui
               $where
              ORDER BY ui.id DESC
@@ -2205,41 +2295,40 @@ $app->group('/accounts/admin/account-review', function (RouteCollectorProxy $gro
 
     $rows = [];
     while ($r = $rs->fetch_assoc()) {
-      $filename = pathinfo((string) $r['image'], PATHINFO_BASENAME);
-      // Canonical type detection (mirrors buildFileListEntry): extension first,
-      // mime first-segment as the fallback.
-      $type = getFileTypeFromName((string) $r['image']);
-      if ($type === 'unknown') {
-        $type = explode('/', (string) $r['mime_type'])[0];
-      }
-      $ptype = 'professional_account_' . $type;
-      try {
-        $url   = SiteConfig::getFullyQualifiedUrl($ptype) . $filename;
-        // Real thumbnail for images only; video posters + other-type icons are
-        // derived client-side.
-        $thumb = $type === 'image' ? (SiteConfig::getThumbnailUrl($ptype) . $filename) : null;
-      } catch (\Throwable $e) {
-        // Unknown CDN mapping — fall back to the public path so the row still
-        // resolves rather than vanishing from the review.
-        $url   = SiteConfig::ACCESS_SCHEME . '://' . SiteConfig::DOMAIN_NAME . '/p/' . $filename;
-        $thumb = null;
-      }
-      $rows[] = [
-        'id'        => (int) $r['id'],
-        'filename'  => $filename,
-        'mediaType' => $type,
-        'mime'      => (string) $r['mime_type'],
-        'url'       => $url,
-        'thumb'     => $thumb,
-        'size'      => (int) ($r['file_size'] ?? 0),
-        'public'    => ((string) $r['flag'] === '1'),
-        'createdAt' => $r['created_at'],
-      ];
+      $rows[] = aaReviewMediaRow($r);
     }
     $stmt->close();
 
     $nextCursor = count($rows) === $limit ? (int) $rows[count($rows) - 1]['id'] : null;
     return aaJson($response, ['rows' => $rows, 'nextCursor' => $nextCursor]);
+  });
+
+  /**
+   * GET /accounts/admin/account-review/upload-info/{id}
+   * Thin read for the IP lookup: the image filename + npub for one users_images
+   * row. The Worker derives the R2 log prefix from the filename stem and reads
+   * the upload logs itself (same as the moderation path; R2 fetching stays out
+   * of PHP).
+   */
+  $group->get('/upload-info/{id:[0-9]+}', function (Request $request, Response $response, array $args) {
+    global $link;
+    $id = (int) $args['id'];
+
+    $stmt = $link->prepare('SELECT image, usernpub FROM users_images WHERE id = ?');
+    $stmt->bind_param('i', $id);
+    $stmt->execute();
+    $row = $stmt->get_result()->fetch_assoc();
+    $stmt->close();
+
+    if ($row === null) {
+      return aaError($response, 'Media not found', 404);
+    }
+
+    return aaJson($response, [
+      'uploadId' => $id,
+      'filename' => pathinfo((string) ($row['image'] ?? ''), PATHINFO_BASENAME),
+      'usernpub' => (string) ($row['usernpub'] ?? ''),
+    ]);
   });
 
 })
