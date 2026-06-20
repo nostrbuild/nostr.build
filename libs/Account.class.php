@@ -827,6 +827,14 @@ class Account
     return $this->account['delete_after'] ?? null;
   }
 
+  /** Admin-termination category ('user'|'gdpr'|'dmca'|'ban'|'legal'), or null
+   *  for self-service / none. For the admin audit + snapshot only — never shown
+   *  to the user (the 'admin'/'forced' status alone drives their banner). */
+  public function getDeletionCategory(): ?string
+  {
+    return $this->account['deletion_category'] ?? null;
+  }
+
   /**
    * Mark an EXPIRED account for deletion: a reversible window (default 30 days)
    * after which the Worker wipes it. Idempotent — a repeat request keeps the
@@ -841,7 +849,10 @@ class Account
     if (!$this->isExpired()) {
       return 'rejected-not-expired';
     }
-    if (($this->account['deletion_status'] ?? 'none') === 'pending') {
+    // Never overwrite an existing schedule — incl. an admin termination
+    // ('admin'/'forced'): a self-service request must not downgrade a ban/legal
+    // takedown to a cancelable self-service deletion.
+    if (($this->account['deletion_status'] ?? 'none') !== 'none') {
       return 'noop-pending';
     }
     $now = date('Y-m-d H:i:s');
@@ -867,17 +878,65 @@ class Account
   }
 
   /**
-   * Clear a pending deletion (back to normal). Two callers: a successful
-   * renewal/upgrade (the user's only self-service exit, hooked in setPlan) and
-   * the admin override (legal hold / user asked for more time / support).
-   * Idempotent + safe when nothing is pending. Uses its own UPDATE because
+   * ADMIN-initiated termination. Unlike requestDeletion() (self-service,
+   * expired-only, the user's own request), this terminates an account for a
+   * ban, GDPR erasure, DMCA, voluntary closure on the user's behalf, or a legal
+   * order — so it does NOT check isExpired() (active accounts can be terminated).
+   * The status encodes the user-facing policy: 'admin' = APPEALABLE (user
+   * request / GDPR / DMCA → the user is shown a contact-us window), 'forced' =
+   * for-cause / compelled (ban / legal → no save path). $windowDays 0 = no
+   * cooldown (the workflow wipes as soon as it wakes). Records the category, a
+   * free-text reason/reference, and the acting admin for the audit + legal
+   * record. Returns the resulting status ('admin' | 'forced').
+   * @throws \Exception on DB failure
+   */
+  public function adminScheduleDeletion(int $windowDays, string $category, string $reason, string $actor): string
+  {
+    $this->fetchAccountData();
+    $appealable = in_array($category, ['user', 'gdpr', 'dmca'], true);
+    $status = $appealable ? 'admin' : 'forced';
+    $now = date('Y-m-d H:i:s');
+    $deleteAfter = $windowDays <= 0 ? $now : date('Y-m-d H:i:s', strtotime("+{$windowDays} days"));
+    $stmt = $this->db->prepare(
+      "UPDATE users SET deletion_status = ?, deletion_requested_at = ?, delete_after = ?,
+         deletion_category = ?, deletion_reason = ?, deletion_actor = ? WHERE usernpub = ?"
+    );
+    if (!$stmt) {
+      throw new Exception("Error preparing statement: " . $this->db->error);
+    }
+    try {
+      if (!$stmt->bind_param('sssssss', $status, $now, $deleteAfter, $category, $reason, $actor, $this->npub)) {
+        throw new Exception("Error binding parameters: " . $stmt->error);
+      }
+      if (!$stmt->execute()) {
+        throw new Exception("Error executing statement: " . $stmt->error);
+      }
+    } finally {
+      $stmt->close();
+    }
+    $this->fetchAccountData();
+    return $status;
+  }
+
+  /**
+   * Clear a scheduled deletion (back to normal). Callers:
+   *   - setPlan (renewal/upgrade): force=false — clears ONLY a self-service
+   *     'pending' deletion. A renewal must NEVER undo an admin termination
+   *     (a ban / court order must not be cancelable by a payment).
+   *   - the admin override (legal hold lifted / appeal granted / support):
+   *     force=true — clears any status ('pending' | 'admin' | 'forced').
+   * Idempotent + safe when nothing is scheduled. Uses its own UPDATE because
    * updateAccount() skips null-valued fields (it can't reset to NULL).
    * @throws \Exception on DB failure
    */
-  public function cancelDeletion(): void
+  public function cancelDeletion(bool $force = false): void
   {
+    if (!$force && ($this->account['deletion_status'] ?? 'none') !== 'pending') {
+      return;
+    }
     $stmt = $this->db->prepare(
-      "UPDATE users SET deletion_status = 'none', deletion_requested_at = NULL, delete_after = NULL WHERE usernpub = ?"
+      "UPDATE users SET deletion_status = 'none', deletion_requested_at = NULL, delete_after = NULL,
+         deletion_category = NULL, deletion_reason = NULL, deletion_actor = NULL WHERE usernpub = ?"
     );
     if (!$stmt) {
       throw new Exception("Error preparing statement: " . $this->db->error);
@@ -895,6 +954,9 @@ class Account
     $this->account['deletion_status'] = 'none';
     $this->account['deletion_requested_at'] = null;
     $this->account['delete_after'] = null;
+    $this->account['deletion_category'] = null;
+    $this->account['deletion_reason'] = null;
+    $this->account['deletion_actor'] = null;
   }
 
   /**
@@ -912,7 +974,8 @@ class Account
     $stmt = $this->db->prepare(
       "UPDATE users SET nym = NULL, wallet = NULL, ppic = NULL, acctlevel = 0,
          plan_start_date = NULL, plan_until_date = NULL, subscription_period = NULL,
-         deletion_status = 'none', deletion_requested_at = NULL, delete_after = NULL
+         deletion_status = 'none', deletion_requested_at = NULL, delete_after = NULL,
+         deletion_category = NULL, deletion_reason = NULL, deletion_actor = NULL
        WHERE usernpub = ?"
     );
     if (!$stmt) {

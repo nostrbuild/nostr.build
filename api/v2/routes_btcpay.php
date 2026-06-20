@@ -289,14 +289,18 @@ $app->group('/internal/account', function (RouteCollectorProxy $group) {
       }
       $deleteAfter = $account->getDeletionDeleteAfter();
       $deleteAfterTs = $deleteAfter !== null ? strtotime($deleteAfter) : null;
-      // Terminal safety net for the expired-only invariant: NEVER report a
-      // now-active account as due, even if its deletion_status is somehow still
-      // 'pending'. A paid reactivation (renew/upgrade/downgrade) clears the flag
-      // in setPlan, but isExpired() is the irreversible-step guard in case any
-      // cancel hook is ever missed — the Worker must not wipe a paying customer.
-      $due = $account->getDeletionStatus() === 'pending'
-        && $deleteAfterTs !== null && $deleteAfterTs <= time()
-        && $account->isExpired();
+      // Self-service ('pending') keeps the expired-only safety net: NEVER report
+      // a now-active account as due (a paid reactivation clears the flag in
+      // setPlan, but isExpired() is the irreversible-step guard in case any
+      // cancel hook is missed — the Worker must not wipe a paying customer).
+      // Admin terminations ('admin' = appealable, 'forced' = for-cause) are
+      // explicit and may target ACTIVE accounts (GDPR/DMCA/ban), so they skip
+      // the expired gate — only an admin cancel (status→'none') stops them.
+      $status = $account->getDeletionStatus();
+      $due = $deleteAfterTs !== null && $deleteAfterTs <= time() && (
+        ($status === 'pending' && $account->isExpired())
+        || $status === 'admin' || $status === 'forced'
+      );
       $response->getBody()->write(json_encode([
         'ok' => true,
         'deletionStatus' => $account->getDeletionStatus(),
@@ -330,11 +334,13 @@ $app->group('/internal/account', function (RouteCollectorProxy $group) {
         $response->getBody()->write(json_encode(['ok' => false, 'error' => 'no-such-account']));
         return $response->withStatus(404)->withHeader('Content-Type', 'application/json');
       }
-      if ($account->getDeletionStatus() !== 'pending' || !$account->isExpired()) {
-        // Cancelled/renewed/reactivated (or already finalized) - no-op,
-        // idempotent. The isExpired() guard mirrors /deletion-state: a paid
-        // account is never wiped, even on a race where it reactivated between the
-        // wake-check and this terminal call.
+      // Mirror /deletion-state: self-service stays expired-only; admin
+      // terminations ('admin'/'forced') finalize regardless of expiry. Anything
+      // else (cancelled/renewed/already-finalized) is an idempotent no-op.
+      $status = $account->getDeletionStatus();
+      $dueNow = ($status === 'pending' && $account->isExpired())
+        || $status === 'admin' || $status === 'forced';
+      if (!$dueNow) {
         $response->getBody()->write(json_encode(['ok' => true, 'status' => 'not-pending']));
         return $response->withHeader('Content-Type', 'application/json');
       }

@@ -185,6 +185,11 @@ function aaUserSnapshot(Account $account, mysqli $link): array
     // deletion). deleteAfter is unix seconds. Defaults tolerate a pre-migration DB.
     'deletionStatus'     => $info['deletion_status'] ?? 'none',
     'deletionDeleteAfter' => !empty($info['delete_after']) ? strtotime($info['delete_after']) : null,
+    // Admin-termination category ('user'|'gdpr'|'dmca'|'ban'|'legal') + reason,
+    // so the Account Review banner can show why/how it was scheduled. Null for
+    // self-service / none.
+    'deletionCategory'   => $info['deletion_category'] ?? null,
+    'deletionReason'     => $info['deletion_reason'] ?? null,
     'nlSubEligible'      => (bool) ($info['nl_sub_eligible'] ?? false),
     'nlSubActivated'     => (bool) ($info['nl_sub_activated'] ?? false),
     'nlSubActivatedDate' => $info['nl_sub_activated_date'] ?? null,
@@ -825,10 +830,10 @@ $app->group('/accounts/admin/users', function (RouteCollectorProxy $group) {
   /**
    * POST /accounts/admin/users/cancel-deletion
    * Body: { npub }
-   * Admin override: cancel a pending self-service account deletion WITHOUT
-   * requiring a renewal/payment (legal hold, user asked for more time, support).
-   * The user's own cancel path is renew/upgrade; this is the staff escape hatch.
-   * Idempotent (safe when nothing is pending).
+   * Admin override: cancel a scheduled deletion WITHOUT requiring a
+   * renewal/payment (legal hold lifted, appeal granted, user asked for more
+   * time, support). Force-clears ANY scheduled state — self-service 'pending'
+   * AND admin 'admin'/'forced' terminations. Idempotent (safe when none).
    */
   $group->post('/cancel-deletion', function (Request $request, Response $response) {
     global $link;
@@ -842,7 +847,7 @@ $app->group('/accounts/admin/users', function (RouteCollectorProxy $group) {
     if (!$account->accountExists()) return aaError($response, 'not-found', 404);
 
     try {
-      $account->cancelDeletion();
+      $account->cancelDeletion(true);
     } catch (\Throwable $e) {
       error_log("admin/users/cancel-deletion failed for {$npub}: " . $e->getMessage());
       return aaError($response, 'server-error', 500);
@@ -853,7 +858,12 @@ $app->group('/accounts/admin/users', function (RouteCollectorProxy $group) {
       ['deletionStatus', 'deletionDeleteAfter'],
       ['deletionStatus' => 'none', 'deletionDeleteAfter' => null],
     );
-    return aaJson($response, ['ok' => true, 'deletionStatus' => 'none']);
+    // Return the stable uuid so the Worker can resolve any tracked termination job.
+    return aaJson($response, [
+      'ok' => true,
+      'deletionStatus' => 'none',
+      'uuid' => $account->getAccountUuid(),
+    ]);
   });
 
   /**
@@ -2191,6 +2201,13 @@ $app->group('/accounts/admin/account-review', function (RouteCollectorProxy $gro
     $account = new Account($npub, $link);
     if (!$account->accountExists()) return aaError($response, 'not-found', 404);
 
+    // Internal staff (moderator/admin) are governed by a separate process and
+    // are NOT subject to Account Review. Refuse before exposing any of their
+    // data or media (mirrored by the terminate route below).
+    if ($account->getAccountLevelInt() >= AccountLevel::Moderator->value) {
+      return aaJson($response, ['found' => false, 'note' => 'This is an internal staff account and is not subject to review.']);
+    }
+
     $snap = aaUserSnapshot($account, $link);
     // Surface the REAL latest blacklist reason (the snapshot hardcodes one).
     if (!empty($snap['banned'])) {
@@ -2328,6 +2345,64 @@ $app->group('/accounts/admin/account-review', function (RouteCollectorProxy $gro
       'uploadId' => $id,
       'filename' => pathinfo((string) ($row['image'] ?? ''), PATHINFO_BASENAME),
       'usernpub' => (string) ($row['usernpub'] ?? ''),
+    ]);
+  });
+
+  /**
+   * POST /accounts/admin/account-review/terminate
+   * Body: { uuid, category, reason, windowDays }
+   * Schedule an admin-initiated account termination. Records the deletion
+   * (status 'admin' for appealable categories user/gdpr/dmca, 'forced' for
+   * ban/legal) + the legal/audit fields, and returns the deadline + npub so the
+   * Worker can fire the optional upload-ban + final backup and start the
+   * DeletionWorkflow timer. NOT expired-gated — admins terminate active accounts
+   * (GDPR/DMCA/ban). Re-validated by the worker; this is the thin DB setter.
+   */
+  $group->post('/terminate', function (Request $request, Response $response) {
+    global $link;
+    $body = json_decode((string) $request->getBody(), true);
+    if (!is_array($body)) return aaError($response, 'invalid-body', 400);
+
+    $uuid = trim((string) ($body['uuid'] ?? ''));
+    if (!preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/', $uuid)) {
+      return aaError($response, 'invalid-uuid', 400);
+    }
+    $category = strtolower(trim((string) ($body['category'] ?? '')));
+    if (!in_array($category, ['user', 'gdpr', 'dmca', 'ban', 'legal'], true)) {
+      return aaError($response, 'invalid-category', 400);
+    }
+    $reason = trim((string) ($body['reason'] ?? ''));
+    if ($reason === '') return aaError($response, 'reason-required', 400);
+    if (strlen($reason) > 512) $reason = substr($reason, 0, 512);
+    $windowDays = max(0, min(365, (int) ($body['windowDays'] ?? 0)));
+
+    // The acting admin (forwarded by ProxiedAdminMiddleware), recorded on the
+    // deletion for the audit + legal record.
+    $actor = (string) ($request->getHeaderLine('x-accounts-npub')
+      ?: $request->getHeaderLine('x-accounts-uuid'));
+
+    $account = Account::fromUuid($uuid, $link);
+    if ($account === null || !$account->accountExists()) return aaError($response, 'not-found', 404);
+
+    // Internal staff (moderator/admin) are governed by a separate process and
+    // can NEVER be terminated through Account Review — authoritative guard, even
+    // if the resolve refusal above is bypassed by a direct call.
+    if ($account->getAccountLevelInt() >= AccountLevel::Moderator->value) {
+      return aaError($response, 'staff-account-protected', 403);
+    }
+
+    try {
+      $status = $account->adminScheduleDeletion($windowDays, $category, $reason, $actor);
+    } catch (\Throwable $e) {
+      error_log("admin/account-review/terminate failed for {$uuid}: " . $e->getMessage());
+      return aaError($response, 'server-error', 500);
+    }
+    $deleteAfter = $account->getDeletionDeleteAfter();
+    return aaJson($response, [
+      'ok'          => true,
+      'status'      => $status, // 'admin' | 'forced'
+      'npub'        => $account->getNpub(),
+      'deleteAfter' => $deleteAfter !== null ? strtotime($deleteAfter) : null,
     ]);
   });
 
