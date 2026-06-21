@@ -1350,6 +1350,68 @@ $app->group('/accounts/admin/csam', function (RouteCollectorProxy $group) {
     ]);
   });
 
+  /**
+   * POST /accounts/admin/csam/paid-media  {ids: [int], npub}
+   * Thin read of the SELECTED offending paid media (users_images, by id) for the
+   * paid-CSAM takedown workflow: the nanoid object name, mime, and the content
+   * sha256 (blossom_hash — the Worker keys CSAM evidence by it; null on legacy
+   * rows → the Worker falls back to the nanoid stem). `type` is derived from the
+   * mime (users_images has no type column). The byte copy/delete + D1 case all
+   * happen Worker-side.
+   *
+   * Scoped to the OWNER npub: a foreign id can never be archived/deleted as this
+   * account's evidence (it silently drops out — the workflow only actions the
+   * rows returned). This is the criminal-evidence safety on the id list.
+   */
+  $group->post('/paid-media', function (Request $request, Response $response) {
+    global $link;
+    $body = json_decode((string) $request->getBody(), true);
+    $rawIds = is_array($body) && isset($body['ids']) && is_array($body['ids']) ? $body['ids'] : [];
+    $npub = aaValidNpub(is_array($body) ? ($body['npub'] ?? null) : null);
+    if ($npub === null) return aaError($response, 'invalid-npub', 400);
+
+    $ids = [];
+    foreach ($rawIds as $i) {
+      if (is_int($i) || (is_string($i) && ctype_digit($i))) {
+        $v = (int) $i;
+        if ($v > 0) $ids[$v] = true;
+      }
+    }
+    $ids = array_keys($ids);
+    if ($ids === []) return aaJson($response, ['rows' => []]);
+
+    $placeholders = implode(',', array_fill(0, count($ids), '?'));
+    $stmt = $link->prepare(
+      "SELECT id, image, mime_type, blossom_hash FROM users_images
+        WHERE id IN ($placeholders) AND usernpub = ?"
+    );
+    if (!$stmt) return aaError($response, 'server-error', 500);
+    $params = $ids;
+    $params[] = $npub;
+    $stmt->bind_param(str_repeat('i', count($ids)) . 's', ...$params);
+    $stmt->execute();
+    $rs = $stmt->get_result();
+    $rows = [];
+    while ($r = $rs->fetch_assoc()) {
+      $mime = (string) ($r['mime_type'] ?? '');
+      $type = str_starts_with($mime, 'image/') ? 'picture'
+        : (str_starts_with($mime, 'video/') ? 'video'
+        : (str_starts_with($mime, 'audio/') ? 'audio' : 'other'));
+      $hash = $r['blossom_hash'] ?? null;
+      $rows[] = [
+        'id' => (int) $r['id'],
+        'filename' => (string) $r['image'],
+        'type' => $type,
+        'mime' => $mime,
+        'blossomHash' => ($hash !== null && $hash !== '') ? (string) $hash : null,
+      ];
+    }
+    $rs->free();
+    $stmt->close();
+
+    return aaJson($response, ['rows' => $rows]);
+  });
+
 })
   ->add(new ProxiedAdminMiddleware())
   ->add(new HmacAuthMiddleware());
