@@ -228,25 +228,13 @@ function aaEmitProfileChanged(?string $targetUuid, array $changed, ?array $field
   }
 }
 
-// ----- CSAM offender-cleanup helpers -----
-// Relocated here from the now-removed routes_admin.php (the legacy session
-// admin area was deleted). The CSAM routes below are the only remaining
-// callers. Names are kept verbatim — isLikelyValidNpub is invoked as a
-// string callable in array_filter(), so it must not be renamed.
-
-/**
- * A CSAM case is "delete-eligible" (offender confirmed, cleanup allowed) when
- * its NCMEC report id is either a real numeric report id or the manual
- * EVIDENCE_EXPIRED sentinel — i.e. the offender has been positively identified
- * even if the formal submission couldn't go through. TEST_/FALSE_MATCH/
- * Null:Technical Error/empty are NOT eligible.
- */
-function csamCaseAllowsOffenderCleanup(?string $reportId): bool
-{
-  if ($reportId === null || $reportId === '') return false;
-  if ($reportId === 'EVIDENCE_EXPIRED') return true;
-  return is_numeric($reportId);
-}
+// ----- CSAM npub helper -----
+// isLikelyValidNpub validates an offender npub before it reaches the
+// uploads_data mass-match in the /csam/offender-uploads route (a loose match
+// could sweep up every legacy anonymous upload). Case-cleanup eligibility +
+// offender-npub derivation now live D1-side in the Worker (src/server/csam/
+// cases.ts), so the former csamCaseAllowsOffenderCleanup /
+// extractOffenderNpubFromLogs helpers were dropped with the table migration.
 
 /**
  * Tight npub-shape validator. Real bech32 npub is `npub1` + 58 bech32 chars
@@ -260,37 +248,6 @@ function isLikelyValidNpub(?string $n): bool
   if ($n === null) return false;
   $len = strlen($n);
   return $len >= 60 && $len <= 100 && str_starts_with($n, 'npub1');
-}
-
-/**
- * Pull the offender (uploader) npub out of an identified_csam_cases.logs JSON.
- *
- * Type 1 logs (filename-keyed): each entry has uploadNpub.
- * Type 2 logs (evidenceData):   ReporteeName carries the npub.
- *
- * Returns null when the npub cannot be confidently identified as a real npub.
- * Critical: the caller MUST treat null as "no actionable target" — never fall
- * back to an empty-string match, which would sweep up every legacy anonymous
- * upload (rows with usernpub = '' or NULL).
- */
-function extractOffenderNpubFromLogs(?string $logsJson): ?string
-{
-  if ($logsJson === null || $logsJson === '') return null;
-  $data = json_decode($logsJson, true);
-  if (!is_array($data)) return null;
-
-  if (isset($data['evidenceData']['ReporteeName'])) {
-    $n = trim((string) $data['evidenceData']['ReporteeName']);
-    if (isLikelyValidNpub($n)) return $n;
-  }
-
-  foreach ($data as $entry) {
-    if (!is_array($entry)) continue;
-    $n = isset($entry['uploadNpub']) ? trim((string) $entry['uploadNpub']) : '';
-    if (isLikelyValidNpub($n)) return $n;
-  }
-
-  return null;
 }
 
 // ----- Routes -----
@@ -1223,220 +1180,30 @@ $app->group('/accounts/admin/security', function (RouteCollectorProxy $group) {
 // admin_csam_cases.php port). Mounted at /api/v2/accounts/admin/csam/*; same
 // auth stack (HMAC + ProxiedAdmin → admin-only).
 //
-// IMPORTANT division of labor: the NCMEC CyberTipline submission itself now
-// runs in the WORKER (TS port; evidence read straight from R2). PHP keeps the
-// thin data endpoints over identified_csam_cases (the Worker has no direct
-// DB), the guarded record-submission write, the unblacklist flow, and the
-// offender enumerations with their npub mass-delete SQL guards. The npub
-// engine helpers (csamCaseAllowsOffenderCleanup, extractOffenderNpubFromLogs,
-// isLikelyValidNpub) are defined at the top of this file; NCMECReportHandler
-// comes from NCMECReportHandler.class.php.
+// IMPORTANT division of labor: CSAM case state now lives in app-owned D1
+// (ADMIN_DB / nb-admin) and the NCMEC CyberTipline submission runs in the WORKER
+// (TS port; evidence read straight from R2). PHP keeps ONLY the two MySQL/blossom
+// touches the Worker can't do itself: the offender's remaining uploads_data rows
+// (by npub) for the purge feed, and the false-match blacklist/blossom removal.
+// No identified_csam_cases access remains here (the table was migrated to D1).
 
 $app->group('/accounts/admin/csam', function (RouteCollectorProxy $group) {
 
   /**
-   * GET /accounts/admin/csam/cases?page=&limit=&hash=
-   * Paginated case list (newest first). `hash` = file_sha256_hash prefix
-   * search. Row payload excludes the heavy JSON columns; `GET /case/{id}`
-   * fetches one case in full.
-   */
-  $group->get('/cases', function (Request $request, Response $response) {
-    global $link;
-    $q = $request->getQueryParams();
-    $limit = max(1, min(200, (int) ($q['limit'] ?? 50)));
-    $page  = max(0, (int) ($q['page'] ?? 0));
-    $start = $page * $limit;
-    $hash  = isset($q['hash']) ? trim((string) $q['hash']) : '';
-
-    if ($hash !== '') {
-      if (!preg_match('/^[a-f0-9]{1,64}$/i', $hash)) {
-        return aaError($response, 'Invalid hash prefix', 400);
-      }
-      $like = $hash . '%';
-      $cnt = $link->prepare('SELECT COUNT(*) AS c FROM identified_csam_cases WHERE file_sha256_hash LIKE ?');
-      $cnt->bind_param('s', $like);
-      $cnt->execute();
-      $total = (int) ($cnt->get_result()->fetch_assoc()['c'] ?? 0);
-      $cnt->close();
-
-      $stmt = $link->prepare(
-        'SELECT id, timestamp, identified_by_npub, file_sha256_hash, ncmec_report_id,
-                (ncmec_submitted_report IS NOT NULL) AS has_report
-           FROM identified_csam_cases
-          WHERE file_sha256_hash LIKE ?
-          ORDER BY id DESC LIMIT ?, ?'
-      );
-      $stmt->bind_param('sii', $like, $start, $limit);
-    } else {
-      $total = (int) ($link->query('SELECT COUNT(*) AS c FROM identified_csam_cases')->fetch_assoc()['c'] ?? 0);
-      $stmt = $link->prepare(
-        'SELECT id, timestamp, identified_by_npub, file_sha256_hash, ncmec_report_id,
-                (ncmec_submitted_report IS NOT NULL) AS has_report
-           FROM identified_csam_cases
-          ORDER BY id DESC LIMIT ?, ?'
-      );
-      $stmt->bind_param('ii', $start, $limit);
-    }
-    $stmt->execute();
-    $rs = $stmt->get_result();
-    $rows = [];
-    while ($r = $rs->fetch_assoc()) {
-      $rows[] = [
-        'id' => (int) $r['id'],
-        'timestamp' => (string) $r['timestamp'],
-        'identified_by_npub' => (string) ($r['identified_by_npub'] ?? ''),
-        'file_sha256_hash' => (string) ($r['file_sha256_hash'] ?? ''),
-        'ncmec_report_id' => $r['ncmec_report_id'] !== null ? (string) $r['ncmec_report_id'] : null,
-        'has_report' => (bool) $r['has_report'],
-      ];
-    }
-    $stmt->close();
-
-    return aaJson($response, ['rows' => $rows, 'total' => $total, 'page' => $page, 'limit' => $limit]);
-  });
-
-  /**
-   * GET /accounts/admin/csam/case/{id}
-   * One case in full — logs + submitted report JSON + evidence location. The
-   * Worker uses this for the per-case viewers, the NCMEC report build, and
-   * the never-double-report idempotency re-check before each submission.
-   */
-  $group->get('/case/{id:[0-9]+}', function (Request $request, Response $response, array $args) {
-    global $link;
-    $id = (int) $args['id'];
-    $stmt = $link->prepare('SELECT * FROM identified_csam_cases WHERE id = ?');
-    $stmt->bind_param('i', $id);
-    $stmt->execute();
-    $row = $stmt->get_result()->fetch_assoc();
-    $stmt->close();
-    if ($row === null) {
-      return aaError($response, 'Case not found', 404);
-    }
-    return aaJson($response, [
-      'id' => (int) $row['id'],
-      'timestamp' => (string) $row['timestamp'],
-      'identified_by_npub' => (string) ($row['identified_by_npub'] ?? ''),
-      'evidence_location_url' => (string) ($row['evidence_location_url'] ?? ''),
-      'file_sha256_hash' => (string) ($row['file_sha256_hash'] ?? ''),
-      'logs' => $row['logs'] !== null ? (string) $row['logs'] : null,
-      'ncmec_report_id' => $row['ncmec_report_id'] !== null ? (string) $row['ncmec_report_id'] : null,
-      'ncmec_submitted_report' => $row['ncmec_submitted_report'] !== null ? (string) $row['ncmec_submitted_report'] : null,
-    ]);
-  });
-
-  /**
-   * POST /accounts/admin/csam/record-case
-   * {evidenceLocationUrl, fileSha256Hash, logs} — insert a CSAM case after the
-   * Worker has archived the evidence (media + logs → evidence bucket). The
-   * identified_by_npub is taken from the verified admin (ProxiedAdminMiddleware),
-   * never the body. Idempotent: a case already on file for this hash is returned
-   * as-is so a Workflow retry / re-report never creates a duplicate.
-   */
-  $group->post('/record-case', function (Request $request, Response $response) {
-    global $link;
-    $body = json_decode((string) $request->getBody(), true);
-    if (!is_array($body)) return aaError($response, 'invalid-body', 400);
-    $hash = trim((string) ($body['fileSha256Hash'] ?? ''));
-    $evidenceUrl = (string) ($body['evidenceLocationUrl'] ?? '');
-    $logs = array_key_exists('logs', $body) && $body['logs'] !== null ? (string) $body['logs'] : null;
-    if ($hash === '' || $evidenceUrl === '') {
-      return aaError($response, 'Invalid parameters', 400);
-    }
-
-    $adminNpub = $request->getAttribute('admin_npub');
-    $identifiedBy = is_string($adminNpub) && $adminNpub !== '' ? $adminNpub : 'unknown';
-
-    $sel = $link->prepare('SELECT id FROM identified_csam_cases WHERE file_sha256_hash = ? ORDER BY id ASC LIMIT 1');
-    $sel->bind_param('s', $hash);
-    $sel->execute();
-    $existing = $sel->get_result()->fetch_assoc();
-    $sel->close();
-    if ($existing !== null) {
-      return aaJson($response, ['id' => (int) $existing['id'], 'existed' => true]);
-    }
-
-    $stmt = $link->prepare(
-      'INSERT INTO identified_csam_cases (identified_by_npub, evidence_location_url, file_sha256_hash, logs) VALUES (?, ?, ?, ?)'
-    );
-    $stmt->bind_param('ssss', $identifiedBy, $evidenceUrl, $hash, $logs);
-    $stmt->execute();
-    $newId = (int) $link->insert_id;
-    $stmt->close();
-
-    return aaJson($response, ['id' => $newId, 'existed' => false]);
-  });
-
-  /**
-   * POST /accounts/admin/csam/record-submission
-   * {incidentId, reportId, report} — the Worker records the NCMEC outcome
-   * here after submitting (TEST_/numeric/ERROR semantics are computed Worker-
-   * side). GUARD: a real (numeric) report id is never overwritten with a
-   * different value — double-submission protection at the write layer.
-   */
-  $group->post('/record-submission', function (Request $request, Response $response) {
-    global $link;
-    $body = json_decode((string) $request->getBody(), true);
-    if (!is_array($body)) return aaError($response, 'invalid-body', 400);
-    $incidentId = (int) ($body['incidentId'] ?? 0);
-    $reportId = trim((string) ($body['reportId'] ?? ''));
-    $report = $body['report'] ?? null;
-    if ($incidentId <= 0 || $reportId === '' || strlen($reportId) > 64) {
-      return aaError($response, 'Invalid parameters', 400);
-    }
-
-    $stmt = $link->prepare('SELECT ncmec_report_id FROM identified_csam_cases WHERE id = ?');
-    $stmt->bind_param('i', $incidentId);
-    $stmt->execute();
-    $row = $stmt->get_result()->fetch_assoc();
-    $stmt->close();
-    if ($row === null) {
-      return aaError($response, 'Case not found', 404);
-    }
-    $existing = $row['ncmec_report_id'] !== null ? (string) $row['ncmec_report_id'] : null;
-    if ($existing !== null && is_numeric($existing) && $existing !== $reportId) {
-      return aaError($response, 'Case already has a submitted NCMEC report id', 409);
-    }
-
-    $reportJson = $report !== null ? json_encode($report) : null;
-    $stmt = $link->prepare('UPDATE identified_csam_cases SET ncmec_report_id = ?, ncmec_submitted_report = ? WHERE id = ?');
-    $stmt->bind_param('ssi', $reportId, $reportJson, $incidentId);
-    $stmt->execute();
-    $stmt->close();
-
-    return aaJson($response, ['success' => true, 'incidentId' => $incidentId, 'reportId' => $reportId]);
-  });
-
-  /**
-   * POST /accounts/admin/csam/unblacklist  {incidentId, npub, incidentTime}
-   * PhotoDNA false-match path. Deliberately SLIM (DB + blossom only): the
-   * WORKER derives npub/incidentTime from the case logs (the same parsing the
-   * NCMEC report build uses) and passes them in; PHP removes the blacklist
-   * rows written around the incident time, unbans from blossom, and marks the
-   * case FALSE_MATCH. Mirrors NCMECReportHandler::unBlacklistUser without
-   * dragging the NCMEC client into this path.
+   * POST /accounts/admin/csam/unblacklist  {npub, incidentTime}
+   * False-match cleanup. SLIM (blacklist + blossom only): the Worker has already
+   * marked the case FALSE_MATCH in D1 (with its own numeric-report-id guard) and
+   * derived npub/incidentTime; PHP removes the blacklist rows written around the
+   * incident time and unbans from blossom. No identified_csam_cases access.
    */
   $group->post('/unblacklist', function (Request $request, Response $response) {
     global $link;
     $body = json_decode((string) $request->getBody(), true);
     if (!is_array($body)) return aaError($response, 'invalid-body', 400);
-    $incidentId = (int) ($body['incidentId'] ?? 0);
     $npub = aaValidNpub($body['npub'] ?? null);
     $incidentTime = trim((string) ($body['incidentTime'] ?? ''));
-    if ($incidentId <= 0 || $npub === null || $incidentTime === '' || strtotime($incidentTime) === false) {
+    if ($npub === null || $incidentTime === '' || strtotime($incidentTime) === false) {
       return aaError($response, 'Invalid parameters', 400);
-    }
-
-    // Belt: never clear a case that already has a real (numeric) report id.
-    $stmt = $link->prepare('SELECT ncmec_report_id FROM identified_csam_cases WHERE id = ?');
-    $stmt->bind_param('i', $incidentId);
-    $stmt->execute();
-    $row = $stmt->get_result()->fetch_assoc();
-    $stmt->close();
-    if ($row === null) {
-      return aaError($response, 'Case not found', 404);
-    }
-    if ($row['ncmec_report_id'] !== null && is_numeric((string) $row['ncmec_report_id'])) {
-      return aaError($response, 'Case already has a submitted NCMEC report id', 409);
     }
 
     try {
@@ -1451,18 +1218,7 @@ $app->group('/accounts/admin/csam', function (RouteCollectorProxy $group) {
       $blossomAPI = new BlossomFrontEndAPI($_SERVER['BLOSSOM_API_URL'], $_SERVER['BLOSSOM_API_KEY']);
       $blossomAPI->unbanUser($npub);
 
-      // Mark the case FALSE_MATCH even when no blacklist row was in range
-      // (same semantics as the legacy handler).
-      $stmt = $link->prepare("UPDATE identified_csam_cases SET ncmec_report_id = 'FALSE_MATCH', ncmec_submitted_report = '{}' WHERE id = ?");
-      $stmt->bind_param('i', $incidentId);
-      $stmt->execute();
-      $stmt->close();
-
-      return aaJson($response, [
-        'success' => true,
-        'incidentId' => $incidentId,
-        'removed' => (int) $affectedRows,
-      ]);
+      return aaJson($response, ['success' => true, 'removed' => (int) $affectedRows]);
     } catch (\Throwable $e) {
       error_log('aa csam unblacklist error: ' . $e->getMessage());
       return aaError($response, 'Error unblacklisting user', 500);
@@ -1470,179 +1226,61 @@ $app->group('/accounts/admin/csam', function (RouteCollectorProxy $group) {
   });
 
   /**
-   * GET /accounts/admin/csam/unsubmitted?days=
-   * Unsubmitted case ids from the past N days (SQL mirrors the legacy
-   * endpoint, sentinels included). The CsamReportWorkflow enumerates here.
+   * POST /accounts/admin/csam/offender-uploads  {npubs: [...]}
+   * The offenders' remaining purge-eligible uploads (uploads_data, MySQL),
+   * grouped by npub. Case state now lives in D1 — the Worker derives the offender
+   * npubs from the submitted D1 cases and passes them here; PHP stays uploads_data
+   * only (no identified_csam_cases access).
    */
-  $group->get('/unsubmitted', function (Request $request, Response $response) {
+  $group->post('/offender-uploads', function (Request $request, Response $response) {
     global $link;
-    $params = $request->getQueryParams();
-    $days = isset($params['days']) ? min(90, max(1, intval($params['days']))) : 7;
+    $body = json_decode((string) $request->getBody(), true);
+    $rawNpubs = is_array($body) && isset($body['npubs']) && is_array($body['npubs']) ? $body['npubs'] : [];
 
-    $sql = "SELECT id FROM identified_csam_cases
-            WHERE timestamp >= DATE_SUB(NOW(), INTERVAL ? DAY)
-              AND (ncmec_report_id IS NULL
-                   OR ncmec_report_id LIKE 'TEST_%'
-                   OR ncmec_report_id = 'Null: Technical Error')
-            ORDER BY timestamp ASC";
-    $stmt = $link->prepare($sql);
-    $stmt->bind_param('i', $days);
-    $stmt->execute();
-    $result = $stmt->get_result();
-    $ids = [];
-    while ($row = $result->fetch_assoc()) {
-      $ids[] = (int) $row['id'];
+    // Validate + dedupe (keys = npubs).
+    $seen = [];
+    foreach ($rawNpubs as $n) {
+      $v = aaValidNpub($n);
+      if ($v !== null && isLikelyValidNpub($v)) $seen[$v] = true;
     }
-    $stmt->close();
-
-    return aaJson($response, ['ids' => $ids, 'count' => count($ids), 'days' => $days]);
-  });
-
-  /**
-   * GET /accounts/admin/csam/offender-uploads/{caseId}
-   * Mirrors the legacy endpoint: delete-eligible check + offender npub
-   * extraction + the SQL anonymous-upload guards.
-   */
-  $group->get('/offender-uploads/{caseId:[0-9]+}', function (Request $request, Response $response, array $args) {
-    global $link;
-    $caseId = (int) $args['caseId'];
-
-    $stmt = $link->prepare('SELECT logs, ncmec_report_id FROM identified_csam_cases WHERE id = ?');
-    $stmt->bind_param('i', $caseId);
-    $stmt->execute();
-    $caseRow = $stmt->get_result()->fetch_assoc();
-    $stmt->close();
-
-    if ($caseRow === null) {
-      return aaError($response, 'Case not found', 404);
-    }
-
-    $reportId = (string) ($caseRow['ncmec_report_id'] ?? '');
-    if (!csamCaseAllowsOffenderCleanup($reportId)) {
-      return aaError($response, 'Case is not in a delete-eligible state (need numeric NCMEC report id or EVIDENCE_EXPIRED).', 422);
-    }
-
-    $npub = extractOffenderNpubFromLogs($caseRow['logs']);
-    if ($npub === null || !isLikelyValidNpub($npub)) {
-      return aaError($response, 'Unable to determine offender npub from case logs.', 422);
-    }
-
-    $stmt = $link->prepare(
-      "SELECT id, filename, type, approval_status
-         FROM uploads_data
-        WHERE usernpub = ?
-          AND usernpub <> ''
-          AND usernpub IS NOT NULL
-          AND approval_status NOT IN ('rejected', 'csam')
-        ORDER BY upload_date DESC"
-    );
-    $stmt->bind_param('s', $npub);
-    $stmt->execute();
-    $result = $stmt->get_result();
-    $uploads = [];
-    while ($r = $result->fetch_assoc()) {
-      $uploads[] = [
-        'id' => (int) $r['id'],
-        'filename' => (string) $r['filename'],
-        'type' => (string) $r['type'],
-        'approval_status' => (string) $r['approval_status'],
-      ];
-    }
-    $stmt->close();
-
-    return aaJson($response, [
-      'caseId' => $caseId,
-      'reportId' => $reportId,
-      'npub' => $npub,
-      'count' => count($uploads),
-      'uploads' => $uploads,
-    ]);
-  });
-
-  /**
-   * GET /accounts/admin/csam/submitted-offenders?days=
-   * Mirrors the legacy endpoint (numeric-report-id final guard + npub
-   * re-validation + single grouped SELECT).
-   */
-  $group->get('/submitted-offenders', function (Request $request, Response $response) {
-    global $link;
-    $params = $request->getQueryParams();
-    $days = isset($params['days']) ? min(90, max(1, (int) $params['days'])) : 7;
-
-    $stmt = $link->prepare(
-      "SELECT id, logs, ncmec_report_id
-         FROM identified_csam_cases
-        WHERE timestamp >= DATE_SUB(NOW(), INTERVAL ? DAY)
-          AND ncmec_report_id IS NOT NULL
-          AND ncmec_report_id NOT LIKE 'TEST_%'
-          AND ncmec_report_id <> 'FALSE_MATCH'
-          AND ncmec_report_id <> 'Null: Technical Error'
-        ORDER BY timestamp ASC"
-    );
-    $stmt->bind_param('i', $days);
-    $stmt->execute();
-    $result = $stmt->get_result();
-
-    $offenderMap = [];
-    while ($r = $result->fetch_assoc()) {
-      if (!is_numeric((string) $r['ncmec_report_id'])) continue;
-      $npub = extractOffenderNpubFromLogs($r['logs']);
-      if ($npub === null) continue;
-      if (!isset($offenderMap[$npub])) {
-        $offenderMap[$npub] = ['case_ids' => [], 'report_ids' => []];
-      }
-      $offenderMap[$npub]['case_ids'][]   = (int) $r['id'];
-      $offenderMap[$npub]['report_ids'][] = (string) $r['ncmec_report_id'];
-    }
-    $stmt->close();
+    $npubs = array_keys($seen);
 
     $offenders = [];
     $totalUploads = 0;
-    if ($offenderMap !== []) {
-      $npubs = array_values(array_filter(array_keys($offenderMap), 'isLikelyValidNpub'));
-
-      $uploadsByNpub = [];
-      if ($npubs !== []) {
-        $placeholders = implode(',', array_fill(0, count($npubs), '?'));
-        $listStmt = $link->prepare(
-          "SELECT id, filename, type, usernpub
-             FROM uploads_data
-            WHERE usernpub IN ($placeholders)
-              AND usernpub <> ''
-              AND usernpub IS NOT NULL
-              AND approval_status NOT IN ('rejected', 'csam')
-            ORDER BY upload_date DESC"
-        );
-        $listStmt->bind_param(str_repeat('s', count($npubs)), ...$npubs);
-        $listStmt->execute();
-        $rs = $listStmt->get_result();
-        while ($u = $rs->fetch_assoc()) {
-          $uploadsByNpub[(string) $u['usernpub']][] = [
-            'id' => (int) $u['id'],
-            'filename' => (string) $u['filename'],
-            'type' => (string) $u['type'],
-          ];
-        }
-        $rs->free();
-        $listStmt->close();
-      }
-
-      foreach ($offenderMap as $npub => $info) {
-        if (!isLikelyValidNpub($npub)) continue;
-        $uploads = $uploadsByNpub[$npub] ?? [];
-        $totalUploads += count($uploads);
-        $offenders[] = [
-          'npub' => $npub,
-          'case_ids' => $info['case_ids'],
-          'report_ids' => $info['report_ids'],
-          'uploads' => $uploads,
-          'remaining_count' => count($uploads),
+    if ($npubs !== []) {
+      $placeholders = implode(',', array_fill(0, count($npubs), '?'));
+      $stmt = $link->prepare(
+        "SELECT id, filename, type, approval_status, usernpub
+           FROM uploads_data
+          WHERE usernpub IN ($placeholders)
+            AND usernpub <> ''
+            AND usernpub IS NOT NULL
+            AND approval_status NOT IN ('rejected', 'csam')
+          ORDER BY upload_date DESC"
+      );
+      $stmt->bind_param(str_repeat('s', count($npubs)), ...$npubs);
+      $stmt->execute();
+      $rs = $stmt->get_result();
+      $byNpub = [];
+      while ($u = $rs->fetch_assoc()) {
+        $byNpub[(string) $u['usernpub']][] = [
+          'id' => (int) $u['id'],
+          'filename' => (string) $u['filename'],
+          'type' => (string) $u['type'],
+          'approval_status' => (string) $u['approval_status'],
         ];
+      }
+      $rs->free();
+      $stmt->close();
+
+      foreach ($npubs as $npub) {
+        $uploads = $byNpub[$npub] ?? [];
+        $totalUploads += count($uploads);
+        $offenders[] = ['npub' => $npub, 'uploads' => $uploads];
       }
     }
 
     return aaJson($response, [
-      'days' => $days,
       'total_offenders' => count($offenders),
       'total_uploads' => $totalUploads,
       'offenders' => $offenders,
