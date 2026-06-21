@@ -142,6 +142,20 @@ class WorkerEventsClient
     $this->emit(['type' => 'banned', 'uuid' => $uuid]);
   }
 
+  /**
+   * Legal-hold lockout (CSAM). Revokes every session like a ban, but the DO
+   * RECORDS lockedAt in the snapshot (instead of clearing it) so the accounts
+   * Worker keeps the account frozen — /locked redirect + mutation gates — even
+   * on a session that outlives the purge.
+   *
+   * @param string $uuid     Target user (users.uuid_id).
+   * @param int    $lockedAt Unix seconds the lock was recorded.
+   */
+  public function emitLocked(string $uuid, int $lockedAt): void
+  {
+    $this->emit(['type' => 'locked', 'uuid' => $uuid, 'lockedAt' => $lockedAt]);
+  }
+
   private function emit(array $envelope): void
   {
     if ($this->signingSecret === '') return;

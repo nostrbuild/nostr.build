@@ -881,6 +881,69 @@ $app->group('/accounts/admin/users', function (RouteCollectorProxy $group) {
     ]);
   });
 
+  /**
+   * POST /accounts/admin/users/lock
+   * Body: { uuid, reason? }
+   * Legal-hold lockout (CSAM criminal-evidence preservation). Sets
+   * users.locked_at (first-lock-wins via COALESCE — idempotent re-lock keeps
+   * the original timestamp/reason/actor) so the login routes reject the account
+   * with 423, then emits the 'locked' event so the accounts Worker revokes every
+   * session + freezes the account. Returns the authoritative lockedAt (unix s).
+   *
+   * Requires users.locked_at / lock_reason / lock_actor columns (see the Phase 2a
+   * ALTER in the deploy runbook).
+   */
+  $group->post('/lock', function (Request $request, Response $response) {
+    global $link;
+    $body = json_decode((string) $request->getBody(), true);
+    if (!is_array($body)) return aaError($response, 'invalid-body', 400);
+
+    $uuid = trim((string) ($body['uuid'] ?? ''));
+    if (!preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/', $uuid)) {
+      return aaError($response, 'invalid-uuid', 400);
+    }
+    $reason = trim((string) ($body['reason'] ?? ''));
+    if ($reason === '') $reason = 'CSAM legal hold';
+    if (strlen($reason) > 255) $reason = substr($reason, 0, 255);
+    $adminNpub = (string) $request->getAttribute('admin_npub');
+
+    // First-lock-wins: COALESCE keeps the original lock on a repeat call, so
+    // re-running the CSAM workflow's lock step is idempotent.
+    $upd = $link->prepare(
+      "UPDATE users
+          SET locked_at   = COALESCE(locked_at, NOW()),
+              lock_reason = COALESCE(lock_reason, ?),
+              lock_actor  = COALESCE(lock_actor, ?)
+        WHERE uuid_id = ?"
+    );
+    if (!$upd) return aaError($response, 'server-error', 500);
+    $upd->bind_param('sss', $reason, $adminNpub, $uuid);
+    $ok = $upd->execute();
+    $upd->close();
+    if (!$ok) return aaError($response, 'server-error', 500);
+
+    // Read back the authoritative timestamp (and confirm the account exists).
+    $sel = $link->prepare("SELECT UNIX_TIMESTAMP(locked_at) AS locked_at FROM users WHERE uuid_id = ?");
+    if (!$sel) return aaError($response, 'server-error', 500);
+    $sel->bind_param('s', $uuid);
+    $sel->execute();
+    $row = $sel->get_result()->fetch_assoc();
+    $sel->close();
+    if (!$row) return aaError($response, 'not-found', 404);
+    $lockedAt = (int) $row['locked_at'];
+
+    // Freeze the account Worker-side: revoke every session + record lockedAt in
+    // the DO snapshot. Best-effort (the Worker's lockAccount also calls the DO
+    // directly); PHP's 423 already blocks re-entry regardless.
+    try {
+      (new WorkerEventsClient())->emitLocked($uuid, $lockedAt);
+    } catch (\Throwable $e) {
+      error_log('admin/users/lock: emitLocked failed: ' . $e->getMessage());
+    }
+
+    return aaJson($response, ['ok' => true, 'lockedAt' => $lockedAt, 'uuid' => $uuid]);
+  });
+
 })
   ->add(new ProxiedAdminMiddleware())
   ->add(new HmacAuthMiddleware());

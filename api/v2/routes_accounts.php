@@ -158,6 +158,16 @@ $app->group('/accounts', function (RouteCollectorProxy $group) {
         ->withStatus(401);
     }
 
+    // Legal-hold lockout (CSAM criminal-evidence preservation): a locked account
+    // cannot sign in. Checked AFTER credentials so the lock state isn't probeable
+    // without the password. 423 Locked.
+    if ($account->isLocked()) {
+      $response->getBody()->write(json_encode(['error' => 'account-locked']));
+      return $response
+        ->withHeader('Content-Type', 'application/json')
+        ->withStatus(423);
+    }
+
     $data = dashboardGetAccountData($link, $account);
     $response->getBody()->write(json_encode($data));
     return $response
@@ -192,6 +202,16 @@ $app->group('/accounts', function (RouteCollectorProxy $group) {
       return $response
         ->withHeader('Content-Type', 'application/json')
         ->withStatus(404);
+    }
+
+    // Legal-hold lockout: a locked account cannot sign in (NIP-07 path). The
+    // npub ownership is already signature-proven by the Worker, so surfacing the
+    // lock to the owner is fine. 423 Locked.
+    if ($account->isLocked()) {
+      $response->getBody()->write(json_encode(['error' => 'account-locked']));
+      return $response
+        ->withHeader('Content-Type', 'application/json')
+        ->withStatus(423);
     }
 
     if (!$account->isNpubLoginAllowed()) {
@@ -279,6 +299,16 @@ $app->group('/accounts', function (RouteCollectorProxy $group) {
       return $response
         ->withHeader('Content-Type', 'application/json')
         ->withStatus(404);
+    }
+
+    // Legal-hold lockout: a locked account cannot sign in (DM-login path).
+    // Gated before the verifyNpub side effect so a frozen account is untouched.
+    // 423 Locked.
+    if ($account->isLocked()) {
+      $response->getBody()->write(json_encode(['error' => 'account-locked']));
+      return $response
+        ->withHeader('Content-Type', 'application/json')
+        ->withStatus(423);
     }
 
     // The verified DM code proves npub ownership — mark it verified, mirroring

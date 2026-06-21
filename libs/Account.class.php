@@ -1051,6 +1051,29 @@ class Account
   }
 
   /**
+   * Legal-hold lockout timestamp (users.locked_at), in unix seconds, or null
+   * when the account is not under a hold. Set the instant CSAM is reported to
+   * freeze the account for criminal-evidence preservation; the login routes
+   * reject a locked account with 423 and the accounts Worker keeps it frozen.
+   * @return int|null
+   */
+  public function getLockedAt(): ?int
+  {
+    $raw = $this->account['locked_at'] ?? null;
+    if ($raw === null || $raw === '' || $raw === '0000-00-00 00:00:00') {
+      return null;
+    }
+    $ts = strtotime((string) $raw);
+    return $ts === false ? null : $ts;
+  }
+
+  /** True when the account is under a legal-hold lock. */
+  public function isLocked(): bool
+  {
+    return $this->getLockedAt() !== null;
+  }
+
+  /**
    * Summary of isAccountValid
    * @return bool
    */
