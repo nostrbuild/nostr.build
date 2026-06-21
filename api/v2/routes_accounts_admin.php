@@ -2185,6 +2185,63 @@ $app->group('/accounts/admin/account-review', function (RouteCollectorProxy $gro
     ]);
   });
 
+  /**
+   * POST /accounts/admin/account-review/delete-media  {uuid, ids: [int]}
+   * Thin DB-row delete for the per-media DMCA/ToS takedown (Phase 3). The Worker
+   * has already removed the bytes (R2+E2), purged the CDN, banned the blossom
+   * blob, and recorded the takedown ledger; this just drops the now-orphaned
+   * users_images rows (S3-delete-first / DB-row-last). Owner-scoped by the npub
+   * resolved from the STABLE uuid, so a foreign id can never be deleted as this
+   * account's media. NO ban, NO termination — only the listed rows. Idempotent
+   * (already-deleted ids simply match nothing). Returns the rows deleted.
+   */
+  $group->post('/delete-media', function (Request $request, Response $response) {
+    global $link;
+    $body = json_decode((string) $request->getBody(), true);
+    $uuid = trim((string) (is_array($body) ? ($body['uuid'] ?? '') : ''));
+    if (!preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/', $uuid)) {
+      return aaError($response, 'invalid-uuid', 400);
+    }
+    $rawIds = is_array($body) && isset($body['ids']) && is_array($body['ids']) ? $body['ids'] : [];
+
+    // Resolve the owner's CURRENT npub from the stable uuid (owner-scope guard).
+    $sel = $link->prepare("SELECT usernpub FROM users WHERE uuid_id = ?");
+    if (!$sel) return aaError($response, 'server-error', 500);
+    $sel->bind_param('s', $uuid);
+    $sel->execute();
+    $owner = $sel->get_result()->fetch_assoc();
+    $sel->close();
+    if (!$owner || ($owner['usernpub'] ?? '') === '') return aaError($response, 'not-found', 404);
+    $npub = (string) $owner['usernpub'];
+
+    $ids = [];
+    foreach ($rawIds as $i) {
+      if (is_int($i) || (is_string($i) && ctype_digit($i))) {
+        $v = (int) $i;
+        if ($v > 0) $ids[$v] = true;
+      }
+    }
+    $ids = array_keys($ids);
+    if ($ids === []) return aaJson($response, ['deleted' => 0]);
+
+    $placeholders = implode(',', array_fill(0, count($ids), '?'));
+    $stmt = $link->prepare(
+      "DELETE FROM users_images WHERE id IN ($placeholders) AND usernpub = ?"
+    );
+    if (!$stmt) return aaError($response, 'server-error', 500);
+    $params = $ids;
+    $params[] = $npub;
+    $stmt->bind_param(str_repeat('i', count($ids)) . 's', ...$params);
+    if (!$stmt->execute()) {
+      $stmt->close();
+      return aaError($response, 'server-error', 500);
+    }
+    $deleted = $stmt->affected_rows;
+    $stmt->close();
+
+    return aaJson($response, ['deleted' => (int) $deleted]);
+  });
+
 })
   ->add(new ProxiedAdminMiddleware())
   ->add(new HmacAuthMiddleware());
