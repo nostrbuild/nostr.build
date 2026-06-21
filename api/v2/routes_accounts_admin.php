@@ -1351,7 +1351,7 @@ $app->group('/accounts/admin/csam', function (RouteCollectorProxy $group) {
   });
 
   /**
-   * POST /accounts/admin/csam/paid-media  {ids: [int], npub}
+   * POST /accounts/admin/csam/paid-media  {uuid, ids: [int]}
    * Thin read of the SELECTED offending paid media (users_images, by id) for the
    * paid-CSAM takedown workflow: the nanoid object name, mime, and the content
    * sha256 (blossom_hash — the Worker keys CSAM evidence by it; null on legacy
@@ -1359,16 +1359,31 @@ $app->group('/accounts/admin/csam', function (RouteCollectorProxy $group) {
    * mime (users_images has no type column). The byte copy/delete + D1 case all
    * happen Worker-side.
    *
-   * Scoped to the OWNER npub: a foreign id can never be archived/deleted as this
-   * account's evidence (it silently drops out — the workflow only actions the
-   * rows returned). This is the criminal-evidence safety on the id list.
+   * Identity is the STABLE uuid: we resolve the owner's CURRENT npub from it and
+   * owner-scope the id lookup, so neither a rotated npub nor a foreign id can be
+   * archived/deleted as this account's evidence (a foreign id silently drops out
+   * — the workflow only actions the rows returned). Returns the resolved npub so
+   * the workflow bans the right account. `filename` is basenamed for parity with
+   * the manifest / delete paths.
    */
   $group->post('/paid-media', function (Request $request, Response $response) {
     global $link;
     $body = json_decode((string) $request->getBody(), true);
+    $uuid = trim((string) (is_array($body) ? ($body['uuid'] ?? '') : ''));
+    if (!preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/', $uuid)) {
+      return aaError($response, 'invalid-uuid', 400);
+    }
     $rawIds = is_array($body) && isset($body['ids']) && is_array($body['ids']) ? $body['ids'] : [];
-    $npub = aaValidNpub(is_array($body) ? ($body['npub'] ?? null) : null);
-    if ($npub === null) return aaError($response, 'invalid-npub', 400);
+
+    // Resolve the owner's CURRENT npub from the stable uuid.
+    $sel = $link->prepare("SELECT usernpub FROM users WHERE uuid_id = ?");
+    if (!$sel) return aaError($response, 'server-error', 500);
+    $sel->bind_param('s', $uuid);
+    $sel->execute();
+    $owner = $sel->get_result()->fetch_assoc();
+    $sel->close();
+    if (!$owner || ($owner['usernpub'] ?? '') === '') return aaError($response, 'not-found', 404);
+    $npub = (string) $owner['usernpub'];
 
     $ids = [];
     foreach ($rawIds as $i) {
@@ -1378,7 +1393,7 @@ $app->group('/accounts/admin/csam', function (RouteCollectorProxy $group) {
       }
     }
     $ids = array_keys($ids);
-    if ($ids === []) return aaJson($response, ['rows' => []]);
+    if ($ids === []) return aaJson($response, ['npub' => $npub, 'rows' => []]);
 
     $placeholders = implode(',', array_fill(0, count($ids), '?'));
     $stmt = $link->prepare(
@@ -1400,7 +1415,8 @@ $app->group('/accounts/admin/csam', function (RouteCollectorProxy $group) {
       $hash = $r['blossom_hash'] ?? null;
       $rows[] = [
         'id' => (int) $r['id'],
-        'filename' => (string) $r['image'],
+        // basename for parity with the backup manifest + the delete key path.
+        'filename' => pathinfo((string) $r['image'], PATHINFO_BASENAME),
         'type' => $type,
         'mime' => $mime,
         'blossomHash' => ($hash !== null && $hash !== '') ? (string) $hash : null,
@@ -1409,7 +1425,7 @@ $app->group('/accounts/admin/csam', function (RouteCollectorProxy $group) {
     $rs->free();
     $stmt->close();
 
-    return aaJson($response, ['rows' => $rows]);
+    return aaJson($response, ['npub' => $npub, 'rows' => $rows]);
   });
 
 })

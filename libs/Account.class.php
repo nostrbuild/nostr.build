@@ -1059,7 +1059,13 @@ class Account
    */
   public function getLockedAt(): ?int
   {
-    $raw = $this->account['locked_at'] ?? null;
+    // Guard the pre-ALTER window explicitly: if the column doesn't exist yet,
+    // `SELECT *` simply has no key and this returns null — but make that
+    // unambiguous rather than a silent "not locked" if the row is partial.
+    if (!array_key_exists('locked_at', $this->account)) {
+      return null;
+    }
+    $raw = $this->account['locked_at'];
     if ($raw === null || $raw === '' || $raw === '0000-00-00 00:00:00') {
       return null;
     }
