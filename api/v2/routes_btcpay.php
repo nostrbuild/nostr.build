@@ -452,6 +452,11 @@ $app->group('/internal/account', function (RouteCollectorProxy $group) {
     $limit = max(1, min(500, $limit));
     $minDays = is_array($data) ? (int)($data['minExpiredDays'] ?? 730) : 730;
     $minDays = max(1, $minDays);
+    // Offset paging for the admin "Upcoming terminations" view. The sweep itself
+    // omits it (offset 0) and drains the set top-down via the exclusion list.
+    $offset = is_array($data) ? max(0, (int)($data['offset'] ?? 0)) : 0;
+    // Optional free-text search (nym / npub / uuid) for the admin view.
+    $search = is_array($data) ? trim((string)($data['q'] ?? '')) : '';
     $withTotal = is_array($data) && !empty($data['withTotal']);
     // App-side hold list (D1) — the only thing PHP can't know on its own. Cap the
     // exclusion set so a runaway list can't blow the statement; holds are a small
@@ -475,11 +480,16 @@ $app->group('/internal/account', function (RouteCollectorProxy $group) {
         $where .= " AND uuid_id NOT IN ($ph)";
         foreach ($exclude as $u) { $params[] = $u; $types .= 's'; }
       }
-      $sql = "SELECT uuid_id, usernpub, plan_until_date,
+      if ($search !== '') {
+        $like = '%' . str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $search) . '%';
+        $where .= " AND (usernpub LIKE ? OR nym LIKE ? OR uuid_id LIKE ?)";
+        $params[] = $like; $params[] = $like; $params[] = $like; $types .= 'sss';
+      }
+      $sql = "SELECT uuid_id, usernpub, nym, ppic, plan_until_date,
                      DATEDIFF(NOW(), plan_until_date) AS days_expired
               FROM users WHERE {$where}
               ORDER BY plan_until_date ASC
-              LIMIT {$limit}";
+              LIMIT {$limit} OFFSET {$offset}";
       $stmt = $link->prepare($sql);
       if (count($params) > 0) { $stmt->bind_param($types, ...$params); }
       $stmt->execute();
@@ -489,6 +499,8 @@ $app->group('/internal/account', function (RouteCollectorProxy $group) {
         $candidates[] = [
           'uuid' => $row['uuid_id'],
           'npub' => $row['usernpub'],
+          'nym' => $row['nym'],
+          'pfpUrl' => $row['ppic'],
           'planUntilDate' => $row['plan_until_date'],
           'daysExpired' => (int)$row['days_expired'],
         ];
@@ -550,31 +562,46 @@ $app->group('/internal/account', function (RouteCollectorProxy $group) {
   // stable set; returns the count too so the UI can show the total.
   $group->get('/inactivity-terminations', function (Request $request, Response $response) {
     global $link;
-    $q = $request->getQueryParams();
-    $limit = max(1, min(500, (int)($q['limit'] ?? 100)));
-    $offset = max(0, (int)($q['offset'] ?? 0));
+    $qp = $request->getQueryParams();
+    $limit = max(1, min(500, (int)($qp['limit'] ?? 100)));
+    $offset = max(0, (int)($qp['offset'] ?? 0));
+    $search = trim((string)($qp['q'] ?? ''));
     try {
-      $sql = "SELECT uuid_id, usernpub, plan_until_date, delete_after, deletion_requested_at
-              FROM users
-              WHERE deletion_status = 'pending' AND deletion_category = 'inactivity'
+      $where = "deletion_status = 'pending' AND deletion_category = 'inactivity'";
+      $params = [];
+      $types = '';
+      if ($search !== '') {
+        $like = '%' . str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $search) . '%';
+        $where .= " AND (usernpub LIKE ? OR nym LIKE ? OR uuid_id LIKE ?)";
+        $params = [$like, $like, $like];
+        $types = 'sss';
+      }
+      $sql = "SELECT uuid_id, usernpub, nym, ppic, plan_until_date, delete_after, deletion_requested_at
+              FROM users WHERE {$where}
               ORDER BY delete_after ASC
               LIMIT {$limit} OFFSET {$offset}";
-      $result = $link->query($sql);
+      $stmt = $link->prepare($sql);
+      if (count($params) > 0) { $stmt->bind_param($types, ...$params); }
+      $stmt->execute();
+      $result = $stmt->get_result();
       $rows = [];
-      if ($result) {
-        while ($row = $result->fetch_assoc()) {
-          $rows[] = [
-            'uuid' => $row['uuid_id'],
-            'npub' => $row['usernpub'],
-            'planUntilDate' => $row['plan_until_date'],
-            'deleteAfter' => $row['delete_after'] !== null ? strtotime($row['delete_after']) : null,
-            'requestedAt' => $row['deletion_requested_at'] !== null ? strtotime($row['deletion_requested_at']) : null,
-          ];
-        }
-        $result->free();
+      while ($row = $result->fetch_assoc()) {
+        $rows[] = [
+          'uuid' => $row['uuid_id'],
+          'npub' => $row['usernpub'],
+          'nym' => $row['nym'],
+          'pfpUrl' => $row['ppic'],
+          'planUntilDate' => $row['plan_until_date'],
+          'deleteAfter' => $row['delete_after'] !== null ? strtotime($row['delete_after']) : null,
+          'requestedAt' => $row['deletion_requested_at'] !== null ? strtotime($row['deletion_requested_at']) : null,
+        ];
       }
-      $countRes = $link->query("SELECT COUNT(*) AS c FROM users WHERE deletion_status = 'pending' AND deletion_category = 'inactivity'");
-      $total = $countRes ? (int)($countRes->fetch_assoc()['c'] ?? 0) : 0;
+      $stmt->close();
+      $cstmt = $link->prepare("SELECT COUNT(*) AS c FROM users WHERE {$where}");
+      if (count($params) > 0) { $cstmt->bind_param($types, ...$params); }
+      $cstmt->execute();
+      $total = (int)($cstmt->get_result()->fetch_assoc()['c'] ?? 0);
+      $cstmt->close();
       $response->getBody()->write(json_encode(['ok' => true, 'rows' => $rows, 'total' => $total]));
       return $response->withHeader('Content-Type', 'application/json');
     } catch (\Throwable $e) {
