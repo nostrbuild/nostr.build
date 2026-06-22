@@ -436,4 +436,183 @@ $app->group('/internal/account', function (RouteCollectorProxy $group) {
       return $response->withStatus(500)->withHeader('Content-Type', 'application/json');
     }
   });
+
+  // ── Long-inactivity auto-termination (Worker Sunday sweep) ───────────────
+  // The Worker's weekly ExpiredTerminationSweepWorkflow schedules accounts that
+  // have been EXPIRED for over 2 years for the SAME 30-day reversible deletion a
+  // user self-service request creates (status 'pending'), tagged
+  // category='inactivity' so the admin views/audit can tell it apart. Three
+  // SQL-only endpoints: list candidates, schedule one (atomic/idempotent), list
+  // the in-flight ones for the admin "Upcoming terminations" view. Banned
+  // accounts are included on purpose; staff (89/99) are excluded.
+  $group->post('/expired-termination/candidates', function (Request $request, Response $response) {
+    global $link;
+    $data = json_decode($request->getBody()->getContents(), true);
+    $limit = is_array($data) ? (int)($data['limit'] ?? 100) : 100;
+    $limit = max(1, min(500, $limit));
+    $minDays = is_array($data) ? (int)($data['minExpiredDays'] ?? 730) : 730;
+    $minDays = max(1, $minDays);
+    $withTotal = is_array($data) && !empty($data['withTotal']);
+    // App-side hold list (D1) — the only thing PHP can't know on its own. Cap the
+    // exclusion set so a runaway list can't blow the statement; holds are a small
+    // admin-curated set in practice.
+    $exclude = (is_array($data) && isset($data['excludeUuids']) && is_array($data['excludeUuids']))
+      ? array_values(array_filter($data['excludeUuids'], fn($u) => is_string($u) && $u !== ''))
+      : [];
+    if (count($exclude) > 1000) {
+      error_log('internal/account/expired-termination/candidates: hold-exclusion list of ' . count($exclude) . ' truncated to 1000 — excess held accounts may be swept');
+      $exclude = array_slice($exclude, 0, 1000);
+    }
+    try {
+      $where = "plan_until_date IS NOT NULL
+                AND plan_until_date < DATE_SUB(NOW(), INTERVAL {$minDays} DAY)
+                AND acctlevel NOT IN (89, 99)
+                AND deletion_status = 'none'";
+      $params = [];
+      $types = '';
+      if (count($exclude) > 0) {
+        $ph = implode(',', array_fill(0, count($exclude), '?'));
+        $where .= " AND uuid_id NOT IN ($ph)";
+        foreach ($exclude as $u) { $params[] = $u; $types .= 's'; }
+      }
+      $sql = "SELECT uuid_id, usernpub, plan_until_date,
+                     DATEDIFF(NOW(), plan_until_date) AS days_expired
+              FROM users WHERE {$where}
+              ORDER BY plan_until_date ASC
+              LIMIT {$limit}";
+      $stmt = $link->prepare($sql);
+      if (count($params) > 0) { $stmt->bind_param($types, ...$params); }
+      $stmt->execute();
+      $res = $stmt->get_result();
+      $candidates = [];
+      while ($row = $res->fetch_assoc()) {
+        $candidates[] = [
+          'uuid' => $row['uuid_id'],
+          'npub' => $row['usernpub'],
+          'planUntilDate' => $row['plan_until_date'],
+          'daysExpired' => (int)$row['days_expired'],
+        ];
+      }
+      $stmt->close();
+      $total = null;
+      if ($withTotal) {
+        $cstmt = $link->prepare("SELECT COUNT(*) AS c FROM users WHERE {$where}");
+        if (count($params) > 0) { $cstmt->bind_param($types, ...$params); }
+        $cstmt->execute();
+        $total = (int)($cstmt->get_result()->fetch_assoc()['c'] ?? 0);
+        $cstmt->close();
+      }
+      $response->getBody()->write(json_encode(['ok' => true, 'candidates' => $candidates, 'total' => $total]));
+      return $response->withHeader('Content-Type', 'application/json');
+    } catch (\Throwable $e) {
+      error_log('internal/account/expired-termination/candidates error: ' . $e->getMessage());
+      $response->getBody()->write(json_encode(['ok' => false, 'candidates' => [], 'total' => null]));
+      return $response->withStatus(500)->withHeader('Content-Type', 'application/json');
+    }
+  });
+
+  // Schedule ONE long-inactive account. Atomic + idempotent + race-safe inside
+  // Account::scheduleInactivityDeletion (only flips a still-eligible 'none' row).
+  // `scheduled` is true ONLY when this call did the flip — the Worker DMs/audits
+  // on that, so a retry (which sees 'pending' now) is a clean no-op.
+  $group->post('/expired-termination/schedule', function (Request $request, Response $response) {
+    global $link;
+    $data = json_decode($request->getBody()->getContents(), true);
+    $uuid = is_array($data) ? trim((string)($data['uuid'] ?? '')) : '';
+    if ($uuid === '') {
+      $response->getBody()->write(json_encode(['ok' => false, 'error' => 'uuid required']));
+      return $response->withStatus(400)->withHeader('Content-Type', 'application/json');
+    }
+    try {
+      $account = Account::fromUuid($uuid, $link);
+      if ($account === null) {
+        $response->getBody()->write(json_encode(['ok' => false, 'error' => 'no-such-account']));
+        return $response->withStatus(404)->withHeader('Content-Type', 'application/json');
+      }
+      $result = $account->scheduleInactivityDeletion();
+      $response->getBody()->write(json_encode([
+        'ok' => true,
+        'scheduled' => $result['scheduled'],
+        'status' => $result['status'],
+        'npub' => $account->getNpub(),
+        'deleteAfter' => $result['deleteAfter'],
+      ]));
+      return $response->withHeader('Content-Type', 'application/json');
+    } catch (\Throwable $e) {
+      error_log('internal/account/expired-termination/schedule error: ' . $e->getMessage());
+      $response->getBody()->write(json_encode(['ok' => false, 'error' => 'schedule failed']));
+      return $response->withStatus(500)->withHeader('Content-Type', 'application/json');
+    }
+  });
+
+  // The in-flight automated terminations (status 'pending' + category
+  // 'inactivity') for the admin "Upcoming terminations" view. Offset-paged on a
+  // stable set; returns the count too so the UI can show the total.
+  $group->get('/inactivity-terminations', function (Request $request, Response $response) {
+    global $link;
+    $q = $request->getQueryParams();
+    $limit = max(1, min(500, (int)($q['limit'] ?? 100)));
+    $offset = max(0, (int)($q['offset'] ?? 0));
+    try {
+      $sql = "SELECT uuid_id, usernpub, plan_until_date, delete_after, deletion_requested_at
+              FROM users
+              WHERE deletion_status = 'pending' AND deletion_category = 'inactivity'
+              ORDER BY delete_after ASC
+              LIMIT {$limit} OFFSET {$offset}";
+      $result = $link->query($sql);
+      $rows = [];
+      if ($result) {
+        while ($row = $result->fetch_assoc()) {
+          $rows[] = [
+            'uuid' => $row['uuid_id'],
+            'npub' => $row['usernpub'],
+            'planUntilDate' => $row['plan_until_date'],
+            'deleteAfter' => $row['delete_after'] !== null ? strtotime($row['delete_after']) : null,
+            'requestedAt' => $row['deletion_requested_at'] !== null ? strtotime($row['deletion_requested_at']) : null,
+          ];
+        }
+        $result->free();
+      }
+      $countRes = $link->query("SELECT COUNT(*) AS c FROM users WHERE deletion_status = 'pending' AND deletion_category = 'inactivity'");
+      $total = $countRes ? (int)($countRes->fetch_assoc()['c'] ?? 0) : 0;
+      $response->getBody()->write(json_encode(['ok' => true, 'rows' => $rows, 'total' => $total]));
+      return $response->withHeader('Content-Type', 'application/json');
+    } catch (\Throwable $e) {
+      error_log('internal/account/inactivity-terminations error: ' . $e->getMessage());
+      $response->getBody()->write(json_encode(['ok' => false, 'rows' => [], 'total' => 0]));
+      return $response->withStatus(500)->withHeader('Content-Type', 'application/json');
+    }
+  });
+
+  // Server-initiated cancel of an INACTIVITY-sweep 'pending' deletion — used when
+  // an admin HOLDS an in-flight inactivity termination. Cancels ONLY a
+  // category='inactivity' 'pending' schedule, so it can never undo a USER's own
+  // self-service deletion (category NULL) nor an admin 'admin'/'forced'
+  // termination. Idempotent no-op otherwise.
+  $group->post('/cancel-deletion', function (Request $request, Response $response) {
+    global $link;
+    $data = json_decode($request->getBody()->getContents(), true);
+    $uuid = is_array($data) ? trim((string)($data['uuid'] ?? '')) : '';
+    if ($uuid === '') {
+      $response->getBody()->write(json_encode(['ok' => false, 'error' => 'uuid required']));
+      return $response->withStatus(400)->withHeader('Content-Type', 'application/json');
+    }
+    try {
+      $account = Account::fromUuid($uuid, $link);
+      if ($account === null) {
+        $response->getBody()->write(json_encode(['ok' => false, 'error' => 'no-such-account']));
+        return $response->withStatus(404)->withHeader('Content-Type', 'application/json');
+      }
+      // Guard to the automated sweep's own terminations only.
+      if ($account->getDeletionStatus() === 'pending' && $account->getDeletionCategory() === 'inactivity') {
+        $account->cancelDeletion(false);
+      }
+      $response->getBody()->write(json_encode(['ok' => true, 'deletionStatus' => $account->getDeletionStatus()]));
+      return $response->withHeader('Content-Type', 'application/json');
+    } catch (\Throwable $e) {
+      error_log('internal/account/cancel-deletion error: ' . $e->getMessage());
+      $response->getBody()->write(json_encode(['ok' => false, 'error' => 'cancel-deletion failed']));
+      return $response->withStatus(500)->withHeader('Content-Type', 'application/json');
+    }
+  });
 })->add(new HmacAuthMiddleware());

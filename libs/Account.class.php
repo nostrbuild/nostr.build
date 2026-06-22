@@ -919,6 +919,69 @@ class Account
   }
 
   /**
+   * AUTOMATED long-inactivity termination — the Sunday sweep's per-account
+   * setter. Behaves like a self-service deletion (status 'pending' → the user's
+   * renew/downgrade still clears it via cancelDeletion, media stays live for the
+   * window, /deletion-state keeps the expired-only guard), but is tagged
+   * category='inactivity' + actor='system' so the admin views + audit can tell
+   * it apart from a user-initiated 'pending' and from an admin 'admin'/'forced'
+   * termination.
+   *
+   * The flip is ATOMIC, IDEMPOTENT, and RACE-SAFE: a single conditional UPDATE
+   * only touches a row that is STILL eligible (deletion_status='none', not staff,
+   * expired by more than $minExpiredDays). So a concurrent renewal, a prior
+   * sweep pass, a manual admin termination, or a re-run after a retry can never
+   * clobber an existing schedule or re-schedule an ineligible account.
+   * `scheduled` is true only when this call did the flip (affected_rows === 1) —
+   * the caller DMs/audits only then.
+   *
+   * @return array{scheduled: bool, status: string, deleteAfter: ?int}
+   * @throws \Exception on DB failure
+   */
+  public function scheduleInactivityDeletion(int $windowDays = 30, int $minExpiredDays = 730): array
+  {
+    $this->fetchAccountData();
+    $windowDays = max(0, $windowDays);
+    $minExpiredDays = max(1, $minExpiredDays);
+    $now = date('Y-m-d H:i:s');
+    $deleteAfter = date('Y-m-d H:i:s', strtotime("+{$windowDays} days"));
+    // $windowDays/$minExpiredDays are int-typed, so the inline INTERVAL is
+    // injection-safe (MySQL can't bind an INTERVAL operand to a placeholder).
+    $stmt = $this->db->prepare(
+      "UPDATE users
+          SET deletion_status = 'pending', deletion_category = 'inactivity',
+              deletion_reason = 'Inactive (expired) for over 2 years — automated sweep',
+              deletion_actor = 'system', deletion_requested_at = ?, delete_after = ?
+        WHERE usernpub = ?
+          AND deletion_status = 'none'
+          AND acctlevel NOT IN (89, 99)
+          AND plan_until_date IS NOT NULL
+          AND plan_until_date < DATE_SUB(NOW(), INTERVAL {$minExpiredDays} DAY)"
+    );
+    if (!$stmt) {
+      throw new Exception("Error preparing statement: " . $this->db->error);
+    }
+    try {
+      if (!$stmt->bind_param('sss', $now, $deleteAfter, $this->npub)) {
+        throw new Exception("Error binding parameters: " . $stmt->error);
+      }
+      if (!$stmt->execute()) {
+        throw new Exception("Error executing statement: " . $stmt->error);
+      }
+      $scheduled = $stmt->affected_rows === 1;
+    } finally {
+      $stmt->close();
+    }
+    $this->fetchAccountData();
+    $after = $this->getDeletionDeleteAfter();
+    return [
+      'scheduled' => $scheduled,
+      'status' => $this->getDeletionStatus(),
+      'deleteAfter' => $after !== null ? strtotime($after) : null,
+    ];
+  }
+
+  /**
    * Clear a scheduled deletion (back to normal). Callers:
    *   - setPlan (renewal/upgrade): force=false — clears ONLY a self-service
    *     'pending' deletion. A renewal must NEVER undo an admin termination
