@@ -1409,7 +1409,7 @@ class Account
     // value, see #/lib/plans/downgrade). We store it VERBATIM - the Worker is the
     // authoritative settlement source - but the INVARIANTS stay here: it must be
     // a genuine downgrade, the account must be inside the renewal window, and the
-    // date must be a sane near-future value. Self-contained branch so the normal
+    // date must be a sane, bounded value. Self-contained branch so the normal
     // signup/renewal/upgrade date math below is untouched.
     if ($planUntilOverride !== null) {
       require_once __DIR__ . '/Plans.class.php';
@@ -1427,7 +1427,16 @@ class Account
         return 'rejected-bad-date';
       }
       $today = date('Y-m-d');
-      $maxDate = date('Y-m-d', strtotime($today . ' +4 years +60 days'));
+      // A downgrade converts the FULL remaining value of the (pricier) current
+      // tier into bonus days at the (cheaper) target tier's daily rate, so a
+      // downgrade from a high tier to a cheap one legitimately produces a very
+      // long runway: Advanced->Purist at the renewal-window edge converts to
+      // ~9.55 years, and a 3y term + bonus easily clears 4 years. Bound at
+      // 10 years (+60 days slack) so the genuine maximum is honored in full
+      // rather than rejected as out-of-bounds; the app holds itself to a
+      // stricter 10-year flat (MAX_DOWNGRADE_TERM_DAYS) so it never sends a date
+      // this rejects.
+      $maxDate = date('Y-m-d', strtotime($today . ' +10 years +60 days'));
       $overrideEnd = date('Y-m-d', $overrideTs);
       if ($overrideEnd <= $today || $overrideEnd > $maxDate) {
         error_log("set-plan override rejected: date '{$overrideEnd}' out of bounds for npub: " . $this->npub);
