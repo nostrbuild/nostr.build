@@ -14,7 +14,6 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/SiteConfig.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/utils.funcs.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/ImageCatalogManager.class.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/imageproc.class.php';
-require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/NostrClient.class.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/Credits.class.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/CloudflarePurge.class.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/permissions.class.php';

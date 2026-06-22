@@ -1314,18 +1314,9 @@ $app->group('/accounts', function (RouteCollectorProxy $group) {
           return dashboardError($response, 'No event to publish or delete');
         }
 
-        // The Worker now owns relay broadcasting (it builds/signs and fans out
-        // through event-cannon) and signals that with x-accounts-app-broadcast.
-        // When the header is absent we fall back to the legacy relay-client send
-        // here. Either way the event is validated above and the note↔media rows
-        // are recorded below — this only governs WHO talks to the relays.
-        if ($request->getHeaderLine('x-accounts-app-broadcast') !== '1') {
-          $nc = new NostrClient($_SERVER['NB_API_NOSTR_CLIENT_SECRET'], $_SERVER['NB_API_NOSTR_CLIENT_URL']);
-          if (!$nc->sendPresignedNote($signedEvent)) {
-            return dashboardError($response, 'Failed to publish Nostr event', 500);
-          }
-        }
-
+        // Relay broadcasting is owned by the Worker (it builds/signs and fans
+        // the event out through event-cannon). PHP only validates the event
+        // (above) and records the note↔media rows (below).
         switch ($eventKind) {
           case 5:
             $stmtDeleteEvent = $link->prepare('DELETE FROM users_nostr_notes WHERE usernpub = ? AND note_id = ?');
