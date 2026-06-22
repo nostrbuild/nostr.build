@@ -69,29 +69,10 @@ class NostrClient
     throw new Exception("Request failed after $maxRetries retries.");
   }
 
-  public function sendDm(string $toNpubHex, string | array $message, bool $otp = false)
-  {
-    try {
-      $randomString = $this->generateRandomString();
-      $expiry = $this->generateExpiry();
-
-      $url = $this->apiEndpoint . "/$randomString/$expiry";
-
-      $content = [
-        [
-          'type' => 'dm',
-          'to' => $toNpubHex,
-          'message' => $message,
-          'otp' => $otp,
-        ]
-      ];
-
-      return $this->sendRequest($url, $content, $randomString, $expiry);
-    } catch (Exception $e) {
-      echo "An error occurred: " . $e->getMessage() . "\n";
-      return false;
-    }
-  }
+  // NOTE: sendDm() was removed — the Worker now builds nip04 + nip17 itself and
+  // sends DMs through event-cannon (see account.nostr.build src/server/nostr/).
+  // sendPresignedNote() remains only as the flag-OFF fallback for note publishing
+  // (the dashboard/nostr route skips it once x-accounts-app-broadcast is sent).
 
   public function sendPresignedNote(string $presignedNote)
   {

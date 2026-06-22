@@ -1314,9 +1314,16 @@ $app->group('/accounts', function (RouteCollectorProxy $group) {
           return dashboardError($response, 'No event to publish or delete');
         }
 
-        $nc = new NostrClient($_SERVER['NB_API_NOSTR_CLIENT_SECRET'], $_SERVER['NB_API_NOSTR_CLIENT_URL']);
-        if (!$nc->sendPresignedNote($signedEvent)) {
-          return dashboardError($response, 'Failed to publish Nostr event', 500);
+        // The Worker now owns relay broadcasting (it builds/signs and fans out
+        // through event-cannon) and signals that with x-accounts-app-broadcast.
+        // When the header is absent we fall back to the legacy relay-client send
+        // here. Either way the event is validated above and the note↔media rows
+        // are recorded below — this only governs WHO talks to the relays.
+        if ($request->getHeaderLine('x-accounts-app-broadcast') !== '1') {
+          $nc = new NostrClient($_SERVER['NB_API_NOSTR_CLIENT_SECRET'], $_SERVER['NB_API_NOSTR_CLIENT_URL']);
+          if (!$nc->sendPresignedNote($signedEvent)) {
+            return dashboardError($response, 'Failed to publish Nostr event', 500);
+          }
         }
 
         switch ($eventKind) {

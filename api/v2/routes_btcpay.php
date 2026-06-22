@@ -364,4 +364,76 @@ $app->group('/internal/account', function (RouteCollectorProxy $group) {
       return $response->withStatus(500)->withHeader('Content-Type', 'application/json');
     }
   });
+
+  // ── Account-expiry renewal reminders (Worker-driven) ─────────────────────
+  // PHP no longer sends any Nostr DMs. The Worker's hourly cron sends the
+  // "your account expired / is expiring, please renew" DMs over event-cannon;
+  // these two SQL-only endpoints expose the data. Cadence mirrors the old
+  // NostrAuthMiddleware: paid/creator tiers (acctlevel not staff 89/99), expiring
+  // within 30 days OR expired < 70 days, and not notified in the last 7 days.
+  $group->get('/expiry-reminders-due', function (Request $request, Response $response) {
+    global $link;
+    try {
+      $sql = "SELECT usernpub,
+                CASE WHEN plan_until_date < NOW() THEN 'expired' ELSE 'expiring' END AS kind,
+                CASE WHEN plan_until_date < NOW() THEN DATEDIFF(NOW(), plan_until_date)
+                     ELSE DATEDIFF(plan_until_date, NOW()) END AS days
+              FROM users
+              WHERE plan_until_date IS NOT NULL
+                AND acctlevel NOT IN (89, 99)
+                AND (
+                  (plan_until_date < NOW() AND DATEDIFF(NOW(), plan_until_date) < 70)
+                  OR (plan_until_date >= NOW() AND DATEDIFF(plan_until_date, NOW()) <= 30)
+                )
+                AND (last_notification_date IS NULL OR DATEDIFF(NOW(), last_notification_date) > 7)
+              ORDER BY plan_until_date ASC
+              LIMIT 500";
+      $result = $link->query($sql);
+      $due = [];
+      if ($result) {
+        while ($row = $result->fetch_assoc()) {
+          $due[] = [
+            'npub' => $row['usernpub'],
+            'kind' => $row['kind'],
+            'days' => (int)$row['days'],
+          ];
+        }
+        $result->free();
+      }
+      $response->getBody()->write(json_encode(['due' => $due]));
+      return $response->withHeader('Content-Type', 'application/json');
+    } catch (\Throwable $e) {
+      error_log('internal/account/expiry-reminders-due error: ' . $e->getMessage());
+      $response->getBody()->write(json_encode(['due' => []]));
+      return $response->withStatus(500)->withHeader('Content-Type', 'application/json');
+    }
+  });
+
+  // Stamp last_notification_date = today for the npubs the Worker just DMed, so
+  // the 7-day dedupe in /expiry-reminders-due holds. Idempotent.
+  $group->post('/mark-reminded', function (Request $request, Response $response) {
+    global $link;
+    $data = json_decode($request->getBody()->getContents(), true);
+    $npubs = (is_array($data) && isset($data['npubs']) && is_array($data['npubs'])) ? $data['npubs'] : [];
+    $npubs = array_values(array_filter($npubs, fn($n) => is_string($n) && str_starts_with($n, 'npub1')));
+    if (count($npubs) === 0) {
+      $response->getBody()->write(json_encode(['ok' => true, 'marked' => 0]));
+      return $response->withHeader('Content-Type', 'application/json');
+    }
+    try {
+      $placeholders = implode(',', array_fill(0, count($npubs), '?'));
+      $types = str_repeat('s', count($npubs));
+      $stmt = $link->prepare("UPDATE users SET last_notification_date = CURDATE() WHERE usernpub IN ($placeholders)");
+      $stmt->bind_param($types, ...$npubs);
+      $stmt->execute();
+      $marked = $stmt->affected_rows;
+      $stmt->close();
+      $response->getBody()->write(json_encode(['ok' => true, 'marked' => $marked]));
+      return $response->withHeader('Content-Type', 'application/json');
+    } catch (\Throwable $e) {
+      error_log('internal/account/mark-reminded error: ' . $e->getMessage());
+      $response->getBody()->write(json_encode(['ok' => false, 'error' => 'mark-reminded failed']));
+      return $response->withStatus(500)->withHeader('Content-Type', 'application/json');
+    }
+  });
 })->add(new HmacAuthMiddleware());
