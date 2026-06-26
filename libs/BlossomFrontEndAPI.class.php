@@ -153,13 +153,18 @@ function signBlossomApiRequest(string $key, string $url, ?string $method = 'GET'
   //$bodySha256 = 'SHA256';
   // Upper case the method
   $method = strtoupper($method);
+  // Stamp the time ONCE: the signed payload and the bearer token must carry the
+  // same timestamp. The Worker verifier rebuilds the payload from the bearer's
+  // timestamp, so two separate time() calls that straddle a one-second boundary
+  // would sign one second and present another — a spurious 401.
+  $ts = time();
   // Prepare payload
-  $payload = "{$method}|{$url}|{$bodySha256}|" . time();
+  $payload = "{$method}|{$url}|{$bodySha256}|{$ts}";
   // Generate HMAC signature
   $hmac = hash_hmac('sha256', $payload, $key, true);
   // Base64 encode the HMAC signature
   $base64Hmac = base64_encode($hmac);
   // Prepare the bearer token
-  $bearer = "HMAC|SHA256|" . time() . "|" . $base64Hmac;
+  $bearer = "HMAC|SHA256|{$ts}|{$base64Hmac}";
   return $bearer;
 }
