@@ -1473,6 +1473,34 @@ class Account
    *   'rejected-renewal-window' - renewal blocked: too many days remaining.
    *   'rejected-no-change'      - the renewal WHERE guard matched no row.
    */
+  /**
+   * Link a now-subscribed user's existing FREE uploads to their stable uuid.
+   * Free/anon uploads land in uploads_data/upload_attempts keyed by npub with a
+   * NULL user_uuid; once that npub owns a paid account we stamp the uuid on the
+   * prior rows. Best-effort + idempotent (fills NULLs only) — a failure here must
+   * never block plan activation.
+   */
+  private function linkFreeUploadsToUuid(): void
+  {
+    $uuid = $this->getAccountUuid();
+    if ($uuid === null || $uuid === '' || $this->npub === '') {
+      return;
+    }
+    foreach (['uploads_data', 'upload_attempts'] as $table) {
+      try {
+        $stmt = $this->db->prepare("UPDATE {$table} SET user_uuid = ? WHERE usernpub = ? AND user_uuid IS NULL");
+        if (!$stmt) {
+          continue;
+        }
+        $stmt->bind_param('ss', $uuid, $this->npub);
+        $stmt->execute();
+        $stmt->close();
+      } catch (\Throwable $e) {
+        error_log("linkFreeUploadsToUuid({$table}) failed for " . $this->npub . ': ' . $e->getMessage());
+      }
+    }
+  }
+
   public function setPlan(int $planLevel, string $period = '1y', bool $new = true, ?string $planUntilOverride = null): string
   {
     // Refresh account data to ensure we have latest DB state for deterministic calculations
@@ -1692,6 +1720,9 @@ class Account
         if (($this->account['deletion_status'] ?? 'none') === 'pending') {
           $this->cancelDeletion();
         }
+
+        // Newly-paid account: link any of this npub's prior free uploads to the uuid.
+        $this->linkFreeUploadsToUuid();
 
         // Trigger NostrLand renewal activation if eligible and previously activated
         if (!$isActuallyNew) { // Only for renewals, not new accounts
