@@ -1724,6 +1724,19 @@ class Account
         // Newly-paid account: link any of this npub's prior free uploads to the uuid.
         $this->linkFreeUploadsToUuid();
 
+        // Also push the uuid to blossom.band so a prior free-tier blossom user
+        // (no uuid) gets tied to this account identity — keeps their subdomain
+        // attached across any future npub rotation. Best-effort + idempotent
+        // (DB-only upstream, mints nothing); never block plan activation.
+        $blossomUuid = $this->getAccountUuid();
+        if ($blossomUuid !== null && $blossomUuid !== '' && $this->npub !== '') {
+          try {
+            $this->blossomFrontEndAPI->linkAccountUuid($this->npub, $blossomUuid);
+          } catch (\Throwable $e) {
+            error_log('linkAccountUuid(blossom) failed for ' . $this->npub . ': ' . $e->getMessage());
+          }
+        }
+
         // Trigger NostrLand renewal activation if eligible and previously activated
         if (!$isActuallyNew) { // Only for renewals, not new accounts
           try {

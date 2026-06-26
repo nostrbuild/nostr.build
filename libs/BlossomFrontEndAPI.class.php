@@ -76,6 +76,24 @@ class BlossomFrontEndAPI
     return $response['status'] === 200 && $response['response']['status'] === 'success';
   }
 
+  /**
+   * Stamp the stable account uuid onto an EXISTING blossom user (found by npub)
+   * when a previously free user converts to a paid account. DB-only upstream: a
+   * user who never used blossom has no row and one is NOT minted (a 200 with
+   * linked=false). A 200 is success whether or not a row was linked; only a
+   * transport error or a 409 (already linked to a different uuid) is a failure.
+   *
+   * @param string $npub bech32 npub of the converting user.
+   * @param string $uuid The account's stable uuid (users.uuid_id).
+   */
+  public function linkAccountUuid(string $npub, string $uuid): bool
+  {
+    $url = "{$this->baseApiUrl}/link/{$npub}";
+    $body = json_encode(['accountUuid' => $uuid]);
+    $response = $this->fetchRequest($url, 'POST', $body);
+    return $response['status'] === 200 && ($response['response']['status'] ?? null) === 'success';
+  }
+
   private function fetchRequest(string $url, string $method = 'GET', ?string $body = null): array
   {
     error_log("Fetching request: {$url}");
