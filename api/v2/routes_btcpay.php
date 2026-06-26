@@ -344,17 +344,34 @@ $app->group('/internal/account', function (RouteCollectorProxy $group) {
         $response->getBody()->write(json_encode(['ok' => true, 'status' => 'not-pending']));
         return $response->withHeader('Content-Type', 'application/json');
       }
-      $npub = $account->getNpub();
       // DB-only row cleanup (bytes already gone, deleted by the Worker). The
-      // media catalog rows + the user's folders.
-      foreach (['users_images', 'users_images_folders'] as $table) {
-        $del = $link->prepare("DELETE FROM {$table} WHERE usernpub = ?");
-        $del->bind_param('s', $npub);
-        $del->execute();
-        $del->close();
+      // users_nostr_images rows would cascade from users_images / users_nostr_notes,
+      // but we clear child-first explicitly inside the same transaction. The
+      // folders still need their own delete. users_nostr_notes is wiped inside
+      // wipeForDeletion() — it owns the "account wiped" semantics.
+      $link->begin_transaction();
+      try {
+        foreach (['users_nostr_images', 'users_images', 'users_images_folders'] as $table) {
+          $del = $link->prepare("DELETE FROM {$table} WHERE user_uuid = ?");
+          if (!$del) {
+            throw new Exception('Failed to prepare finalize-deletion cleanup for ' . $table);
+          }
+          $del->bind_param('s', $uuid);
+          if (!$del->execute()) {
+            throw new Exception('Failed to delete rows from ' . $table . ': ' . $del->error);
+          }
+          $del->close();
+        }
+        // Reset the profile to a blank free shell (keeps npub + login).
+        $account->wipeForDeletion();
+        $link->commit();
+      } catch (Throwable $e) {
+        if (isset($del) && $del instanceof mysqli_stmt) {
+          $del->close();
+        }
+        $link->rollback();
+        throw $e;
       }
-      // Reset the profile to a blank free shell (keeps npub + login).
-      $account->wipeForDeletion();
 
       $response->getBody()->write(json_encode(['ok' => true, 'status' => 'finalized']));
       return $response->withHeader('Content-Type', 'application/json');

@@ -427,3 +427,81 @@ function resolveIdentityNpub($request): string
   $stmt->close();
   return is_array($row) && !empty($row['usernpub']) ? (string) $row['usernpub'] : '';
 }
+
+/**
+ * Resolve the acting user's stable uuid (users.uuid_id) for a Worker-proxied
+ * request — the mirror of resolveIdentityNpub(). The Worker always forwards
+ * X-Accounts-Uuid, so the fast path needs no DB hit; the npub header is only a
+ * fallback (resolved usernpub → uuid_id) for any caller that sends npub alone.
+ *
+ * Returns '' when neither header yields a uuid, so `=== ''` guards fire unchanged.
+ */
+function resolveIdentityUuid($request): string
+{
+  global $link;
+
+  // Fast path: stable uuid already provided, no lookup needed.
+  $uuid = trim((string) $request->getHeaderLine('X-Accounts-Uuid'));
+  if ($uuid !== '') {
+    return $uuid;
+  }
+
+  // Fallback: resolve from the npub.
+  $npub = trim((string) $request->getHeaderLine('X-Accounts-Npub'));
+  if ($npub === '') {
+    return '';
+  }
+  return npubToUuid($link, $npub) ?? '';
+}
+
+/**
+ * Resolve a bare npub to the stable users.uuid_id. Returns null when unknown.
+ */
+function npubToUuid(mysqli $link, string $npub): ?string
+{
+  if ($npub === '') {
+    return null;
+  }
+  $stmt = $link->prepare("SELECT uuid_id FROM users WHERE usernpub = ? LIMIT 1");
+  $stmt->bind_param('s', $npub);
+  $stmt->execute();
+  $row = $stmt->get_result()->fetch_assoc();
+  $stmt->close();
+  return is_array($row) && !empty($row['uuid_id']) ? (string) $row['uuid_id'] : null;
+}
+
+/**
+ * Resolve a stable users.uuid_id back to its npub. Returns null when unknown.
+ * Used only where a NOT NULL usernpub column must still be written on INSERT.
+ */
+function uuidToNpub(mysqli $link, string $uuid): ?string
+{
+  if ($uuid === '') {
+    return null;
+  }
+  $stmt = $link->prepare("SELECT usernpub FROM users WHERE uuid_id = ? LIMIT 1");
+  $stmt->bind_param('s', $uuid);
+  $stmt->execute();
+  $row = $stmt->get_result()->fetch_assoc();
+  $stmt->close();
+  return is_array($row) && !empty($row['usernpub']) ? (string) $row['usernpub'] : null;
+}
+
+/**
+ * Normalise an owner identity that may be EITHER a uuid or an npub into the
+ * stable users.uuid_id used to key the derived tables (users_images,
+ * users_images_folders, users_nostr_notes, users_nostr_images). An npub always
+ * starts with "npub1"; a uuid never does, so the value is self-identifying.
+ * Pass a uuid (the common Worker path) and it returns immediately with no DB hit.
+ * Returns null when an npub can't be resolved.
+ */
+function resolveOwnerUuid(mysqli $link, string $owner): ?string
+{
+  if ($owner === '') {
+    return null;
+  }
+  if (str_starts_with($owner, 'npub1')) {
+    return npubToUuid($link, $owner);
+  }
+  return $owner;
+}

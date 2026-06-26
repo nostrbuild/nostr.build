@@ -113,7 +113,7 @@ function dashboardListFiles(string $folderName, $link, $start = null, $limit = n
 }
 
 // Files the logged-in user owns that the DOWNGRADE TARGET tier can't host, across
-// ALL folders (users_images is keyed by npub, not folder). A file is ineligible
+// ALL folders (users_images is keyed by stable user_uuid, not folder). A file is ineligible
 // when its MIME isn't in the target tier's allow-list (getAllowedMimesArray — the
 // SAME gate the uploader enforces, so this never drifts) OR — Purist (3) only — it
 // exceeds the 450 MiB per-file cap. Each row carries a `reason`:
@@ -124,7 +124,7 @@ function dashboardListFiles(string $folderName, $link, $start = null, $limit = n
 // 200; a downgrade-eligible library is tiny (the storage gate gates first).
 function dashboardListDowngradeIneligibleFiles(int $targetLevel, $link): array
 {
-  $npub = $_SESSION['usernpub'];
+  $userUuid = npubToUuid($link, $_SESSION['usernpub']);
 
   // The exact MIME allow-list the uploader enforces for the target tier.
   $allowed = array_keys(getAllowedMimesArray($targetLevel));
@@ -143,7 +143,7 @@ function dashboardListDowngradeIneligibleFiles(int $targetLevel, $link): array
              LEFT JOIN users_nostr_notes unn ON uni.note_id = unn.note_id
              WHERE uni.image_id = ui.id) AS associated_notes
         FROM users_images ui
-        WHERE ui.usernpub = ?
+        WHERE ui.user_uuid = ?
           AND (COALESCE(ui.mime_type, '') NOT IN ($placeholders)$sizeClause)
         ORDER BY ui.file_size DESC
         LIMIT 200
@@ -158,7 +158,7 @@ function dashboardListDowngradeIneligibleFiles(int $targetLevel, $link): array
   }
   // Bind: npub (s), each allowed MIME (s…), then the cap (i) when present.
   $types = 's' . str_repeat('s', count($allowed)) . ($cap !== null ? 'i' : '');
-  $bindArgs = array_merge([$npub], $allowed);
+  $bindArgs = array_merge([$userUuid], $allowed);
   if ($cap !== null) {
     $bindArgs[] = $cap;
   }
@@ -234,11 +234,11 @@ function dashboardGetAccountData($link, $account): array
 
 function dashboardGetMediaStats(string $mediaId, string $period, string $interval, string $groupBy, $link): string
 {
-  $userNpub = $_SESSION['usernpub'];
+  $userUuid = npubToUuid($link, $_SESSION['usernpub']);
   $mediaIdInt = intval($mediaId);
 
-  $stmt = $link->prepare("SELECT * FROM users_images WHERE id = ? AND usernpub = ?");
-  $stmt->bind_param('is', $mediaIdInt, $userNpub);
+  $stmt = $link->prepare("SELECT * FROM users_images WHERE id = ? AND user_uuid = ?");
+  $stmt->bind_param('is', $mediaIdInt, $userUuid);
   $stmt->execute();
   $result = $stmt->get_result();
 

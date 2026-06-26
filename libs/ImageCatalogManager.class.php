@@ -13,6 +13,7 @@ class ImageCatalogManager
   private $link;
   private $s3;
   private $usernpub;
+  private $userUuid;
   private $cloudflarePurger;
   private $blossomFrontEndAPI;
   private $fromAPI;
@@ -23,11 +24,14 @@ class ImageCatalogManager
    * @param mixed $s3 S3 service instance
    * @param string $usernpub User identifier
    */
-  public function __construct(mysqli $link, mixed $s3, string $usernpub, ?bool $fromAPI = false)
+  public function __construct(mysqli $link, mixed $s3, string $owner, ?bool $fromAPI = false)
   {
     $this->link = $link;
     $this->s3 = $s3;
-    $this->usernpub = $usernpub;
+    // $owner may be a uuid (Worker path) or an npub (legacy callers). The derived
+    // tables key on the stable uuid; Blossom is still npub-keyed, so keep both.
+    $this->userUuid = resolveOwnerUuid($link, $owner);
+    $this->usernpub = str_starts_with($owner, 'npub1') ? $owner : (uuidToNpub($link, $owner) ?? '');
     $this->cloudflarePurger = new CloudflarePurger($_SERVER['NB_API_SECRET'], $_SERVER['NB_API_PURGE_URL']);
     $this->blossomFrontEndAPI = new BlossomFrontEndAPI($_SERVER['BLOSSOM_API_URL'], $_SERVER['BLOSSOM_API_KEY']);
     $this->fromAPI = $fromAPI;
@@ -35,9 +39,9 @@ class ImageCatalogManager
 
   public function getImageByName(string $imageName): array | null
   {
-    $stmt = $this->link->prepare("SELECT * FROM users_images WHERE usernpub = ? AND image LIKE ? ESCAPE '\\\\' LIMIT 1");
+    $stmt = $this->link->prepare("SELECT * FROM users_images WHERE user_uuid = ? AND image LIKE ? ESCAPE '\\\\' LIMIT 1");
     $imageName = $imageName . '.%';
-    $stmt->bind_param('ss', $this->usernpub, $imageName);
+    $stmt->bind_param('ss', $this->userUuid, $imageName);
     $stmt->execute();
     $result = $stmt->get_result();
     $row = $result ? $result->fetch_assoc() : null;
@@ -47,8 +51,8 @@ class ImageCatalogManager
 
   public function getImageByBlossomHash(string $blossomHash): array | null
   {
-    $stmt = $this->link->prepare("SELECT * FROM users_images WHERE usernpub = ? AND blossom_hash = ? LIMIT 1");
-    $stmt->bind_param('ss', $this->usernpub, $blossomHash);
+    $stmt = $this->link->prepare("SELECT * FROM users_images WHERE user_uuid = ? AND blossom_hash = ? LIMIT 1");
+    $stmt->bind_param('ss', $this->userUuid, $blossomHash);
     $stmt->execute();
     $result = $stmt->get_result();
     $row = $result ? $result->fetch_assoc() : null;
@@ -111,10 +115,12 @@ class ImageCatalogManager
     }
 
     $placeholders = implode(',', array_fill(0, count($imageIds), '?'));
-    $stmt = $this->link->prepare("SELECT * FROM users_images WHERE usernpub = ? AND id IN ($placeholders)");
-    $stmt->bind_param('s' . str_repeat('i', count($imageIds)), $this->usernpub, ...$imageIds);
-    $stmt->execute();
-    $result = $stmt->get_result();
+    $selectStmt = $this->link->prepare("SELECT * FROM users_images WHERE user_uuid = ? AND id IN ($placeholders)");
+    $selectStmt->bind_param('s' . str_repeat('i', count($imageIds)), $this->userUuid, ...$imageIds);
+    $selectStmt->execute();
+    $result = $selectStmt->get_result();
+    $deleteStmt = null;
+    $inTransaction = false;
 
     try {
       while ($row = $result->fetch_assoc()) {
@@ -140,11 +146,45 @@ class ImageCatalogManager
         }
       }
 
-      $stmt = $this->link->prepare("DELETE FROM users_images WHERE usernpub = ? AND id IN ($placeholders)");
-      $stmt->bind_param('s' . str_repeat('i', count($imageIds)), $this->usernpub, ...$imageIds);
-      $stmt->execute();
+      $this->link->begin_transaction();
+      $inTransaction = true;
+      $deleteStmt = $this->link->prepare("DELETE FROM users_nostr_images WHERE user_uuid = ? AND image_id IN ($placeholders)");
+      if (!$deleteStmt) {
+        throw new Exception('Failed to prepare users_nostr_images delete');
+      }
+      $deleteStmt->bind_param('s' . str_repeat('i', count($imageIds)), $this->userUuid, ...$imageIds);
+      if (!$deleteStmt->execute()) {
+        throw new Exception('Failed to delete users_nostr_images rows: ' . $deleteStmt->error);
+      }
+      $deleteStmt->close();
+      $deleteStmt = null;
+
+      // Then the image rows. users_nostr_images has an ON DELETE CASCADE FK on
+      // image_id, so this delete also clears the note↔image links; the explicit
+      // delete above just makes the owner-scoped cleanup order obvious. Both run
+      // in one transaction so they roll back together.
+      $deleteStmt = $this->link->prepare("DELETE FROM users_images WHERE user_uuid = ? AND id IN ($placeholders)");
+      if (!$deleteStmt) {
+        throw new Exception('Failed to prepare users_images delete');
+      }
+      $deleteStmt->bind_param('s' . str_repeat('i', count($imageIds)), $this->userUuid, ...$imageIds);
+      if (!$deleteStmt->execute()) {
+        throw new Exception('Failed to delete users_images rows: ' . $deleteStmt->error);
+      }
+      $this->link->commit();
+      $inTransaction = false;
+    } catch (Throwable $e) {
+      if ($inTransaction) {
+        $this->link->rollback();
+      }
+      throw $e;
     } finally {
-      $stmt->close();
+      if ($selectStmt instanceof mysqli_stmt) {
+        $selectStmt->close();
+      }
+      if ($deleteStmt instanceof mysqli_stmt) {
+        $deleteStmt->close();
+      }
     }
 
     return [$filesToPurge, $imageIds];
@@ -164,8 +204,8 @@ class ImageCatalogManager
     try {
       $placeholders = implode(',', array_fill(0, count($folderIds), '?'));
       // FK constraint will NULL out the folder_id in users_images table
-      $stmt = $this->link->prepare("DELETE FROM users_images_folders WHERE usernpub = ? AND id IN ($placeholders)");
-      $stmt->bind_param('s' . str_repeat('i', count($folderIds)), $this->usernpub, ...$folderIds);
+      $stmt = $this->link->prepare("DELETE FROM users_images_folders WHERE user_uuid = ? AND id IN ($placeholders)");
+      $stmt->bind_param('s' . str_repeat('i', count($folderIds)), $this->userUuid, ...$folderIds);
       $stmt->execute();
       $stmt->close();
     } catch (Exception $e) {
@@ -207,9 +247,10 @@ class ImageCatalogManager
     $placeholders = implode(',', array_fill(0, count($imageIds), '?'));
     $flag = $shareFlag ? '1' : '0';
     error_log("Setting share flag to $flag for images: " . implode(',', $imageIds) . PHP_EOL);
+    $stmt = null;
     try {
-      $stmt = $this->link->prepare("UPDATE users_images SET flag = ? WHERE usernpub = ? AND id IN ($placeholders)");
-      $stmt->bind_param('ss' . str_repeat('i', count($imageIds)), $flag, $this->usernpub, ...$imageIds);
+      $stmt = $this->link->prepare("UPDATE users_images SET flag = ? WHERE user_uuid = ? AND id IN ($placeholders)");
+      $stmt->bind_param('ss' . str_repeat('i', count($imageIds)), $flag, $this->userUuid, ...$imageIds);
       if (!$stmt->execute()) {
         throw new Exception("Failed to update share flag");
       }
@@ -217,7 +258,9 @@ class ImageCatalogManager
       error_log("Error occurred while updating share flag: " . $e->getMessage());
       return [];
     } finally {
-      $stmt->close();
+      if ($stmt instanceof mysqli_stmt) {
+        $stmt->close();
+      }
     }
     return $imageIds;
   }
@@ -231,11 +274,12 @@ class ImageCatalogManager
   {
     $placeholders = implode(',', array_fill(0, count($imageIds), '?'));
     error_log("Moving images: " . implode(',', $imageIds) . " to folder: $folderId" . PHP_EOL);
+    $stmt = null;
     try {
       // Handle special case where folderId is set to 0, meaning the images are moved to the root folder
       if ($folderId === 0) {
-        $stmt = $this->link->prepare("UPDATE users_images SET folder_id = NULL WHERE usernpub = ? AND id IN ($placeholders)");
-        $stmt->bind_param('s' . str_repeat('i', count($imageIds)), $this->usernpub, ...$imageIds);
+        $stmt = $this->link->prepare("UPDATE users_images SET folder_id = NULL WHERE user_uuid = ? AND id IN ($placeholders)");
+        $stmt->bind_param('s' . str_repeat('i', count($imageIds)), $this->userUuid, ...$imageIds);
         if (!$stmt->execute()) {
           throw new Exception("Failed to move images");
         }
@@ -243,8 +287,8 @@ class ImageCatalogManager
       }
       // Update the folder and folder ID for the images
       // FK constraint will prevent moving images to a folder that doesn't exist
-      $stmt = $this->link->prepare("UPDATE users_images SET folder_id = ? WHERE usernpub = ? AND id IN ($placeholders)");
-      $stmt->bind_param('is' . str_repeat('i', count($imageIds)), $folderId, $this->usernpub, ...$imageIds);
+      $stmt = $this->link->prepare("UPDATE users_images SET folder_id = ? WHERE user_uuid = ? AND id IN ($placeholders)");
+      $stmt->bind_param('is' . str_repeat('i', count($imageIds)), $folderId, $this->userUuid, ...$imageIds);
       if (!$stmt->execute()) {
         throw new Exception("Failed to move images");
       }
@@ -252,7 +296,9 @@ class ImageCatalogManager
       error_log("Error occurred while moving images: " . $e->getMessage());
       return [];
     } finally {
-      $stmt->close();
+      if ($stmt instanceof mysqli_stmt) {
+        $stmt->close();
+      }
     }
     return $imageIds;
   }
@@ -265,9 +311,10 @@ class ImageCatalogManager
   public function renameFolder(int $folderId, string $folderName): array
   {
     error_log("Renaming folder: $folderId to $folderName" . PHP_EOL);
+    $stmt = null;
     try {
-      $stmt = $this->link->prepare("UPDATE users_images_folders SET folder = ? WHERE usernpub = ? AND id = ?");
-      $stmt->bind_param('ssi', $folderName, $this->usernpub, $folderId);
+      $stmt = $this->link->prepare("UPDATE users_images_folders SET folder = ? WHERE user_uuid = ? AND id = ?");
+      $stmt->bind_param('ssi', $folderName, $this->userUuid, $folderId);
       if (!$stmt->execute()) {
         throw new Exception("Failed to rename folder");
       }
@@ -275,7 +322,9 @@ class ImageCatalogManager
       error_log("Error occurred while renaming folder: " . $e->getMessage());
       return [];
     } finally {
-      $stmt->close();
+      if ($stmt instanceof mysqli_stmt) {
+        $stmt->close();
+      }
     }
     return [$folderId];
   }
@@ -293,9 +342,10 @@ class ImageCatalogManager
   public function updateMediaMetadata(int $imageId, ?string $title = '', ?string $description = ''): array
   {
     error_log("Updating metadata for image: $imageId" . PHP_EOL);
+    $stmt = null;
     try {
-      $stmt = $this->link->prepare("UPDATE users_images SET title = ?, description = ? WHERE usernpub = ? AND id = ?");
-      $stmt->bind_param('sssi', $title, $description, $this->usernpub, $imageId);
+      $stmt = $this->link->prepare("UPDATE users_images SET title = ?, description = ? WHERE user_uuid = ? AND id = ?");
+      $stmt->bind_param('sssi', $title, $description, $this->userUuid, $imageId);
       if (!$stmt->execute()) {
         throw new Exception("Failed to update metadata");
       }
@@ -303,7 +353,9 @@ class ImageCatalogManager
       error_log("Error occurred while updating metadata: " . $e->getMessage());
       return [];
     } finally {
-      $stmt->close();
+      if ($stmt instanceof mysqli_stmt) {
+        $stmt->close();
+      }
     }
     return [$imageId];
   }

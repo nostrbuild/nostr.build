@@ -1,5 +1,6 @@
 <?php
 require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/db/DatabaseTable.class.php';
+require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/utils.funcs.php';
 require $_SERVER['DOCUMENT_ROOT'] . '/vendor/autoload.php';
 
 use Respect\Validation\Validator as v;
@@ -38,8 +39,9 @@ class UsersImages extends DatabaseTable
    * @param string $usernpub
    * @return int|null
    */
-  public function getTotalSize(string $usernpub): int | null
+  public function getTotalSize(string $owner): int | null
   {
+    $userUuid = resolveOwnerUuid($this->db, $owner);
     $sql = "
     SELECT
         COALESCE(SUM(COALESCE(ui.file_size, 0)), 0) AS totalSize,
@@ -47,7 +49,7 @@ class UsersImages extends DatabaseTable
     FROM (
         SELECT NULL AS id, 'TOTAL' AS folder
     ) AS dummy
-    LEFT JOIN {$this->tableName} ui ON ui.usernpub = ?
+    LEFT JOIN {$this->tableName} ui ON ui.user_uuid = ?
     GROUP BY dummy.id, dummy.folder
     ";
     // Prepare and execute the statement
@@ -55,7 +57,7 @@ class UsersImages extends DatabaseTable
     $totalCount = null;
     try {
       $stmt = $this->db->prepare($sql);
-      $stmt->bind_param('s', $usernpub);
+      $stmt->bind_param('s', $userUuid);
       $stmt->execute();
       $stmt->bind_result($totalSize, $totalCount);
       $stmt->fetch();
@@ -74,8 +76,9 @@ class UsersImages extends DatabaseTable
    * @param mixed $folderId
    * @return array
    */
-  public function getFiles(string $npub, ?int $folderId = null, ?int $start = null, ?int $limit = null, ?string $filter = null): array
+  public function getFiles(string $owner, ?int $folderId = null, ?int $start = null, ?int $limit = null, ?string $filter = null): array
   {
+    $userUuid = resolveOwnerUuid($this->db, $owner);
     $filterConditions = [
       'all' => '',
       'images' => "AND (ui.mime_type LIKE 'image%' AND ui.mime_type != 'image/gif') AND ui.mime_type != 'image/svg+xml'",
@@ -99,7 +102,7 @@ class UsersImages extends DatabaseTable
                WHERE uni.image_id = ui.id) AS associated_notes
           FROM {$this->tableName} ui
           WHERE {$folder_id_sql}
-            AND usernpub = ?
+            AND ui.user_uuid = ?
             {$filter_sql}
           ORDER BY created_at DESC
       ";
@@ -116,7 +119,7 @@ class UsersImages extends DatabaseTable
       $types .= 'i';
     }
 
-    $params[] = $npub;
+    $params[] = $userUuid;
     $types .= 's';
 
     if ($start !== null && $limit !== null) {
@@ -145,10 +148,11 @@ class UsersImages extends DatabaseTable
     }
   }
 
-  public function getFile(string $npub, int $fileId): array
+  public function getFile(string $owner, int $fileId): array
   {
+    $userUuid = resolveOwnerUuid($this->db, $owner);
     $sql = "
-    SELECT 
+    SELECT
         ui.*,
         (SELECT GROUP_CONCAT(CONCAT(uni.note_id, ':', UNIX_TIMESTAMP(unn.created_at)))
          FROM users_nostr_images uni
@@ -156,12 +160,12 @@ class UsersImages extends DatabaseTable
          WHERE uni.image_id = ui.id) AS associated_notes
     FROM {$this->tableName} ui
     WHERE ui.id = ?
-      AND usernpub = ?
+      AND ui.user_uuid = ?
     ";
 
     try {
       $stmt = $this->db->prepare($sql);
-      $stmt->bind_param('is', $fileId, $npub);
+      $stmt->bind_param('is', $fileId, $userUuid);
       $stmt->execute();
       $result = $stmt->get_result();
 
@@ -186,10 +190,11 @@ class UsersImages extends DatabaseTable
    * @param string $usernpub User's npub
    * @return array|null File data if found, null if not found
    */
-  public function findByFilenameAndUser(string $filename, string $usernpub): ?array
+  public function findByFilenameAndUser(string $filename, string $owner): ?array
   {
+    $userUuid = resolveOwnerUuid($this->db, $owner);
     $sql = "
-    SELECT 
+    SELECT
         ui.*,
         (SELECT GROUP_CONCAT(CONCAT(uni.note_id, ':', UNIX_TIMESTAMP(unn.created_at)))
          FROM users_nostr_images uni
@@ -197,14 +202,14 @@ class UsersImages extends DatabaseTable
          WHERE uni.image_id = ui.id) AS associated_notes
     FROM {$this->tableName} ui
     WHERE ui.image = ?
-      AND ui.usernpub = ?
+      AND ui.user_uuid = ?
     ORDER BY ui.created_at DESC
     LIMIT 1
     ";
 
     try {
       $stmt = $this->db->prepare($sql);
-      $stmt->bind_param('ss', $filename, $usernpub);
+      $stmt->bind_param('ss', $filename, $userUuid);
       $stmt->execute();
       $result = $stmt->get_result();
 

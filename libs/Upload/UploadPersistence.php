@@ -83,9 +83,14 @@ class UploadPersistence
     }
 
     try {
+      $userUuid = resolveOwnerUuid($this->usersImages->getDb(), $this->userNpub);
+      if ($userUuid === null || $userUuid === '') {
+        throw new Exception('Unable to resolve user uuid for pro upload');
+      }
       $tempFile = generateUniqueFilename('file_upload_');
       $insertId = $this->usersImages->insert([
         'usernpub' => $this->userNpub,
+        'user_uuid' => $userUuid,
         'sha256_hash' => $originalSha256,
         'image' => $tempFile,
         'flag' => 0,

@@ -1398,11 +1398,11 @@ $app->group('/accounts/admin/csam', function (RouteCollectorProxy $group) {
     $placeholders = implode(',', array_fill(0, count($ids), '?'));
     $stmt = $link->prepare(
       "SELECT id, image, mime_type, blossom_hash FROM users_images
-        WHERE id IN ($placeholders) AND usernpub = ?"
+        WHERE id IN ($placeholders) AND user_uuid = ?"
     );
     if (!$stmt) return aaError($response, 'server-error', 500);
     $params = $ids;
-    $params[] = $npub;
+    $params[] = $uuid;
     $stmt->bind_param(str_repeat('i', count($ids)) . 's', ...$params);
     $stmt->execute();
     $rs = $stmt->get_result();
@@ -2018,9 +2018,9 @@ $app->group('/accounts/admin/account-review', function (RouteCollectorProxy $gro
     $limit  = max(1, min(200, (int) ($p['limit'] ?? 60)));
     $cursor = max(0, (int) ($p['cursor'] ?? 0));
 
-    $where = "WHERE ui.usernpub = ?";
+    $where = "WHERE ui.user_uuid = ?";
     $types = 's';
-    $args  = [$npub];
+    $args  = [npubToUuid($link, $npub)];
     if ($cursor > 0) {
       $where .= " AND ui.id < ?";
       $types .= 'i';
@@ -2190,7 +2190,7 @@ $app->group('/accounts/admin/account-review', function (RouteCollectorProxy $gro
    * Thin DB-row delete for the per-media DMCA/ToS takedown (Phase 3). The Worker
    * has already removed the bytes (R2+E2), purged the CDN, banned the blossom
    * blob, and recorded the takedown ledger; this just drops the now-orphaned
-   * users_images rows (S3-delete-first / DB-row-last). Owner-scoped by the npub
+  * users_images rows (S3-delete-first / DB-row-last). Owner-scoped by the uuid
    * resolved from the STABLE uuid, so a foreign id can never be deleted as this
    * account's media. NO ban, NO termination — only the listed rows. Idempotent
    * (already-deleted ids simply match nothing). Returns the rows deleted.
@@ -2212,7 +2212,6 @@ $app->group('/accounts/admin/account-review', function (RouteCollectorProxy $gro
     $owner = $sel->get_result()->fetch_assoc();
     $sel->close();
     if (!$owner || ($owner['usernpub'] ?? '') === '') return aaError($response, 'not-found', 404);
-    $npub = (string) $owner['usernpub'];
 
     $ids = [];
     foreach ($rawIds as $i) {
@@ -2225,19 +2224,48 @@ $app->group('/accounts/admin/account-review', function (RouteCollectorProxy $gro
     if ($ids === []) return aaJson($response, ['deleted' => 0]);
 
     $placeholders = implode(',', array_fill(0, count($ids), '?'));
-    $stmt = $link->prepare(
-      "DELETE FROM users_images WHERE id IN ($placeholders) AND usernpub = ?"
-    );
-    if (!$stmt) return aaError($response, 'server-error', 500);
-    $params = $ids;
-    $params[] = $npub;
-    $stmt->bind_param(str_repeat('i', count($ids)) . 's', ...$params);
-    if (!$stmt->execute()) {
+    $deleted = 0;
+    $link->begin_transaction();
+    try {
+      $nostr = $link->prepare(
+        "DELETE FROM users_nostr_images WHERE image_id IN ($placeholders) AND user_uuid = ?"
+      );
+      $stmt = $link->prepare(
+        "DELETE FROM users_images WHERE id IN ($placeholders) AND user_uuid = ?"
+      );
+      if (!$stmt || !$nostr) {
+        throw new Exception('Failed to prepare account-review delete statements');
+      }
+
+      $params = $ids;
+      $params[] = $uuid;
+      $types = str_repeat('i', count($ids)) . 's';
+
+      $nostr->bind_param($types, ...$params);
+      if (!$nostr->execute()) {
+        throw new Exception('Failed to delete note-image rows: ' . $nostr->error);
+      }
+      $nostr->close();
+
+      $stmt->bind_param($types, ...$params);
+      if (!$stmt->execute()) {
+        throw new Exception('Failed to delete media rows: ' . $stmt->error);
+      }
+      $deleted = $stmt->affected_rows;
       $stmt->close();
+
+      $link->commit();
+    } catch (Throwable $e) {
+      if (isset($stmt) && $stmt instanceof mysqli_stmt) {
+        $stmt->close();
+      }
+      if (isset($nostr) && $nostr instanceof mysqli_stmt) {
+        $nostr->close();
+      }
+      $link->rollback();
+      error_log('account-review delete failed: ' . $e->getMessage());
       return aaError($response, 'server-error', 500);
     }
-    $deleted = $stmt->affected_rows;
-    $stmt->close();
 
     return aaJson($response, ['deleted' => (int) $deleted]);
   });

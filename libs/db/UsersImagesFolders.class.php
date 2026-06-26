@@ -1,5 +1,6 @@
 <?php
 require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/db/DatabaseTable.class.php';
+require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/utils.funcs.php';
 require $_SERVER['DOCUMENT_ROOT'] . '/vendor/autoload.php';
 
 use Respect\Validation\Validator as v;
@@ -34,18 +35,20 @@ class UsersImagesFolders extends DatabaseTable
    * @param string $usernpub
    * @return array
    */
-  public function getFolders(string $usernpub): array
+  public function getFolders(string $owner): array
   {
-    $stmt = $this->db->prepare("SELECT * FROM {$this->tableName} WHERE usernpub = ?");
-    $stmt->bind_param("s", $usernpub);
+    $userUuid = resolveOwnerUuid($this->db, $owner);
+    $stmt = $this->db->prepare("SELECT * FROM {$this->tableName} WHERE user_uuid = ?");
+    $stmt->bind_param("s", $userUuid);
     $stmt->execute();
     $result = $stmt->get_result();
     $stmt->close();
     return $result->fetch_all(MYSQLI_ASSOC);
   }
 
-  public function getFoldersWithStats(string $usernpub): array
+  public function getFoldersWithStats(string $owner): array
   {
+    $userUuid = resolveOwnerUuid($this->db, $owner);
     $stmt = $this->db->prepare("
     SELECT
         COALESCE(uif.folder, '') AS folder,
@@ -90,10 +93,10 @@ class UsersImagesFolders extends DatabaseTable
             SUM(CASE WHEN ui.mime_type = 'image/svg+xml' THEN 1 ELSE 0 END) AS otherCount,
             SUM(CASE WHEN ui.flag = 1 THEN 1 ELSE 0 END) AS publicCount
         FROM users_images ui
-        WHERE ui.usernpub = ?
+        WHERE ui.user_uuid = ?
         GROUP BY ui.folder_id
     ) dt ON uif.id = dt.folder_id
-    WHERE uif.usernpub = ?
+    WHERE uif.user_uuid = ?
     UNION ALL
     SELECT
         'Home: Main Folder' AS folder,
@@ -136,19 +139,20 @@ class UsersImagesFolders extends DatabaseTable
             SUM(CASE WHEN ui.mime_type = 'image/svg+xml' THEN 1 ELSE 0 END) AS otherCount,
             SUM(CASE WHEN ui.flag = 1 THEN 1 ELSE 0 END) AS publicCount
         FROM users_images ui
-        WHERE ui.usernpub = ?
+        WHERE ui.user_uuid = ?
             AND ui.folder_id IS NULL
     ) dt
     ");
-    $stmt->bind_param("sss", $usernpub, $usernpub, $usernpub);
+    $stmt->bind_param("sss", $userUuid, $userUuid, $userUuid);
     $stmt->execute();
     $result = $stmt->get_result();
     $stmt->close();
     return $result->fetch_all(MYSQLI_ASSOC);
   }
 
-  public function getTotalStats(string $usernpub): array
+  public function getTotalStats(string $owner): array
   {
+    $userUuid = resolveOwnerUuid($this->db, $owner);
     $stmt = $this->db->prepare("
     SELECT
         'TOTAL' AS folder,
@@ -171,29 +175,34 @@ class UsersImagesFolders extends DatabaseTable
         SUM(CASE WHEN ui.mime_type = 'image/svg+xml' THEN 1 ELSE 0 END) AS otherCount,
         SUM(CASE WHEN ui.flag = 1 THEN 1 ELSE 0 END) AS publicCount
     FROM users_images ui
-    WHERE ui.usernpub = ?
+    WHERE ui.user_uuid = ?
     ");
-    $stmt->bind_param("s", $usernpub);
+    $stmt->bind_param("s", $userUuid);
     $stmt->execute();
     $result = $stmt->get_result();
     $stmt->close();
     return $result->fetch_assoc();
   }
 
-  public function findFolderByNameOrCreate(string $usernpub, string $folder_name, ?int $parent_id = null): int
+  public function findFolderByNameOrCreate(string $owner, string $folder_name, ?int $parent_id = null): int
   {
     if (empty($folder_name)) {
       throw new Exception('Folder name cannot be empty');
     }
+    // Look up by the stable uuid; keep the npub for the NOT NULL usernpub column.
+    // New writes populate BOTH columns explicitly; the trigger backstops any
+    // legacy caller that still inserts only usernpub.
+    $userUuid = resolveOwnerUuid($this->db, $owner);
+    $usernpub = str_starts_with($owner, 'npub1') ? $owner : (uuidToNpub($this->db, $owner) ?? '');
     // First, try to select the folder
     if ($parent_id) {
-      $sql = "SELECT id FROM {$this->tableName} WHERE folder = ? AND usernpub = ? AND parent_id = ?";
+      $sql = "SELECT id FROM {$this->tableName} WHERE folder = ? AND user_uuid = ? AND parent_id = ?";
       $selectStmt = $this->db->prepare($sql);
-      $selectStmt->bind_param("ssi", $folder_name, $usernpub, $parent_id);
+      $selectStmt->bind_param("ssi", $folder_name, $userUuid, $parent_id);
     } else {
-      $sql = "SELECT id FROM {$this->tableName} WHERE folder = ? AND usernpub = ?";
+      $sql = "SELECT id FROM {$this->tableName} WHERE folder = ? AND user_uuid = ?";
       $selectStmt = $this->db->prepare($sql);
-      $selectStmt->bind_param("ss", $folder_name, $usernpub);
+      $selectStmt->bind_param("ss", $folder_name, $userUuid);
     }
     $selectStmt->execute();
     $result = $selectStmt->get_result();
@@ -206,45 +215,66 @@ class UsersImagesFolders extends DatabaseTable
     if ($data) {
       $folderId = $data['id'];
     } else {
-      // If the folder doesn't exist, insert it and get the last inserted id
+      // Insert it. With the UNIQUE(usernpub, folder) constraint a concurrent
+      // request (or a same-named sibling) can race us between the SELECT above and
+      // this INSERT; on a duplicate key (1062), fall back to the existing row's id
+      // instead of throwing a 500.
       if ($parent_id) {
-        $insertStmt = $this->db->prepare("INSERT INTO {$this->tableName} (folder, usernpub, parent_id) VALUES (?,?,?)");
-        $insertStmt->bind_param("ssi", $folder_name, $usernpub, $parent_id);
+        $insertStmt = $this->db->prepare("INSERT INTO {$this->tableName} (folder, usernpub, user_uuid, parent_id) VALUES (?,?,?,?)");
+        $insertStmt->bind_param("sssi", $folder_name, $usernpub, $userUuid, $parent_id);
       } else {
-        $insertStmt = $this->db->prepare("INSERT INTO {$this->tableName} (folder, usernpub) VALUES (?,?)");
-        $insertStmt->bind_param("ss", $folder_name, $usernpub);
+        $insertStmt = $this->db->prepare("INSERT INTO {$this->tableName} (folder, usernpub, user_uuid) VALUES (?,?,?)");
+        $insertStmt->bind_param("sss", $folder_name, $usernpub, $userUuid);
       }
-      $insertStmt->execute();
-      $insertStmt->close();
-
-      $folderId = $this->db->insert_id;
+      try {
+        $insertStmt->execute();
+        $folderId = $this->db->insert_id;
+      } catch (\mysqli_sql_exception $e) {
+        if ((int) $this->db->errno !== 1062) {
+          throw $e;
+        }
+        // Duplicate key — another writer won the race, or the name already exists
+        // within the UNIQUE(user_uuid, folder) scope. Return that existing id.
+        $reStmt = $this->db->prepare("SELECT id FROM {$this->tableName} WHERE folder = ? AND user_uuid = ? LIMIT 1");
+        $reStmt->bind_param("ss", $folder_name, $userUuid);
+        $reStmt->execute();
+        $existing = $reStmt->get_result()->fetch_assoc();
+        $reStmt->close();
+        if (!$existing) {
+          throw $e;
+        }
+        $folderId = (int) $existing['id'];
+      } finally {
+        $insertStmt->close();
+      }
     }
 
     // Return the ID
     return $folderId;
   }
 
-  public function findFolderByNameOrCreateHierarchy(string $usernpub, array $folderList): int
+  public function findFolderByNameOrCreateHierarchy(string $owner, array $folderList): int
   {
     $folderId = null;
     $folderName = null;
 
     foreach ($folderList as $folder) {
       $folderName = $folder;
-      $folderId = $this->findFolderByNameOrCreate($usernpub, $folderName, $folderId);
+      $folderId = $this->findFolderByNameOrCreate($owner, $folderName, $folderId);
     }
 
     // Return the ID of the last folder
     return $folderId;
   }
 
-  public function getFolderNameById(string $usernpub, ?int $folderId): string
+  public function getFolderNameById(string $owner, ?int $folderId): string
   {
     if ($folderId === null) {
       return 'Home: Main Folder';
     }
-    $stmt = $this->db->prepare("SELECT folder FROM {$this->tableName} WHERE usernpub = ? AND id = ?");
-    $stmt->bind_param("si", $usernpub, $folderId);
+    $userUuid = resolveOwnerUuid($this->db, $owner);
+    $stmt = $this->db->prepare("SELECT folder FROM {$this->tableName} WHERE user_uuid = ? AND id = ?");
+    $stmt->bind_param("si", $userUuid, $folderId);
     $stmt->execute();
     $result = $stmt->get_result();
     $data = $result->fetch_assoc();

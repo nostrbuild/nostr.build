@@ -85,7 +85,7 @@ function backupManifestForNpub(
 
   $sql = "SELECT id, image, file_size, mime_type, created_at, folder_id, title
           FROM users_images
-          WHERE usernpub = ?{$mimeWhere}{$folderWhere}
+          WHERE user_uuid = ?{$mimeWhere}{$folderWhere}
           ORDER BY created_at ASC, id ASC";
 
   $stmt = $link->prepare($sql);
@@ -93,7 +93,7 @@ function backupManifestForNpub(
     throw new Exception('backup-manifest prepare failed: ' . $link->error);
   }
   $types = 's' . $folderTypes;
-  $params = array_merge([$npub], $folderParams);
+  $params = array_merge([npubToUuid($link, $npub)], $folderParams);
   $stmt->bind_param($types, ...$params);
   $stmt->execute();
   $result = $stmt->get_result();
@@ -1208,7 +1208,7 @@ $app->group('/accounts', function (RouteCollectorProxy $group) {
       $tmpPath = null;
       try {
         $images = new UsersImages($link);
-        $videoInfo = $images->getFile(npub: $npub, fileId: $fileId);
+        $videoInfo = $images->getFile($npub, $fileId);
         if (!$videoInfo) {
           return dashboardError($response, 'Video not found', 404);
         }
@@ -1317,35 +1317,83 @@ $app->group('/accounts', function (RouteCollectorProxy $group) {
         // Relay broadcasting is owned by the Worker (it builds/signs and fans
         // the event out through event-cannon). PHP only validates the event
         // (above) and records the note↔media rows (below).
+        $uuid = $account->getAccountUuid();
+        if (!is_string($uuid) || $uuid === '') {
+          return dashboardError($response, 'Missing account uuid', 500);
+        }
+
         switch ($eventKind) {
           case 5:
-            $stmtDeleteEvent = $link->prepare('DELETE FROM users_nostr_notes WHERE usernpub = ? AND note_id = ?');
-            $stmtDeleteImage = $link->prepare('DELETE FROM users_nostr_images WHERE usernpub = ? AND note_id = ?');
-            foreach ($eventIdsToDelete as $eventToDelete) {
-              $stmtDeleteEvent->bind_param('ss', $npub, $eventToDelete);
-              $stmtDeleteEvent->execute();
-              $stmtDeleteImage->bind_param('ss', $npub, $eventToDelete);
-              $stmtDeleteImage->execute();
+            $link->begin_transaction();
+            try {
+              $stmtDeleteImage = $link->prepare('DELETE FROM users_nostr_images WHERE user_uuid = ? AND note_id = ?');
+              $stmtDeleteEvent = $link->prepare('DELETE FROM users_nostr_notes WHERE user_uuid = ? AND note_id = ?');
+              if (!$stmtDeleteImage || !$stmtDeleteEvent) {
+                throw new Exception('Failed to prepare event delete statements');
+              }
+              foreach ($eventIdsToDelete as $eventToDelete) {
+                $stmtDeleteImage->bind_param('ss', $uuid, $eventToDelete);
+                if (!$stmtDeleteImage->execute()) {
+                  throw new Exception('Failed to delete note-image record: ' . $stmtDeleteImage->error);
+                }
+                $stmtDeleteEvent->bind_param('ss', $uuid, $eventToDelete);
+                if (!$stmtDeleteEvent->execute()) {
+                  throw new Exception('Failed to delete note record: ' . $stmtDeleteEvent->error);
+                }
+              }
+              $stmtDeleteImage->close();
+              $stmtDeleteEvent->close();
+              $link->commit();
+            } catch (Throwable $e) {
+              if (isset($stmtDeleteImage) && $stmtDeleteImage instanceof mysqli_stmt) {
+                $stmtDeleteImage->close();
+              }
+              if (isset($stmtDeleteEvent) && $stmtDeleteEvent instanceof mysqli_stmt) {
+                $stmtDeleteEvent->close();
+              }
+              $link->rollback();
+              throw $e;
             }
-            $stmtDeleteEvent->close();
-            $stmtDeleteImage->close();
             break;
 
           case 1:
           case 20:
           case 21:
           case 1222:
-            $stmt = $link->prepare('INSERT INTO users_nostr_notes (usernpub, note_id, created_at, content, full_json) VALUES (?, ?, FROM_UNIXTIME(?), ?, ?)');
-            $stmt->bind_param('ssiss', $npub, $eventId, $eventCreatedAt, $eventContent, $signedEvent);
-            $stmt->execute();
-            $stmt->close();
+            $link->begin_transaction();
+            try {
+              $stmtInsertNote = $link->prepare('INSERT INTO users_nostr_notes (usernpub, user_uuid, note_id, created_at, content, full_json) VALUES (?, ?, ?, FROM_UNIXTIME(?), ?, ?)');
+              if (!$stmtInsertNote) {
+                throw new Exception('Failed to prepare note insert statement');
+              }
+              $stmtInsertNote->bind_param('sssiss', $npub, $uuid, $eventId, $eventCreatedAt, $eventContent, $signedEvent);
+              if (!$stmtInsertNote->execute()) {
+                throw new Exception('Failed to insert note row: ' . $stmtInsertNote->error);
+              }
+              $stmtInsertNote->close();
 
-            $stmt = $link->prepare('INSERT INTO users_nostr_images (usernpub, note_id, image_id) VALUES (?, ?, ?)');
-            foreach ($mediaIds as $imageId) {
-              $stmt->bind_param('ssi', $npub, $eventId, $imageId);
-              $stmt->execute();
+              $stmtInsertImage = $link->prepare('INSERT INTO users_nostr_images (usernpub, user_uuid, note_id, image_id) VALUES (?, ?, ?, ?)');
+              if (!$stmtInsertImage) {
+                throw new Exception('Failed to prepare note-image insert statement');
+              }
+              foreach ($mediaIds as $imageId) {
+                $stmtInsertImage->bind_param('sssi', $npub, $uuid, $eventId, $imageId);
+                if (!$stmtInsertImage->execute()) {
+                  throw new Exception('Failed to insert note-image row: ' . $stmtInsertImage->error);
+                }
+              }
+              $stmtInsertImage->close();
+              $link->commit();
+            } catch (Throwable $e) {
+              if (isset($stmtInsertNote) && $stmtInsertNote instanceof mysqli_stmt) {
+                $stmtInsertNote->close();
+              }
+              if (isset($stmtInsertImage) && $stmtInsertImage instanceof mysqli_stmt) {
+                $stmtInsertImage->close();
+              }
+              $link->rollback();
+              throw $e;
             }
-            $stmt->close();
             break;
 
           default:

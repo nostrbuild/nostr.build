@@ -674,8 +674,13 @@ class S3Multipart
       }
 
       // Insert into users_images table with proper data
+      $userUuid = resolveOwnerUuid($this->usersImages->getDb(), $uploadInfo['userNpub']);
+      if ($userUuid === null || $userUuid === '') {
+        throw new Exception('Unable to resolve user uuid for multipart upload');
+      }
       $insertId = $this->usersImages->insert([
         'usernpub' => $uploadInfo['userNpub'],
+        'user_uuid' => $userUuid,
         'sha256_hash' => null, // $fileData['checksum_sha256'] ?: $fileData['etag'], // Use actual SHA256 checksum from R2, fallback to ETag
         'image' => $fileData['filename'],
         'file_size' => $fileData['fileSize'],

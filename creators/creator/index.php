@@ -11,7 +11,7 @@ $mime = $display === 'video' ? 'video/%' : ($display === 'audio' ? 'audio/%' : '
 $stats_stmt = $link->prepare("
     SELECT COUNT(users_images.id) AS count, SUBSTRING(users_images.mime_type, 1, 5) as type
     FROM users 
-    LEFT JOIN users_images ON users.usernpub = users_images.usernpub AND users_images.flag = 1
+    LEFT JOIN users_images ON users.uuid_id = users_images.user_uuid AND users_images.flag = 1
     WHERE users.id = ? AND users.plan_until_date > NOW() AND users.acctlevel IN (1, 10, 99)
     GROUP BY type
     ORDER BY count DESC
@@ -47,7 +47,7 @@ if (empty($availableCategories[$selectedCategory])) {
 $stmt = $link->prepare("
     SELECT users.id AS user_id, users_images.id AS image_id, users.*, users_images.* 
     FROM users 
-    LEFT JOIN users_images ON users.usernpub = users_images.usernpub AND users_images.flag = 1
+    LEFT JOIN users_images ON users.uuid_id = users_images.user_uuid AND users_images.flag = 1
     WHERE users.id = ? AND users.plan_until_date > NOW() AND users.acctlevel IN (1, 10, 99)
 		AND users_images.mime_type LIKE '{$mime}'
     ORDER BY users_images.id DESC

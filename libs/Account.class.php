@@ -333,7 +333,7 @@ class Account
    */
   private function fetchAccountSpaceConsumption(): int
   {
-    $sql = "SELECT SUM(file_size) AS total FROM users_images WHERE usernpub = ?";
+    $sql = "SELECT SUM(file_size) AS total FROM users_images WHERE user_uuid = ?";
     $stmt = $this->db->prepare($sql);
 
     if (!$stmt) {
@@ -341,8 +341,9 @@ class Account
       throw new Exception("Error preparing statement: " . $this->db->error);
     }
 
+    $uuid = $this->getAccountUuid();
     try {
-      if (!$stmt->bind_param('s', $this->npub)) {
+      if (!$stmt->bind_param('s', $uuid)) {
         // Handle binding parameters error
         throw new Exception("Error binding parameters: " . $stmt->error);
       }
@@ -1053,6 +1054,24 @@ class Account
       }
     } finally {
       $stmt->close();
+    }
+    // The user is wiped to a blank shell: drop their published-note records,
+    // keyed by the stable uuid. Deleting notes also cascades any remaining
+    // note↔image links by note_id. (Media rows are removed before this runs.)
+    $uuid = $this->getAccountUuid();
+    if ($uuid !== null && $uuid !== '') {
+      $noteStmt = $this->db->prepare("DELETE FROM users_nostr_notes WHERE user_uuid = ?");
+      if (!$noteStmt) {
+        throw new Exception("Error preparing users_nostr_notes delete: " . $this->db->error);
+      }
+      try {
+        $noteStmt->bind_param('s', $uuid);
+        if (!$noteStmt->execute()) {
+          throw new Exception("Error deleting users_nostr_notes rows: " . $noteStmt->error);
+        }
+      } finally {
+        $noteStmt->close();
+      }
     }
     $this->fetchAccountData();
     // Keep Blossom in sync with the now-free tier (same as setPlan does).
