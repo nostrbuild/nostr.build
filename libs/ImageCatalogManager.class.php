@@ -159,10 +159,9 @@ class ImageCatalogManager
       $deleteStmt->close();
       $deleteStmt = null;
 
-      // Then the image rows. users_nostr_images has an ON DELETE CASCADE FK on
-      // image_id, so this delete also clears the note↔image links; the explicit
-      // delete above just makes the owner-scoped cleanup order obvious. Both run
-      // in one transaction so they roll back together.
+      // Then the image rows. The note↔image links were already cleared by the
+      // explicit owner-scoped delete above (the app owns the cascade, not an FK);
+      // both run in one transaction so they roll back together.
       $deleteStmt = $this->link->prepare("DELETE FROM users_images WHERE user_uuid = ? AND id IN ($placeholders)");
       if (!$deleteStmt) {
         throw new Exception('Failed to prepare users_images delete');

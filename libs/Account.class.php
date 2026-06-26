@@ -1055,11 +1055,24 @@ class Account
     } finally {
       $stmt->close();
     }
-    // The user is wiped to a blank shell: drop their published-note records,
-    // keyed by the stable uuid. Deleting notes also cascades any remaining
-    // note↔image links by note_id. (Media rows are removed before this runs.)
+    // The user is wiped to a blank shell: drop their published-note records and
+    // their note↔image links, keyed by the stable uuid. (Media rows are removed
+    // before this runs.) The links are deleted explicitly — the app owns the
+    // cascade, not an FK — so this is correct even with no FK on the table.
     $uuid = $this->getAccountUuid();
     if ($uuid !== null && $uuid !== '') {
+      $imageStmt = $this->db->prepare("DELETE FROM users_nostr_images WHERE user_uuid = ?");
+      if (!$imageStmt) {
+        throw new Exception("Error preparing users_nostr_images delete: " . $this->db->error);
+      }
+      try {
+        $imageStmt->bind_param('s', $uuid);
+        if (!$imageStmt->execute()) {
+          throw new Exception("Error deleting users_nostr_images rows: " . $imageStmt->error);
+        }
+      } finally {
+        $imageStmt->close();
+      }
       $noteStmt = $this->db->prepare("DELETE FROM users_nostr_notes WHERE user_uuid = ?");
       if (!$noteStmt) {
         throw new Exception("Error preparing users_nostr_notes delete: " . $this->db->error);
