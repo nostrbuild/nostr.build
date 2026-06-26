@@ -944,6 +944,182 @@ $app->group('/accounts/admin/users', function (RouteCollectorProxy $group) {
     return aaJson($response, ['ok' => true, 'lockedAt' => $lockedAt, 'uuid' => $uuid]);
   });
 
+  /**
+   * POST /accounts/admin/users/rotate-npub
+   * Body: { uuid, newNpub, expectedOldNpub, reason?, dryRun? }
+   *
+   * Rotates a known user's nostr key (admin asserts ownership of BOTH the old
+   * AND the new npub). `uuid` is the stable identity; only `users.usernpub` and
+   * the npub-keyed FREE tables move — paid media (users_images / users_nostr_*)
+   * is user_uuid-keyed and untouched. No schema change, no history table.
+   *
+   * Idempotent + race-safe: the Worker carries oldNpub in its immutable workflow
+   * params and passes it as `expectedOldNpub`. The canonical move is row-locked
+   * (FOR UPDATE) and value-guarded (WHERE usernpub = expectedOldNpub); a step
+   * retry that re-enters after a committed-but-unacked write sees
+   * current == newNpub and returns a no-op success. `dryRun` returns the
+   * MySQL-side conflict report WITHOUT mutating (the Worker adds Blossom facts).
+   */
+  $group->post('/rotate-npub', function (Request $request, Response $response) {
+    global $link;
+    $body = json_decode((string) $request->getBody(), true);
+    if (!is_array($body)) return aaError($response, 'invalid-body', 400);
+
+    $uuid = trim((string) ($body['uuid'] ?? ''));
+    if (!preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/', $uuid)) {
+      return aaError($response, 'invalid-uuid', 400);
+    }
+    $newNpub = aaValidNpub($body['newNpub'] ?? null);
+    if ($newNpub === null) return aaError($response, 'invalid-npub', 400);
+    // expectedOldNpub is the Worker's launch-time snapshot of the current npub —
+    // required for the REAL mutation (the optimistic-concurrency guard) but not
+    // for the dryRun report (PHP reads the current value itself).
+    $expectedOldNpub = aaValidNpub($body['expectedOldNpub'] ?? null);
+    $dryRun = ($body['dryRun'] ?? false) === true;
+    $reason = trim((string) ($body['reason'] ?? ''));
+    if (strlen($reason) > 512) $reason = substr($reason, 0, 512);
+
+    $account = Account::fromUuid($uuid, $link);
+    if ($account === null) return aaError($response, 'not-found', 404);
+    $current = $account->getNpub();
+
+    $blacklist = new LegacyBlacklist($link);
+
+    // ----- conflict facts (drive the dryRun report AND the real-path guards) ---
+    // The new npub already belongs to a DIFFERENT subscriber account → we never
+    // merge two accounts.
+    $st = $link->prepare("SELECT 1 FROM users WHERE usernpub = ? AND uuid_id <> ? LIMIT 1");
+    $st->bind_param('ss', $newNpub, $uuid);
+    $st->execute();
+    $newNpubIsAccount = $st->get_result()->fetch_row() !== null;
+    $st->close();
+
+    $newNpubBanned = $blacklist->isNpubBanned($newNpub);
+
+    // Free uploads already under the new npub (informational — they get unified).
+    $freeUploads = 0;
+    foreach (['uploads_data', 'upload_attempts'] as $t) {
+      $st = $link->prepare("SELECT COUNT(*) AS n FROM {$t} WHERE usernpub = ?");
+      $st->bind_param('s', $newNpub);
+      $st->execute();
+      $freeUploads += (int) ($st->get_result()->fetch_assoc()['n'] ?? 0);
+      $st->close();
+    }
+
+    $alreadyRotated = ($current === $newNpub);
+
+    if ($dryRun) {
+      return aaJson($response, [
+        'ok' => true,
+        'uuid' => $uuid,
+        'oldNpub' => $current,
+        'newNpub' => $newNpub,
+        'alreadyRotated' => $alreadyRotated,
+        'conflicts' => [
+          'newNpubIsAccount' => $newNpubIsAccount,
+          'newNpubBanned'    => $newNpubBanned,
+          'freeUploads'      => $freeUploads,
+        ],
+      ]);
+    }
+
+    // ----- real rotation -----
+    if ($expectedOldNpub === null) return aaError($response, 'invalid-expected-old-npub', 400);
+    if ($alreadyRotated) {
+      // Re-entrancy (a workflow step retry after a committed-but-unacked write):
+      // already on the new key. oldNpub comes from the Worker's immutable params.
+      return aaJson($response, [
+        'ok' => true, 'uuid' => $uuid, 'oldNpub' => $expectedOldNpub,
+        'newNpub' => $newNpub, 'alreadyRotated' => true,
+      ]);
+    }
+    if ($newNpubIsAccount) return aaError($response, 'newNpub-taken', 409);
+
+    $adminNpub = (string) $request->getAttribute('admin_npub');
+    if ($adminNpub !== '' && ($adminNpub === $current || $adminNpub === $newNpub)) {
+      return aaError($response, 'self-modify-forbidden', 403);
+    }
+
+    $locked = $current;
+    $link->begin_transaction();
+    try {
+      // Authoritative, row-locked re-read of the current npub.
+      $sel = $link->prepare("SELECT usernpub FROM users WHERE uuid_id = ? FOR UPDATE");
+      $sel->bind_param('s', $uuid);
+      $sel->execute();
+      $row = $sel->get_result()->fetch_assoc();
+      $sel->close();
+      if (!$row) { $link->rollback(); return aaError($response, 'not-found', 404); }
+      $locked = (string) $row['usernpub'];
+
+      if ($locked === $newNpub) {
+        // A concurrent call already rotated — idempotent success.
+        $link->rollback();
+        return aaJson($response, [
+          'ok' => true, 'uuid' => $uuid, 'oldNpub' => $expectedOldNpub,
+          'newNpub' => $newNpub, 'alreadyRotated' => true,
+        ]);
+      }
+      if ($locked !== $expectedOldNpub) {
+        $link->rollback();
+        return aaError($response, 'stale-old-npub', 409, ['current' => $locked]);
+      }
+
+      // Point of no return: move the canonical key (guarded by the locked value).
+      $upd = $link->prepare("UPDATE users SET usernpub = ? WHERE uuid_id = ? AND usernpub = ?");
+      $upd->bind_param('sss', $newNpub, $uuid, $locked);
+      $upd->execute();
+      $moved = $upd->affected_rows;
+      $upd->close();
+      if ($moved !== 1) { $link->rollback(); return aaError($response, 'rotate-conflict', 409); }
+
+      // Merge the FREE npub-keyed tables old→new, dedupe-safe.
+      // upload_attempts has UNIQUE(filename,usernpub): IGNORE the colliders, then
+      // drop the leftovers (it is only an attempt / rate-limit log).
+      $a1 = $link->prepare("UPDATE IGNORE upload_attempts SET usernpub = ? WHERE usernpub = ?");
+      $a1->bind_param('ss', $newNpub, $locked); $a1->execute(); $a1->close();
+      $a2 = $link->prepare("DELETE FROM upload_attempts WHERE usernpub = ?");
+      $a2->bind_param('s', $locked); $a2->execute(); $a2->close();
+
+      // uploads_data has NO such unique: drop old rows whose filename already
+      // exists under the new npub (same content present), then move the rest.
+      $u1 = $link->prepare(
+        "DELETE u1 FROM uploads_data u1
+           JOIN uploads_data u2 ON u2.filename = u1.filename AND u2.usernpub = ?
+          WHERE u1.usernpub = ?"
+      );
+      $u1->bind_param('ss', $newNpub, $locked); $u1->execute(); $u1->close();
+      $u2 = $link->prepare("UPDATE uploads_data SET usernpub = ? WHERE usernpub = ?");
+      $u2->bind_param('ss', $newNpub, $locked); $u2->execute(); $u2->close();
+
+      // Link the now-unified free rows to the stable account uuid (mirrors
+      // Account::linkFreeUploadsToUuid; covers moved + pre-existing target rows).
+      foreach (['uploads_data', 'upload_attempts'] as $t) {
+        $lk = $link->prepare("UPDATE {$t} SET user_uuid = ? WHERE usernpub = ? AND user_uuid IS NULL");
+        $lk->bind_param('ss', $uuid, $newNpub); $lk->execute(); $lk->close();
+      }
+
+      // Carry an existing ban to the new npub (anti-evasion).
+      if ($blacklist->isNpubBanned($locked) && !$blacklist->isNpubBanned($newNpub)) {
+        $blacklist->add($newNpub, null, null, "npub rotated from {$locked}");
+      }
+
+      $link->commit();
+    } catch (\Throwable $e) {
+      $link->rollback();
+      error_log("admin/users/rotate-npub failed for {$uuid}: " . $e->getMessage());
+      return aaError($response, 'server-error', 500);
+    }
+
+    // Push the new npub to the user's connected devices (best-effort).
+    aaEmitProfileChanged($uuid, ['npub'], ['npub' => $newNpub]);
+
+    return aaJson($response, [
+      'ok' => true, 'uuid' => $uuid, 'oldNpub' => $locked,
+      'newNpub' => $newNpub, 'alreadyRotated' => false,
+    ]);
+  });
+
 })
   ->add(new ProxiedAdminMiddleware())
   ->add(new HmacAuthMiddleware());
