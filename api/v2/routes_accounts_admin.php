@@ -1960,15 +1960,19 @@ $app->group('/accounts/admin/account-review', function (RouteCollectorProxy $gro
       $path = parse_url($q, PHP_URL_PATH);
       $basename = is_string($path) ? pathinfo($path, PATHINFO_BASENAME) : '';
       if ($basename === '') return aaError($response, 'invalid-query', 400);
-      $stmt = $link->prepare("SELECT id, usernpub, image, mime_type, file_size, created_at FROM users_images WHERE image = ? ORDER BY id DESC LIMIT 1");
+      $stmt = $link->prepare("SELECT id, user_uuid, image, mime_type, file_size, created_at FROM users_images WHERE image = ? ORDER BY id DESC LIMIT 1");
       $stmt->bind_param('s', $basename);
       $stmt->execute();
       $hit = $stmt->get_result()->fetch_assoc();
       $stmt->close();
-      if (!$hit) {
+      if (!$hit || ($hit['user_uuid'] ?? '') === '') {
         return aaJson($response, ['found' => false, 'note' => 'No paid-account media matches that URL.']);
       }
-      $npub = (string) $hit['usernpub'];
+      // Resolve to the CURRENT owner via the stable uuid (rotation-safe; the
+      // media row no longer stores npub).
+      $acct = Account::fromUuid((string) $hit['user_uuid'], $link);
+      if ($acct === null || !$acct->accountExists()) return aaError($response, 'not-found', 404);
+      $npub = $acct->getNpub();
       $matchedItemId = (int) $hit['id'];
       // The matched media row, so the URL-match view renders it without a
       // separate /media fetch.
@@ -2110,7 +2114,7 @@ $app->group('/accounts/admin/account-review', function (RouteCollectorProxy $gro
     global $link;
     $id = (int) $args['id'];
 
-    $stmt = $link->prepare('SELECT image, usernpub FROM users_images WHERE id = ?');
+    $stmt = $link->prepare('SELECT image, user_uuid FROM users_images WHERE id = ?');
     $stmt->bind_param('i', $id);
     $stmt->execute();
     $row = $stmt->get_result()->fetch_assoc();
@@ -2123,7 +2127,9 @@ $app->group('/accounts/admin/account-review', function (RouteCollectorProxy $gro
     return aaJson($response, [
       'uploadId' => $id,
       'filename' => pathinfo((string) ($row['image'] ?? ''), PATHINFO_BASENAME),
-      'usernpub' => (string) ($row['usernpub'] ?? ''),
+      // Resolve to the CURRENT npub via the stable uuid (the media row no longer
+      // stores npub); rotation-safe.
+      'usernpub' => uuidToNpub($link, (string) ($row['user_uuid'] ?? '')) ?? '',
     ]);
   });
 

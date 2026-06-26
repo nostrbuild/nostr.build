@@ -189,11 +189,9 @@ class UsersImagesFolders extends DatabaseTable
     if (empty($folder_name)) {
       throw new Exception('Folder name cannot be empty');
     }
-    // Look up by the stable uuid; keep the npub for the NOT NULL usernpub column.
-    // New writes populate BOTH columns explicitly; the trigger backstops any
-    // legacy caller that still inserts only usernpub.
+    // Folders are keyed by the stable user_uuid; the legacy usernpub column is
+    // no longer written.
     $userUuid = resolveOwnerUuid($this->db, $owner);
-    $usernpub = str_starts_with($owner, 'npub1') ? $owner : (uuidToNpub($this->db, $owner) ?? '');
     // First, try to select the folder
     if ($parent_id) {
       $sql = "SELECT id FROM {$this->tableName} WHERE folder = ? AND user_uuid = ? AND parent_id = ?";
@@ -215,16 +213,16 @@ class UsersImagesFolders extends DatabaseTable
     if ($data) {
       $folderId = $data['id'];
     } else {
-      // Insert it. With the UNIQUE(usernpub, folder) constraint a concurrent
+      // Insert it. With the UNIQUE(user_uuid, folder) constraint a concurrent
       // request (or a same-named sibling) can race us between the SELECT above and
       // this INSERT; on a duplicate key (1062), fall back to the existing row's id
       // instead of throwing a 500.
       if ($parent_id) {
-        $insertStmt = $this->db->prepare("INSERT INTO {$this->tableName} (folder, usernpub, user_uuid, parent_id) VALUES (?,?,?,?)");
-        $insertStmt->bind_param("sssi", $folder_name, $usernpub, $userUuid, $parent_id);
+        $insertStmt = $this->db->prepare("INSERT INTO {$this->tableName} (folder, user_uuid, parent_id) VALUES (?,?,?)");
+        $insertStmt->bind_param("ssi", $folder_name, $userUuid, $parent_id);
       } else {
-        $insertStmt = $this->db->prepare("INSERT INTO {$this->tableName} (folder, usernpub, user_uuid) VALUES (?,?,?)");
-        $insertStmt->bind_param("sss", $folder_name, $usernpub, $userUuid);
+        $insertStmt = $this->db->prepare("INSERT INTO {$this->tableName} (folder, user_uuid) VALUES (?,?)");
+        $insertStmt->bind_param("ss", $folder_name, $userUuid);
       }
       try {
         $insertStmt->execute();

@@ -1362,22 +1362,22 @@ $app->group('/accounts', function (RouteCollectorProxy $group) {
           case 1222:
             $link->begin_transaction();
             try {
-              $stmtInsertNote = $link->prepare('INSERT INTO users_nostr_notes (usernpub, user_uuid, note_id, created_at, content, full_json) VALUES (?, ?, ?, FROM_UNIXTIME(?), ?, ?)');
+              $stmtInsertNote = $link->prepare('INSERT INTO users_nostr_notes (user_uuid, note_id, created_at, content, full_json) VALUES (?, ?, FROM_UNIXTIME(?), ?, ?)');
               if (!$stmtInsertNote) {
                 throw new Exception('Failed to prepare note insert statement');
               }
-              $stmtInsertNote->bind_param('sssiss', $npub, $uuid, $eventId, $eventCreatedAt, $eventContent, $signedEvent);
+              $stmtInsertNote->bind_param('ssiss', $uuid, $eventId, $eventCreatedAt, $eventContent, $signedEvent);
               if (!$stmtInsertNote->execute()) {
                 throw new Exception('Failed to insert note row: ' . $stmtInsertNote->error);
               }
               $stmtInsertNote->close();
 
-              $stmtInsertImage = $link->prepare('INSERT INTO users_nostr_images (usernpub, user_uuid, note_id, image_id) VALUES (?, ?, ?, ?)');
+              $stmtInsertImage = $link->prepare('INSERT INTO users_nostr_images (user_uuid, note_id, image_id) VALUES (?, ?, ?)');
               if (!$stmtInsertImage) {
                 throw new Exception('Failed to prepare note-image insert statement');
               }
               foreach ($mediaIds as $imageId) {
-                $stmtInsertImage->bind_param('sssi', $npub, $uuid, $eventId, $imageId);
+                $stmtInsertImage->bind_param('ssi', $uuid, $eventId, $imageId);
                 if (!$stmtInsertImage->execute()) {
                   throw new Exception('Failed to insert note-image row: ' . $stmtInsertImage->error);
                 }

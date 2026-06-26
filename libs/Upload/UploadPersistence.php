@@ -89,7 +89,6 @@ class UploadPersistence
       }
       $tempFile = generateUniqueFilename('file_upload_');
       $insertId = $this->usersImages->insert([
-        'usernpub' => $this->userNpub,
         'user_uuid' => $userUuid,
         'sha256_hash' => $originalSha256,
         'image' => $tempFile,
