@@ -994,21 +994,21 @@ $app->group('/accounts/admin/users', function (RouteCollectorProxy $group) {
     $newNpubIsAccount = $st->get_result()->fetch_row() !== null;
     $st->close();
 
-    $newNpubBanned = $blacklist->isNpubBanned($newNpub);
-
-    // Free uploads already under the new npub (informational — they get unified).
-    $freeUploads = 0;
-    foreach (['uploads_data', 'upload_attempts'] as $t) {
-      $st = $link->prepare("SELECT COUNT(*) AS n FROM {$t} WHERE usernpub = ?");
-      $st->bind_param('s', $newNpub);
-      $st->execute();
-      $freeUploads += (int) ($st->get_result()->fetch_assoc()['n'] ?? 0);
-      $st->close();
-    }
-
     $alreadyRotated = ($current === $newNpub);
 
     if ($dryRun) {
+      // Report-only facts — computed lazily so the real rotation path never pays
+      // for queries it doesn't read (it re-checks the ban under the row lock).
+      $newNpubBanned = $blacklist->isNpubBanned($newNpub);
+      // Free uploads already under the new npub (informational — they get unified).
+      $freeUploads = 0;
+      foreach (['uploads_data', 'upload_attempts'] as $t) {
+        $st = $link->prepare("SELECT COUNT(*) AS n FROM {$t} WHERE usernpub = ?");
+        $st->bind_param('s', $newNpub);
+        $st->execute();
+        $freeUploads += (int) ($st->get_result()->fetch_assoc()['n'] ?? 0);
+        $st->close();
+      }
       return aaJson($response, [
         'ok' => true,
         'uuid' => $uuid,
@@ -1099,14 +1099,24 @@ $app->group('/accounts/admin/users', function (RouteCollectorProxy $group) {
         $lk->bind_param('ss', $uuid, $newNpub); $lk->execute(); $lk->close();
       }
 
-      // Carry an existing ban to the new npub (anti-evasion).
+      // Carry an existing ban to the new npub (anti-evasion). Fold the admin's
+      // reason into the ban record when supplied (its primary audit home is the
+      // D1 audit_log the Worker writes; this keeps it on the MySQL ban too).
       if ($blacklist->isNpubBanned($locked) && !$blacklist->isNpubBanned($newNpub)) {
-        $blacklist->add($newNpub, null, null, "npub rotated from {$locked}");
+        $banReason = "npub rotated from {$locked}";
+        if ($reason !== '') $banReason .= " — {$reason}";
+        $blacklist->add($newNpub, null, null, $banReason);
       }
 
       $link->commit();
     } catch (\Throwable $e) {
       $link->rollback();
+      // A concurrent signup/rotation can claim newNpub in the window between the
+      // pre-check and the guarded UPDATE; the usernpub UNIQUE throws 1062 — surface
+      // the real 409 conflict rather than an opaque 500.
+      if ((int) $e->getCode() === 1062) {
+        return aaError($response, 'newNpub-taken', 409);
+      }
       error_log("admin/users/rotate-npub failed for {$uuid}: " . $e->getMessage());
       return aaError($response, 'server-error', 500);
     }
