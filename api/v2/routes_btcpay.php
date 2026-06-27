@@ -125,6 +125,51 @@ $app->group('/internal/plans', function (RouteCollectorProxy $group) {
     }
   });
 
+  // POST /api/v2/internal/plans/email-signup — create an npub-less (email)
+  // account. The Worker has already proven inbox control (single-use signup
+  // magic-link) before calling this, so the email is created already verified.
+  // Mirrors /signup but keyed on email + name instead of an npub.
+  $group->post('/email-signup', function (Request $request, Response $response) {
+    global $link;
+    $data = json_decode($request->getBody()->getContents(), true);
+    $email = is_array($data) ? strtolower(trim((string)($data['email'] ?? ''))) : '';
+    $password = is_array($data) ? (string)($data['password'] ?? '') : '';
+    $name = is_array($data) ? trim((string)($data['name'] ?? '')) : '';
+
+    if ($email === '' || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+      $response->getBody()->write(json_encode(['ok' => false, 'error' => 'invalid-email']));
+      return $response->withStatus(400)->withHeader('Content-Type', 'application/json');
+    }
+    if (strlen($password) < 6) {
+      $response->getBody()->write(json_encode(['ok' => false, 'error' => 'weak-password']));
+      return $response->withStatus(400)->withHeader('Content-Type', 'application/json');
+    }
+
+    try {
+      $account = new Account('', $link);
+      $account->createEmailAccount($email, $password, $name !== '' ? $name : null, 0);
+      $uuid = $account->getAccountUuid();
+      // Record clickwrap acceptance (same non-fatal handling as /signup).
+      $legalVersion = is_array($data) ? trim((string)($data['legalVersion'] ?? '')) : '';
+      if ($legalVersion !== '') {
+        try {
+          $account->recordLegalAcceptance($legalVersion);
+        } catch (\Throwable $e) {
+          error_log('internal/plans/email-signup legal-acceptance record failed: ' . $e->getMessage());
+        }
+      }
+      $response->getBody()->write(json_encode(['ok' => true, 'uuid' => $uuid]));
+      return $response->withStatus(200)->withHeader('Content-Type', 'application/json');
+    } catch (DuplicateEmailException $e) {
+      $response->getBody()->write(json_encode(['ok' => false, 'error' => 'email-exists']));
+      return $response->withStatus(409)->withHeader('Content-Type', 'application/json');
+    } catch (\Throwable $e) {
+      error_log('internal/plans/email-signup error: ' . $e->getMessage());
+      $response->getBody()->write(json_encode(['ok' => false, 'error' => 'signup-failed']));
+      return $response->withStatus(500)->withHeader('Content-Type', 'application/json');
+    }
+  });
+
   // Resolve a referral code to the referrer's public identity (npub + nym + pfp)
   // so the in-app /plans page can show a "Referred by" card, exactly like the
   // legacy plans/index.php did. Returns 404 for an unknown/invalid code.

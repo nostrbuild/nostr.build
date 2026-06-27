@@ -456,6 +456,60 @@ class Account
   */
 
   /**
+   * Create an npub-less ("email") account: email + password, no Nostr key. The
+   * Worker has already proven inbox control (single-use signup magic-link), so
+   * email_verified = 1. usernpub is left NULL and npub login is off (the account
+   * has no key); a key can be claimed later (add-npub). Loads the inserted row so
+   * $this->uuid is set for the caller. Throws DuplicateEmailException (errno 1062)
+   * when the address is already in use.
+   *
+   * @throws DuplicateEmailException
+   * @throws InvalidAccountLevelException
+   * @throws Exception
+   */
+  public function createEmailAccount(string $email, string $password, ?string $name = null, int $level = 0): void
+  {
+    $normalized = strtolower(trim($email));
+    if ($normalized === '') {
+      throw new Exception('email is required');
+    }
+    try {
+      AccountLevel::from($level);
+    } catch (ValueError $e) {
+      throw new InvalidAccountLevelException("Invalid account level: $level");
+    }
+
+    $hashed_password = password_hash(trim($password), PASSWORD_DEFAULT);
+    $pbkdf2_hashed_password = hashPasswordPBKDF2(trim($password));
+    $referralCode = generateUniqueCode();
+    $nym = ($name !== null && trim($name) !== '') ? trim($name) : null;
+
+    // usernpub NULL (no key); email_verified = 1; npub_verified / allow_npub_login = 0.
+    $sql = "INSERT INTO users (usernpub, email, email_verified, password, pbkdf2_password, acctlevel, npub_verified, allow_npub_login, referral_code, nym) VALUES (NULL, ?, 1, ?, ?, ?, 0, 0, ?, ?)";
+    $stmt = $this->db->prepare($sql);
+    if (!$stmt) {
+      throw new Exception("Error preparing statement: " . $this->db->error);
+    }
+    try {
+      $stmt->bind_param('sssiss', $normalized, $hashed_password, $pbkdf2_hashed_password, $level, $referralCode, $nym);
+      if (!$stmt->execute()) {
+        if ($this->db->errno == 1062) {
+          throw new DuplicateEmailException("Email $normalized already in use");
+        }
+        throw new Exception("Database error: " . $this->db->error);
+      }
+    } finally {
+      $stmt->close();
+    }
+
+    // Load the just-inserted row by email so $this->uuid (+ the rest of the
+    // account data) is populated before the caller reads it back.
+    $this->lookupColumn = 'email';
+    $this->lookupValue = $normalized;
+    $this->fetchAccountData();
+  }
+
+  /**
    * Summary of createAccount
    * @param string $password
    * @param int $level
@@ -2026,15 +2080,6 @@ class Account
   public function hasPassword(): bool
   {
     return !empty($this->account['password']);
-  }
-
-  /** The stable per-user identity (users.uuid_id). Always present once the
-   *  account is loaded; '' only for a non-existent account. Used by the uuid-
-   *  native upload path (object keys + ownership) so an npub-less email account
-   *  can upload. */
-  public function getUuidId(): string
-  {
-    return $this->uuid;
   }
 
   /**
