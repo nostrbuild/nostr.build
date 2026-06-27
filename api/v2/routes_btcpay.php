@@ -436,7 +436,11 @@ $app->group('/internal/account', function (RouteCollectorProxy $group) {
   $group->get('/expiry-reminders-due', function (Request $request, Response $response) {
     global $link;
     try {
-      $sql = "SELECT usernpub,
+      // uuid_id is the stable key (mark-reminded stamps by it); email + the
+      // notify flag let the Worker ALSO email accounts that have a verified
+      // address and haven't opted out — crucially, key-less ("email-only")
+      // accounts (usernpub NULL) that the npub-only DM path can't reach.
+      $sql = "SELECT uuid_id, usernpub, email, email_verified, email_notify_account,
                 CASE WHEN plan_until_date < NOW() THEN 'expired' ELSE 'expiring' END AS kind,
                 CASE WHEN plan_until_date < NOW() THEN DATEDIFF(NOW(), plan_until_date)
                      ELSE DATEDIFF(plan_until_date, NOW()) END AS days
@@ -455,7 +459,11 @@ $app->group('/internal/account', function (RouteCollectorProxy $group) {
       if ($result) {
         while ($row = $result->fetch_assoc()) {
           $due[] = [
-            'npub' => $row['usernpub'],
+            'uuid' => $row['uuid_id'],
+            'npub' => $row['usernpub'], // null for key-less accounts
+            'email' => $row['email'],   // null when no email on file
+            'emailVerified' => (bool) $row['email_verified'],
+            'notifyAccount' => (bool) ($row['email_notify_account'] ?? 1),
             'kind' => $row['kind'],
             'days' => (int)$row['days'],
           ];
@@ -471,22 +479,24 @@ $app->group('/internal/account', function (RouteCollectorProxy $group) {
     }
   });
 
-  // Stamp last_notification_date = today for the npubs the Worker just DMed, so
-  // the 7-day dedupe in /expiry-reminders-due holds. Idempotent.
+  // Stamp last_notification_date = today for the uuids the Worker just notified
+  // (DM and/or email), so the 7-day dedupe in /expiry-reminders-due holds. Keyed
+  // by uuid_id (the stable identity) so key-less accounts are covered too.
+  // Idempotent.
   $group->post('/mark-reminded', function (Request $request, Response $response) {
     global $link;
     $data = json_decode($request->getBody()->getContents(), true);
-    $npubs = (is_array($data) && isset($data['npubs']) && is_array($data['npubs'])) ? $data['npubs'] : [];
-    $npubs = array_values(array_filter($npubs, fn($n) => is_string($n) && str_starts_with($n, 'npub1')));
-    if (count($npubs) === 0) {
+    $uuids = (is_array($data) && isset($data['uuids']) && is_array($data['uuids'])) ? $data['uuids'] : [];
+    $uuids = array_values(array_filter($uuids, fn($u) => is_string($u) && $u !== ''));
+    if (count($uuids) === 0) {
       $response->getBody()->write(json_encode(['ok' => true, 'marked' => 0]));
       return $response->withHeader('Content-Type', 'application/json');
     }
     try {
-      $placeholders = implode(',', array_fill(0, count($npubs), '?'));
-      $types = str_repeat('s', count($npubs));
-      $stmt = $link->prepare("UPDATE users SET last_notification_date = CURDATE() WHERE usernpub IN ($placeholders)");
-      $stmt->bind_param($types, ...$npubs);
+      $placeholders = implode(',', array_fill(0, count($uuids), '?'));
+      $types = str_repeat('s', count($uuids));
+      $stmt = $link->prepare("UPDATE users SET last_notification_date = CURDATE() WHERE uuid_id IN ($placeholders)");
+      $stmt->bind_param($types, ...$uuids);
       $stmt->execute();
       $marked = $stmt->affected_rows;
       $stmt->close();
@@ -495,6 +505,76 @@ $app->group('/internal/account', function (RouteCollectorProxy $group) {
     } catch (\Throwable $e) {
       error_log('internal/account/mark-reminded error: ' . $e->getMessage());
       $response->getBody()->write(json_encode(['ok' => false, 'error' => 'mark-reminded failed']));
+      return $response->withStatus(500)->withHeader('Content-Type', 'application/json');
+    }
+  });
+
+  // ── ToS / Privacy update email notice (Worker-driven) ────────────────────
+  // When the legal documents change (LEGAL_VERSION bumps), email each account
+  // that has a verified address and hasn't opted out, ONCE per version. The
+  // Worker owns the current version (passes it in); PHP just compares the stored
+  // legal_emailed_version. SQL-only — the Worker sends + localizes.
+  $group->get('/legal-notice-due', function (Request $request, Response $response) {
+    global $link;
+    $version = (string) ($request->getQueryParams()['version'] ?? '');
+    if ($version === '') {
+      $response->getBody()->write(json_encode(['due' => []]));
+      return $response->withHeader('Content-Type', 'application/json');
+    }
+    try {
+      // Verified email + account-notify consent + not yet emailed for THIS version.
+      $stmt = $link->prepare(
+        "SELECT uuid_id, email
+           FROM users
+          WHERE email IS NOT NULL
+            AND email_verified = 1
+            AND (email_notify_account IS NULL OR email_notify_account = 1)
+            AND (legal_emailed_version IS NULL OR legal_emailed_version <> ?)
+          ORDER BY uuid_id ASC
+          LIMIT 500"
+      );
+      $stmt->bind_param('s', $version);
+      $stmt->execute();
+      $result = $stmt->get_result();
+      $due = [];
+      while ($row = $result->fetch_assoc()) {
+        $due[] = ['uuid' => $row['uuid_id'], 'email' => $row['email']];
+      }
+      $stmt->close();
+      $response->getBody()->write(json_encode(['due' => $due]));
+      return $response->withHeader('Content-Type', 'application/json');
+    } catch (\Throwable $e) {
+      error_log('internal/account/legal-notice-due error: ' . $e->getMessage());
+      $response->getBody()->write(json_encode(['due' => []]));
+      return $response->withStatus(500)->withHeader('Content-Type', 'application/json');
+    }
+  });
+
+  // Stamp legal_emailed_version = the just-sent version for the uuids the Worker
+  // emailed, so each account is notified at most once per legal version.
+  $group->post('/mark-legal-emailed', function (Request $request, Response $response) {
+    global $link;
+    $data = json_decode($request->getBody()->getContents(), true);
+    $version = (is_array($data) && isset($data['version'])) ? (string) $data['version'] : '';
+    $uuids = (is_array($data) && isset($data['uuids']) && is_array($data['uuids'])) ? $data['uuids'] : [];
+    $uuids = array_values(array_filter($uuids, fn($u) => is_string($u) && $u !== ''));
+    if ($version === '' || count($uuids) === 0) {
+      $response->getBody()->write(json_encode(['ok' => true, 'marked' => 0]));
+      return $response->withHeader('Content-Type', 'application/json');
+    }
+    try {
+      $placeholders = implode(',', array_fill(0, count($uuids), '?'));
+      $types = 's' . str_repeat('s', count($uuids));
+      $stmt = $link->prepare("UPDATE users SET legal_emailed_version = ? WHERE uuid_id IN ($placeholders)");
+      $stmt->bind_param($types, $version, ...$uuids);
+      $stmt->execute();
+      $marked = $stmt->affected_rows;
+      $stmt->close();
+      $response->getBody()->write(json_encode(['ok' => true, 'marked' => $marked]));
+      return $response->withHeader('Content-Type', 'application/json');
+    } catch (\Throwable $e) {
+      error_log('internal/account/mark-legal-emailed error: ' . $e->getMessage());
+      $response->getBody()->write(json_encode(['ok' => false, 'error' => 'mark-legal-emailed failed']));
       return $response->withStatus(500)->withHeader('Content-Type', 'application/json');
     }
   });
