@@ -1398,13 +1398,19 @@ $app->group('/accounts/admin/security', function (RouteCollectorProxy $group) {
     $ip = isset($body['ip']) ? trim((string) $body['ip']) : '';
     $ua = isset($body['user_agent']) ? trim((string) $body['user_agent']) : '';
     $reason = isset($body['reason']) ? trim((string) $body['reason']) : '';
-    if ($npub === '' && $ip === '') return aaError($response, 'Provide npub and/or ip', 400);
+    // email bans key-less ("npubless") accounts that have no npub to list.
+    $email = isset($body['email']) ? trim((string) $body['email']) : '';
+    if ($email !== '' && !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+      return aaError($response, 'Invalid email', 422);
+    }
+    if ($npub === '' && $ip === '' && $email === '') return aaError($response, 'Provide npub, ip, or email', 400);
     try {
       $id = (new LegacyBlacklist($link))->add(
         $npub !== '' ? $npub : null,
         $ip !== '' ? $ip : null,
         $ua !== '' ? $ua : null,
         $reason !== '' ? $reason : null,
+        $email !== '' ? $email : null,
       );
       return aaJson($response, ['success' => true, 'id' => $id]);
     } catch (InvalidArgumentException $e) {

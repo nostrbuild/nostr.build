@@ -1299,14 +1299,17 @@ class Account
   }
 
   /**
-   * Public read of the legacy npub blacklist for this account's npub.
-   * Wraps UploadsData::checkBlacklisted (which delegates to LegacyBlacklist)
-   * so callers can ask "is this user banned?" without poking at private
-   * collaborators.
+   * Public read of the legacy ban list for this account. Checks BOTH the npub
+   * (when present) and the email (key-less accounts), so a banned email-only
+   * account is "banned" everywhere this is consulted — isUploadEligible(),
+   * getAccountInfo(), the auth middlewares. Wraps UploadsData (which delegates
+   * to LegacyBlacklist) so callers don't poke at private collaborators.
    */
   public function isBanned(): bool
   {
-    return $this->uploadsData->checkBlacklisted($this->npub);
+    if ($this->uploadsData->checkBlacklisted($this->npub)) return true;
+    $email = $this->getEmail();
+    return $email !== null && $this->uploadsData->checkEmailBlacklisted($email);
   }
 
   /**
@@ -2035,8 +2038,9 @@ class Account
   public function getAccountInfo(): array
   {
     $accountInfo = $this->account;
-    // Check if the user is banned
-    if ($this->uploadsData->checkBlacklisted($this->npub)) {
+    // Check if the user is banned (npub OR email — a key-less account is banned
+    // by its email; isBanned() covers both).
+    if ($this->isBanned()) {
       $accountInfo['banned'] = true;
       // Add ban reason, which is "Repeated TOS violations or for legal reasons", which may include CSAM uploads
       $accountInfo['ban_reason'] = 'Repeated TOS violations or for legal reasons';

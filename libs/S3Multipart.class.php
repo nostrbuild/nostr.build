@@ -109,6 +109,13 @@ class S3Multipart
       if ($account === null || !$account->accountExists()) {
         throw new Exception('Account not found');
       }
+      // Ban gate, email-aware: isBanned() checks the npub blacklist AND the email
+      // blacklist, so a banned key-less account is blocked here too (the npub-only
+      // fast check above can't reach it).
+      if ($account->isBanned()) {
+        error_log('S3Multipart: blocked banned account ' . $userUuid);
+        throw new Exception('User has been flagged as rejected');
+      }
       // Legal-hold lockout (CSAM evidence preservation) AND expiry both block
       // large uploads. isLocked covers the uuid-keyed termination path that an
       // npub-less account would otherwise miss (the npub blacklist can't reach it).
@@ -228,14 +235,22 @@ class S3Multipart
         throw new Exception('User does not own this upload');
       }
 
-      // Re-check the npub blacklist at completion. Catches the case where a
-      // user created the multipart upload before being banned and is now
-      // trying to publish the assembled file. Best-effort cleanup of the
-      // S3 parts on abort below — even if cleanup fails, the file never
-      // becomes publicly accessible because we don't run the copy step
-      // or insert the DB row.
-      if ($userNpub !== '' && (new LegacyBlacklist($this->db))->isNpubBanned($userNpub)) {
-        error_log('S3Multipart: blocked banned npub ' . $userNpub . ' at complete; aborting upload ' . substr($uploadId, 0, 10));
+      // Re-check the ban list at completion. Catches the case where a user
+      // created the multipart upload before being banned and is now trying to
+      // publish the assembled file. npub → cheap indexed check; key-less account
+      // → resolve from uuid and ask isBanned() (which also covers the email
+      // list). Best-effort cleanup of the S3 parts on abort below — even if
+      // cleanup fails, the file never becomes publicly accessible because we
+      // don't run the copy step or insert the DB row.
+      $bannedAtComplete = false;
+      if ($userNpub !== '') {
+        $bannedAtComplete = (new LegacyBlacklist($this->db))->isNpubBanned($userNpub);
+      } else {
+        $acct = Account::fromUuid($userUuid, $this->db);
+        $bannedAtComplete = $acct !== null && $acct->isBanned();
+      }
+      if ($bannedAtComplete) {
+        error_log('S3Multipart: blocked banned account at complete; aborting upload ' . substr($uploadId, 0, 10));
         try {
           $this->s3Client->abortMultipartUpload([
             'Bucket' => $this->bucket,

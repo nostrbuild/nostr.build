@@ -14,8 +14,14 @@ declare(strict_types=1);
  *     user_agent VARCHAR(255) NULL,
  *     timestamp  TIMESTAMP    DEFAULT CURRENT_TIMESTAMP,
  *     reason     VARCHAR(255) NULL,
- *     KEY (npub), KEY (ip)
+ *     email      VARCHAR(255) NULL,   -- email-only ("npubless") account bans
+ *     KEY (npub), KEY (ip), KEY (email)
  *   );
+ *
+ * The `email` column lets an admin ban a key-less account (one that signed up
+ * with email + password and has no npub to put on the npub list). It's enforced
+ * by Account::isBanned() → isUploadEligible(), so a banned email account can
+ * still sign in / manage billing but can't upload — same model as an npub ban.
  *
  * NOTES
  * -----
@@ -49,16 +55,16 @@ final class LegacyBlacklist
 
     if ($q !== '') {
       $like = '%' . $q . '%';
-      $sql  = 'SELECT id, npub, ip, user_agent, reason,
+      $sql  = 'SELECT id, npub, ip, user_agent, reason, email,
                       DATE_FORMAT(timestamp, "%Y-%m-%d %H:%i:%s") AS timestamp
                  FROM blacklist
-                WHERE npub LIKE ? OR ip LIKE ?
+                WHERE npub LIKE ? OR ip LIKE ? OR email LIKE ?
                 ORDER BY id DESC
                 LIMIT ? OFFSET ?';
-      return $this->fetchAll($sql, 'ssii', [$like, $like, $limit, $offset]);
+      return $this->fetchAll($sql, 'sssii', [$like, $like, $like, $limit, $offset]);
     }
 
-    $sql = 'SELECT id, npub, ip, user_agent, reason,
+    $sql = 'SELECT id, npub, ip, user_agent, reason, email,
                    DATE_FORMAT(timestamp, "%Y-%m-%d %H:%i:%s") AS timestamp
               FROM blacklist
              ORDER BY id DESC
@@ -71,9 +77,9 @@ final class LegacyBlacklist
     if ($q !== '') {
       $like = '%' . $q . '%';
       $row  = $this->fetchOne(
-        'SELECT COUNT(*) AS c FROM blacklist WHERE npub LIKE ? OR ip LIKE ?',
-        'ss',
-        [$like, $like],
+        'SELECT COUNT(*) AS c FROM blacklist WHERE npub LIKE ? OR ip LIKE ? OR email LIKE ?',
+        'sss',
+        [$like, $like, $like],
       );
     } else {
       $row = $this->fetchOne('SELECT COUNT(*) AS c FROM blacklist', '', []);
@@ -114,18 +120,33 @@ final class LegacyBlacklist
     return $row !== null;
   }
 
+  /** Whether $email (normalized lowercase) is on the ban list. Powers the ban of
+   *  key-less accounts that have no npub to put on the npub list. */
+  public function isEmailBanned(string $email): bool
+  {
+    $email = strtolower(trim($email));
+    if ($email === '') return false;
+    $row = $this->fetchOne(
+      'SELECT 1 AS x FROM blacklist WHERE email = ? LIMIT 1',
+      's',
+      [$email],
+    );
+    return $row !== null;
+  }
+
   // ---------------------------------------------------------------------------
   // WRITE
   // ---------------------------------------------------------------------------
 
   /**
-   * Insert a new entry. Caller must supply at least one of npub/ip — a row
-   * with both columns null is meaningless.
+   * Insert a new entry. Caller must supply at least one of npub/ip/email — a row
+   * with all three null is meaningless. `email` is stored lowercase-normalized
+   * (matches isEmailBanned + Account email storage).
    *
    * @return int Inserted row id.
-   * @throws InvalidArgumentException If neither npub nor ip is provided.
+   * @throws InvalidArgumentException If none of npub/ip/email is provided.
    */
-  public function add(?string $npub, ?string $ip, ?string $userAgent, ?string $reason): int
+  public function add(?string $npub, ?string $ip, ?string $userAgent, ?string $reason, ?string $email = null): int
   {
     // Normalize: trim, then collapse empty strings to null so we don't
     // store meaningless "" rows.
@@ -134,9 +155,13 @@ final class LegacyBlacklist
     $ip        = $norm($ip);
     $userAgent = $norm($userAgent);
     $reason    = $norm($reason);
+    $email     = $norm($email);
+    if ($email !== null) {
+      $email = strtolower($email);
+    }
 
-    if ($npub === null && $ip === null) {
-      throw new InvalidArgumentException('At least one of npub or ip is required');
+    if ($npub === null && $ip === null && $email === null) {
+      throw new InvalidArgumentException('At least one of npub, ip, or email is required');
     }
 
     if ($ip !== null && filter_var($ip, FILTER_VALIDATE_IP) === false) {
@@ -144,10 +169,10 @@ final class LegacyBlacklist
     }
 
     $stmt = $this->db->prepare(
-      'INSERT INTO blacklist (npub, ip, user_agent, reason) VALUES (?, ?, ?, ?)'
+      'INSERT INTO blacklist (npub, ip, user_agent, reason, email) VALUES (?, ?, ?, ?, ?)'
     );
     try {
-      $stmt->bind_param('ssss', $npub, $ip, $userAgent, $reason);
+      $stmt->bind_param('sssss', $npub, $ip, $userAgent, $reason, $email);
       $stmt->execute();
       return (int) $this->db->insert_id;
     } finally {

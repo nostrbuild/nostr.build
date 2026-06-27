@@ -158,6 +158,20 @@ class UploadsData extends DatabaseTable
     }
   }
 
+  /** Email-keyed ban check (key-less accounts). Sibling of checkBlacklisted. */
+  public function checkEmailBlacklisted(?string $email = null): bool
+  {
+    if (empty($email)) return false;
+    try {
+      $banned = (new LegacyBlacklist($this->db))->isEmailBanned($email);
+      if ($banned) error_log("Blacklisted email: " . $email);
+      return $banned;
+    } catch (Exception $e) {
+      error_log("Exception: " . $e->getMessage());
+      return false;
+    }
+  }
+
   public function getUploadData(string $filehash): array|bool
   {
     $sql = "SELECT * FROM {$this->tableName} WHERE filename LIKE ?";

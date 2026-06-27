@@ -78,10 +78,14 @@ class UploadValidator
       return [false, 413, "File size exceeds the limit of " . formatSizeUnits(SiteConfig::FREE_UPLOAD_LIMIT)];
     }
 
-    // Check if file has been rejected for free users or if the user has been flagged as rejected
+    // Check if file has been rejected for free users or if the user has been
+    // flagged as rejected. The npub check covers anonymous/account-less uploads;
+    // the account->isBanned() check additionally covers a key-less ("email")
+    // account banned by its email (no npub to match above).
     if (
       (!$pro && $this->uploadsData->checkRejected($file['sha256'])) ||
-      (!empty($userNpub) && $this->uploadsData->checkBlacklisted($userNpub))
+      (!empty($userNpub) && $this->uploadsData->checkBlacklisted($userNpub)) ||
+      ($account !== null && $account->isBanned())
     ) {
       error_log('File has been flagged as rejected');
       return [false, 403, "File or User has been flagged as rejected"];
