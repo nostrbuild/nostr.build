@@ -108,6 +108,15 @@ class MultimediaUpload
             // Resolve the account from the npub when present, else the uuid, so
             // an email account (no npub) still loads for the level/storage gates.
             $this->userAccount = $userNpub !== '' ? new Account($userNpub, $db) : Account::fromUuid($userUuid, $db);
+            // Backfill the stable uuid from the loaded account when the caller
+            // passed an npub but no uuid (the common npub-session path — every
+            // upload route except the email-account ones). Email accounts have no
+            // npub and always pass the uuid explicitly. Keep $this->userUuid and
+            // the local $userUuid (handed to UploadPersistence below) in sync.
+            if ($userUuid === '' && $this->userAccount !== null) {
+                $userUuid = (string) ($this->userAccount->getAccountUuid() ?? '');
+                $this->userUuid = $userUuid;
+            }
         }
         // Pro uploads are keyed by the stable uuid; require it (npub is optional).
         if ($this->pro && empty($this->userUuid)) {

@@ -92,7 +92,7 @@ $container->set('proUpload', function () {
   global $link;
   // Instantiate S3Service
   $s3 = new S3Service($awsConfig);
-  return new MultimediaUpload($link, $s3, true, $_SESSION['usernpub'] ?? '', $awsConfig);
+  return new MultimediaUpload($link, $s3, true, $_SESSION['usernpub'] ?? '', $awsConfig, $_SESSION['uuid_id'] ?? '');
 });
 
 $container->set('userImages', function () {
@@ -141,11 +141,14 @@ class MultimediaUploadFactory
     $this->link = $link;
   }
 
-  public function create($isPro = false, $npub = null)
+  public function create($isPro = false, $npub = null, $uuid = null)
   {
     $s3 = new S3Service($this->awsConfig);
     $npubValue = $npub ?? $_SESSION['usernpub'] ?? '';
-    return new MultimediaUpload($this->link, $s3, $isPro, $npubValue, $this->awsConfig);
+    // For an npub session the ctor backfills the uuid from the loaded account;
+    // an email account (no npub) relies on the session uuid passed here.
+    $uuidValue = $uuid ?? $_SESSION['uuid_id'] ?? '';
+    return new MultimediaUpload($this->link, $s3, $isPro, $npubValue, $this->awsConfig, $uuidValue);
   }
 }
 

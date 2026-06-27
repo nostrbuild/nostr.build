@@ -615,17 +615,22 @@ class S3Multipart
       // reliable source; the path is only used when metadata is missing.
       $pathParts = explode('/', $key);
       $userPrefixFromPath = (count($pathParts) >= 3 && $pathParts[0] === 'uploads') ? $pathParts[1] : '';
+      // A pre-cutover key is npub-prefixed; a post-cutover key is uuid-prefixed.
+      // Only treat the path segment as a uuid when it is NOT an npub — otherwise
+      // a legacy npub prefix would short-circuit storeInDatabase's resolver and
+      // land the npub in users_images.user_uuid, corrupting ownership.
+      $prefixIsNpub = str_starts_with($userPrefixFromPath, 'npub1');
 
       // Reconstruct the original session structure
       return [
         'key' => $key,
         'filename' => $metadata['original-filename'] ?? basename($key),
         'contentType' => $objectMetadata['ContentType'] ?? 'application/octet-stream',
-        'userNpub' => $metadata['user-npub'] ?? '',
+        'userNpub' => $metadata['user-npub'] ?? ($prefixIsNpub ? $userPrefixFromPath : ''),
         // uuid is the owner identity. Prefer the metadata; fall back to the path
-        // segment (a new key's prefix IS the uuid). storeInDatabase resolves the
-        // final owner uuid from this (or from the npub for legacy keys).
-        'userUuid' => $metadata['user-uuid'] ?? $userPrefixFromPath,
+        // segment ONLY when it's a uuid (new key). For a legacy npub-prefixed key
+        // leave this empty so storeInDatabase resolves npub→uuid via the resolver.
+        'userUuid' => $metadata['user-uuid'] ?? ($prefixIsNpub ? '' : $userPrefixFromPath),
         'metadata' => isset($metadata['metadata']) ? json_decode($metadata['metadata'], true) : [],
         'createdAt' => isset($metadata['upload-time']) ? (int)$metadata['upload-time'] : time()
       ];

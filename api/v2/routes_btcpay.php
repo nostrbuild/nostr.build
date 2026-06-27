@@ -452,6 +452,16 @@ $app->group('/internal/account', function (RouteCollectorProxy $group) {
                   OR (plan_until_date >= NOW() AND DATEDIFF(plan_until_date, NOW()) <= 30)
                 )
                 AND (last_notification_date IS NULL OR DATEDIFF(NOW(), last_notification_date) > 7)
+                -- Only rows with at least one usable channel. A row with no
+                -- reachable channel never gets stamped (mark-reminded only stamps
+                -- accounts a notice actually landed on), so without this filter it
+                -- re-qualifies every run and, given LIMIT + earliest-expiry order,
+                -- starves genuinely-reachable accounts out of the batch.
+                AND (
+                  usernpub IS NOT NULL
+                  OR (email IS NOT NULL AND email_verified = 1
+                      AND (email_notify_account IS NULL OR email_notify_account = 1))
+                )
               ORDER BY plan_until_date ASC
               LIMIT 500";
       $result = $link->query($sql);
@@ -522,18 +532,26 @@ $app->group('/internal/account', function (RouteCollectorProxy $group) {
       return $response->withHeader('Content-Type', 'application/json');
     }
     try {
-      // Verified email + account-notify consent + not yet emailed for THIS version.
+      // Verified email + account-notify consent + not yet emailed for THIS
+      // version. CRITICALLY, only accounts whose ACCEPTED legal_version is an
+      // OLDER one (recorded AND != current): this is a "terms changed since you
+      // accepted" notice, so a fresh signup who just clickwrapped the current
+      // version (legal_version = current, legal_emailed_version NULL) must NOT
+      // match — and neither should legacy rows that never accepted (NULL), which
+      // also dodges a mass blast on the first run after a version bump.
       $stmt = $link->prepare(
         "SELECT uuid_id, email
            FROM users
           WHERE email IS NOT NULL
             AND email_verified = 1
             AND (email_notify_account IS NULL OR email_notify_account = 1)
+            AND legal_version IS NOT NULL
+            AND legal_version <> ?
             AND (legal_emailed_version IS NULL OR legal_emailed_version <> ?)
           ORDER BY uuid_id ASC
           LIMIT 500"
       );
-      $stmt->bind_param('s', $version);
+      $stmt->bind_param('ss', $version, $version);
       $stmt->execute();
       $result = $stmt->get_result();
       $due = [];

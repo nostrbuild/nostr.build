@@ -1119,6 +1119,14 @@ $app->group('/accounts', function (RouteCollectorProxy $group) {
         );
         $account->allowNpubLogin($allowNostrLogin);
         $data = dashboardGetAccountData($link, $account);
+      } catch (LastAuthenticatorException $e) {
+        // Disabling Nostr login on a key-only account (no email sign-in) would
+        // lock the user out. Surface the actionable 409 the client handles
+        // (mirrors the removeEmail route), not a generic 500.
+        $response->getBody()->write(json_encode(['error' => 'last-authenticator']));
+        return $response
+          ->withHeader('Content-Type', 'application/json')
+          ->withStatus(409);
       } catch (\Throwable $e) {
         error_log($e->getMessage());
         $response->getBody()->write(json_encode(['error' => 'update-failed']));

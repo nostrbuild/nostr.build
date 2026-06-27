@@ -256,6 +256,9 @@ class Account
   {
     $_SESSION['id'] = $this->account['id'] ?? 0;
     $_SESSION['usernpub'] = $this->npub ?? '';
+    // Stable account identity — the only identity a key-less (email) account has.
+    // Pro-upload wiring reads this for accounts with no npub to resolve from.
+    $_SESSION['uuid_id'] = $this->uuid ?? '';
     $_SESSION['acctlevel'] = $this->account['acctlevel'] ?? 0;
     $_SESSION['nym'] = $this->account['nym'] ?? '';
     $_SESSION['wallet'] = $this->account['wallet'] ?? '';
@@ -1915,7 +1918,11 @@ class Account
   public function verifyPassword(string $password): bool
   {
     $hashed_password = $this->account['password'] ?? null;
-    $valid = $hashed_password === null ? false : password_verify($password, $hashed_password);
+    // Trim to match every hash WRITER (createAccount/createEmailAccount/
+    // changePassword all store password_hash(trim(...))). Verifying the raw
+    // string would reject a password with surrounding whitespace and lock an
+    // email account out permanently (password is its only authenticator).
+    $valid = $hashed_password === null ? false : password_verify(trim($password), $hashed_password);
     if ($valid) {
       // Prefill PBKDF2 password hash if not set
       if (empty($this->account['pbkdf2_password'])) {
