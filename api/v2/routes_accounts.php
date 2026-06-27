@@ -1375,6 +1375,46 @@ $app->group('/accounts', function (RouteCollectorProxy $group) {
       return $response->withHeader('Content-Type', 'application/json')->withStatus(200);
     });
 
+    // POST /api/v2/accounts/dashboard/email/notify-prefs  {account?, marketing?}
+    //
+    // Toggle the account's email-notification preferences. Either flag may be
+    // omitted to leave it unchanged. A normal session-authed dashboard mutation
+    // (the user manages their own prefs) — uuid-keyed, npub-agnostic.
+    $sub->post('/email/notify-prefs', function (Request $request, Response $response) {
+      global $link;
+      $uuid = resolveIdentityUuid($request);
+      if ($uuid === '') {
+        $response->getBody()->write(json_encode(['error' => 'missing-identity']));
+        return $response->withHeader('Content-Type', 'application/json')->withStatus(400);
+      }
+      $body = $request->getParsedBody();
+      $toBool = static fn($v): ?bool => $v === null ? null : ($v === true || $v === 'true' || $v === 1 || $v === '1');
+      $account = $toBool($body['account'] ?? null);
+      $marketing = $toBool($body['marketing'] ?? null);
+      if ($account === null && $marketing === null) {
+        $response->getBody()->write(json_encode(['error' => 'no-change']));
+        return $response->withHeader('Content-Type', 'application/json')->withStatus(400);
+      }
+      try {
+        $acct = Account::fromUuid($uuid, $link);
+        if ($acct === null) {
+          $response->getBody()->write(json_encode(['error' => 'not-found']));
+          return $response->withHeader('Content-Type', 'application/json')->withStatus(404);
+        }
+        $acct->setEmailNotifyPrefs($account, $marketing);
+      } catch (\Throwable $e) {
+        error_log('email notify-prefs failed: ' . $e->getMessage());
+        $response->getBody()->write(json_encode(['error' => 'update-failed']));
+        return $response->withHeader('Content-Type', 'application/json')->withStatus(500);
+      }
+      $response->getBody()->write(json_encode([
+        'ok' => true,
+        'account' => $acct->getEmailNotifyAccount(),
+        'marketing' => $acct->getEmailNotifyMarketing(),
+      ]));
+      return $response->withHeader('Content-Type', 'application/json')->withStatus(200);
+    });
+
     // POST /api/v2/accounts/dashboard/password/reset  {newPassword}
     //
     // The Worker has consumed a single-use password-reset magic-link token (proof

@@ -208,6 +208,10 @@ function dashboardGetAccountData($link, $account): array
     "email" => $account->getEmail(),
     "emailVerified" => $account->isEmailVerified(),
     "hasPassword" => $account->hasPassword(),
+    // Email-notification preferences (account/security notices + marketing).
+    // Defaults tolerate a DB that predates the email_notify_* columns.
+    "emailNotifyAccount" => $account->getEmailNotifyAccount(),
+    "emailNotifyMarketing" => $account->getEmailNotifyMarketing(),
     "pfpUrl" => $info['ppic'],
     "wallet" => $info['wallet'],
     "defaultFolder" => $info['default_folder'] ?? "",

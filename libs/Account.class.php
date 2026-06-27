@@ -805,7 +805,9 @@ class Account
     ?string $default_folder = null,
     ?string $nl_sub_activated_date = null,
     ?string $nl_sub_activation_id = null,
-    ?array $nl_sub_activation_return_value = null
+    ?array $nl_sub_activation_return_value = null,
+    ?int $email_notify_account = null,
+    ?int $email_notify_marketing = null
   ) {
     $updates = [
       'password' => $password,
@@ -826,7 +828,9 @@ class Account
       'default_folder' => $default_folder,
       'nl_sub_activated_date' => $nl_sub_activated_date,
       'nl_sub_activation_id' => $nl_sub_activation_id,
-      'nl_sub_activation_return_value' => $nl_sub_activation_return_value ? json_encode($nl_sub_activation_return_value) : null
+      'nl_sub_activation_return_value' => $nl_sub_activation_return_value ? json_encode($nl_sub_activation_return_value) : null,
+      'email_notify_account' => $email_notify_account,
+      'email_notify_marketing' => $email_notify_marketing
     ];
 
     $sql = "UPDATE users SET ";
@@ -2092,6 +2096,34 @@ class Account
   public function isEmailVerified(): bool
   {
     return (bool) ($this->account['email_verified'] ?? 0);
+  }
+
+  /** Consent to ACCOUNT/security/legal emails (expiry, plan, ToS notices). On by
+   *  default for any account with an email — defaults tolerate a pre-column DB. */
+  public function getEmailNotifyAccount(): bool
+  {
+    return (bool) ($this->account['email_notify_account'] ?? 1);
+  }
+
+  /** Opt-in to product / feature-update (marketing) emails. Off by default. */
+  public function getEmailNotifyMarketing(): bool
+  {
+    return (bool) ($this->account['email_notify_marketing'] ?? 0);
+  }
+
+  /**
+   * Set the email-notification preferences. Either flag may be null to leave it
+   * unchanged. uuid-keyed write via updateAccount; syncs the in-memory row.
+   */
+  public function setEmailNotifyPrefs(?bool $account, ?bool $marketing): void
+  {
+    if ($this->uuid === '') {
+      throw new Exception("setEmailNotifyPrefs: account not loaded (missing uuid)");
+    }
+    $this->updateAccount(
+      email_notify_account: $account === null ? null : ($account ? 1 : 0),
+      email_notify_marketing: $marketing === null ? null : ($marketing ? 1 : 0),
+    );
   }
 
   /** Whether a login password is set (the hash itself is never exposed). */
