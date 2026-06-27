@@ -1293,6 +1293,38 @@ $app->group('/accounts', function (RouteCollectorProxy $group) {
         ->withStatus(200);
     });
 
+    // POST /api/v2/accounts/dashboard/email/remove
+    //
+    // Remove the email credential. Enforces the ≥1-authenticator invariant: 409
+    // when email is the account's only sign-in method (no usable Nostr-key login).
+    // Session-authed (the user removing their own email); the invariant is the
+    // real gate, so this stays a normal dashboard mutation. uuid-keyed.
+    $sub->post('/email/remove', function (Request $request, Response $response) {
+      global $link;
+      $uuid = resolveIdentityUuid($request);
+      if ($uuid === '') {
+        $response->getBody()->write(json_encode(['error' => 'missing-identity']));
+        return $response->withHeader('Content-Type', 'application/json')->withStatus(400);
+      }
+      try {
+        $account = Account::fromUuid($uuid, $link);
+        if ($account === null) {
+          $response->getBody()->write(json_encode(['error' => 'not-found']));
+          return $response->withHeader('Content-Type', 'application/json')->withStatus(404);
+        }
+        $account->removeEmail();
+      } catch (LastAuthenticatorException $e) {
+        $response->getBody()->write(json_encode(['error' => 'last-authenticator']));
+        return $response->withHeader('Content-Type', 'application/json')->withStatus(409);
+      } catch (\Throwable $e) {
+        error_log('email remove failed: ' . $e->getMessage());
+        $response->getBody()->write(json_encode(['error' => 'update-failed']));
+        return $response->withHeader('Content-Type', 'application/json')->withStatus(500);
+      }
+      $response->getBody()->write(json_encode(['ok' => true]));
+      return $response->withHeader('Content-Type', 'application/json')->withStatus(200);
+    });
+
     // POST /api/v2/accounts/dashboard/password/reset  {newPassword}
     //
     // The Worker has consumed a single-use password-reset magic-link token (proof
@@ -1799,7 +1831,7 @@ $app->group('/accounts', function (RouteCollectorProxy $group) {
           $data['type'],
           $data['metadata'] ?? [],
           $npub,
-          $account->getUuidId(),
+          (string) $account->getAccountUuid(),
         );
         if (!$result) {
           return jsonResponse($response, 'error', 'Failed to create multipart upload', new stdClass(), 500);

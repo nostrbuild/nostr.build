@@ -73,6 +73,11 @@ ALTER TABLE users
 class DuplicateUserException extends Exception {}
 class InvalidAccountLevelException extends Exception {}
 class DuplicateEmailException extends Exception {}
+// Thrown when an operation would remove an account's LAST sign-in method (the
+// ≥1-authenticator invariant): e.g. removing the email from an account with no
+// usable Nostr-key login, or disabling Nostr login on an account with no
+// verified email + password.
+class LastAuthenticatorException extends Exception {}
 
 enum AccountLevel: int
 {
@@ -1945,6 +1950,12 @@ class Account
    */
   public function allowNpubLogin(bool $allow = true): void
   {
+    // ≥1-authenticator invariant: disabling Nostr login is only allowed when the
+    // account still has a usable email sign-in (verified email + password). Else
+    // the user would lock themselves out.
+    if ($allow === false && !$this->hasEmailAuthenticator()) {
+      throw new LastAuthenticatorException('Cannot disable Nostr login without an email sign-in');
+    }
     if ($this->isNpubVerified() === true) {
       $this->updateAccount(allow_npub_login: $allow);
       $this->account['allow_npub_login'] = $allow;
@@ -2080,6 +2091,48 @@ class Account
   public function hasPassword(): bool
   {
     return !empty($this->account['password']);
+  }
+
+  /** A usable email sign-in method: a verified address + a password. */
+  public function hasEmailAuthenticator(): bool
+  {
+    return $this->getEmail() !== null && $this->isEmailVerified() && $this->hasPassword();
+  }
+
+  /** A usable Nostr-key sign-in method: an npub with key-login enabled. */
+  public function hasNpubAuthenticator(): bool
+  {
+    return !empty($this->account['usernpub']) && (bool) ($this->account['allow_npub_login'] ?? 0);
+  }
+
+  /**
+   * Remove the email credential (the ≥1-authenticator invariant): allowed only
+   * when the account can still sign in by its Nostr key. Clears email +
+   * email_verified in one uuid-keyed write.
+   *
+   * @throws LastAuthenticatorException when email is the only sign-in method.
+   * @throws Exception
+   */
+  public function removeEmail(): void
+  {
+    if ($this->uuid === '') {
+      throw new Exception("removeEmail: account not loaded (missing uuid)");
+    }
+    if (!$this->hasNpubAuthenticator()) {
+      throw new LastAuthenticatorException('Cannot remove the only sign-in method');
+    }
+    $stmt = $this->db->prepare("UPDATE users SET email = NULL, email_verified = 0 WHERE uuid_id = ?");
+    if (!$stmt) {
+      throw new Exception("Error preparing statement: " . $this->db->error);
+    }
+    $stmt->bind_param('s', $this->uuid);
+    if (!$stmt->execute()) {
+      $stmt->close();
+      throw new Exception("Database error removing email: " . $this->db->error);
+    }
+    $stmt->close();
+    $this->account['email'] = null;
+    $this->account['email_verified'] = 0;
   }
 
   /**
