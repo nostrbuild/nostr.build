@@ -175,6 +175,53 @@ $app->group('/accounts', function (RouteCollectorProxy $group) {
       ->withStatus(200);
   });
 
+  // POST /api/v2/accounts/email-login — email + password validation. The email
+  // sibling of /login: identity is the (verified) email instead of the npub, so
+  // an npubless account can sign in. Resolves email -> account via fromEmail
+  // (a hit is always a verified address — setEmail writes email_verified=1
+  // atomically), verifies the password, then returns the full dashboard profile
+  // exactly like /login so the Worker mints the session + ecosystem cookies.
+  $group->post('/email-login', function (Request $request, Response $response) {
+    global $link;
+    $raw = (string) $request->getBody();
+    $data = json_decode($raw, true);
+    if (!is_array($data) || empty($data['email']) || empty($data['password'])) {
+      $response->getBody()->write(json_encode(['error' => 'invalid-input']));
+      return $response
+        ->withHeader('Content-Type', 'application/json')
+        ->withStatus(400);
+    }
+
+    $email = trim((string) $data['email']);
+    $password = (string) $data['password'];
+
+    $account = Account::fromEmail($email, $link);
+    // Same uniform 401 for "no such email" and "wrong password" so the response
+    // is not an account-existence oracle. isEmailVerified() is a belt-and-braces
+    // check; fromEmail already only matches stored (=verified) addresses.
+    if ($account === null || !$account->isEmailVerified() || !$account->verifyPassword($password)) {
+      $response->getBody()->write(json_encode(['error' => 'invalid-credentials']));
+      return $response
+        ->withHeader('Content-Type', 'application/json')
+        ->withStatus(401);
+    }
+
+    // Legal-hold lockout — checked AFTER credentials so the lock isn't probeable
+    // without the password. 423 Locked. Mirrors /login.
+    if ($account->isLocked()) {
+      $response->getBody()->write(json_encode(['error' => 'account-locked']));
+      return $response
+        ->withHeader('Content-Type', 'application/json')
+        ->withStatus(423);
+    }
+
+    $data = dashboardGetAccountData($link, $account);
+    $response->getBody()->write(json_encode($data));
+    return $response
+      ->withHeader('Content-Type', 'application/json')
+      ->withStatus(200);
+  });
+
   // GET /api/v2/accounts/user-by-npub?npub=... — npub → internal user id
   // lookup used by the Worker after NIP-07 signature verification.
   //
@@ -256,6 +303,37 @@ $app->group('/accounts', function (RouteCollectorProxy $group) {
     }
     $stmt = $link->prepare("SELECT uuid_id FROM users WHERE usernpub = ? LIMIT 1");
     $stmt->bind_param('s', $npub);
+    $stmt->execute();
+    $row = $stmt->get_result()->fetch_assoc();
+    $stmt->close();
+    if (!is_array($row) || empty($row['uuid_id'])) {
+      $response->getBody()->write(json_encode(['error' => 'not found']));
+      return $response
+        ->withHeader('Content-Type', 'application/json')
+        ->withStatus(404);
+    }
+    $response->getBody()->write(json_encode(['uuidId' => $row['uuid_id']]));
+    return $response
+      ->withHeader('Content-Type', 'application/json')
+      ->withStatus(200);
+  });
+
+  // GET /api/v2/accounts/uuid-by-email?email=... — (verified) email → stable
+  // uuid_id, for the Worker's enumeration-safe password-reset flow: it resolves
+  // the account behind an address server-side and never reveals the result to the
+  // browser (the reset endpoint always answers "if that address exists, we sent a
+  // link"). Bare lookup, no side effects. 404 when no account owns that email.
+  $group->get('/uuid-by-email', function (Request $request, Response $response) {
+    global $link;
+    $email = strtolower(trim((string) ($request->getQueryParams()['email'] ?? '')));
+    if ($email === '') {
+      $response->getBody()->write(json_encode(['error' => 'missing-email']));
+      return $response
+        ->withHeader('Content-Type', 'application/json')
+        ->withStatus(400);
+    }
+    $stmt = $link->prepare("SELECT uuid_id FROM users WHERE email = ? LIMIT 1");
+    $stmt->bind_param('s', $email);
     $stmt->execute();
     $row = $stmt->get_result()->fetch_assoc();
     $stmt->close();
@@ -1210,6 +1288,59 @@ $app->group('/accounts', function (RouteCollectorProxy $group) {
       }
 
       $response->getBody()->write(json_encode(['ok' => true, 'email' => $account->getEmail()]));
+      return $response
+        ->withHeader('Content-Type', 'application/json')
+        ->withStatus(200);
+    });
+
+    // POST /api/v2/accounts/dashboard/password/reset  {newPassword}
+    //
+    // The Worker has consumed a single-use password-reset magic-link token (proof
+    // the user controls the verified email on file), so this sets a NEW password
+    // with NO current-password check — exactly why it MUST stay worker-only and is
+    // denied at the proxy (PROXY_DENY in proxy.ts): a logged-in client must never
+    // reach it directly and overwrite the password without the token proof. Also
+    // serves as the set-initial-password path for an npubless account that had no
+    // password yet. uuid-keyed (npub-agnostic).
+    $sub->post('/password/reset', function (Request $request, Response $response) {
+      global $link;
+      $uuid = resolveIdentityUuid($request);
+      if ($uuid === '') {
+        $response->getBody()->write(json_encode(['error' => 'missing-identity']));
+        return $response
+          ->withHeader('Content-Type', 'application/json')
+          ->withStatus(400);
+      }
+
+      $body = $request->getParsedBody();
+      $newPassword = isset($body['newPassword']) ? (string) $body['newPassword'] : '';
+      // Defence in depth: the Worker already enforces the 6..200 policy, but never
+      // write an empty/whitespace password even if a malformed call slips through.
+      if (strlen(trim($newPassword)) < 6) {
+        $response->getBody()->write(json_encode(['error' => 'weak-password']));
+        return $response
+          ->withHeader('Content-Type', 'application/json')
+          ->withStatus(400);
+      }
+
+      try {
+        $account = Account::fromUuid($uuid, $link);
+        if ($account === null) {
+          $response->getBody()->write(json_encode(['error' => 'not-found']));
+          return $response
+            ->withHeader('Content-Type', 'application/json')
+            ->withStatus(404);
+        }
+        $account->changePassword($newPassword);
+      } catch (\Throwable $e) {
+        error_log('password reset failed: ' . $e->getMessage());
+        $response->getBody()->write(json_encode(['error' => 'update-failed']));
+        return $response
+          ->withHeader('Content-Type', 'application/json')
+          ->withStatus(500);
+      }
+
+      $response->getBody()->write(json_encode(['ok' => true]));
       return $response
         ->withHeader('Content-Type', 'application/json')
         ->withStatus(200);

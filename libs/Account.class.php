@@ -164,6 +164,35 @@ class Account
   }
 
   /**
+   * Build an Account from a (verified) email address. Resolves email -> uuid_id,
+   * then constructs through fromUuid so all existing (npub-keyed) Account logic
+   * keeps working. An unverified address is never stored (setEmail sets
+   * email_verified=1 atomically), so a hit here is always a verified credential.
+   * Returns null when no account owns that email. Used by the accounts Worker
+   * for email login + password reset.
+   *
+   * @param string $email
+   * @param mysqli $db
+   * @return self|null
+   */
+  public static function fromEmail(string $email, mysqli $db): ?self
+  {
+    $email = strtolower(trim($email));
+    if ($email === '') {
+      return null;
+    }
+    $stmt = $db->prepare("SELECT uuid_id FROM users WHERE email = ? LIMIT 1");
+    $stmt->bind_param('s', $email);
+    $stmt->execute();
+    $row = $stmt->get_result()->fetch_assoc();
+    $stmt->close();
+    if (!is_array($row) || empty($row['uuid_id'])) {
+      return null;
+    }
+    return self::fromUuid((string) $row['uuid_id'], $db);
+  }
+
+  /**
    * Summary of fetchAccountData
    * @throws \Exception
    * @return void
