@@ -167,6 +167,10 @@ function aaUserSnapshot(Account $account, mysqli $link): array
     'npub'               => $account->getNpub(),
     'userId'             => $account->getAccountNumericId(),
     'uuidId'             => $account->getAccountUuid(),
+    // Email is stripped from getAccountInfo() (PII, shared payload); admin reads
+    // it via the dedicated getters. Admin + self are the only authorized contexts.
+    'email'              => $account->getEmail(),
+    'emailVerified'      => $account->isEmailVerified(),
     'nym'                => $info['nym'] ?? null,
     'pfpUrl'             => $info['ppic'] ?? null,
     'acctlevel'          => (int) ($info['acctlevel'] ?? 0),

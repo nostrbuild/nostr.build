@@ -202,7 +202,12 @@ function dashboardGetAccountData($link, $account): array
     // null where the type promises a string. Same pattern used a few lines
     // down for default_folder.
     "name" => $info['nym'] ?? "",
-    "npub" => $info['usernpub'],
+    "npub" => $info['usernpub'] ?? null,
+    // email/emailVerified/hasPassword are read via dedicated getters, NOT $info:
+    // getAccountInfo() strips email (PII, shared payload) and the password hash.
+    "email" => $account->getEmail(),
+    "emailVerified" => $account->isEmailVerified(),
+    "hasPassword" => $account->hasPassword(),
     "pfpUrl" => $info['ppic'],
     "wallet" => $info['wallet'],
     "defaultFolder" => $info['default_folder'] ?? "",

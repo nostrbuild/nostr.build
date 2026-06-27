@@ -72,6 +72,7 @@ ALTER TABLE users
 
 class DuplicateUserException extends Exception {}
 class InvalidAccountLevelException extends Exception {}
+class DuplicateEmailException extends Exception {}
 
 enum AccountLevel: int
 {
@@ -97,6 +98,9 @@ class Account
    * @var string
    */
   private string $npub;
+  private string $lookupColumn = 'usernpub';
+  private string $lookupValue = '';
+  private string $uuid = '';
   /**
    * Summary of account
    * @var array
@@ -121,12 +125,19 @@ class Account
    * @param string $npub
    * @param mysqli $db
    */
-  public function __construct(string $npub, mysqli $db)
+  public function __construct(string $npub, mysqli $db, ?string $uuid = null)
   {
     $this->npub = trim($npub);
     $this->db = $db;
     $this->uploadsData = new UploadsData($db);
-    // Populate account data
+    if ($this->npub === '' && $uuid !== null && trim($uuid) !== '') {
+      $this->lookupColumn = 'uuid_id';
+      $this->lookupValue = trim($uuid);
+    } else {
+      $this->lookupColumn = 'usernpub';
+      $this->lookupValue = $this->npub;
+    }
+    // Populate account data (also sets $this->uuid + backfills $this->npub).
     $this->fetchAccountData();
     $this->blossomFrontEndAPI = new BlossomFrontEndAPI($_SERVER['BLOSSOM_API_URL'], $_SERVER['BLOSSOM_API_KEY']);
   }
@@ -148,21 +159,8 @@ class Account
     if ($uuid === '') {
       return null;
     }
-    $stmt = $db->prepare("SELECT usernpub FROM users WHERE uuid_id = ? LIMIT 1");
-    if (!$stmt) {
-      throw new Exception("Error preparing statement: " . $db->error);
-    }
-    try {
-      $stmt->bind_param('s', $uuid);
-      $stmt->execute();
-      $row = $stmt->get_result()->fetch_assoc();
-    } finally {
-      $stmt->close();
-    }
-    if (!$row || empty($row['usernpub'])) {
-      return null;
-    }
-    return new self((string) $row['usernpub'], $db);
+    $account = new self('', $db, $uuid);
+    return $account->accountExists() ? $account : null;
   }
 
   /**
@@ -172,7 +170,7 @@ class Account
    */
   private function fetchAccountData(): void
   {
-    $sql = "SELECT * FROM users WHERE usernpub = ?";
+    $sql = "SELECT * FROM users WHERE {$this->lookupColumn} = ?";
     $stmt = $this->db->prepare($sql);
 
     if (!$stmt) {
@@ -181,7 +179,7 @@ class Account
     }
 
     try {
-      if (!$stmt->bind_param('s', $this->npub)) {
+      if (!$stmt->bind_param('s', $this->lookupValue)) {
         // Handle binding parameters error
         throw new Exception("Error binding parameters: " . $stmt->error);
       }
@@ -198,6 +196,10 @@ class Account
       }
 
       $this->account = $result->fetch_assoc() ?? [];
+      $this->uuid = (string) ($this->account['uuid_id'] ?? '');
+      if ($this->npub === '') {
+        $this->npub = (string) ($this->account['usernpub'] ?? '');
+      }
       if (!$this->account) {
         // Handle no matching record found
         //throw new Exception("No matching record found for npub: " . $this->npub);
@@ -474,6 +476,11 @@ class Account
       $stmt->close();
     }
 
+    // Load the just-inserted row so $this->uuid (DB-auto-populated on INSERT) is
+    // set BEFORE any uuid-keyed write below — the Nostr-profile import's UPDATE
+    // keys on uuid_id, which is '' until the row is fetched back.
+    $this->fetchAccountData();
+
     // Update account data from API
     try {
       $this->updateAccountDataFromNostrApi();
@@ -502,13 +509,13 @@ class Account
    */
   public function recordLegalAcceptance(string $version): void
   {
-    $sql = "UPDATE users SET legal_accepted_at = NOW(), legal_version = ? WHERE usernpub = ?";
+    $sql = "UPDATE users SET legal_accepted_at = NOW(), legal_version = ? WHERE uuid_id = ?";
     $stmt = $this->db->prepare($sql);
     if (!$stmt) {
       throw new Exception("Error preparing legal-acceptance statement: " . $this->db->error);
     }
     try {
-      $stmt->bind_param('ss', $version, $this->npub);
+      $stmt->bind_param('ss', $version, $this->uuid);
       if (!$stmt->execute()) {
         throw new Exception("Database error recording legal acceptance: " . $this->db->error);
       }
@@ -747,8 +754,8 @@ class Account
     }
 
     $sql = rtrim($sql, ', ');
-    $sql .= " WHERE usernpub = ?";
-    $params[] = $this->npub;
+    $sql .= " WHERE uuid_id = ?";
+    $params[] = $this->uuid;
     $types .= 's';
 
     // DEBUG
@@ -787,7 +794,7 @@ class Account
    */
   public function deleteAccount(): void
   {
-    $sql = "DELETE FROM users WHERE usernpub = ?";
+    $sql = "DELETE FROM users WHERE uuid_id = ?";
     $stmt = $this->db->prepare($sql);
 
     if (!$stmt) {
@@ -795,7 +802,7 @@ class Account
     }
 
     try {
-      if (!$stmt->bind_param('s', $this->npub)) {
+      if (!$stmt->bind_param('s', $this->uuid)) {
         throw new Exception("Error binding parameters: " . $stmt->error);
       }
 
@@ -859,13 +866,13 @@ class Account
     $now = date('Y-m-d H:i:s');
     $deleteAfter = date('Y-m-d H:i:s', strtotime("+{$windowDays} days"));
     $stmt = $this->db->prepare(
-      "UPDATE users SET deletion_status = 'pending', deletion_requested_at = ?, delete_after = ? WHERE usernpub = ?"
+      "UPDATE users SET deletion_status = 'pending', deletion_requested_at = ?, delete_after = ? WHERE uuid_id = ?"
     );
     if (!$stmt) {
       throw new Exception("Error preparing statement: " . $this->db->error);
     }
     try {
-      if (!$stmt->bind_param('sss', $now, $deleteAfter, $this->npub)) {
+      if (!$stmt->bind_param('sss', $now, $deleteAfter, $this->uuid)) {
         throw new Exception("Error binding parameters: " . $stmt->error);
       }
       if (!$stmt->execute()) {
@@ -900,13 +907,13 @@ class Account
     $deleteAfter = $windowDays <= 0 ? $now : date('Y-m-d H:i:s', strtotime("+{$windowDays} days"));
     $stmt = $this->db->prepare(
       "UPDATE users SET deletion_status = ?, deletion_requested_at = ?, delete_after = ?,
-         deletion_category = ?, deletion_reason = ?, deletion_actor = ? WHERE usernpub = ?"
+         deletion_category = ?, deletion_reason = ?, deletion_actor = ? WHERE uuid_id = ?"
     );
     if (!$stmt) {
       throw new Exception("Error preparing statement: " . $this->db->error);
     }
     try {
-      if (!$stmt->bind_param('sssssss', $status, $now, $deleteAfter, $category, $reason, $actor, $this->npub)) {
+      if (!$stmt->bind_param('sssssss', $status, $now, $deleteAfter, $category, $reason, $actor, $this->uuid)) {
         throw new Exception("Error binding parameters: " . $stmt->error);
       }
       if (!$stmt->execute()) {
@@ -953,7 +960,7 @@ class Account
           SET deletion_status = 'pending', deletion_category = 'inactivity',
               deletion_reason = 'Inactive (expired) for over 2 years — automated sweep',
               deletion_actor = 'system', deletion_requested_at = ?, delete_after = ?
-        WHERE usernpub = ?
+        WHERE uuid_id = ?
           AND deletion_status = 'none'
           AND acctlevel NOT IN (89, 99)
           AND plan_until_date IS NOT NULL
@@ -963,7 +970,7 @@ class Account
       throw new Exception("Error preparing statement: " . $this->db->error);
     }
     try {
-      if (!$stmt->bind_param('sss', $now, $deleteAfter, $this->npub)) {
+      if (!$stmt->bind_param('sss', $now, $deleteAfter, $this->uuid)) {
         throw new Exception("Error binding parameters: " . $stmt->error);
       }
       if (!$stmt->execute()) {
@@ -1000,13 +1007,13 @@ class Account
     }
     $stmt = $this->db->prepare(
       "UPDATE users SET deletion_status = 'none', deletion_requested_at = NULL, delete_after = NULL,
-         deletion_category = NULL, deletion_reason = NULL, deletion_actor = NULL WHERE usernpub = ?"
+         deletion_category = NULL, deletion_reason = NULL, deletion_actor = NULL WHERE uuid_id = ?"
     );
     if (!$stmt) {
       throw new Exception("Error preparing statement: " . $this->db->error);
     }
     try {
-      if (!$stmt->bind_param('s', $this->npub)) {
+      if (!$stmt->bind_param('s', $this->uuid)) {
         throw new Exception("Error binding parameters: " . $stmt->error);
       }
       if (!$stmt->execute()) {
@@ -1040,13 +1047,13 @@ class Account
          plan_start_date = NULL, plan_until_date = NULL, subscription_period = NULL,
          deletion_status = 'none', deletion_requested_at = NULL, delete_after = NULL,
          deletion_category = NULL, deletion_reason = NULL, deletion_actor = NULL
-       WHERE usernpub = ?"
+       WHERE uuid_id = ?"
     );
     if (!$stmt) {
       throw new Exception("Error preparing statement: " . $this->db->error);
     }
     try {
-      if (!$stmt->bind_param('s', $this->npub)) {
+      if (!$stmt->bind_param('s', $this->uuid)) {
         throw new Exception("Error binding parameters: " . $stmt->error);
       }
       if (!$stmt->execute()) {
@@ -1591,12 +1598,12 @@ class Account
       }
 
       $overrideStart = $today;
-      $stmt = $this->db->prepare("UPDATE users SET acctlevel = ?, plan_start_date = ?, plan_until_date = ?, subscription_period = ? WHERE usernpub = ?");
+      $stmt = $this->db->prepare("UPDATE users SET acctlevel = ?, plan_start_date = ?, plan_until_date = ?, subscription_period = ? WHERE uuid_id = ?");
       if (!$stmt) {
         throw new Exception("Error preparing statement: " . $this->db->error);
       }
       try {
-        if (!$stmt->bind_param('issss', $planLevel, $overrideStart, $overrideEnd, $period, $this->npub)) {
+        if (!$stmt->bind_param('issss', $planLevel, $overrideStart, $overrideEnd, $period, $this->uuid)) {
           throw new Exception("Error binding parameters: " . $stmt->error);
         }
         if (!$stmt->execute()) {
@@ -1692,10 +1699,10 @@ class Account
 
     // Build SQL query with conditional WHERE clause for renewals  
     if ($isActuallyNew) {
-      $sql = "UPDATE users SET acctlevel = ?, plan_start_date = ?, plan_until_date = ?, subscription_period = ? WHERE usernpub = ?";
+      $sql = "UPDATE users SET acctlevel = ?, plan_start_date = ?, plan_until_date = ?, subscription_period = ? WHERE uuid_id = ?";
     } else {
       $sql = "UPDATE users SET acctlevel = ?, plan_start_date = ?, plan_until_date = ?, subscription_period = ? " .
-        "WHERE usernpub = ? AND plan_until_date < DATE_ADD(CURDATE(), INTERVAL {$safeRenewDays} DAY)";
+        "WHERE uuid_id = ? AND plan_until_date < DATE_ADD(CURDATE(), INTERVAL {$safeRenewDays} DAY)";
     }
 
     $stmt = $this->db->prepare($sql);
@@ -1708,7 +1715,7 @@ class Account
       error_log("Account data: " . print_r($this->account, true));
       error_log("Plan start date: $planStartDate, Plan end date: $planEndDate" . PHP_EOL);
 
-      if (!$stmt->bind_param('issss', $planLevel, $planStartDate, $planEndDate, $period, $this->npub)) {
+      if (!$stmt->bind_param('issss', $planLevel, $planStartDate, $planEndDate, $period, $this->uuid)) {
         throw new Exception("Error binding parameters: " . $stmt->error);
       }      if (!$stmt->execute()) {
         throw new Exception("Error executing statement: " . $stmt->error);
@@ -1946,6 +1953,12 @@ class Account
     }
     unset($accountInfo['password']);
     unset($accountInfo['pbkdf2_password']);
+    // email is PII: never include it in this shared payload. getAccountInfo() is
+    // also returned by the cross-user GET /blossom/account/{npub} route and pushed
+    // to blossom-band by blossomFrontEndAPI->updateAccount(). Self/admin read the
+    // email via getEmail()/isEmailVerified() instead.
+    unset($accountInfo['email']);
+    unset($accountInfo['email_verified']);
     // Add remaining storage space
     $accountInfo['remaining_storage_space'] = $this->getRemainingStorageSpace();
     // Add used storage space
@@ -1962,6 +1975,28 @@ class Account
       $accountInfo['nl_sub_info'] = $this->getNlSubInfo();
     }
     return $accountInfo;
+  }
+
+  /**
+   * The account's email (null when none set). Deliberately NOT in getAccountInfo()
+   * — that payload is shared with the cross-user /blossom/account route and the
+   * blossom sync. Read email only in self/admin contexts.
+   */
+  public function getEmail(): ?string
+  {
+    return $this->account['email'] ?? null;
+  }
+
+  /** Whether the account's email has been verified. */
+  public function isEmailVerified(): bool
+  {
+    return (bool) ($this->account['email_verified'] ?? 0);
+  }
+
+  /** Whether a login password is set (the hash itself is never exposed). */
+  public function hasPassword(): bool
+  {
+    return !empty($this->account['password']);
   }
 
   // =========================================================================
@@ -2001,11 +2036,11 @@ class Account
     // Free tier: clear plan dates so this looks like a never-paid account.
     if ($level === 0) {
       $stmt = $this->db->prepare(
-        "UPDATE users SET acctlevel = 0, plan_start_date = NULL, plan_until_date = NULL, subscription_period = NULL WHERE usernpub = ?"
+        "UPDATE users SET acctlevel = 0, plan_start_date = NULL, plan_until_date = NULL, subscription_period = NULL WHERE uuid_id = ?"
       );
       if (!$stmt) throw new Exception("prepare failed: " . $this->db->error);
       try {
-        $stmt->bind_param('s', $this->npub);
+        $stmt->bind_param('s', $this->uuid);
         if (!$stmt->execute()) throw new Exception("execute failed: " . $stmt->error);
       } finally {
         $stmt->close();
@@ -2024,11 +2059,11 @@ class Account
     if ($until === false) throw new Exception("date arithmetic failed for period {$period}");
 
     $stmt = $this->db->prepare(
-      "UPDATE users SET acctlevel = ?, plan_start_date = ?, plan_until_date = ?, subscription_period = ? WHERE usernpub = ?"
+      "UPDATE users SET acctlevel = ?, plan_start_date = ?, plan_until_date = ?, subscription_period = ? WHERE uuid_id = ?"
     );
     if (!$stmt) throw new Exception("prepare failed: " . $this->db->error);
     try {
-      $stmt->bind_param('issss', $level, $today, $until, $period, $this->npub);
+      $stmt->bind_param('issss', $level, $today, $until, $period, $this->uuid);
       if (!$stmt->execute()) throw new Exception("execute failed: " . $stmt->error);
     } finally {
       $stmt->close();
@@ -2064,10 +2099,10 @@ class Account
     $newEnd = date('Y-m-d', strtotime("{$base} +{$days} days"));
     if ($newEnd === false) throw new Exception("date arithmetic failed");
 
-    $stmt = $this->db->prepare("UPDATE users SET plan_until_date = ? WHERE usernpub = ?");
+    $stmt = $this->db->prepare("UPDATE users SET plan_until_date = ? WHERE uuid_id = ?");
     if (!$stmt) throw new Exception("prepare failed: " . $this->db->error);
     try {
-      $stmt->bind_param('ss', $newEnd, $this->npub);
+      $stmt->bind_param('ss', $newEnd, $this->uuid);
       if (!$stmt->execute()) throw new Exception("execute failed: " . $stmt->error);
     } finally {
       $stmt->close();
@@ -2114,10 +2149,10 @@ class Account
       throw new InvalidArgumentException('user has no plan — use adminSetPlan first');
     }
 
-    $stmt = $this->db->prepare("UPDATE users SET plan_until_date = ? WHERE usernpub = ?");
+    $stmt = $this->db->prepare("UPDATE users SET plan_until_date = ? WHERE uuid_id = ?");
     if (!$stmt) throw new Exception("prepare failed: " . $this->db->error);
     try {
-      $stmt->bind_param('ss', $normalized, $this->npub);
+      $stmt->bind_param('ss', $normalized, $this->uuid);
       if (!$stmt->execute()) throw new Exception("execute failed: " . $stmt->error);
     } finally {
       $stmt->close();
@@ -2144,10 +2179,10 @@ class Account
   public function adminSetNpubVerified(bool $verified): void
   {
     $val = $verified ? 1 : 0;
-    $stmt = $this->db->prepare("UPDATE users SET npub_verified = ? WHERE usernpub = ?");
+    $stmt = $this->db->prepare("UPDATE users SET npub_verified = ? WHERE uuid_id = ?");
     if (!$stmt) throw new Exception("prepare failed: " . $this->db->error);
     try {
-      $stmt->bind_param('is', $val, $this->npub);
+      $stmt->bind_param('is', $val, $this->uuid);
       if (!$stmt->execute()) throw new Exception("execute failed: " . $stmt->error);
       if ($stmt->affected_rows === 0 && !$this->accountExists()) {
         throw new Exception("user not found");
@@ -2172,10 +2207,10 @@ class Account
   public function adminSetAllowNpubLogin(bool $allow): void
   {
     $val = $allow ? 1 : 0;
-    $stmt = $this->db->prepare("UPDATE users SET allow_npub_login = ? WHERE usernpub = ?");
+    $stmt = $this->db->prepare("UPDATE users SET allow_npub_login = ? WHERE uuid_id = ?");
     if (!$stmt) throw new Exception("prepare failed: " . $this->db->error);
     try {
-      $stmt->bind_param('is', $val, $this->npub);
+      $stmt->bind_param('is', $val, $this->uuid);
       if (!$stmt->execute()) throw new Exception("execute failed: " . $stmt->error);
       if ($stmt->affected_rows === 0 && !$this->accountExists()) {
         throw new Exception("user not found");
@@ -2206,10 +2241,10 @@ class Account
     if ($bytes < 0) {
       throw new InvalidArgumentException("addon storage must be >= 0: $bytes");
     }
-    $stmt = $this->db->prepare("UPDATE users SET addon_storage = ? WHERE usernpub = ?");
+    $stmt = $this->db->prepare("UPDATE users SET addon_storage = ? WHERE uuid_id = ?");
     if (!$stmt) throw new Exception("prepare failed: " . $this->db->error);
     try {
-      $stmt->bind_param('is', $bytes, $this->npub);
+      $stmt->bind_param('is', $bytes, $this->uuid);
       if (!$stmt->execute()) throw new Exception("execute failed: " . $stmt->error);
       if ($stmt->affected_rows === 0 && !$this->accountExists()) {
         throw new Exception("user not found");
@@ -2243,10 +2278,10 @@ class Account
     $hash = password_hash($password, PASSWORD_DEFAULT);
     $pbkdf2 = hashPasswordPBKDF2($password);
 
-    $stmt = $this->db->prepare("UPDATE users SET password = ?, pbkdf2_password = ? WHERE usernpub = ?");
+    $stmt = $this->db->prepare("UPDATE users SET password = ?, pbkdf2_password = ? WHERE uuid_id = ?");
     if (!$stmt) throw new Exception("prepare failed: " . $this->db->error);
     try {
-      $stmt->bind_param('sss', $hash, $pbkdf2, $this->npub);
+      $stmt->bind_param('sss', $hash, $pbkdf2, $this->uuid);
       if (!$stmt->execute()) throw new Exception("execute failed: " . $stmt->error);
       if ($stmt->affected_rows === 0) {
         throw new Exception("user not found");
