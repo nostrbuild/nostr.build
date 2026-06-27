@@ -1114,6 +1114,107 @@ $app->group('/accounts', function (RouteCollectorProxy $group) {
         ->withStatus(200);
     });
 
+    // GET /api/v2/accounts/dashboard/email/available?email=...
+    //
+    // Server-only availability probe for the Worker's enumeration-safe
+    // add-email flow: the Worker calls this BEFORE sending a magic-link and
+    // skips the send when the address is taken. The result never reaches the
+    // browser, so it isn't an existence oracle. uuid-keyed (npub-agnostic).
+    $sub->get('/email/available', function (Request $request, Response $response) {
+      global $link;
+      $uuid = resolveIdentityUuid($request);
+      if ($uuid === '') {
+        $response->getBody()->write(json_encode(['error' => 'missing-identity']));
+        return $response
+          ->withHeader('Content-Type', 'application/json')
+          ->withStatus(400);
+      }
+
+      $params = $request->getQueryParams();
+      $email = isset($params['email']) ? (string) $params['email'] : '';
+      if ($email === '') {
+        $response->getBody()->write(json_encode(['error' => 'missing-email']));
+        return $response
+          ->withHeader('Content-Type', 'application/json')
+          ->withStatus(400);
+      }
+
+      try {
+        $account = Account::fromUuid($uuid, $link);
+        if ($account === null) {
+          $response->getBody()->write(json_encode(['error' => 'not-found']));
+          return $response
+            ->withHeader('Content-Type', 'application/json')
+            ->withStatus(404);
+        }
+        $available = !$account->emailTakenByOther($email);
+      } catch (\Throwable $e) {
+        error_log('email availability check failed: ' . $e->getMessage());
+        $response->getBody()->write(json_encode(['error' => 'check-failed']));
+        return $response
+          ->withHeader('Content-Type', 'application/json')
+          ->withStatus(500);
+      }
+
+      $response->getBody()->write(json_encode(['available' => $available]));
+      return $response
+        ->withHeader('Content-Type', 'application/json')
+        ->withStatus(200);
+    });
+
+    // POST /api/v2/accounts/dashboard/email/set-verified  {email}
+    //
+    // The Worker has consumed a single-use magic-link token (proof the user
+    // controls the inbox), so this sets + verifies the email in one uuid-keyed
+    // write, atomically swapping any prior address. 409 when another account
+    // already owns the address (UNIQUE index → DuplicateEmailException).
+    $sub->post('/email/set-verified', function (Request $request, Response $response) {
+      global $link;
+      $uuid = resolveIdentityUuid($request);
+      if ($uuid === '') {
+        $response->getBody()->write(json_encode(['error' => 'missing-identity']));
+        return $response
+          ->withHeader('Content-Type', 'application/json')
+          ->withStatus(400);
+      }
+
+      $body = $request->getParsedBody();
+      $email = isset($body['email']) ? (string) $body['email'] : '';
+      if ($email === '') {
+        $response->getBody()->write(json_encode(['error' => 'missing-email']));
+        return $response
+          ->withHeader('Content-Type', 'application/json')
+          ->withStatus(400);
+      }
+
+      try {
+        $account = Account::fromUuid($uuid, $link);
+        if ($account === null) {
+          $response->getBody()->write(json_encode(['error' => 'not-found']));
+          return $response
+            ->withHeader('Content-Type', 'application/json')
+            ->withStatus(404);
+        }
+        $account->setEmail($email);
+      } catch (DuplicateEmailException $e) {
+        $response->getBody()->write(json_encode(['error' => 'email-taken']));
+        return $response
+          ->withHeader('Content-Type', 'application/json')
+          ->withStatus(409);
+      } catch (\Throwable $e) {
+        error_log('email set-verified failed: ' . $e->getMessage());
+        $response->getBody()->write(json_encode(['error' => 'update-failed']));
+        return $response
+          ->withHeader('Content-Type', 'application/json')
+          ->withStatus(500);
+      }
+
+      $response->getBody()->write(json_encode(['ok' => true, 'email' => $account->getEmail()]));
+      return $response
+        ->withHeader('Content-Type', 'application/json')
+        ->withStatus(200);
+    });
+
     // POST /api/v2/accounts/dashboard/profile/password
     $sub->post('/profile/password', function (Request $request, Response $response) {
       global $link;

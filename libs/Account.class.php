@@ -1999,6 +1999,65 @@ class Account
     return !empty($this->account['password']);
   }
 
+  /**
+   * Set + verify the account's email in one uuid-keyed write. The Worker has
+   * already proven control of the inbox (single-use magic-link token), so this
+   * sets email_verified = 1 and atomically swaps any prior address.
+   *
+   * Email is stored lowercase-normalized (the Worker normalizes too; this is
+   * defense in depth). The UNIQUE index raises errno 1062 when another account
+   * already owns the address — surfaced as DuplicateEmailException for a 409.
+   *
+   * @throws DuplicateEmailException when the address is taken by another account.
+   */
+  public function setEmail(string $email): void
+  {
+    if ($this->uuid === '') {
+      throw new Exception("setEmail: account not loaded (missing uuid)");
+    }
+    $normalized = strtolower(trim($email));
+    $stmt = $this->db->prepare("UPDATE users SET email = ?, email_verified = 1 WHERE uuid_id = ?");
+    if (!$stmt) {
+      throw new Exception("Error preparing statement: " . $this->db->error);
+    }
+    $stmt->bind_param('ss', $normalized, $this->uuid);
+    if (!$stmt->execute()) {
+      $errno = $this->db->errno;
+      $error = $this->db->error;
+      $stmt->close();
+      if ($errno == 1062) { // Duplicate entry: another account owns this email.
+        throw new DuplicateEmailException("Email already in use");
+      }
+      throw new Exception("setEmail execute failed: " . $error);
+    }
+    $stmt->close();
+    // Keep the in-memory row coherent for any subsequent getter in this request.
+    $this->account['email'] = $normalized;
+    $this->account['email_verified'] = 1;
+  }
+
+  /**
+   * Whether $email is already taken by a DIFFERENT account. Powers the Worker's
+   * enumeration-safe availability probe (skip the magic-link send when taken);
+   * the canonical uniqueness guarantee is still the UNIQUE index at write time.
+   */
+  public function emailTakenByOther(string $email): bool
+  {
+    $normalized = strtolower(trim($email));
+    if ($normalized === '') {
+      return false;
+    }
+    $stmt = $this->db->prepare("SELECT 1 FROM users WHERE email = ? AND uuid_id <> ? LIMIT 1");
+    if (!$stmt) {
+      throw new Exception("Error preparing statement: " . $this->db->error);
+    }
+    $stmt->bind_param('ss', $normalized, $this->uuid);
+    $stmt->execute();
+    $taken = $stmt->get_result()->fetch_row() !== null;
+    $stmt->close();
+    return $taken;
+  }
+
   // =========================================================================
   // ADMIN OVERRIDES
   // -------------------------------------------------------------------------
