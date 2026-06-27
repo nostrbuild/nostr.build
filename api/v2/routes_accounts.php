@@ -1192,6 +1192,56 @@ $app->group('/accounts', function (RouteCollectorProxy $group) {
         ->withStatus(200);
     });
 
+    // POST /api/v2/accounts/dashboard/npub/claim  {npub}
+    //
+    // Called by the Worker after it has cryptographically proven the user owns
+    // $npub (NIP-07 signature OR a matched DM code sent to that key). Attaches
+    // the key to a key-LESS ("email") account — the symmetric counterpart of
+    // add-email. The proven npub rides in the (HMAC-signed) body, NOT a header:
+    // the session has no npub yet, so unlike mark-verified there's nothing in
+    // X-Accounts-Npub to trust. uuid identifies the account; the Worker is the
+    // only caller (PROXY_DENY blocks the generic /api/dashboard/* proxy).
+    //
+    // 409 'npub-already-set' when the account already has a key (claiming is
+    // first-key-only); 409 'npub-in-use' when another account owns the key.
+    $sub->post('/npub/claim', function (Request $request, Response $response) {
+      global $link;
+      $uuid = resolveIdentityUuid($request);
+      if ($uuid === '') {
+        $response->getBody()->write(json_encode(['error' => 'missing-identity']));
+        return $response->withHeader('Content-Type', 'application/json')->withStatus(400);
+      }
+
+      $body = $request->getParsedBody();
+      $npub = isset($body['npub']) ? trim((string) $body['npub']) : '';
+      if (strpos($npub, 'npub1') !== 0 || strlen($npub) < 60 || strlen($npub) > 100) {
+        $response->getBody()->write(json_encode(['error' => 'invalid-npub']));
+        return $response->withHeader('Content-Type', 'application/json')->withStatus(400);
+      }
+
+      try {
+        $account = Account::fromUuid($uuid, $link);
+        if ($account === null) {
+          $response->getBody()->write(json_encode(['error' => 'not-found']));
+          return $response->withHeader('Content-Type', 'application/json')->withStatus(404);
+        }
+        $account->claimNpub($npub);
+      } catch (NpubAlreadySetException $e) {
+        $response->getBody()->write(json_encode(['error' => 'npub-already-set']));
+        return $response->withHeader('Content-Type', 'application/json')->withStatus(409);
+      } catch (DuplicateUserException $e) {
+        $response->getBody()->write(json_encode(['error' => 'npub-in-use']));
+        return $response->withHeader('Content-Type', 'application/json')->withStatus(409);
+      } catch (\Throwable $e) {
+        error_log('npub claim failed: ' . $e->getMessage());
+        $response->getBody()->write(json_encode(['error' => 'update-failed']));
+        return $response->withHeader('Content-Type', 'application/json')->withStatus(500);
+      }
+
+      $response->getBody()->write(json_encode(['ok' => true, 'npub' => $npub]));
+      return $response->withHeader('Content-Type', 'application/json')->withStatus(200);
+    });
+
     // GET /api/v2/accounts/dashboard/email/available?email=...
     //
     // Server-only availability probe for the Worker's enumeration-safe

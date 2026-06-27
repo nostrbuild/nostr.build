@@ -78,6 +78,9 @@ class DuplicateEmailException extends Exception {}
 // usable Nostr-key login, or disabling Nostr login on an account with no
 // verified email + password.
 class LastAuthenticatorException extends Exception {}
+// Thrown when claiming a Nostr key onto an account that already has one (claiming
+// is first-key-only; changing an existing key is admin npub-rotation).
+class NpubAlreadySetException extends Exception {}
 
 enum AccountLevel: int
 {
@@ -2192,6 +2195,69 @@ class Account
     $taken = $stmt->get_result()->fetch_row() !== null;
     $stmt->close();
     return $taken;
+  }
+
+  /**
+   * Claim a Nostr key for a key-less ("email") account: attach $npub to a row
+   * that currently has none, mark it verified, and enable npub login. The Worker
+   * has already proven ownership of $npub (a NIP-07 signature OR a DM round-trip),
+   * so we trust it here and bind it under the account's stable uuid.
+   *
+   * First-key-only: refuses (NpubAlreadySetException) when the account already
+   * has a key — changing an existing key is admin npub-rotation, not a self-serve
+   * claim. The usernpub UNIQUE index raises errno 1062 when another account
+   * already owns $npub — surfaced as DuplicateUserException for a 409.
+   *
+   * Pushes the now-keyed profile to the Blossom API exactly like verifyNpub():
+   * an email-only account never reaches that push (no key), so claiming is the
+   * moment a Blossom-side npub record first becomes meaningful. No new Blossom
+   * code — the normal profile push carries it.
+   *
+   * @throws NpubAlreadySetException when the account already has a key.
+   * @throws DuplicateUserException when $npub is attached to another account.
+   * @throws Exception
+   */
+  public function claimNpub(string $npub): void
+  {
+    if ($this->uuid === '') {
+      throw new Exception("claimNpub: account not loaded (missing uuid)");
+    }
+    $npub = trim($npub);
+    if (strpos($npub, 'npub1') !== 0 || strlen($npub) < 60 || strlen($npub) > 100) {
+      throw new Exception("claimNpub: invalid npub");
+    }
+    if (!empty($this->account['usernpub'])) {
+      throw new NpubAlreadySetException('Account already has a Nostr key');
+    }
+
+    $stmt = $this->db->prepare("UPDATE users SET usernpub = ?, npub_verified = 1, allow_npub_login = 1 WHERE uuid_id = ?");
+    if (!$stmt) {
+      throw new Exception("Error preparing statement: " . $this->db->error);
+    }
+    $stmt->bind_param('ss', $npub, $this->uuid);
+    if (!$stmt->execute()) {
+      $errno = $this->db->errno;
+      $error = $this->db->error;
+      $stmt->close();
+      if ($errno == 1062) { // usernpub UNIQUE: the key is attached elsewhere.
+        throw new DuplicateUserException("Nostr key already in use");
+      }
+      throw new Exception("claimNpub execute failed: " . $error);
+    }
+    $stmt->close();
+
+    // Keep the in-memory row + npub property coherent so getAccountInfo() and the
+    // Blossom push below (and any later getter this request) see the new key.
+    $this->account['usernpub'] = $npub;
+    $this->account['npub_verified'] = 1;
+    $this->account['allow_npub_login'] = 1;
+    $this->npub = $npub;
+    $this->setSessionParameters();
+
+    // Normal profile push to Blossom — now that a key exists, the npub record is
+    // meaningful (verifyNpub() does the identical push on its own path).
+    $newData = $this->getAccountInfo();
+    $this->blossomFrontEndAPI->updateAccount($this->npub, $newData);
   }
 
   // =========================================================================
