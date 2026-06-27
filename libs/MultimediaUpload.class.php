@@ -69,6 +69,7 @@ class MultimediaUpload
 
     // -- User/account context -------------------------------------------------
     protected string $userNpub;
+    protected string $userUuid;
     protected bool $pro;
     protected ?string $apiClient = null;
 
@@ -86,11 +87,15 @@ class MultimediaUpload
      * @param string $userNpub
      * @param array $awsConfig AWS/R2 config for poster extraction (optional, enables auto poster for pro videos)
      */
-    public function __construct(mysqli $db, S3Service $s3Service, bool $pro = false, string $userNpub = '', array $awsConfig = [])
+    public function __construct(mysqli $db, S3Service $s3Service, bool $pro = false, string $userNpub = '', array $awsConfig = [], string $userUuid = '')
     {
         $this->db = $db;
         $this->s3Service = $s3Service;
         $this->userNpub = $userNpub;
+        // Stable owner identity — the only identity an npub-less email account
+        // has. The object key is filename-based (not owner-prefixed), so this
+        // only drives DB ownership (users_images.user_uuid) + the Account.
+        $this->userUuid = $userUuid;
         $this->pro = $pro;
         $this->awsConfig = $awsConfig;
 
@@ -100,10 +105,13 @@ class MultimediaUpload
         if ($this->pro) {
             $this->usersImages = new UsersImages($db);
             $this->usersImagesFolders = new UsersImagesFolders($db);
-            $this->userAccount = new Account($userNpub, $db);
+            // Resolve the account from the npub when present, else the uuid, so
+            // an email account (no npub) still loads for the level/storage gates.
+            $this->userAccount = $userNpub !== '' ? new Account($userNpub, $db) : Account::fromUuid($userUuid, $db);
         }
-        if ($this->pro && empty($this->userNpub)) {
-            throw new Exception('UserNpub is required for pro uploads');
+        // Pro uploads are keyed by the stable uuid; require it (npub is optional).
+        if ($this->pro && empty($this->userUuid)) {
+            throw new Exception('UserUuid is required for pro uploads');
         }
 
         // Delegates
@@ -119,6 +127,7 @@ class MultimediaUpload
             $this->usersImagesFolders,
             $userNpub,
             $pro,
+            $userUuid,
         );
         $this->duplicateDetector = new DuplicateDetector(
             $this->uploadsData,

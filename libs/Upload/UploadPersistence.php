@@ -9,6 +9,7 @@ class UploadPersistence
   private ?UsersImages $usersImages;
   private ?UsersImagesFolders $usersImagesFolders;
   private string $userNpub;
+  private string $userUuid;
   private bool $pro;
 
   public function __construct(
@@ -18,12 +19,16 @@ class UploadPersistence
     ?UsersImagesFolders $usersImagesFolders,
     string $userNpub,
     bool $pro,
+    string $userUuid = '',
   ) {
     $this->s3Service = $s3Service;
     $this->uploadsData = $uploadsData;
     $this->usersImages = $usersImages;
     $this->usersImagesFolders = $usersImagesFolders;
     $this->userNpub = $userNpub;
+    // Stable owner identity — present for every account (an npub-less email
+    // account has only this). storePro keys users_images by it.
+    $this->userUuid = $userUuid;
     $this->pro = $pro;
   }
 
@@ -83,7 +88,11 @@ class UploadPersistence
     }
 
     try {
-      $userUuid = resolveOwnerUuid($this->usersImages->getDb(), $this->userNpub);
+      // Prefer the stable uuid passed in (works for npub-less email accounts);
+      // fall back to resolving it from the npub for any legacy caller.
+      $userUuid = $this->userUuid !== ''
+        ? $this->userUuid
+        : resolveOwnerUuid($this->usersImages->getDb(), $this->userNpub);
       if ($userUuid === null || $userUuid === '') {
         throw new Exception('Unable to resolve user uuid for pro upload');
       }

@@ -2003,8 +2003,11 @@ $app->group('/accounts', function (RouteCollectorProxy $group) {
     global $awsConfig;
     require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/MultimediaUpload.class.php';
 
+    // uuid is the stable identity (an email account has no npub). npub stays
+    // optional and only drives the npub-keyed blacklist checks downstream.
     $npub = resolveIdentityNpub($request);
-    if ($npub === '') {
+    $uuid = resolveIdentityUuid($request);
+    if ($uuid === '') {
       return uppyResponse($response, 'error', 'missing-identity', new stdClass(), 400);
     }
 
@@ -2018,7 +2021,7 @@ $app->group('/accounts', function (RouteCollectorProxy $group) {
     $_SESSION['usernpub'] = $npub;
     try {
       $s3 = new S3Service($awsConfig);
-      $upload = new MultimediaUpload($link, $s3, true, $npub, $awsConfig);
+      $upload = new MultimediaUpload($link, $s3, true, $npub, $awsConfig, $uuid);
       $upload->setPsrFiles($files, $metadata);
       $upload->setUppyMetadata($metadata);
       [$status, $code, $message] = $upload->uploadFiles();
