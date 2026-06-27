@@ -2028,6 +2028,15 @@ class Account
     return !empty($this->account['password']);
   }
 
+  /** The stable per-user identity (users.uuid_id). Always present once the
+   *  account is loaded; '' only for a non-existent account. Used by the uuid-
+   *  native upload path (object keys + ownership) so an npub-less email account
+   *  can upload. */
+  public function getUuidId(): string
+  {
+    return $this->uuid;
+  }
+
   /**
    * Set + verify the account's email in one uuid-keyed write. The Worker has
    * already proven control of the inbox (single-use magic-link token), so this

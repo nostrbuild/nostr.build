@@ -80,9 +80,16 @@ class S3Multipart
    * @param string $userNpub User's npub
    * @return array|false Upload ID and key or false on failure
    */
-  public function createMultipartUpload(string $filename, string $contentType, array $metadata, string $userNpub)
+  public function createMultipartUpload(string $filename, string $contentType, array $metadata, string $userNpub, string $userUuid = '')
   {
     try {
+      // The stable uuid is the identity that keys the upload (an npub-less email
+      // account has no npub). npub stays optional and only drives the npub-keyed
+      // ban check below.
+      if ($userUuid === '') {
+        throw new Exception('userUuid is required');
+      }
+
       // Hard-fail banned npubs before we hand out any presigned URLs.
       // Until this gate landed, the entire /s3/multipart path bypassed
       // every blacklist check (UploadValidator only runs inside
@@ -90,23 +97,31 @@ class S3Multipart
       // could keep uploading large files via the dashboard's multipart flow
       // even after their npub was blacklisted on every other route.
       // The check uses the legacy `blacklist` table which both abuse and
-      // CSAM bans write to.
-      if ($userNpub === '') {
-        throw new Exception('userNpub is required');
-      }
-      if ((new LegacyBlacklist($this->db))->isNpubBanned($userNpub)) {
+      // CSAM bans write to. It is npub-keyed, so it only applies to accounts
+      // that have an npub; an email-only account is gated by isLocked/isExpired.
+      if ($userNpub !== '' && (new LegacyBlacklist($this->db))->isNpubBanned($userNpub)) {
         error_log('S3Multipart: blocked banned npub ' . $userNpub);
         throw new Exception('User has been flagged as rejected');
       }
 
-      // Validate user account
-      $account = new Account($userNpub, $this->db);
+      // Validate user account — resolve from npub when present, else the uuid.
+      $account = $userNpub !== '' ? new Account($userNpub, $this->db) : Account::fromUuid($userUuid, $this->db);
+      if ($account === null || !$account->accountExists()) {
+        throw new Exception('Account not found');
+      }
+      // Legal-hold lockout (CSAM evidence preservation) AND expiry both block
+      // large uploads. isLocked covers the uuid-keyed termination path that an
+      // npub-less account would otherwise miss (the npub blacklist can't reach it).
+      if ($account->isLocked()) {
+        throw new Exception('Account is locked');
+      }
       if ($account->isExpired()) {
         throw new Exception('Account has expired');
       }
 
-      // Generate unique key for the upload
-      $key = $this->generateUploadKey($filename, $userNpub, $contentType);
+      // Generate unique key for the upload — uuid-prefixed so an npub-less
+      // account is addressable. The Worker's ownsKey accepts both prefixes.
+      $key = $this->generateUploadKey($filename, $userUuid, $contentType);
 
       // Create multipart upload
       $result = $this->s3Client->createMultipartUpload([
@@ -116,6 +131,7 @@ class S3Multipart
         'Metadata' => [
           'original-filename' => $filename,
           'user-npub' => $userNpub,
+          'user-uuid' => $userUuid,
           'upload-time' => (string)time(),
           'metadata' => json_encode($metadata)
         ]
@@ -201,11 +217,14 @@ class S3Multipart
    * @param string $userNpub User's npub
    * @return array|false Success data or false on failure
    */
-  public function completeMultipartUpload(string $uploadId, string $key, array $parts, string $userNpub)
+  public function completeMultipartUpload(string $uploadId, string $key, array $parts, string $userNpub, string $userUuid = '')
   {
     try {
-      // Validate user owns this upload
-      if (!$this->validateUserOwnership($uploadId, $userNpub, $key)) {
+      if ($userUuid === '') {
+        throw new Exception('userUuid is required');
+      }
+      // Validate user owns this upload (accepts the uuid OR legacy npub prefix).
+      if (!$this->validateUserOwnership($uploadId, $userNpub, $key, $userUuid)) {
         throw new Exception('User does not own this upload');
       }
 
@@ -215,7 +234,7 @@ class S3Multipart
       // S3 parts on abort below — even if cleanup fails, the file never
       // becomes publicly accessible because we don't run the copy step
       // or insert the DB row.
-      if ($userNpub === '' || (new LegacyBlacklist($this->db))->isNpubBanned($userNpub)) {
+      if ($userNpub !== '' && (new LegacyBlacklist($this->db))->isNpubBanned($userNpub)) {
         error_log('S3Multipart: blocked banned npub ' . $userNpub . ' at complete; aborting upload ' . substr($uploadId, 0, 10));
         try {
           $this->s3Client->abortMultipartUpload([
@@ -509,21 +528,30 @@ class S3Multipart
    * @param string|null $key Optional object key for validation
    * @return bool True if user owns upload
    */
-  private function validateUserOwnership(string $uploadId, string $userNpub, ?string $key = null): bool
+  private function validateUserOwnership(string $uploadId, string $userNpub, ?string $key = null, string $userUuid = ''): bool
   {
-    // If we have a key, validate directly from it
+    // If we have a key, validate directly from it. Accept BOTH the uuid prefix
+    // (forward scheme) and the legacy npub prefix (a key minted before the
+    // cutover), each requiring the trailing slash so a sibling prefix can't pass.
     if ($key) {
-      $expectedPrefix = "uploads/{$userNpub}/";
-      return str_starts_with($key, $expectedPrefix);
+      if ($userUuid !== '' && str_starts_with($key, "uploads/{$userUuid}/")) {
+        return true;
+      }
+      if ($userNpub !== '' && str_starts_with($key, "uploads/{$userNpub}/")) {
+        return true;
+      }
+      return false;
     }
 
-    // For methods that don't have the key, we'll use a different approach
+    // For methods that don't have the key, list under the user's prefix (uuid
+    // when available, else the legacy npub) to find the upload.
+    $prefix = $userUuid !== '' ? "uploads/{$userUuid}/" : "uploads/{$userNpub}/";
 
     try {
       // List multipart uploads for this user's prefix to find the upload
       $result = $this->s3Client->listMultipartUploads([
         'Bucket' => $this->bucket,
-        'Prefix' => "uploads/{$userNpub}/",
+        'Prefix' => $prefix,
         'MaxUploads' => 100
       ]);
 
@@ -565,16 +593,24 @@ class S3Multipart
 
       $metadata = $objectMetadata['Metadata'];
 
-      // Extract user npub from key path as fallback
+      // Extract the user prefix from the key path as a fallback. Keys are now
+      // uuid-prefixed (uploads/{uuid}/...), but a key minted before the cutover
+      // is npub-prefixed — so this segment is the uuid for new uploads and the
+      // npub for old ones. The S3 metadata (user-uuid / user-npub) is the
+      // reliable source; the path is only used when metadata is missing.
       $pathParts = explode('/', $key);
-      $userNpubFromPath = (count($pathParts) >= 3 && $pathParts[0] === 'uploads') ? $pathParts[1] : '';
+      $userPrefixFromPath = (count($pathParts) >= 3 && $pathParts[0] === 'uploads') ? $pathParts[1] : '';
 
       // Reconstruct the original session structure
       return [
         'key' => $key,
         'filename' => $metadata['original-filename'] ?? basename($key),
         'contentType' => $objectMetadata['ContentType'] ?? 'application/octet-stream',
-        'userNpub' => $metadata['user-npub'] ?? $userNpubFromPath,
+        'userNpub' => $metadata['user-npub'] ?? '',
+        // uuid is the owner identity. Prefer the metadata; fall back to the path
+        // segment (a new key's prefix IS the uuid). storeInDatabase resolves the
+        // final owner uuid from this (or from the npub for legacy keys).
+        'userUuid' => $metadata['user-uuid'] ?? $userPrefixFromPath,
         'metadata' => isset($metadata['metadata']) ? json_decode($metadata['metadata'], true) : [],
         'createdAt' => isset($metadata['upload-time']) ? (int)$metadata['upload-time'] : time()
       ];
@@ -604,12 +640,14 @@ class S3Multipart
       $originalFilename = $uploadInfo['filename'];
       $mimeType = $metadata['ContentType'];
       
-      // Extract filename from the key path (uploads/npub/filename.ext)
+      // Extract filename from the key path (uploads/{uuid}/filename.ext)
       $keyParts = explode('/', $key);
       $newFilename = end($keyParts); // Get the last part which is the filename
 
-      // Create destination path like "uploads/npub.../filename.ext" 
-      $destinationKey = "uploads/{$uploadInfo['userNpub']}/{$newFilename}";
+      // Destination prefix is uuid-keyed (an email account has no npub). The
+      // prefix is cosmetic for serving — S3Service::getR2BucketAndObjectNames
+      // basenames the key, so the final object + CDN URL are filename-only.
+      $destinationKey = "uploads/{$uploadInfo['userUuid']}/{$newFilename}";
 
       // Copy to final R2 storage (pro account = true as specified)
       $copyResult = $this->s3Service->copyToFinalR2Storage(
@@ -663,20 +701,25 @@ class S3Multipart
         $folder_name = json_decode($uploadInfo['metadata']['folderName']) ?? '';
       }
 
-      // Find or create folder if we have folder information
+      // Resolve the owner uuid: the upload now carries it directly (uuid-keyed),
+      // falling back to resolving it from the npub for a pre-cutover upload.
+      $userUuid = !empty($uploadInfo['userUuid'])
+        ? $uploadInfo['userUuid']
+        : resolveOwnerUuid($this->usersImages->getDb(), $uploadInfo['userNpub']);
+      if ($userUuid === null || $userUuid === '') {
+        throw new Exception('Unable to resolve user uuid for multipart upload');
+      }
+
+      // Find or create folder if we have folder information. Folders are keyed by
+      // the stable uuid (findFolderByNameOrCreate resolves owner→uuid), so the
+      // uuid works for npub and email-only accounts alike.
       if (!empty($folder_name)) {
         try {
-          $folder_id = $this->usersImagesFolders->findFolderByNameOrCreate($uploadInfo['userNpub'], $folder_name);
+          $folder_id = $this->usersImagesFolders->findFolderByNameOrCreate($userUuid, $folder_name);
         } catch (Exception $e) {
           error_log('Error finding/creating folder: ' . $e->getMessage());
           // Continue without folder if there's an error
         }
-      }
-
-      // Insert into users_images table with proper data
-      $userUuid = resolveOwnerUuid($this->usersImages->getDb(), $uploadInfo['userNpub']);
-      if ($userUuid === null || $userUuid === '') {
-        throw new Exception('Unable to resolve user uuid for multipart upload');
       }
       $insertId = $this->usersImages->insert([
         'usernpub' => $uploadInfo['userNpub'],

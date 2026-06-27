@@ -1758,8 +1758,12 @@ $app->group('/accounts', function (RouteCollectorProxy $group) {
     // POST /multipart — create multipart upload.
     $mp->post('', function (Request $request, Response $response) {
       global $link;
+      // uuid is the stable identity (always present); npub is optional — an
+      // npub-less email account has none. Both are accepted so the multipart
+      // path works for email accounts, keyed by the uuid.
       $npub = resolveIdentityNpub($request);
-      if ($npub === '') {
+      $uuid = resolveIdentityUuid($request);
+      if ($uuid === '') {
         return jsonResponse($response, 'error', 'missing-identity', new stdClass(), 400);
       }
       $data = $request->getParsedBody();
@@ -1769,8 +1773,8 @@ $app->group('/accounts', function (RouteCollectorProxy $group) {
       $prevNpub = $_SESSION['usernpub'] ?? null;
       $_SESSION['usernpub'] = $npub;
       try {
-        $account = new Account($npub, $link);
-        if (!$account->accountExists()) {
+        $account = $npub !== '' ? new Account($npub, $link) : Account::fromUuid($uuid, $link);
+        if ($account === null || !$account->accountExists()) {
           return jsonResponse($response, 'error', 'not-found', new stdClass(), 404);
         }
         // Creator (1), Professional (2), Purist (3), Advanced
@@ -1795,6 +1799,7 @@ $app->group('/accounts', function (RouteCollectorProxy $group) {
           $data['type'],
           $data['metadata'] ?? [],
           $npub,
+          $account->getUuidId(),
         );
         if (!$result) {
           return jsonResponse($response, 'error', 'Failed to create multipart upload', new stdClass(), 500);
@@ -1848,7 +1853,8 @@ $app->group('/accounts', function (RouteCollectorProxy $group) {
     // GET /multipart/{uploadId}/status?key=... — completion-status probe.
     $mp->get('/{uploadId}/status', function (Request $request, Response $response, array $args) {
       $npub = resolveIdentityNpub($request);
-      if ($npub === '') {
+      $uuid = resolveIdentityUuid($request);
+      if ($uuid === '') {
         return jsonResponse($response, 'error', 'missing-identity', new stdClass(), 400);
       }
       $uploadId = $args['uploadId'];
@@ -1860,7 +1866,8 @@ $app->group('/accounts', function (RouteCollectorProxy $group) {
       $_SESSION['usernpub'] = $npub;
       try {
         $s3Multipart = $this->get('s3Multipart');
-        $completionStatus = $s3Multipart->checkForCompletedUpload($key, $npub);
+        // Owner lookup is uuid-keyed (findByFilenameAndUser resolves owner→uuid).
+        $completionStatus = $s3Multipart->checkForCompletedUpload($key, $uuid);
         if ($completionStatus) {
           if ($completionStatus['status'] === 'fully_completed') {
             return jsonResponse($response, 'success', 'Upload fully completed', [
@@ -1924,7 +1931,8 @@ $app->group('/accounts', function (RouteCollectorProxy $group) {
     // POST /multipart/{uploadId}/complete?key=... — finalize.
     $mp->post('/{uploadId}/complete', function (Request $request, Response $response, array $args) {
       $npub = resolveIdentityNpub($request);
-      if ($npub === '') {
+      $uuid = resolveIdentityUuid($request);
+      if ($uuid === '') {
         return jsonResponse($response, 'error', 'missing-identity', new stdClass(), 400);
       }
       $uploadId = $args['uploadId'];
@@ -1937,7 +1945,7 @@ $app->group('/accounts', function (RouteCollectorProxy $group) {
       $_SESSION['usernpub'] = $npub;
       try {
         $s3Multipart = $this->get('s3Multipart');
-        $result = $s3Multipart->completeMultipartUpload($uploadId, $key, $data['parts'], $npub);
+        $result = $s3Multipart->completeMultipartUpload($uploadId, $key, $data['parts'], $npub, $uuid);
         if (!$result) {
           return jsonResponse($response, 'error', 'Failed to complete multipart upload', new stdClass(), 500);
         }
