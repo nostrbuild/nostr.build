@@ -2039,7 +2039,14 @@ $app->group('/accounts', function (RouteCollectorProxy $group) {
       try {
         $s3Multipart = $this->get('s3Multipart');
         $result = $s3Multipart->completeMultipartUpload($uploadId, $key, $data['parts'], $npub, $uuid);
-        if (!$result) {
+        // completeMultipartUpload returns false on a thrown error, OR an array
+        // carrying an 'error' key when a post-assembly step (copy / DB insert)
+        // fails after the object was already assembled. Both are failures — the
+        // old `if (!$result)` missed the array form and reported success while no
+        // DB row was written, leaving the file orphaned in final storage.
+        if (!$result || isset($result['error'])) {
+          $reason = is_array($result) ? ($result['error'] ?? 'unknown') : 'completion returned false';
+          error_log('uploads/multipart complete failed (' . substr($uploadId, 0, 10) . '): ' . $reason);
           return jsonResponse($response, 'error', 'Failed to complete multipart upload', new stdClass(), 500);
         }
         return jsonResponse($response, 'success', 'Multipart upload completed', $result);

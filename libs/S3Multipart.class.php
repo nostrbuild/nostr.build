@@ -532,8 +532,12 @@ class S3Multipart
           // Continue without folder if there's an error
         }
       }
+      // users_images is keyed by the stable user_uuid; the legacy `usernpub`
+      // column was dropped from the table in the npub→uuid re-key, so inserting
+      // it here threw "Unknown column 'usernpub'" and left the file copied to
+      // final storage with no DB row. The npub stays available via $uploadInfo
+      // for the upload webhook below.
       $insertId = $this->usersImages->insert([
-        'usernpub' => $uploadInfo['userNpub'],
         'user_uuid' => $userUuid,
         'sha256_hash' => null, // $fileData['checksum_sha256'] ?: $fileData['etag'], // Use actual SHA256 checksum from R2, fallback to ETag
         'image' => $fileData['filename'],
