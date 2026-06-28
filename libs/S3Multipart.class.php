@@ -183,6 +183,28 @@ class S3Multipart
         throw new Exception('User does not own this upload');
       }
 
+      // Idempotency guard. A retried completion — disconnect recovery, a lost
+      // 200, or a client re-drive after the route now returns an error on
+      // failure — must be a NO-OP, never a second copy to final storage and a
+      // second users_images row (duplicate file, double-counted storage).
+      // checkForCompletedUpload is uuid-keyed (its param is named $userNpub but
+      // findByFilenameAndUser resolves owner→uuid, and /status passes the uuid).
+      // It only reports 'fully_completed' when a DB row already exists for this
+      // exact key's filename — a random nanoid, unique per create — so this can
+      // never false-positive across different uploads, and it does NOT trigger
+      // on the first completion (then only the staging object exists).
+      $alreadyRecorded = $this->checkForCompletedUpload($key, $userUuid);
+      if ($alreadyRecorded !== null && ($alreadyRecorded['status'] ?? '') === 'fully_completed') {
+        error_log('S3Multipart: complete is a no-op, file already recorded: ' . substr(basename($key), 0, 16));
+        return [
+          'location' => null,
+          'bucket' => $this->bucket,
+          'key' => $key,
+          'etag' => null,
+          'fileData' => $alreadyRecorded,
+        ];
+      }
+
       // Re-check the ban list at completion. Catches the case where a user
       // created the multipart upload before being banned and is now trying to
       // publish the assembled file. npub → cheap indexed check; key-less account
@@ -281,7 +303,38 @@ class S3Multipart
       $fileId = $this->storeInDatabase($uploadInfo, $copyResult);
 
       if (!$fileId) {
-        error_log("Failed to store file in database for upload: " . substr($uploadId, 0, 10));
+        // storeInDatabase returns false on a GENUINE insert failure (no row
+        // written) OR when a CONCURRENT completion already stored this file —
+        // `image` is UNIQUE, so our INSERT degraded to an ON DUPLICATE KEY
+        // UPDATE and insert_id came back 0. Distinguish the two before touching
+        // storage: only an object that NOTHING records may be deleted, else we
+        // would delete a file a winning completion legitimately owns (orphaned
+        // row + lost file). Read against the primary, so this is authoritative.
+        $existing = $this->usersImages->findByFilenameAndUser(basename($copyResult['destinationKey']), $userUuid);
+        if ($existing) {
+          error_log('S3Multipart: complete lost an insert race but the file is recorded; returning it: ' . substr(basename($copyResult['destinationKey']), 0, 16));
+          return [
+            'location' => null,
+            'bucket' => $this->bucket,
+            'key' => $key,
+            'etag' => $copyResult['etag'] ?? null,
+            'fileData' => $this->getFileDataById((int)$existing['id'], $uploadInfo, $copyResult),
+          ];
+        }
+
+        // Genuine failure: no DB row points at the just-copied object. Delete it
+        // (+ its backup / -pro-av replicas) so we never leave a file that no row
+        // references — the exact "worst case": billed storage, invisible to the
+        // user, uncounted against quota. deleteFromS3 is idempotent (NoSuchKey
+        // == success). A client retry is then clean: no row exists, the
+        // idempotency guard above won't short-circuit, so a fresh re-copy +
+        // insert can succeed.
+        error_log("Failed to store file in database for upload: " . substr($uploadId, 0, 10) . " — deleting orphaned final object");
+        try {
+          $this->s3Service->deleteFromS3($copyResult['destinationKey'], true, $copyResult['mimeType']);
+        } catch (\Throwable $cleanupError) {
+          error_log('S3Multipart: failed to clean up orphaned final object after DB failure: ' . $cleanupError->getMessage());
+        }
         return [
           'error' => 'Failed to store file in database'
         ];
