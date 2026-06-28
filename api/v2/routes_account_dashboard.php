@@ -104,10 +104,10 @@ function dashboardListFiles(string $folderName, $link, $start = null, $limit = n
   $images = new UsersImages($link);
 
   $folderId = ($folderName !== "Home: Main Folder")
-    ? $folders->findFolderByNameOrCreate($_SESSION['usernpub'], $folderName)
+    ? $folders->findFolderByNameOrCreate($_SESSION['useruuid'], $folderName)
     : null;
 
-  $imgArray = $images->getFiles($_SESSION['usernpub'], $folderId, $start, $limit, $filter);
+  $imgArray = $images->getFiles($_SESSION['useruuid'], $folderId, $start, $limit, $filter);
 
   return array_map('buildFileListEntry', $imgArray);
 }
@@ -124,7 +124,7 @@ function dashboardListFiles(string $folderName, $link, $start = null, $limit = n
 // 200; a downgrade-eligible library is tiny (the storage gate gates first).
 function dashboardListDowngradeIneligibleFiles(int $targetLevel, $link): array
 {
-  $userUuid = npubToUuid($link, $_SESSION['usernpub']);
+  $userUuid = $_SESSION['useruuid'];
 
   // The exact MIME allow-list the uploader enforces for the target tier.
   $allowed = array_keys(getAllowedMimesArray($targetLevel));
@@ -243,7 +243,7 @@ function dashboardGetAccountData($link, $account): array
 
 function dashboardGetMediaStats(string $mediaId, string $period, string $interval, string $groupBy, $link): string
 {
-  $userUuid = npubToUuid($link, $_SESSION['usernpub']);
+  $userUuid = $_SESSION['useruuid'];
   $mediaIdInt = intval($mediaId);
 
   $stmt = $link->prepare("SELECT * FROM users_images WHERE id = ? AND user_uuid = ?");
@@ -322,7 +322,7 @@ function dashboardBuildReturnFile(array $fileData): array
 function dashboardImportFromURL(string $url, string $folder, string $title, string $prompt, $link, $awsConfig): array
 {
   $s3 = new S3Service($awsConfig);
-  $upload = new MultimediaUpload($link, $s3, true, $_SESSION['usernpub'], $awsConfig);
+  $upload = new MultimediaUpload($link, $s3, true, $_SESSION['usernpub'], $awsConfig, $_SESSION['useruuid']);
   if (!empty($folder)) {
     $upload->setDefaultFolderName($folder);
   }
@@ -344,7 +344,8 @@ function dashboardGenerateAIImage(string $model, string $prompt, string $title, 
   $requestBodyArray = [
     "prompt" => $prompt,
     "model" => $model,
-    "npub" => $_SESSION['usernpub'],
+    // The AI worker's CF-model path is uuid-only (npub fully retired there).
+    "user_uuid" => $_SESSION['useruuid'],
   ];
   // Only the SD-family CF models + Leonardo Phoenix accept a negative prompt;
   // the worker's per-model schema strips it for the rest, so forwarding it when
@@ -383,7 +384,7 @@ function dashboardGenerateAIImage(string $model, string $prompt, string $title, 
     throw new \Exception("AI Image generation failed: Unexpected content type: {$contentType}");
   }
 
-  $upload = new MultimediaUpload($link, $s3, true, $_SESSION['usernpub'], $awsConfig);
+  $upload = new MultimediaUpload($link, $s3, true, $_SESSION['usernpub'], $awsConfig, $_SESSION['useruuid']);
   $upload->setDefaultFolderName("AI: Generated Images");
   $upload->setRawFiles([[
     'input_name' => 'ai_image',
@@ -505,7 +506,7 @@ function dashboardGenerateStabilityImage(string $endpoint, ?string $sdModel, str
     throw new \Exception("Stability image generation failed: Unexpected content type: {$contentType}");
   }
 
-  $upload = new MultimediaUpload($link, $s3, true, $_SESSION['usernpub'], $awsConfig);
+  $upload = new MultimediaUpload($link, $s3, true, $_SESSION['usernpub'], $awsConfig, $_SESSION['useruuid']);
   $upload->setDefaultFolderName("AI: Generated Images");
   $upload->setRawFiles([[
     'input_name' => 'ai_image',
@@ -536,7 +537,7 @@ function dashboardGenerateStabilityImage(string $endpoint, ?string $sdModel, str
   }
 
   $mediaId = $fileData[0]['name'];
-  $credits = new Credits($_SESSION['usernpub'], $apiBase, $_SERVER['AI_GEN_API_HMAC_KEY'], $link);
+  $credits = new Credits($_SESSION['useruuid'], $apiBase, $_SERVER['AI_GEN_API_HMAC_KEY'], $link);
   $credits->updateTransactionWithMediaId($transactionId, $mediaId);
 
   return dashboardBuildReturnFile($fileData);
@@ -544,14 +545,15 @@ function dashboardGenerateStabilityImage(string $endpoint, ?string $sdModel, str
 
 // --- Lazy Account loader ---
 // Only creates Account + fetches subscription days when a route actually needs it.
-// Most routes (files, folders, stats) only need the session npub — no DB lookup.
+// Keyed by the stable uuid ($_SESSION['useruuid']) — works for every account,
+// npub or email.
 function dashboardGetAccount(): Account
 {
   static $account = null;
   if ($account === null) {
     $__t = hrtime(true);
     global $link;
-    $account = new Account($_SESSION['usernpub'], $link);
+    $account = Account::fromUuid($_SESSION['useruuid'], $link) ?? new Account('', $link, $_SESSION['useruuid']);
     apiTimingLog('dashboardGetAccount: new Account() constructor', $__t);
   }
   return $account;

@@ -17,7 +17,7 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/Account.class.php';
  */
 class Credits
 {
-  private string $userNpub;
+  private string $owner;
   private string $baseApiUrl;
   private string $apiKey;
   private mysqli $db;
@@ -26,18 +26,22 @@ class Credits
   /**
    * Constructor for the Credits class.
    *
-   * @param string $userNpub The user's public key in Nostr.
+   * @param string $owner The user's stable uuid (an npub is also accepted for
+   *   legacy callers; both resolve to the same account).
    * @param string $baseApiUrl The base URL for the API.
    * @param string $apiKey The API key for authentication.
    * @param mysqli $db The MySQLi database connection object.
    */
-  public function __construct(string $userNpub, string $baseApiUrl, string $apiKey, mysqli $db)
+  public function __construct(string $owner, string $baseApiUrl, string $apiKey, mysqli $db)
   {
-    $this->userNpub = $userNpub;
+    $this->owner = $owner;
     $this->baseApiUrl = $baseApiUrl;
     $this->apiKey = $apiKey;
     $this->db = $db;
-    $this->account = new Account($this->userNpub, $this->db);
+    // Accept either a uuid (current) or an npub (legacy); normalise to the
+    // stable uuid so the account loads for key-less ("email") users too.
+    $ownerUuid = resolveOwnerUuid($this->db, $owner) ?? '';
+    $this->account = Account::fromUuid($ownerUuid, $this->db) ?? new Account('', $this->db, $ownerUuid);
   }
 
   public function updateTransactionWithMediaId(string $transactionId, string $mediaId): array

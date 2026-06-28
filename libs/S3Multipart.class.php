@@ -42,7 +42,6 @@ class S3Multipart
    * 
    * @param array $awsConfig AWS configuration array
    * @param mysqli $db Database connection
-   * @param string $userNpub User's npub
    */
   public function __construct($awsConfig, $db)
   {
@@ -63,7 +62,7 @@ class S3Multipart
     $this->usersImages = new UsersImages($db);
     $this->usersImagesFolders = new UsersImagesFolders($db);
     $this->s3Service = new S3Service($awsConfig);
-    $this->userNpub = $_SESSION['usernpub'];
+    $this->userNpub = $_SESSION['usernpub'] ?? '';
     // Upload hook class
     $this->uploadWebhook = new CloudflareUploadWebhook(
       $_SERVER['NB_API_UPLOAD_SECRET'],
@@ -165,57 +164,6 @@ class S3Multipart
   }
 
   /**
-   * Sign a part for upload
-   * 
-   * @param string $uploadId Upload ID
-   * @param string $key Object key
-   * @param int $partNumber Part number (1-based)
-   * @param string $userNpub User's npub
-   * @return array|false Presigned URL and headers or false on failure
-   */
-  public function signPart(string $uploadId, string $key, int $partNumber, string $userNpub)
-  {
-    try {
-      // Validate part number
-      if ($partNumber < 1 || $partNumber > 10000) {
-        throw new Exception('Invalid part number. Must be between 1 and 10000.');
-      }
-
-      // Validate user owns this upload
-      if (!$this->validateUserOwnership($uploadId, $userNpub, $key)) {
-        throw new Exception('User does not own this upload');
-      }
-
-      // Create presigned URL for uploading the part
-      $cmd = $this->s3Client->getCommand('UploadPart', [
-        'Bucket' => $this->bucket,
-        'Key' => $key,
-        'UploadId' => $uploadId,
-        'PartNumber' => $partNumber
-      ]);
-
-      $request = $this->s3Client->createPresignedRequest($cmd, '+15 minutes');
-
-      $uploadIdShort = substr($uploadId, 0, 10);
-      $userNpubShort = substr($userNpub, 0, 10);
-      error_log("Signed part $partNumber for upload: $uploadIdShort, user: $userNpubShort");
-
-      return [
-        'url' => (string)$request->getUri(),
-        'headers' => [
-          'Content-Type' => 'application/octet-stream'
-        ]
-      ];
-    } catch (AwsException $e) {
-      error_log('AWS Error signing part: ' . $e->getMessage());
-      return false;
-    } catch (Exception $e) {
-      error_log('Error signing part: ' . $e->getMessage());
-      return false;
-    }
-  }
-
-  /**
    * Complete multipart upload
    * 
    * @param string $uploadId Upload ID
@@ -230,8 +178,8 @@ class S3Multipart
       if ($userUuid === '') {
         throw new Exception('userUuid is required');
       }
-      // Validate user owns this upload (accepts the uuid OR legacy npub prefix).
-      if (!$this->validateUserOwnership($uploadId, $userNpub, $key, $userUuid)) {
+      // Validate user owns this upload — staging keys are strictly uuid-prefixed.
+      if (!$this->validateUserOwnership($key, $userUuid)) {
         throw new Exception('User does not own this upload');
       }
 
@@ -390,134 +338,15 @@ class S3Multipart
   }
 
   /**
-   * List uploaded parts for a multipart upload
-   * 
-   * @param string $uploadId Upload ID
-   * @param string $key Object key
-   * @param string $userNpub User's npub
-   * @return array|false List of parts or false on failure. Returns special array with 'completed' flag if upload was already completed.
-   */
-  public function listParts(string $uploadId, string $key, string $userNpub)
-  {
-    try {
-      // Validate user owns this upload
-      if (!$this->validateUserOwnership($uploadId, $userNpub, $key)) {
-        throw new Exception('User does not own this upload');
-      }
-
-      // List all parts, handling truncated responses
-      $parts = [];
-      $params = [
-        'Bucket' => $this->bucket,
-        'Key' => $key,
-        'UploadId' => $uploadId
-      ];
-      do {
-        $result = $this->s3Client->listParts($params);
-        if (isset($result['Parts'])) {
-          foreach ($result['Parts'] as $part) {
-            $parts[] = [
-              'PartNumber' => $part['PartNumber'],
-              'ETag' => $part['ETag'],
-              'Size' => $part['Size'],
-              'LastModified' => $part['LastModified']->format('c')
-            ];
-          }
-        }
-        // If truncated, set Marker for next request
-        if (!empty($result['IsTruncated']) && !empty($result['NextPartNumberMarker'])) {
-          $params['PartNumberMarker'] = $result['NextPartNumberMarker'];
-        } else {
-          break;
-        }
-      } while (true);
-
-      $uploadIdShort = substr($uploadId, 0, 10);
-      $userNpubShort = substr($userNpub, 0, 10);
-      error_log("Listed " . count($parts) . " parts for upload: $uploadIdShort, user: $userNpubShort");
-
-      return $parts;
-    } catch (AwsException $e) {
-      // Check for NoSuchUpload error - this indicates the upload was likely completed and cleaned up
-      if (strpos($e->getAwsErrorCode(), 'NoSuchUpload') !== false) {
-        $uploadIdShort = substr($uploadId, 0, 10);
-        error_log("Upload not found in S3, checking if already completed: $uploadIdShort");
-        
-        // Check if upload was completed in S3 and/or database
-        $completionStatus = $this->checkForCompletedUpload($key, $userNpub);
-        if ($completionStatus) {
-          if ($completionStatus['status'] === 'fully_completed') {
-            // File is fully completed - return file data
-            return [
-              'completed' => true,
-              'fileData' => $completionStatus
-            ];
-          } elseif ($completionStatus['status'] === 's3_completed_needs_processing') {
-            // S3 object exists but needs processing - tell client to call completion
-            error_log("S3 object exists but not processed for upload: $uploadIdShort - instructing client to call completion");
-            return [
-              'call_completion' => true,
-              'key' => $completionStatus['key'],
-              'uploadInfo' => $completionStatus['uploadInfo']
-            ];
-          }
-        }
-      }
-      
-      error_log('AWS Error listing parts: ' . $e->getMessage());
-      return false;
-    } catch (Exception $e) {
-      error_log('Error listing parts: ' . $e->getMessage());
-      return false;
-    }
-  }
-
-  /**
-   * Abort multipart upload
-   * 
-   * @param string $uploadId Upload ID
-   * @param string $key Object key
-   * @param string $userNpub User's npub
-   * @return bool Success
-   */
-  public function abortMultipartUpload(string $uploadId, string $key, string $userNpub): bool
-  {
-    try {
-      // Validate user owns this upload
-      if (!$this->validateUserOwnership($uploadId, $userNpub, $key)) {
-        throw new Exception('User does not own this upload');
-      }
-
-      // Abort the multipart upload
-      $this->s3Client->abortMultipartUpload([
-        'Bucket' => $this->bucket,
-        'Key' => $key,
-        'UploadId' => $uploadId
-      ]);
-
-      $uploadIdShort = substr($uploadId, 0, 10);
-      $userNpubShort = substr($userNpub, 0, 10);
-      error_log("Aborted multipart upload: $uploadIdShort for user: $userNpubShort");
-
-      return true;
-    } catch (AwsException $e) {
-      error_log('AWS Error aborting multipart upload: ' . $e->getMessage());
-      return false;
-    } catch (Exception $e) {
-      error_log('Error aborting multipart upload: ' . $e->getMessage());
-      return false;
-    }
-  }
-
-  /**
-   * Generate unique key for upload
-   * 
+   * Generate unique key for upload — strictly uuid-prefixed (the stable identity
+   * every account has). `uploads/{uuid}/{nanoid}.{ext}`.
+   *
    * @param string $filename Original filename
-   * @param string $userNpub User's npub
+   * @param string $userUuid Owner's stable uuid
    * @param string $mimeType MIME type of the file
    * @return string Unique key
    */
-  private function generateUploadKey(string $filename, string $userNpub, string $mimeType): string
+  private function generateUploadKey(string $filename, string $userUuid, string $mimeType): string
   {
     // Get the correct extension from MIME type using our utils function
     $accountLevel = (int)($_SESSION['acctlevel'] ?? 0);
@@ -532,60 +361,22 @@ class S3Multipart
 
     $nanoid = getUniqueNanoId();
     $finalFilename = $fileExtension ? "{$nanoid}." . strtolower($fileExtension) : $nanoid;
-    return "uploads/{$userNpub}/" . $finalFilename;
+    return "uploads/{$userUuid}/" . $finalFilename;
   }
 
   /**
-   * Validate user owns this upload by checking key structure
-   * 
-   * @param string $uploadId Upload ID  
-   * @param string $userNpub User's npub
-   * @param string|null $key Optional object key for validation
-   * @return bool True if user owns upload
+   * Validate the caller owns this upload by its key prefix. Staging keys are
+   * minted STRICTLY uuid-prefixed (generateUploadKey), so ownership is the stable
+   * uuid and nothing else. The trailing slash is required so a sibling prefix
+   * (`uploads/{uuid}EVIL/…`) can't pass, and an empty uuid never matches.
+   *
+   * @param string $key Object key
+   * @param string $userUuid Owner's stable uuid
+   * @return bool True if the caller owns the upload
    */
-  private function validateUserOwnership(string $uploadId, string $userNpub, ?string $key = null, string $userUuid = ''): bool
+  private function validateUserOwnership(string $key, string $userUuid): bool
   {
-    // If we have a key, validate directly from it. Accept BOTH the uuid prefix
-    // (forward scheme) and the legacy npub prefix (a key minted before the
-    // cutover), each requiring the trailing slash so a sibling prefix can't pass.
-    if ($key) {
-      if ($userUuid !== '' && str_starts_with($key, "uploads/{$userUuid}/")) {
-        return true;
-      }
-      if ($userNpub !== '' && str_starts_with($key, "uploads/{$userNpub}/")) {
-        return true;
-      }
-      return false;
-    }
-
-    // For methods that don't have the key, list under the user's prefix (uuid
-    // when available, else the legacy npub) to find the upload.
-    $prefix = $userUuid !== '' ? "uploads/{$userUuid}/" : "uploads/{$userNpub}/";
-
-    try {
-      // List multipart uploads for this user's prefix to find the upload
-      $result = $this->s3Client->listMultipartUploads([
-        'Bucket' => $this->bucket,
-        'Prefix' => $prefix,
-        'MaxUploads' => 100
-      ]);
-
-      if (isset($result['Uploads'])) {
-        foreach ($result['Uploads'] as $upload) {
-          if ($upload['UploadId'] === $uploadId) {
-            return true;
-          }
-        }
-      }
-
-      return false;
-    } catch (AwsException $e) {
-      error_log('AWS Error validating user ownership: ' . $e->getMessage());
-      return false;
-    } catch (Exception $e) {
-      error_log('Error validating user ownership: ' . $e->getMessage());
-      return false;
-    }
+    return $userUuid !== '' && str_starts_with($key, "uploads/{$userUuid}/");
   }
 
   /**

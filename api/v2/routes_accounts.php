@@ -31,8 +31,8 @@ use Slim\Routing\RouteCollectorProxy;
  *   [ id, sourceKey, size, mime, uploadedAt, displayName, folderId ]
  * ordered by (created_at, id) ASC so the downstream packer/zip is deterministic.
  */
-function backupManifestForNpub(
-  string $npub,
+function backupManifestForUuid(
+  string $userUuid,
   ?array $filterKinds,
   array $folderSelection,
   mysqli $link
@@ -93,7 +93,7 @@ function backupManifestForNpub(
     throw new Exception('backup-manifest prepare failed: ' . $link->error);
   }
   $types = 's' . $folderTypes;
-  $params = array_merge([npubToUuid($link, $npub)], $folderParams);
+  $params = array_merge([$userUuid], $folderParams);
   $stmt->bind_param($types, ...$params);
   $stmt->execute();
   $result = $stmt->get_result();
@@ -427,15 +427,17 @@ $app->group('/accounts', function (RouteCollectorProxy $group) {
     // GET /api/v2/accounts/dashboard/profile
     $sub->get('/profile', function (Request $request, Response $response) {
       global $link;
-      $npub = resolveIdentityNpub($request);
-      if ($npub === '') {
+      // Stable uuid is the single identity for every account (an email account
+      // has no npub). Resolve + gate on the uuid; the npub is just an attribute.
+      $uuid = resolveIdentityUuid($request);
+      if ($uuid === '') {
         $response->getBody()->write(json_encode(['error' => 'missing-identity']));
         return $response
           ->withHeader('Content-Type', 'application/json')
           ->withStatus(400);
       }
-      $account = new Account($npub, $link);
-      if (!$account->accountExists()) {
+      $account = Account::fromUuid($uuid, $link);
+      if ($account === null) {
         $response->getBody()->write(json_encode(['error' => 'not-found']));
         return $response
           ->withHeader('Content-Type', 'application/json')
@@ -451,15 +453,15 @@ $app->group('/accounts', function (RouteCollectorProxy $group) {
     // GET /api/v2/accounts/dashboard/folders
     $sub->get('/folders', function (Request $request, Response $response) {
       global $link;
-      $npub = resolveIdentityNpub($request);
-      if ($npub === '') {
+      $uuid = resolveIdentityUuid($request);
+      if ($uuid === '') {
         $response->getBody()->write(json_encode(['error' => 'missing-identity']));
         return $response
           ->withHeader('Content-Type', 'application/json')
           ->withStatus(400);
       }
       $folders = new UsersImagesFolders($link);
-      $folderList = $folders->getFoldersWithStats($npub);
+      $folderList = $folders->getFoldersWithStats($uuid);
       $result = array_map(function ($folder) {
         $folderName = $folder['folder'];
         $firstChar = mb_substr($folderName, 0, 1, 'UTF-8');
@@ -500,8 +502,8 @@ $app->group('/accounts', function (RouteCollectorProxy $group) {
     // GET /api/v2/accounts/dashboard/files
     $sub->get('/files', function (Request $request, Response $response) {
       global $link;
-      $npub = resolveIdentityNpub($request);
-      if ($npub === '') {
+      $uuid = resolveIdentityUuid($request);
+      if ($uuid === '') {
         $response->getBody()->write(json_encode(['error' => 'missing-identity']));
         return $response
           ->withHeader('Content-Type', 'application/json')
@@ -527,17 +529,17 @@ $app->group('/accounts', function (RouteCollectorProxy $group) {
           ->withStatus(400);
       }
 
-      // dashboardListFiles -> getFiles reads $_SESSION['usernpub'] inside
-      // UsersImages. Set the session var transiently, then restore.
-      $prevNpub = $_SESSION['usernpub'] ?? null;
-      $_SESSION['usernpub'] = $npub;
+      // dashboardListFiles -> getFiles keys on the stable uuid (resolved via
+      // $_SESSION['useruuid']). Set it transiently, then restore.
+      $prevUuid = $_SESSION['useruuid'] ?? null;
+      $_SESSION['useruuid'] = $uuid;
       try {
         $files = dashboardListFiles((string) $folder, $link, $start, $limit, $filter);
       } finally {
-        if ($prevNpub === null) {
-          unset($_SESSION['usernpub']);
+        if ($prevUuid === null) {
+          unset($_SESSION['useruuid']);
         } else {
-          $_SESSION['usernpub'] = $prevNpub;
+          $_SESSION['useruuid'] = $prevUuid;
         }
       }
 
@@ -554,13 +556,13 @@ $app->group('/accounts', function (RouteCollectorProxy $group) {
     // per-file cap. Each file carries a `reason` ('type' | 'size'). Backs the
     // user-initiated "Check my files" downgrade gate. Reuses
     // dashboardListDowngradeIneligibleFiles (routes_account_dashboard.php), which
-    // reads $_SESSION['usernpub'] — set it transiently like the /files route does.
+    // reads $_SESSION['useruuid'] — set it transiently like the /files route does.
     // Throws (→ 500) on a DB failure so the Worker treats "can't verify" as
     // blocked, never a silent pass.
     $sub->get('/files/downgrade-ineligible', function (Request $request, Response $response) {
       global $link;
-      $npub = resolveIdentityNpub($request);
-      if ($npub === '') {
+      $uuid = resolveIdentityUuid($request);
+      if ($uuid === '') {
         $response->getBody()->write(json_encode(['error' => 'missing-identity']));
         return $response
           ->withHeader('Content-Type', 'application/json')
@@ -577,15 +579,15 @@ $app->group('/accounts', function (RouteCollectorProxy $group) {
           ->withStatus(400);
       }
 
-      $prevNpub = $_SESSION['usernpub'] ?? null;
-      $_SESSION['usernpub'] = $npub;
+      $prevUuid = $_SESSION['useruuid'] ?? null;
+      $_SESSION['useruuid'] = $uuid;
       try {
         $files = dashboardListDowngradeIneligibleFiles($targetLevel, $link);
       } finally {
-        if ($prevNpub === null) {
-          unset($_SESSION['usernpub']);
+        if ($prevUuid === null) {
+          unset($_SESSION['useruuid']);
         } else {
-          $_SESSION['usernpub'] = $prevNpub;
+          $_SESSION['useruuid'] = $prevUuid;
         }
       }
 
@@ -599,8 +601,8 @@ $app->group('/accounts', function (RouteCollectorProxy $group) {
     $sub->post('/media/delete', function (Request $request, Response $response) {
       global $link;
       global $awsConfig;
-      $npub = resolveIdentityNpub($request);
-      if ($npub === '') {
+      $uuid = resolveIdentityUuid($request);
+      if ($uuid === '') {
         $response->getBody()->write(json_encode(['error' => 'missing-identity']));
         return $response
           ->withHeader('Content-Type', 'application/json')
@@ -611,18 +613,18 @@ $app->group('/accounts', function (RouteCollectorProxy $group) {
       $foldersToDelete = !empty($body['foldersToDelete']) ? json_decode($body['foldersToDelete']) : [];
       $imagesToDelete = !empty($body['imagesToDelete']) ? json_decode($body['imagesToDelete']) : [];
 
-      $prevNpub = $_SESSION['usernpub'] ?? null;
-      $_SESSION['usernpub'] = $npub;
+      $prevUuid = $_SESSION['useruuid'] ?? null;
+      $_SESSION['useruuid'] = $uuid;
       try {
         $s3 = new S3Service($awsConfig);
-        $icm = new ImageCatalogManager($link, $s3, $npub);
+        $icm = new ImageCatalogManager($link, $s3, $uuid);
         $deletedFolders = array_map('intval', $icm->deleteFolders((array) $foldersToDelete));
         $deletedImages = array_map('intval', $icm->deleteImages((array) $imagesToDelete));
       } finally {
-        if ($prevNpub === null) {
-          unset($_SESSION['usernpub']);
+        if ($prevUuid === null) {
+          unset($_SESSION['useruuid']);
         } else {
-          $_SESSION['usernpub'] = $prevNpub;
+          $_SESSION['useruuid'] = $prevUuid;
         }
       }
 
@@ -640,24 +642,24 @@ $app->group('/accounts', function (RouteCollectorProxy $group) {
     $sub->post('/media/share', function (Request $request, Response $response) {
       global $link;
       global $awsConfig;
-      $npub = resolveIdentityNpub($request);
-      if ($npub === '') {
+      $uuid = resolveIdentityUuid($request);
+      if ($uuid === '') {
         $response->getBody()->write(json_encode(['error' => 'missing-identity']));
         return $response
           ->withHeader('Content-Type', 'application/json')
           ->withStatus(400);
       }
 
-      $account = new Account($npub, $link);
-      if (!$account->accountExists()) {
+      $account = Account::fromUuid($uuid, $link);
+      if ($account === null) {
         $response->getBody()->write(json_encode(['error' => 'not-found']));
         return $response
           ->withHeader('Content-Type', 'application/json')
           ->withStatus(404);
       }
 
-      $prevNpub = $_SESSION['usernpub'] ?? null;
-      $_SESSION['usernpub'] = $npub;
+      $prevUuid = $_SESSION['useruuid'] ?? null;
+      $_SESSION['useruuid'] = $uuid;
       try {
         // Permission allowlist: Creator (1), Advanced (10), Admin (99) — mirrors
         // the legacy Permission::validatePermissionsLevelAny(1, 10, 99).
@@ -684,13 +686,13 @@ $app->group('/accounts', function (RouteCollectorProxy $group) {
         }
 
         $s3 = new S3Service($awsConfig);
-        $icm = new ImageCatalogManager($link, $s3, $npub);
+        $icm = new ImageCatalogManager($link, $s3, $uuid);
         $sharedImages = array_map('intval', $icm->shareImage($imagesToShare, (bool) $shareFlag));
       } finally {
-        if ($prevNpub === null) {
-          unset($_SESSION['usernpub']);
+        if ($prevUuid === null) {
+          unset($_SESSION['useruuid']);
         } else {
-          $_SESSION['usernpub'] = $prevNpub;
+          $_SESSION['useruuid'] = $prevUuid;
         }
       }
 
@@ -707,8 +709,8 @@ $app->group('/accounts', function (RouteCollectorProxy $group) {
     $sub->post('/media/move', function (Request $request, Response $response) {
       global $link;
       global $awsConfig;
-      $npub = resolveIdentityNpub($request);
-      if ($npub === '') {
+      $uuid = resolveIdentityUuid($request);
+      if ($uuid === '') {
         $response->getBody()->write(json_encode(['error' => 'missing-identity']));
         return $response
           ->withHeader('Content-Type', 'application/json')
@@ -726,17 +728,17 @@ $app->group('/accounts', function (RouteCollectorProxy $group) {
           ->withStatus(400);
       }
 
-      $prevNpub = $_SESSION['usernpub'] ?? null;
-      $_SESSION['usernpub'] = $npub;
+      $prevUuid = $_SESSION['useruuid'] ?? null;
+      $_SESSION['useruuid'] = $uuid;
       try {
         $s3 = new S3Service($awsConfig);
-        $icm = new ImageCatalogManager($link, $s3, $npub);
+        $icm = new ImageCatalogManager($link, $s3, $uuid);
         $movedImages = array_map('intval', $icm->moveImages($imagesToMove, $destinationFolderId));
       } finally {
-        if ($prevNpub === null) {
-          unset($_SESSION['usernpub']);
+        if ($prevUuid === null) {
+          unset($_SESSION['useruuid']);
         } else {
-          $_SESSION['usernpub'] = $prevNpub;
+          $_SESSION['useruuid'] = $prevUuid;
         }
       }
 
@@ -753,13 +755,16 @@ $app->group('/accounts', function (RouteCollectorProxy $group) {
     $sub->post('/media/import', function (Request $request, Response $response) {
       global $link;
       global $awsConfig;
-      $npub = resolveIdentityNpub($request);
-      if ($npub === '') {
+      // Upload path: uuid is the identity (gated); npub is optional — it only
+      // feeds the npub-keyed blacklist check + upload queue field downstream.
+      $uuid = resolveIdentityUuid($request);
+      if ($uuid === '') {
         $response->getBody()->write(json_encode(['error' => 'missing-identity']));
         return $response
           ->withHeader('Content-Type', 'application/json')
           ->withStatus(400);
       }
+      $npub = resolveIdentityNpub($request);
 
       $body = $request->getParsedBody();
       $url = isset($body['url']) ? (string) $body['url'] : '';
@@ -780,10 +785,12 @@ $app->group('/accounts', function (RouteCollectorProxy $group) {
       }
 
       $prevNpub = $_SESSION['usernpub'] ?? null;
+      $prevUuid = $_SESSION['useruuid'] ?? null;
       $_SESSION['usernpub'] = $npub;
+      $_SESSION['useruuid'] = $uuid;
       try {
-        $account = new Account($npub, $link);
-        if (!$account->accountExists()) {
+        $account = Account::fromUuid($uuid, $link);
+        if ($account === null) {
           $response->getBody()->write(json_encode(['error' => 'not-found']));
           return $response
             ->withHeader('Content-Type', 'application/json')
@@ -808,6 +815,11 @@ $app->group('/accounts', function (RouteCollectorProxy $group) {
           unset($_SESSION['usernpub']);
         } else {
           $_SESSION['usernpub'] = $prevNpub;
+        }
+        if ($prevUuid === null) {
+          unset($_SESSION['useruuid']);
+        } else {
+          $_SESSION['useruuid'] = $prevUuid;
         }
       }
 
@@ -886,8 +898,8 @@ $app->group('/accounts', function (RouteCollectorProxy $group) {
     // POST /api/v2/accounts/dashboard/folders/create
     $sub->post('/folders/create', function (Request $request, Response $response) {
       global $link;
-      $npub = resolveIdentityNpub($request);
-      if ($npub === '') {
+      $uuid = resolveIdentityUuid($request);
+      if ($uuid === '') {
         $response->getBody()->write(json_encode(['error' => 'missing-identity']));
         return $response
           ->withHeader('Content-Type', 'application/json')
@@ -903,11 +915,11 @@ $app->group('/accounts', function (RouteCollectorProxy $group) {
           ->withStatus(400);
       }
 
-      $prevNpub = $_SESSION['usernpub'] ?? null;
-      $_SESSION['usernpub'] = $npub;
+      $prevUuid = $_SESSION['useruuid'] ?? null;
+      $_SESSION['useruuid'] = $uuid;
       try {
         $folders = new UsersImagesFolders($link);
-        $folderId = $folders->findFolderByNameOrCreate($npub, $folderName);
+        $folderId = $folders->findFolderByNameOrCreate($uuid, $folderName);
       } catch (\Throwable $e) {
         error_log($e->getMessage());
         $response->getBody()->write(json_encode(['error' => 'create-failed']));
@@ -915,10 +927,10 @@ $app->group('/accounts', function (RouteCollectorProxy $group) {
           ->withHeader('Content-Type', 'application/json')
           ->withStatus(500);
       } finally {
-        if ($prevNpub === null) {
-          unset($_SESSION['usernpub']);
+        if ($prevUuid === null) {
+          unset($_SESSION['useruuid']);
         } else {
-          $_SESSION['usernpub'] = $prevNpub;
+          $_SESSION['useruuid'] = $prevUuid;
         }
       }
 
@@ -936,8 +948,8 @@ $app->group('/accounts', function (RouteCollectorProxy $group) {
     $sub->post('/folders/rename', function (Request $request, Response $response) {
       global $link;
       global $awsConfig;
-      $npub = resolveIdentityNpub($request);
-      if ($npub === '') {
+      $uuid = resolveIdentityUuid($request);
+      if ($uuid === '') {
         $response->getBody()->write(json_encode(['error' => 'missing-identity']));
         return $response
           ->withHeader('Content-Type', 'application/json')
@@ -958,12 +970,12 @@ $app->group('/accounts', function (RouteCollectorProxy $group) {
       $folderToRename = array_map('intval', (array) $folderToRename);
       $folderNames = array_map('strval', (array) $folderNames);
 
-      $prevNpub = $_SESSION['usernpub'] ?? null;
-      $_SESSION['usernpub'] = $npub;
+      $prevUuid = $_SESSION['useruuid'] ?? null;
+      $_SESSION['useruuid'] = $uuid;
       $renamedFolders = [];
       try {
         $s3 = new S3Service($awsConfig);
-        $icm = new ImageCatalogManager($link, $s3, $npub);
+        $icm = new ImageCatalogManager($link, $s3, $uuid);
         foreach ($folderToRename as $i => $id) {
           if (!isset($folderNames[$i])) continue;
           foreach ($icm->renameFolder($id, $folderNames[$i]) as $renamed) {
@@ -971,10 +983,10 @@ $app->group('/accounts', function (RouteCollectorProxy $group) {
           }
         }
       } finally {
-        if ($prevNpub === null) {
-          unset($_SESSION['usernpub']);
+        if ($prevUuid === null) {
+          unset($_SESSION['useruuid']);
         } else {
-          $_SESSION['usernpub'] = $prevNpub;
+          $_SESSION['useruuid'] = $prevUuid;
         }
       }
 
@@ -991,8 +1003,8 @@ $app->group('/accounts', function (RouteCollectorProxy $group) {
     $sub->post('/folders/delete', function (Request $request, Response $response) {
       global $link;
       global $awsConfig;
-      $npub = resolveIdentityNpub($request);
-      if ($npub === '') {
+      $uuid = resolveIdentityUuid($request);
+      if ($uuid === '') {
         $response->getBody()->write(json_encode(['error' => 'missing-identity']));
         return $response
           ->withHeader('Content-Type', 'application/json')
@@ -1010,17 +1022,17 @@ $app->group('/accounts', function (RouteCollectorProxy $group) {
       }
 
       $foldersToDelete = array_map('intval', $foldersToDelete);
-      $prevNpub = $_SESSION['usernpub'] ?? null;
-      $_SESSION['usernpub'] = $npub;
+      $prevUuid = $_SESSION['useruuid'] ?? null;
+      $_SESSION['useruuid'] = $uuid;
       try {
         $s3 = new S3Service($awsConfig);
-        $icm = new ImageCatalogManager($link, $s3, $npub);
+        $icm = new ImageCatalogManager($link, $s3, $uuid);
         $deletedFolders = array_map('intval', $icm->deleteFolders($foldersToDelete));
       } finally {
-        if ($prevNpub === null) {
-          unset($_SESSION['usernpub']);
+        if ($prevUuid === null) {
+          unset($_SESSION['useruuid']);
         } else {
-          $_SESSION['usernpub'] = $prevNpub;
+          $_SESSION['useruuid'] = $prevUuid;
         }
       }
 
@@ -1037,8 +1049,8 @@ $app->group('/accounts', function (RouteCollectorProxy $group) {
     $sub->post('/media/metadata', function (Request $request, Response $response) {
       global $link;
       global $awsConfig;
-      $npub = resolveIdentityNpub($request);
-      if ($npub === '') {
+      $uuid = resolveIdentityUuid($request);
+      if ($uuid === '') {
         $response->getBody()->write(json_encode(['error' => 'missing-identity']));
         return $response
           ->withHeader('Content-Type', 'application/json')
@@ -1057,17 +1069,17 @@ $app->group('/accounts', function (RouteCollectorProxy $group) {
           ->withStatus(400);
       }
 
-      $prevNpub = $_SESSION['usernpub'] ?? null;
-      $_SESSION['usernpub'] = $npub;
+      $prevUuid = $_SESSION['useruuid'] ?? null;
+      $_SESSION['useruuid'] = $uuid;
       try {
         $s3 = new S3Service($awsConfig);
-        $icm = new ImageCatalogManager($link, $s3, $npub);
+        $icm = new ImageCatalogManager($link, $s3, $uuid);
         $updatedMedia = $icm->updateMediaMetadata($mediaId, $title, $description);
       } finally {
-        if ($prevNpub === null) {
-          unset($_SESSION['usernpub']);
+        if ($prevUuid === null) {
+          unset($_SESSION['useruuid']);
         } else {
-          $_SESSION['usernpub'] = $prevNpub;
+          $_SESSION['useruuid'] = $prevUuid;
         }
       }
 
@@ -1083,8 +1095,8 @@ $app->group('/accounts', function (RouteCollectorProxy $group) {
     // POST /api/v2/accounts/dashboard/profile
     $sub->post('/profile', function (Request $request, Response $response) {
       global $link;
-      $npub = resolveIdentityNpub($request);
-      if ($npub === '') {
+      $uuid = resolveIdentityUuid($request);
+      if ($uuid === '') {
         $response->getBody()->write(json_encode(['error' => 'missing-identity']));
         return $response
           ->withHeader('Content-Type', 'application/json')
@@ -1101,11 +1113,11 @@ $app->group('/accounts', function (RouteCollectorProxy $group) {
       $rawNl = $body['allowNostrLogin'] ?? false;
       $allowNostrLogin = ($rawNl === true || $rawNl === 'true' || $rawNl === 1 || $rawNl === '1');
 
-      $prevNpub = $_SESSION['usernpub'] ?? null;
-      $_SESSION['usernpub'] = $npub;
+      $prevUuid = $_SESSION['useruuid'] ?? null;
+      $_SESSION['useruuid'] = $uuid;
       try {
-        $account = new Account($npub, $link);
-        if (!$account->accountExists()) {
+        $account = Account::fromUuid($uuid, $link);
+        if ($account === null) {
           $response->getBody()->write(json_encode(['error' => 'not-found']));
           return $response
             ->withHeader('Content-Type', 'application/json')
@@ -1134,10 +1146,10 @@ $app->group('/accounts', function (RouteCollectorProxy $group) {
           ->withHeader('Content-Type', 'application/json')
           ->withStatus(500);
       } finally {
-        if ($prevNpub === null) {
-          unset($_SESSION['usernpub']);
+        if ($prevUuid === null) {
+          unset($_SESSION['useruuid']);
         } else {
-          $_SESSION['usernpub'] = $prevNpub;
+          $_SESSION['useruuid'] = $prevUuid;
         }
       }
 
@@ -1479,8 +1491,8 @@ $app->group('/accounts', function (RouteCollectorProxy $group) {
     // POST /api/v2/accounts/dashboard/profile/password
     $sub->post('/profile/password', function (Request $request, Response $response) {
       global $link;
-      $npub = resolveIdentityNpub($request);
-      if ($npub === '') {
+      $uuid = resolveIdentityUuid($request);
+      if ($uuid === '') {
         $response->getBody()->write(json_encode(['error' => 'missing-identity']));
         return $response
           ->withHeader('Content-Type', 'application/json')
@@ -1498,11 +1510,11 @@ $app->group('/accounts', function (RouteCollectorProxy $group) {
           ->withStatus(400);
       }
 
-      $prevNpub = $_SESSION['usernpub'] ?? null;
-      $_SESSION['usernpub'] = $npub;
+      $prevUuid = $_SESSION['useruuid'] ?? null;
+      $_SESSION['useruuid'] = $uuid;
       try {
-        $account = new Account($npub, $link);
-        if (!$account->accountExists()) {
+        $account = Account::fromUuid($uuid, $link);
+        if ($account === null) {
           $response->getBody()->write(json_encode(['error' => 'not-found']));
           return $response
             ->withHeader('Content-Type', 'application/json')
@@ -1516,10 +1528,10 @@ $app->group('/accounts', function (RouteCollectorProxy $group) {
           ->withHeader('Content-Type', 'application/json')
           ->withStatus(500);
       } finally {
-        if ($prevNpub === null) {
-          unset($_SESSION['usernpub']);
+        if ($prevUuid === null) {
+          unset($_SESSION['useruuid']);
         } else {
-          $_SESSION['usernpub'] = $prevNpub;
+          $_SESSION['useruuid'] = $prevUuid;
         }
       }
 
@@ -1541,12 +1553,12 @@ $app->group('/accounts', function (RouteCollectorProxy $group) {
 
     // POST /api/v2/accounts/dashboard/media/poster — replace a video's poster
     // frame. Ported from routes_account_dashboard.php; the $_SESSION swap lets
-    // any legacy helper that reads $_SESSION['usernpub'] run unchanged.
+    // any legacy helper that reads $_SESSION['useruuid'] run unchanged.
     $sub->post('/media/poster', function (Request $request, Response $response) {
       global $link;
       global $awsConfig;
-      $npub = resolveIdentityNpub($request);
-      if ($npub === '') {
+      $uuid = resolveIdentityUuid($request);
+      if ($uuid === '') {
         return dashboardError($response, 'missing-identity', 400);
       }
 
@@ -1565,12 +1577,12 @@ $app->group('/accounts', function (RouteCollectorProxy $group) {
         return dashboardError($response, 'Invalid file type');
       }
 
-      $prevNpub = $_SESSION['usernpub'] ?? null;
-      $_SESSION['usernpub'] = $npub;
+      $prevUuid = $_SESSION['useruuid'] ?? null;
+      $_SESSION['useruuid'] = $uuid;
       $tmpPath = null;
       try {
         $images = new UsersImages($link);
-        $videoInfo = $images->getFile($npub, $fileId);
+        $videoInfo = $images->getFile($uuid, $fileId);
         if (!$videoInfo) {
           return dashboardError($response, 'Video not found', 404);
         }
@@ -1622,10 +1634,10 @@ $app->group('/accounts', function (RouteCollectorProxy $group) {
         if ($tmpPath !== null && file_exists($tmpPath)) {
           @unlink($tmpPath);
         }
-        if ($prevNpub === null) {
-          unset($_SESSION['usernpub']);
+        if ($prevUuid === null) {
+          unset($_SESSION['useruuid']);
         } else {
-          $_SESSION['usernpub'] = $prevNpub;
+          $_SESSION['useruuid'] = $prevUuid;
         }
       }
     });
@@ -1796,18 +1808,23 @@ $app->group('/accounts', function (RouteCollectorProxy $group) {
     $sub->post('/ai/generate', function (Request $request, Response $response) {
       global $link;
       global $awsConfig;
-      $npub = resolveIdentityNpub($request);
-      if ($npub === '') {
+      // Upload path: uuid is the identity (gated); npub is optional — it only
+      // feeds the npub-keyed blacklist check + upload queue field downstream.
+      $uuid = resolveIdentityUuid($request);
+      if ($uuid === '') {
         return dashboardError($response, 'missing-identity', 400);
       }
+      $npub = resolveIdentityNpub($request);
 
-      $account = new Account($npub, $link);
-      if (!$account->accountExists()) {
+      $account = Account::fromUuid($uuid, $link);
+      if ($account === null) {
         return dashboardError($response, 'not-found', 404);
       }
 
       $prevNpub = $_SESSION['usernpub'] ?? null;
+      $prevUuid = $_SESSION['useruuid'] ?? null;
       $_SESSION['usernpub'] = $npub;
+      $_SESSION['useruuid'] = $uuid;
       try {
         if (dashboardGetDaysRemaining() <= 0 || $account->getPerFileUploadLimit() <= 0) {
           return dashboardError($response, 'Your account has expired', 403);
@@ -1875,6 +1892,11 @@ $app->group('/accounts', function (RouteCollectorProxy $group) {
           unset($_SESSION['usernpub']);
         } else {
           $_SESSION['usernpub'] = $prevNpub;
+        }
+        if ($prevUuid === null) {
+          unset($_SESSION['useruuid']);
+        } else {
+          $_SESSION['useruuid'] = $prevUuid;
         }
       }
     });
@@ -1947,38 +1969,11 @@ $app->group('/accounts', function (RouteCollectorProxy $group) {
       }
     });
 
-    // GET /multipart/{uploadId}/{partNumber}?key=... — sign one part URL.
-    $mp->get('/{uploadId}/{partNumber:[0-9]+}', function (Request $request, Response $response, array $args) {
-      $npub = resolveIdentityNpub($request);
-      if ($npub === '') {
-        return jsonResponse($response, 'error', 'missing-identity', new stdClass(), 400);
-      }
-      $uploadId = $args['uploadId'];
-      $partNumber = (int) $args['partNumber'];
-      $key = $request->getQueryParams()['key'] ?? '';
-      if (empty($uploadId) || empty($key) || $partNumber < 1) {
-        return jsonResponse($response, 'error', 'Missing required parameters', new stdClass(), 400);
-      }
-      $prevNpub = $_SESSION['usernpub'] ?? null;
-      $_SESSION['usernpub'] = $npub;
-      try {
-        $s3Multipart = $this->get('s3Multipart');
-        $result = $s3Multipart->signPart($uploadId, $key, $partNumber, $npub);
-        if (!$result) {
-          return jsonResponse($response, 'error', 'Failed to sign part', new stdClass(), 500);
-        }
-        return jsonResponse($response, 'success', 'Part signed', $result);
-      } catch (\Throwable $e) {
-        error_log('uploads/multipart sign: ' . $e->getMessage());
-        return jsonResponse($response, 'error', 'Failed to sign part', new stdClass(), 500);
-      } finally {
-        if ($prevNpub === null) {
-          unset($_SESSION['usernpub']);
-        } else {
-          $_SESSION['usernpub'] = $prevNpub;
-        }
-      }
-    });
+    // NOTE: signPart, listParts, and abort run in the accounts Worker
+    // (src/server/multipart-r2.ts + the /api/uploads/multipart/$ route) directly
+    // against R2 — they never reach PHP. Only create (the banned-npub/expiry/level
+    // gate), the /status DB probe, and complete (the post-assembly copy → DB →
+    // webhook → poster pipeline) stay here.
 
     // GET /multipart/{uploadId}/status?key=... — completion-status probe.
     $mp->get('/{uploadId}/status', function (Request $request, Response $response, array $args) {
@@ -2026,38 +2021,6 @@ $app->group('/accounts', function (RouteCollectorProxy $group) {
       }
     });
 
-    // GET /multipart/{uploadId}?key=... — list uploaded parts.
-    $mp->get('/{uploadId}', function (Request $request, Response $response, array $args) {
-      $npub = resolveIdentityNpub($request);
-      if ($npub === '') {
-        return jsonResponse($response, 'error', 'missing-identity', new stdClass(), 400);
-      }
-      $uploadId = $args['uploadId'];
-      $key = $request->getQueryParams()['key'] ?? '';
-      if (empty($uploadId) || empty($key)) {
-        return jsonResponse($response, 'error', 'Missing required parameters', new stdClass(), 400);
-      }
-      $prevNpub = $_SESSION['usernpub'] ?? null;
-      $_SESSION['usernpub'] = $npub;
-      try {
-        $s3Multipart = $this->get('s3Multipart');
-        $result = $s3Multipart->listParts($uploadId, $key, $npub);
-        if ($result === false) {
-          return jsonResponse($response, 'error', 'Failed to list parts', new stdClass(), 500);
-        }
-        return jsonResponse($response, 'success', 'Parts listed', $result);
-      } catch (\Throwable $e) {
-        error_log('uploads/multipart list: ' . $e->getMessage());
-        return jsonResponse($response, 'error', 'Failed to list parts', new stdClass(), 500);
-      } finally {
-        if ($prevNpub === null) {
-          unset($_SESSION['usernpub']);
-        } else {
-          $_SESSION['usernpub'] = $prevNpub;
-        }
-      }
-    });
-
     // POST /multipart/{uploadId}/complete?key=... — finalize.
     $mp->post('/{uploadId}/complete', function (Request $request, Response $response, array $args) {
       $npub = resolveIdentityNpub($request);
@@ -2083,38 +2046,6 @@ $app->group('/accounts', function (RouteCollectorProxy $group) {
       } catch (\Throwable $e) {
         error_log('uploads/multipart complete: ' . $e->getMessage());
         return jsonResponse($response, 'error', 'Failed to complete multipart upload', new stdClass(), 500);
-      } finally {
-        if ($prevNpub === null) {
-          unset($_SESSION['usernpub']);
-        } else {
-          $_SESSION['usernpub'] = $prevNpub;
-        }
-      }
-    });
-
-    // DELETE /multipart/{uploadId}?key=... — abort.
-    $mp->delete('/{uploadId}', function (Request $request, Response $response, array $args) {
-      $npub = resolveIdentityNpub($request);
-      if ($npub === '') {
-        return jsonResponse($response, 'error', 'missing-identity', new stdClass(), 400);
-      }
-      $uploadId = $args['uploadId'];
-      $key = $request->getQueryParams()['key'] ?? '';
-      if (empty($uploadId) || empty($key)) {
-        return jsonResponse($response, 'error', 'Missing required parameters', new stdClass(), 400);
-      }
-      $prevNpub = $_SESSION['usernpub'] ?? null;
-      $_SESSION['usernpub'] = $npub;
-      try {
-        $s3Multipart = $this->get('s3Multipart');
-        $result = $s3Multipart->abortMultipartUpload($uploadId, $key, $npub);
-        if (!$result) {
-          return jsonResponse($response, 'error', 'Failed to abort multipart upload', new stdClass(), 500);
-        }
-        return jsonResponse($response, 'success', 'Multipart upload aborted', new stdClass());
-      } catch (\Throwable $e) {
-        error_log('uploads/multipart abort: ' . $e->getMessage());
-        return jsonResponse($response, 'error', 'Failed to abort multipart upload', new stdClass(), 500);
       } finally {
         if ($prevNpub === null) {
           unset($_SESSION['usernpub']);
@@ -2181,8 +2112,8 @@ $app->group('/accounts', function (RouteCollectorProxy $group) {
     global $link;
     global $awsConfig;
 
-    $npub = resolveIdentityNpub($request);
-    if ($npub === '') {
+    $uuid = resolveIdentityUuid($request);
+    if ($uuid === '') {
       $response->getBody()->write(json_encode(['error' => 'missing-identity']));
       return $response->withHeader('Content-Type', 'application/json')->withStatus(400);
     }
@@ -2199,7 +2130,7 @@ $app->group('/accounts', function (RouteCollectorProxy $group) {
       : ['kind' => 'all'];
 
     try {
-      $files = backupManifestForNpub($npub, $filterKinds, $folderSelection, $link);
+      $files = backupManifestForUuid($uuid, $filterKinds, $folderSelection, $link);
     } catch (\Throwable $e) {
       error_log('backup-manifest failed: ' . $e->getMessage());
       $response->getBody()->write(json_encode(['error' => 'manifest-failed']));

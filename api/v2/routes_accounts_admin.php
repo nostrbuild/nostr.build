@@ -68,6 +68,32 @@ function aaValidNpub(?string $raw): ?string
   return $npub;
 }
 
+/**
+ * Resolve an admin action's target account from the request body, keyed by the
+ * stable `uuid` (the identity for EVERY account, including key-less "email"
+ * accounts) and falling back to a legacy `npub`. The stable uuid is preferred so
+ * the billing/lifecycle actions work for npub-less accounts; the npub branch is
+ * kept only for older clients that still send it.
+ *
+ * Returns [Account|null, npubOrEmpty]: the account (null when neither identifier
+ * resolves to a real account) plus the resolved npub for the self-modify guard +
+ * audit ('' for an account with no key).
+ *
+ * @return array{0: ?Account, 1: string}
+ */
+function aaResolveTargetAccount(array $body, mysqli $link): array
+{
+  $uuid = isset($body['uuid']) && is_string($body['uuid']) ? trim($body['uuid']) : '';
+  if ($uuid !== '') {
+    $account = Account::fromUuid($uuid, $link);
+    return [$account, $account !== null ? (string) $account->getNpub() : ''];
+  }
+  $npub = aaValidNpub($body['npub'] ?? null);
+  if ($npub === null) return [null, ''];
+  $account = new Account($npub, $link);
+  return [$account->accountExists() ? $account : null, $npub];
+}
+
 /** Parse the nl_sub_activation_return_value JSON column. The tier name
  *  is dynamic — read `request.tier` first, then index `current_tier_ends`
  *  by that name. Today only "plus" exists; this keeps the lookup honest
@@ -521,11 +547,11 @@ $app->group('/accounts/admin/users', function (RouteCollectorProxy $group) {
     $body = json_decode((string) $request->getBody(), true);
     if (!is_array($body)) return aaError($response, 'invalid-body', 400);
 
-    $npub  = aaValidNpub($body['npub'] ?? null);
+    [$account, $npub] = aaResolveTargetAccount($body, $link);
     $level = isset($body['level']) && is_int($body['level']) ? $body['level'] : null;
     $period = isset($body['period']) && is_string($body['period']) ? $body['period'] : null;
 
-    if ($npub === null)   return aaError($response, 'invalid-npub', 400);
+    if ($account === null) return aaError($response, 'not-found', 404);
     if ($level === null || !in_array($level, [0, 1, 2, 3, 4, 5, 10, 89, 99], true)) {
       return aaError($response, 'invalid-level', 400);
     }
@@ -534,12 +560,9 @@ $app->group('/accounts/admin/users', function (RouteCollectorProxy $group) {
     }
 
     $adminNpub = (string) $request->getAttribute('admin_npub');
-    if ($adminNpub !== '' && $adminNpub === $npub) {
+    if ($adminNpub !== '' && $npub !== '' && $adminNpub === $npub) {
       return aaError($response, 'self-modify-forbidden', 403);
     }
-
-    $account = new Account($npub, $link);
-    if (!$account->accountExists()) return aaError($response, 'not-found', 404);
 
     try {
       $result = $account->adminSetPlan($level, $period);
@@ -572,21 +595,18 @@ $app->group('/accounts/admin/users', function (RouteCollectorProxy $group) {
     $body = json_decode((string) $request->getBody(), true);
     if (!is_array($body)) return aaError($response, 'invalid-body', 400);
 
-    $npub = aaValidNpub($body['npub'] ?? null);
+    [$account, $npub] = aaResolveTargetAccount($body, $link);
     $days = isset($body['days']) && is_int($body['days']) ? $body['days'] : null;
 
-    if ($npub === null)  return aaError($response, 'invalid-npub', 400);
+    if ($account === null) return aaError($response, 'not-found', 404);
     if ($days === null || $days < 1 || $days > 3650) {
       return aaError($response, 'invalid-days', 400);
     }
 
     $adminNpub = (string) $request->getAttribute('admin_npub');
-    if ($adminNpub !== '' && $adminNpub === $npub) {
+    if ($adminNpub !== '' && $npub !== '' && $adminNpub === $npub) {
       return aaError($response, 'self-modify-forbidden', 403);
     }
-
-    $account = new Account($npub, $link);
-    if (!$account->accountExists()) return aaError($response, 'not-found', 404);
 
     try {
       $newEnd = $account->adminExtendSubscription($days);
@@ -622,19 +642,16 @@ $app->group('/accounts/admin/users', function (RouteCollectorProxy $group) {
     $body = json_decode((string) $request->getBody(), true);
     if (!is_array($body)) return aaError($response, 'invalid-body', 400);
 
-    $npub = aaValidNpub($body['npub'] ?? null);
+    [$account, $npub] = aaResolveTargetAccount($body, $link);
     $date = isset($body['date']) && is_string($body['date']) ? $body['date'] : null;
 
-    if ($npub === null) return aaError($response, 'invalid-npub', 400);
+    if ($account === null) return aaError($response, 'not-found', 404);
     if ($date === null) return aaError($response, 'invalid-date', 400);
 
     $adminNpub = (string) $request->getAttribute('admin_npub');
-    if ($adminNpub !== '' && $adminNpub === $npub) {
+    if ($adminNpub !== '' && $npub !== '' && $adminNpub === $npub) {
       return aaError($response, 'self-modify-forbidden', 403);
     }
-
-    $account = new Account($npub, $link);
-    if (!$account->accountExists()) return aaError($response, 'not-found', 404);
 
     try {
       $newEnd = $account->adminSetExpiryDate($date);
@@ -670,21 +687,18 @@ $app->group('/accounts/admin/users', function (RouteCollectorProxy $group) {
     $body = json_decode((string) $request->getBody(), true);
     if (!is_array($body)) return aaError($response, 'invalid-body', 400);
 
-    $npub = aaValidNpub($body['npub'] ?? null);
+    [$account, $npub] = aaResolveTargetAccount($body, $link);
     $blocks = isset($body['blocks']) && is_int($body['blocks']) ? $body['blocks'] : null;
 
-    if ($npub === null) return aaError($response, 'invalid-npub', 400);
+    if ($account === null) return aaError($response, 'not-found', 404);
     if ($blocks === null || $blocks < 0 || $blocks > 1000) {
       return aaError($response, 'invalid-blocks', 400);
     }
 
     $adminNpub = (string) $request->getAttribute('admin_npub');
-    if ($adminNpub !== '' && $adminNpub === $npub) {
+    if ($adminNpub !== '' && $npub !== '' && $adminNpub === $npub) {
       return aaError($response, 'self-modify-forbidden', 403);
     }
-
-    $account = new Account($npub, $link);
-    if (!$account->accountExists()) return aaError($response, 'not-found', 404);
 
     // 10 GiB per block. blocks <= 1000 → <= 10 TiB, comfortably within int64.
     $bytes = $blocks * 10 * 1024 * 1024 * 1024;
@@ -801,11 +815,8 @@ $app->group('/accounts/admin/users', function (RouteCollectorProxy $group) {
     $body = json_decode((string) $request->getBody(), true);
     if (!is_array($body)) return aaError($response, 'invalid-body', 400);
 
-    $npub = aaValidNpub($body['npub'] ?? null);
-    if ($npub === null) return aaError($response, 'invalid-npub', 400);
-
-    $account = new Account($npub, $link);
-    if (!$account->accountExists()) return aaError($response, 'not-found', 404);
+    [$account, $npub] = aaResolveTargetAccount($body, $link);
+    if ($account === null) return aaError($response, 'not-found', 404);
 
     try {
       $account->cancelDeletion(true);
@@ -842,20 +853,17 @@ $app->group('/accounts/admin/users', function (RouteCollectorProxy $group) {
     $body = json_decode((string) $request->getBody(), true);
     if (!is_array($body)) return aaError($response, 'invalid-body', 400);
 
-    $npub = aaValidNpub($body['npub'] ?? null);
-    if ($npub === null) return aaError($response, 'invalid-npub', 400);
+    [$account, $npub] = aaResolveTargetAccount($body, $link);
+    if ($account === null) return aaError($response, 'not-found', 404);
 
     // Optional, default false. Accept actual booleans only — string
     // "false"/"true" coercion is too lenient for an action this destructive.
     $killSessions = isset($body['killSessions']) ? $body['killSessions'] === true : false;
 
     $adminNpub = (string) $request->getAttribute('admin_npub');
-    if ($adminNpub !== '' && $adminNpub === $npub) {
+    if ($adminNpub !== '' && $npub !== '' && $adminNpub === $npub) {
       return aaError($response, 'self-modify-forbidden', 403);
     }
-
-    $account = new Account($npub, $link);
-    if (!$account->accountExists()) return aaError($response, 'not-found', 404);
 
     try {
       $plaintext = $account->adminResetPassword();
