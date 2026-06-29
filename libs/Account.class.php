@@ -1875,8 +1875,10 @@ class Account
           }
         }
 
-        // Trigger NostrLand renewal activation if eligible and previously activated
-        if (!$isActuallyNew) { // Only for renewals, not new accounts
+        // Trigger NostrLand renewal activation if eligible and previously
+        // activated. NostrLand is Nostr-bound, so skip it for an email-only
+        // account (no npub) rather than calling it with an empty key.
+        if (!$isActuallyNew && $this->npub !== '') { // renewals only, key-holders only
           try {
             require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/NostrLand.class.php';
             $nostrLand = new NostrLand($this->npub, $this->db);
@@ -1891,9 +1893,12 @@ class Account
       }
     } finally {
       $stmt->close();
-      // Send update to Blossom API
-      $newData = $this->getAccountInfo();
-      $this->blossomFrontEndAPI->updateAccount($this->npub, $newData);
+      // Send update to Blossom API — only for key-holding accounts; an email-only
+      // account has no npub and no blossom presence to update.
+      if ($this->npub !== '') {
+        $newData = $this->getAccountInfo();
+        $this->blossomFrontEndAPI->updateAccount($this->npub, $newData);
+      }
     }
 
     return $status;
@@ -2614,17 +2619,20 @@ class Account
   }
 }
 
-// Helper function to find npub by referral code
+// Helper function to find the referrer's stable uuid by referral code.
 /**
- * Finds the npub (public key) associated with a given referral code.
+ * Finds the stable account uuid (users.uuid_id) for a given referral code. uuid
+ * is the durable identity — npub is mutable and absent for email-only accounts —
+ * so referrer resolution (and the bonus credit keyed off it) uses the uuid.
  *
  * @param mysqli $db The MySQLi database connection object.
  * @param string $referralCode The referral code to search for.
- * @return string The npub (public key) associated with the referral code.
+ * @return string The referrer's uuid_id, or '' when the code matches no
+ *                eligible (level 1/2/10, unexpired) account.
  */
-function findNpubByReferralCode(mysqli $db, string $referralCode): string
+function findReferrerUuidByReferralCode(mysqli $db, string $referralCode): string
 {
-  $sql = "SELECT usernpub FROM users WHERE referral_code = ? AND acctlevel IN (1,2,10) AND plan_until_date > NOW()";
+  $sql = "SELECT uuid_id FROM users WHERE referral_code = ? AND acctlevel IN (1,2,10) AND plan_until_date > NOW()";
   $stmt = $db->prepare($sql);
 
   if (!$stmt) {
@@ -2647,10 +2655,10 @@ function findNpubByReferralCode(mysqli $db, string $referralCode): string
       throw new Exception("Error getting result: " . $stmt->error);
     }
 
-    $npub = $result->fetch_assoc()['usernpub'] ?? '';
+    $uuid = $result->fetch_assoc()['uuid_id'] ?? '';
   } finally {
     $stmt->close();
   }
 
-  return $npub;
+  return $uuid;
 }

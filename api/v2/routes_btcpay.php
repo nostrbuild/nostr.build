@@ -182,20 +182,23 @@ $app->group('/internal/plans', function (RouteCollectorProxy $group) {
     }
     try {
       // Same validity gate the legacy page used (valid level, not expired).
-      $npub = findNpubByReferralCode($link, $code);
-      if (empty($npub)) {
+      // Resolve by the stable uuid: an email-only referrer has no npub, so a
+      // usernpub lookup would wrongly 404 them (and drop their bonus credit).
+      $uuid = findReferrerUuidByReferralCode($link, $code);
+      $acct = $uuid !== '' ? Account::fromUuid($uuid, $link)?->getAccount() : null;
+      if (empty($acct)) {
         $response->getBody()->write(json_encode(['ok' => false, 'error' => 'not-found']));
         return $response->withStatus(404)->withHeader('Content-Type', 'application/json');
       }
-      $acct = (new Account($npub, $link))->getAccount();
       // `level` lets the Worker apply the signup referral split itself (only
       // levels 1/2/10 earn) without PHP owning that credit logic - keep PHP dumb.
       // `uuid` is the stable ledger key the Worker credits the referrer bonus to
-      // (npub is mutable); server-to-server only — the public /plans card drops it.
+      // (npub is mutable, and empty for an email-only referrer); server-to-server
+      // only — the public /plans card drops it.
       $response->getBody()->write(json_encode([
         'ok' => true,
-        'uuid' => $acct['uuid_id'] ?? null,
-        'npub' => $npub,
+        'uuid' => $acct['uuid_id'] ?? $uuid,
+        'npub' => $acct['usernpub'] ?? '',
         'nym' => $acct['nym'] ?? null,
         'ppic' => $acct['ppic'] ?? null,
         'level' => (int)($acct['acctlevel'] ?? 0),

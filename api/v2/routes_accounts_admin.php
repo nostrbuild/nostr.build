@@ -1590,15 +1590,17 @@ $app->group('/accounts/admin/csam', function (RouteCollectorProxy $group) {
     }
     $rawIds = is_array($body) && isset($body['ids']) && is_array($body['ids']) ? $body['ids'] : [];
 
-    // Resolve the owner's CURRENT npub from the stable uuid.
+    // Resolve the owner's CURRENT npub from the stable uuid. May be empty for an
+    // email-only account — that's fine, it's only echoed back; the media lookup
+    // below is uuid-scoped, so DON'T require a non-empty npub here.
     $sel = $link->prepare("SELECT usernpub FROM users WHERE uuid_id = ?");
     if (!$sel) return aaError($response, 'server-error', 500);
     $sel->bind_param('s', $uuid);
     $sel->execute();
     $owner = $sel->get_result()->fetch_assoc();
     $sel->close();
-    if (!$owner || ($owner['usernpub'] ?? '') === '') return aaError($response, 'not-found', 404);
-    $npub = (string) $owner['usernpub'];
+    if (!$owner) return aaError($response, 'not-found', 404);
+    $npub = (string) ($owner['usernpub'] ?? '');
 
     $ids = [];
     foreach ($rawIds as $i) {
@@ -2440,14 +2442,16 @@ $app->group('/accounts/admin/account-review', function (RouteCollectorProxy $gro
     }
     $rawIds = is_array($body) && isset($body['ids']) && is_array($body['ids']) ? $body['ids'] : [];
 
-    // Resolve the owner's CURRENT npub from the stable uuid (owner-scope guard).
-    $sel = $link->prepare("SELECT usernpub FROM users WHERE uuid_id = ?");
+    // Verify the account exists by its stable uuid (owner-scope guard). An
+    // email-only account has no npub, so DON'T require one — the DELETE below is
+    // already uuid-scoped (npub is not used here at all).
+    $sel = $link->prepare("SELECT uuid_id FROM users WHERE uuid_id = ?");
     if (!$sel) return aaError($response, 'server-error', 500);
     $sel->bind_param('s', $uuid);
     $sel->execute();
     $owner = $sel->get_result()->fetch_assoc();
     $sel->close();
-    if (!$owner || ($owner['usernpub'] ?? '') === '') return aaError($response, 'not-found', 404);
+    if (!$owner) return aaError($response, 'not-found', 404);
 
     $ids = [];
     foreach ($rawIds as $i) {
