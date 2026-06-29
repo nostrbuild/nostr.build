@@ -805,4 +805,34 @@ $app->group('/internal/account', function (RouteCollectorProxy $group) {
       return $response->withStatus(500)->withHeader('Content-Type', 'application/json');
     }
   });
+
+  // EMERGENCY bulk cancel — reset EVERY in-flight inactivity-sweep deletion back
+  // to 'none' in one statement (mirrors Account::cancelDeletion's column reset).
+  // Scoped to category='inactivity' so it can NEVER undo a user's self-service
+  // deletion (category NULL) nor an admin 'admin'/'forced' termination. The
+  // sleeping DeletionWorkflows re-check PHP state on wake and no-op once the row
+  // is no longer 'pending', so this neutralizes them without touching Cloudflare.
+  $group->post('/expired-termination/cancel-all-inactivity', function (Request $request, Response $response) {
+    global $link;
+    try {
+      $stmt = $link->prepare(
+        "UPDATE users
+            SET deletion_status = 'none', deletion_requested_at = NULL, delete_after = NULL,
+                deletion_category = NULL, deletion_reason = NULL, deletion_actor = NULL
+          WHERE deletion_status = 'pending' AND deletion_category = 'inactivity'"
+      );
+      if (!$stmt) {
+        throw new Exception('prepare failed: ' . $link->error);
+      }
+      $stmt->execute();
+      $cancelled = $stmt->affected_rows;
+      $stmt->close();
+      $response->getBody()->write(json_encode(['ok' => true, 'cancelled' => $cancelled]));
+      return $response->withHeader('Content-Type', 'application/json');
+    } catch (\Throwable $e) {
+      error_log('internal/account/expired-termination/cancel-all-inactivity error: ' . $e->getMessage());
+      $response->getBody()->write(json_encode(['ok' => false, 'error' => 'cancel-all failed']));
+      return $response->withStatus(500)->withHeader('Content-Type', 'application/json');
+    }
+  });
 })->add(new HmacAuthMiddleware());
