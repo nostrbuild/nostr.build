@@ -207,6 +207,17 @@ class Account
    */
   private function fetchAccountData(): void
   {
+    // An empty identifier can never identify an account. Skip the query: a blank
+    // value runs `WHERE usernpub = ''`, which would match a stray empty-usernpub
+    // row and load the WRONG account, and constructing a non-existent account
+    // must not seed $_SESSION or log spurious "no record"/"plan start date"
+    // warnings. This is what made `new Account('')` — e.g. resolving a key-less
+    // account through its empty npub — emit those misleading errors.
+    if ($this->lookupValue === '') {
+      $this->account = [];
+      $this->uuid = '';
+      return;
+    }
     $sql = "SELECT * FROM users WHERE {$this->lookupColumn} = ?";
     $stmt = $this->db->prepare($sql);
 
@@ -245,7 +256,13 @@ class Account
     } finally {
       $stmt->close();
     }
-    $this->setSessionParameters();
+    // Only seed session state from a REAL row — constructing a missing account
+    // must not overwrite $_SESSION with blanks or trigger plan-date warnings
+    // (admin tools build OTHER users' accounts; that must never touch the
+    // acting admin's session).
+    if (!empty($this->account)) {
+      $this->setSessionParameters();
+    }
   }
 
   /**

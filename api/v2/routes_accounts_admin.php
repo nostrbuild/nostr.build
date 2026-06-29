@@ -154,11 +154,13 @@ function aaParseNlActivation(mixed $raw): array
  *  (getTotalStats) yields the per-type counts + sizes AND the storage total,
  *  so this costs a single extra round-trip on top of the lookup. Works for
  *  expired accounts — users_images rows survive expiry, the query keys on
- *  usernpub only. getTotalStats uses inconsistent key names for the tail
+ *  the stable user_uuid. getTotalStats uses inconsistent key names for the tail
  *  categories (documentCount / archiveCount / otherCount), normalised here. */
-function aaMediaStats(mysqli $link, string $npub): array
+function aaMediaStats(mysqli $link, string $owner): array
 {
-  $s = (new UsersImagesFolders($link))->getTotalStats($npub);
+  // getTotalStats resolves owner→uuid; pass the stable uuid so a key-less
+  // (email) account reports its real media (its npub is empty).
+  $s = (new UsersImagesFolders($link))->getTotalStats($owner);
   $s = is_array($s) ? $s : [];
   $n = static fn(string $k): int => (int) ($s[$k] ?? 0);
   return [
@@ -233,7 +235,7 @@ function aaUserSnapshot(Account $account, mysqli $link): array
     // Add-on storage (bytes) granted on top of the plan tier — drives the
     // admin add-on panel's "current" value.
     'storageAddon'       => $account->getAccountAdditionStorage(),
-    'media'              => aaMediaStats($link, $account->getNpub()),
+    'media'              => aaMediaStats($link, (string) $account->getAccountUuid()),
   ];
 }
 
@@ -321,6 +323,7 @@ $app->group('/accounts/admin/users', function (RouteCollectorProxy $group) {
   $group->get('/overview', function (Request $request, Response $response) {
     global $link;
 
+    try {
     // ----- Recently expired paid plans (last 30 days, newest-first) -----
     // Paid tiers only (1..10 covers Creator/Pro/Purist/Viewer/Starter/Advanced;
     // excludes Free=0 and staff 89/99 which have no meaningful expiry).
@@ -450,6 +453,14 @@ $app->group('/accounts/admin/users', function (RouteCollectorProxy $group) {
       'newestAccounts'   => $newestAccounts,
       'planDistribution' => $planDistribution,
     ]);
+    } catch (\Throwable $e) {
+      // This was the only admin route without a guard, so any query exception
+      // (mysqli throws under config.php's MYSQLI_REPORT_STRICT) became an
+      // uncaught fatal → 502 with no clean log. Log the real cause and return a
+      // clean error instead of crashing the FPM worker.
+      error_log('admin/users/overview failed: ' . $e->getMessage());
+      return aaError($response, 'overview-failed', 500);
+    }
   });
 
   /**
@@ -2148,15 +2159,22 @@ $app->group('/accounts/admin/account-review', function (RouteCollectorProxy $gro
 
     $matchedItemId = null;
     $matchedItem = null;
-    $npub = null;
+    $npub = '';
+    $account = null;
 
     if (str_starts_with($q, 'npub1')) {
       $npub = aaValidNpub($q);
       if ($npub === null) return aaError($response, 'invalid-query', 400);
+      $account = new Account($npub, $link);
     } elseif (preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/', $q)) {
-      $acct = Account::fromUuid($q, $link);
-      if ($acct === null || !$acct->accountExists()) return aaError($response, 'not-found', 404);
-      $npub = $acct->getNpub();
+      // Resolve by the STABLE uuid and KEEP that account. The old code did
+      // `$npub = $acct->getNpub()` then `new Account($npub)` below, which
+      // re-resolved to an EMPTY npub for a key-less (email) account → "No
+      // matching record found for npub:" + a bogus "Plan start date is not set".
+      // The uuid is the identity; never round-trip an account through its npub.
+      $account = Account::fromUuid($q, $link);
+      if ($account === null || !$account->accountExists()) return aaError($response, 'not-found', 404);
+      $npub = (string) $account->getNpub();
     } elseif (str_contains($q, '://')) {
       // Reported URL → filename basename → users_images row. `image` stores the
       // bare filename (the dashboard builds URLs as base . image), so an exact
@@ -2173,10 +2191,10 @@ $app->group('/accounts/admin/account-review', function (RouteCollectorProxy $gro
         return aaJson($response, ['found' => false, 'note' => 'No paid-account media matches that URL.']);
       }
       // Resolve to the CURRENT owner via the stable uuid (rotation-safe; the
-      // media row no longer stores npub).
-      $acct = Account::fromUuid((string) $hit['user_uuid'], $link);
-      if ($acct === null || !$acct->accountExists()) return aaError($response, 'not-found', 404);
-      $npub = $acct->getNpub();
+      // media row no longer stores npub) and KEEP that account.
+      $account = Account::fromUuid((string) $hit['user_uuid'], $link);
+      if ($account === null || !$account->accountExists()) return aaError($response, 'not-found', 404);
+      $npub = (string) $account->getNpub();
       $matchedItemId = (int) $hit['id'];
       // The matched media row, so the URL-match view renders it without a
       // separate /media fetch.
@@ -2185,8 +2203,7 @@ $app->group('/accounts/admin/account-review', function (RouteCollectorProxy $gro
       return aaError($response, 'invalid-query', 400);
     }
 
-    $account = new Account($npub, $link);
-    if (!$account->accountExists()) return aaError($response, 'not-found', 404);
+    if ($account === null || !$account->accountExists()) return aaError($response, 'not-found', 404);
 
     // Internal staff (moderator/admin) are governed by a separate process and
     // are NOT subject to Account Review. Refuse before exposing any of their
@@ -2221,14 +2238,23 @@ $app->group('/accounts/admin/account-review', function (RouteCollectorProxy $gro
   $group->get('/media', function (Request $request, Response $response) {
     global $link;
     $p = $request->getQueryParams();
-    $npub = aaValidNpub($p['npub'] ?? null);
-    if ($npub === null) return aaError($response, 'invalid-npub', 400);
+    // Owner is the STABLE uuid (every account has one; a key-less email account
+    // has no npub). Accept a uuid (preferred) or a legacy npub, resolve to uuid.
+    $uuidParam = trim((string) ($p['uuid'] ?? ''));
+    if ($uuidParam !== '' && preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/', $uuidParam)) {
+      $ownerUuid = $uuidParam;
+    } else {
+      $npub = aaValidNpub($p['npub'] ?? null);
+      if ($npub === null) return aaError($response, 'invalid-owner', 400);
+      $ownerUuid = npubToUuid($link, $npub);
+    }
+    if ($ownerUuid === null || $ownerUuid === '') return aaError($response, 'not-found', 404);
     $limit  = max(1, min(200, (int) ($p['limit'] ?? 60)));
     $cursor = max(0, (int) ($p['cursor'] ?? 0));
 
     $where = "WHERE ui.user_uuid = ?";
     $types = 's';
-    $args  = [npubToUuid($link, $npub)];
+    $args  = [$ownerUuid];
     if ($cursor > 0) {
       $where .= " AND ui.id < ?";
       $types .= 'i';
