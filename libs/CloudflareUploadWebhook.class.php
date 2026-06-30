@@ -44,6 +44,7 @@ class CloudflareUploadWebhook
     ?int $uploadTime = null,
     ?string $fileOriginalUrl = null,
     ?string $uploadNpub = null,
+    ?string $uploadUserUUID = null,
     ?string $uploadedFileInfo = null,
     ?string $orginalSha256Hash = null, // NIP-96 (kept for compatibility)
     ?string $currentSha256Hash = null, // Blossom
@@ -72,6 +73,10 @@ class CloudflareUploadWebhook
 
     if ($uploadNpub !== null) {
       $this->payload['uploadNpub'] = $uploadNpub;
+    }
+
+    if ($uploadUserUUID !== null) {
+      $this->payload['uploadUserUUID'] = $uploadUserUUID;
     }
 
     if ($uploadedFileInfo !== null) {

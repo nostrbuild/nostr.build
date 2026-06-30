@@ -627,6 +627,7 @@ class S3Multipart
           uploadTime: time(),
           uploadedFileInfo: $_SERVER['CLIENT_REQUEST_INFO'] ?? null,
           uploadNpub: $uploadInfo['userNpub'] ?? null,
+          uploadUserUUID: $uploadInfo['userUuid'] ?? null,
           fileOriginalUrl: null,
           doVirusScan: $doVirusScan, // TODO: Figureout how to deal with oversized archives that are hard to scan.
           orginalSha256Hash: $fileData['checksum_sha256'] ?? null,
