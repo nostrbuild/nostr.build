@@ -2467,9 +2467,8 @@ class Account
       // e.g. '2025-13-40' would normalize differently.
       throw new InvalidArgumentException("date invalid: $date");
     }
-    if ($normalized < date('Y-m-d')) {
-      throw new InvalidArgumentException("expiry must be today or later: $date");
-    }
+    // Admin GOD override: ANY valid date is allowed, past or future (backdate a
+    // correction, force an immediate expiry, etc.). No today-or-later floor.
     $this->fetchAccountData();
     if (($this->account['plan_until_date'] ?? null) === null) {
       throw new InvalidArgumentException('user has no plan — use adminSetPlan first');

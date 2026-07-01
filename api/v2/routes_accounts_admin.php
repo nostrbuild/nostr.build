@@ -646,7 +646,7 @@ $app->group('/accounts/admin/users', function (RouteCollectorProxy $group) {
 
   /**
    * POST /accounts/admin/users/expiry
-   * Body: { npub, date: 'YYYY-MM-DD' (today or later) }
+   * Body: { npub, date: 'YYYY-MM-DD' (any date — past or future) }
    */
   $group->post('/expiry', function (Request $request, Response $response) {
     global $link;
