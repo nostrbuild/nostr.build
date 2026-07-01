@@ -1847,6 +1847,42 @@ $app->group('/accounts', function (RouteCollectorProxy $group) {
         $ar = $body['aspect_ratio'] ?? '';
         $preset = $body['style_preset'] ?? '';
 
+        // img2img: CSV of the caller's own users_images ids + optional 0-1
+        // strength. Support map mirrors the app catalog's `imageInput`
+        // (max source count per model); everything else is text-to-image only.
+        $imageInputModels = [
+          '@cf/bytedance/stable-diffusion-xl-lightning'  => 1,
+          '@cf/stabilityai/stable-diffusion-xl-base-1.0' => 1,
+          '@cf/lykon/dreamshaper-8-lcm'                  => 1,
+          '@cf/black-forest-labs/flux-2-dev'             => 4,
+          '@cf/black-forest-labs/flux-2-klein-4b'        => 4,
+          '@cf/black-forest-labs/flux-2-klein-9b'        => 4,
+          '@sd/sd3.5-large'                              => 1,
+          '@sd/sd3.5-medium'                             => 1,
+          '@sd/sd3.5-large-turbo'                        => 1,
+        ];
+        $sourceImagesCsv = trim((string) ($body['source_images'] ?? ''));
+        $strengthRaw = (string) ($body['strength'] ?? '');
+        $strength = ($strengthRaw !== '' && is_numeric($strengthRaw))
+          ? max(0.0, min(1.0, (float) $strengthRaw))
+          : null;
+        $sourceImagesB64 = [];
+        if ($sourceImagesCsv !== '') {
+          if (!isset($imageInputModels[$model])) {
+            return dashboardError($response, 'This model does not accept a source image', 400);
+          }
+          $sourceIds = array_values(array_filter(array_map('intval', explode(',', $sourceImagesCsv)), fn($v) => $v > 0));
+          if (count($sourceIds) === 0 || count($sourceIds) > $imageInputModels[$model]) {
+            return dashboardError($response, 'Invalid source images', 400);
+          }
+          // FLUX.2 rejects inputs >=512px, so its references ride the 300x300
+          // thumbnail rendition; everything else gets the 1080p rendition.
+          $sourceVariant = str_starts_with($model, '@cf/black-forest-labs/flux-2') ? 'thumb' : '1080p';
+          foreach ($sourceIds as $sourceId) {
+            $sourceImagesB64[] = dashboardFetchAiSourceImage($sourceId, $sourceVariant, $link);
+          }
+        }
+
         // Per-model tier gating mirrors the legacy route. Lightning + SD-XL
         // base share the base AI gate; FLUX is narrower (no Professional).
         $creatorsModels = [
@@ -1874,10 +1910,11 @@ $app->group('/accounts', function (RouteCollectorProxy $group) {
         ];
         if (isset($stabilityRoutes[$model])) {
           [$endpoint, $sdModel] = $stabilityRoutes[$model];
-          $aiImage = dashboardGenerateStabilityImage($endpoint, $sdModel, $prompt, $negativePrompt, $ar, $preset, 0, $title, $account, $link, $awsConfig);
+          $aiImage = dashboardGenerateStabilityImage($endpoint, $sdModel, $prompt, $negativePrompt, $ar, $preset, 0, $title, $account, $link, $awsConfig, $sourceImagesB64[0] ?? null, $strength);
         } else {
-          // Cloudflare Workers AI models (@cf/...) — prompt-only passthrough.
-          $aiImage = dashboardGenerateAIImage($model, $prompt, $title, $negativePrompt, $link, $awsConfig);
+          // Cloudflare Workers AI models (@cf/...) — prompt (+ optional
+          // source-image) passthrough.
+          $aiImage = dashboardGenerateAIImage($model, $prompt, $title, $negativePrompt, $link, $awsConfig, $sourceImagesB64, $strength);
         }
         return dashboardJson($response, $aiImage);
       } catch (\Throwable $e) {
@@ -1885,6 +1922,11 @@ $app->group('/accounts', function (RouteCollectorProxy $group) {
         // Surface the worker's insufficient-credits signal (402) instead of 500.
         if ($e->getCode() === 402) {
           return dashboardError($response, 'You do not have enough credits to generate AI images', 402);
+        }
+        // Source-image resolution failures carry a user-safe message (see
+        // dashboardFetchAiSourceImage) — surface them as 400s, not generic 500s.
+        if ($e->getCode() === 400) {
+          return dashboardError($response, $e->getMessage(), 400);
         }
         return dashboardError($response, 'Failed to generate AI image', 500);
       } finally {

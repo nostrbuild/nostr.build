@@ -337,7 +337,80 @@ function dashboardImportFromURL(string $url, string $folder, string $title, stri
   return dashboardBuildReturnFile($fileData);
 }
 
-function dashboardGenerateAIImage(string $model, string $prompt, string $title, string $negativePrompt, $link, $awsConfig): array
+/**
+ * Resolve one of the caller's OWN images (users_images.id + session uuid) into
+ * a bounded-size base64 payload for the AI worker's img2img inputs.
+ *
+ * $variant picks the pre-sized rendition the nostrmedia-stream worker serves:
+ *   - 'thumb': the 300x300 box-fit thumbnail — FLUX.2 reference images, whose
+ *     upstream hard-caps inputs at <512x512, so the thumb always complies.
+ *   - '1080p': the width-1920 responsive rendition (?format=webp) — SD-family
+ *     CF models and SD3.5 image-to-image, which want a real-resolution source.
+ *
+ * Throws \Exception with code 400 and a user-safe message on any problem; the
+ * /ai/generate route surfaces that verbatim instead of a generic 500.
+ */
+function dashboardFetchAiSourceImage(int $imageId, string $variant, $link): string
+{
+  $userUuid = $_SESSION['useruuid'];
+  $stmt = $link->prepare("SELECT image, mime_type FROM users_images WHERE id = ? AND user_uuid = ?");
+  $stmt->bind_param('is', $imageId, $userUuid);
+  $stmt->execute();
+  $result = $stmt->get_result();
+  $row = $result ? $result->fetch_assoc() : null;
+  $stmt->close();
+  if (!$row) {
+    throw new \Exception('Source image not found', 400);
+  }
+  if (!in_array($row['mime_type'], ['image/jpeg', 'image/png', 'image/webp'], true)) {
+    throw new \Exception('Source must be a JPEG, PNG, or WebP image', 400);
+  }
+
+  $parsedUrl = parse_url($row['image']);
+  $filename = pathinfo($parsedUrl['path'] ?? $row['image'], PATHINFO_BASENAME);
+  if ($variant === 'thumb') {
+    $url = SiteConfig::getThumbnailUrl('professional_account_image') . $filename;
+  } else {
+    // Explicit webp: a server-side fetch has no Accept header, and all the
+    // downstream models (Stability SD3.5, CF SD family) take webp sources.
+    $url = SiteConfig::getResponsiveUrl('professional_account_image', $variant) . $filename . '?format=webp';
+  }
+
+  $ch = curl_init($url);
+  curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+  curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
+  curl_setopt($ch, CURLOPT_MAXREDIRS, 3);
+  curl_setopt($ch, CURLOPT_TIMEOUT, 20);
+  $bytes = curl_exec($ch);
+  $httpCode = curl_getinfo($ch, CURLINFO_RESPONSE_CODE);
+  $contentType = (string) curl_getinfo($ch, CURLINFO_CONTENT_TYPE);
+  $ch = null;
+
+  if ($bytes === false || $httpCode !== 200 || !str_starts_with($contentType, 'image/')) {
+    throw new \Exception('Source image could not be loaded', 400);
+  }
+  // The resizer can fall back to the ORIGINAL bytes when imgproxy hiccups —
+  // keep the payload bounded so the worker-bound JSON stays sane.
+  if (strlen($bytes) > 8 * 1024 * 1024) {
+    throw new \Exception('Source image is too large', 400);
+  }
+  $dims = getimagesizefromstring($bytes);
+  if ($dims === false) {
+    throw new \Exception('Source image could not be read', 400);
+  }
+  if ($variant === 'thumb' && ($dims[0] > 511 || $dims[1] > 511)) {
+    // Same resizer-fallback case: FLUX.2 rejects >=512px inputs outright.
+    throw new \Exception('Source image could not be prepared, please try again', 400);
+  }
+  if ($dims[0] < 64 || $dims[1] < 64) {
+    // Stability requires >=64px per side; tiny sources aren't useful anywhere.
+    throw new \Exception('Source image must be at least 64x64 pixels', 400);
+  }
+
+  return base64_encode($bytes);
+}
+
+function dashboardGenerateAIImage(string $model, string $prompt, string $title, string $negativePrompt, $link, $awsConfig, ?array $sourceImagesB64 = null, ?float $strength = null): array
 {
   $s3 = new S3Service($awsConfig);
   $apiUrl = $_SERVER['AI_GEN_API_ENDPOINT'];
@@ -351,6 +424,17 @@ function dashboardGenerateAIImage(string $model, string $prompt, string $title, 
   // the worker's per-model schema strips it for the rest, so forwarding it when
   // present is safe.
   if (!empty($negativePrompt)) $requestBodyArray['negative_prompt'] = $negativePrompt;
+  // img2img sources (already ownership-checked + size-bounded by the route).
+  // FLUX.2 takes multi-reference `reference_images` (no strength field); the
+  // SD family takes a single `image_b64` + optional 0-1 `strength`.
+  if (!empty($sourceImagesB64)) {
+    if (str_starts_with($model, '@cf/black-forest-labs/flux-2')) {
+      $requestBodyArray['reference_images'] = array_values($sourceImagesB64);
+    } else {
+      $requestBodyArray['image_b64'] = $sourceImagesB64[0];
+      if ($strength !== null) $requestBodyArray['strength'] = $strength;
+    }
+  }
   $requestBody = json_encode($requestBodyArray);
 
   $bearer = signApiRequest($_SERVER['AI_GEN_API_HMAC_KEY'], $apiUrl, 'POST', $requestBody);
@@ -410,7 +494,7 @@ function dashboardGenerateAIImage(string $model, string $prompt, string $title, 
   return dashboardBuildReturnFile($fileData);
 }
 
-function dashboardGenerateStabilityImage(string $endpoint, ?string $sdModel, string $prompt, string $negativePrompt, string $ar, string $preset, int $seed, string $title, Account $account, $link, $awsConfig): array
+function dashboardGenerateStabilityImage(string $endpoint, ?string $sdModel, string $prompt, string $negativePrompt, string $ar, string $preset, int $seed, string $title, Account $account, $link, $awsConfig, ?string $sourceImageB64 = null, ?float $strength = null): array
 {
   // Validate parameters
   if (empty($prompt) || strlen($prompt) > 10000) {
@@ -451,7 +535,16 @@ function dashboardGenerateStabilityImage(string $endpoint, ?string $sdModel, str
   // fixed by their endpoint.
   if ($sdModel !== null) $requestBodyArray['model'] = $sdModel;
   if (!empty($negativePrompt)) $requestBodyArray['negative_prompt'] = $negativePrompt;
-  if (!empty($ar)) $requestBodyArray['aspect_ratio'] = $ar;
+  // img2img (route-gated to /sd/sd3): Stability requires mode + image +
+  // strength together, and rejects aspect_ratio outside text-to-image mode —
+  // so the source image supersedes any aspect the client still had selected.
+  if ($endpoint === '/sd/sd3' && $sourceImageB64 !== null) {
+    $requestBodyArray['mode'] = 'image-to-image';
+    $requestBodyArray['image_b64'] = $sourceImageB64;
+    $requestBodyArray['strength'] = $strength ?? 0.7;
+  } elseif (!empty($ar)) {
+    $requestBodyArray['aspect_ratio'] = $ar;
+  }
   // The /sd/sd3 endpoint has no style_preset field; only core + ultra accept it.
   if (!empty($preset) && $endpoint !== '/sd/sd3') $requestBodyArray['style_preset'] = $preset;
   if ($seed > 0) $requestBodyArray['seed'] = $seed;
