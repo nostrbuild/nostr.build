@@ -1848,38 +1848,31 @@ $app->group('/accounts', function (RouteCollectorProxy $group) {
         $preset = $body['style_preset'] ?? '';
 
         // img2img: CSV of the caller's own users_images ids + optional 0-1
-        // strength. Support map mirrors the app catalog's `imageInput`
-        // (max source count per model); everything else is text-to-image only.
-        $imageInputModels = [
-          '@cf/bytedance/stable-diffusion-xl-lightning'  => 1,
-          '@cf/stabilityai/stable-diffusion-xl-base-1.0' => 1,
-          '@cf/lykon/dreamshaper-8-lcm'                  => 1,
-          '@cf/black-forest-labs/flux-2-dev'             => 4,
-          '@cf/black-forest-labs/flux-2-klein-4b'        => 4,
-          '@cf/black-forest-labs/flux-2-klein-9b'        => 4,
-          '@sd/sd3.5-large'                              => 1,
-          '@sd/sd3.5-medium'                             => 1,
-          '@sd/sd3.5-large-turbo'                        => 1,
-        ];
+        // strength. dashboardAiSourceSpec is the single source of truth for
+        // which models take sources, how many, and the docs-verified size
+        // constraints each upstream enforces; everything else is text-to-image
+        // only. The fetch returns pixel dims alongside the payload — FLUX.2
+        // output sizing needs the first source's aspect ratio.
         $sourceImagesCsv = trim((string) ($body['source_images'] ?? ''));
         $strengthRaw = (string) ($body['strength'] ?? '');
         $strength = ($strengthRaw !== '' && is_numeric($strengthRaw))
           ? max(0.0, min(1.0, (float) $strengthRaw))
           : null;
         $sourceImagesB64 = [];
+        $firstSourceDims = null;
         if ($sourceImagesCsv !== '') {
-          if (!isset($imageInputModels[$model])) {
+          $sourceSpec = dashboardAiSourceSpec($model);
+          if ($sourceSpec === null) {
             return dashboardError($response, 'This model does not accept a source image', 400);
           }
           $sourceIds = array_values(array_filter(array_map('intval', explode(',', $sourceImagesCsv)), fn($v) => $v > 0));
-          if (count($sourceIds) === 0 || count($sourceIds) > $imageInputModels[$model]) {
+          if (count($sourceIds) === 0 || count($sourceIds) > $sourceSpec['max']) {
             return dashboardError($response, 'Invalid source images', 400);
           }
-          // FLUX.2 rejects inputs >=512px, so its references ride the 300x300
-          // thumbnail rendition; everything else gets the 1080p rendition.
-          $sourceVariant = str_starts_with($model, '@cf/black-forest-labs/flux-2') ? 'thumb' : '1080p';
           foreach ($sourceIds as $sourceId) {
-            $sourceImagesB64[] = dashboardFetchAiSourceImage($sourceId, $sourceVariant, $link);
+            $source = dashboardFetchAiSourceImage($sourceId, $sourceSpec, $link);
+            $sourceImagesB64[] = $source['b64'];
+            $firstSourceDims ??= [$source['width'], $source['height']];
           }
         }
 
@@ -1914,7 +1907,7 @@ $app->group('/accounts', function (RouteCollectorProxy $group) {
         } else {
           // Cloudflare Workers AI models (@cf/...) — prompt (+ optional
           // source-image) passthrough.
-          $aiImage = dashboardGenerateAIImage($model, $prompt, $title, $negativePrompt, $link, $awsConfig, $sourceImagesB64, $strength);
+          $aiImage = dashboardGenerateAIImage($model, $prompt, $title, $negativePrompt, $link, $awsConfig, $sourceImagesB64, $strength, $firstSourceDims);
         }
         return dashboardJson($response, $aiImage);
       } catch (\Throwable $e) {
