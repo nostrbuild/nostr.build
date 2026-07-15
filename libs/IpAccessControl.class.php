@@ -61,8 +61,8 @@ final class IpAccessControl
   private const LOOKUP_SQL = <<<'SQL'
         SELECT 1
         FROM ip_blocklist
-        WHERE start_ip <= INET6_ATON(?)
-          AND end_ip   >= INET6_ATON(?)
+        WHERE start_ip <= ?
+          AND end_ip   >= ?
           AND (expires_at IS NULL OR expires_at > NOW())
           AND NOT EXISTS (
             SELECT 1 FROM ip_whitelist
@@ -170,12 +170,13 @@ final class IpAccessControl
 
   public function isBlocked(string $clientIp, string $userId = ''): bool
   {
-    if (filter_var($clientIp, FILTER_VALIDATE_IP) === false) {
+    $needle = self::ipToStorageBin($clientIp);
+    if ($needle === null) {
       return true; // fail closed on malformed IP
     }
 
     $stmt = $this->getLookupStmt();
-    $stmt->bind_param('ssss', $clientIp, $clientIp, $userId, $userId);
+    $stmt->bind_param('ssss', $needle, $needle, $userId, $userId);
     $stmt->execute();
     $stmt->store_result();
     $blocked = $stmt->num_rows > 0;
@@ -189,7 +190,8 @@ final class IpAccessControl
    */
   public function findBlock(string $clientIp, string $userId = ''): ?array
   {
-    if (filter_var($clientIp, FILTER_VALIDATE_IP) === false) {
+    $needle = self::ipToStorageBin($clientIp);
+    if ($needle === null) {
       return null;
     }
 
@@ -198,8 +200,8 @@ final class IpAccessControl
                     DATE_FORMAT(banned_at,  "%Y-%m-%d %H:%i:%s") AS banned_at,
                     DATE_FORMAT(expires_at, "%Y-%m-%d %H:%i:%s") AS expires_at
              FROM ip_blocklist
-             WHERE start_ip <= INET6_ATON(?)
-               AND end_ip   >= INET6_ATON(?)
+             WHERE start_ip <= ?
+               AND end_ip   >= ?
                AND (expires_at IS NULL OR expires_at > NOW())
                AND NOT EXISTS (
                  SELECT 1 FROM ip_whitelist
@@ -209,7 +211,7 @@ final class IpAccessControl
                )
              ORDER BY start_ip DESC LIMIT 1',
       'sssss',
-      [$clientIp, $clientIp, $userId, '', $userId],
+      [$needle, $needle, $userId, '', $userId],
     );
   }
 
@@ -604,6 +606,28 @@ final class IpAccessControl
 
     // Canonicalize the IP string (e.g., "2001:0db8::1" -> "2001:db8::1")
     return inet_ntop($bin) . '/' . $prefix;
+  }
+
+  /**
+   * Convert a bare IP string to the 16-byte binary form used for the
+   * start_ip/end_ip columns, promoting IPv4 to its v4-mapped IPv6 form.
+   *
+   * This MUST mirror the promotion in cidrToRange(): ranges are stored as
+   * 16-byte values, so a lookup needle has to be 16 bytes too. Binding a raw
+   * INET6_ATON(ipv4) (which MySQL returns as 4 bytes) against a 16-byte column
+   * makes the range comparison silently never match — IPv4 blocks would be
+   * bypassed. Returns null for a malformed IP (callers fail closed).
+   */
+  private static function ipToStorageBin(string $ip): ?string
+  {
+    $bin = @inet_pton($ip);
+    if ($bin === false) {
+      return null;
+    }
+    if (strlen($bin) === 4) {
+      $bin = "\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xff\xff" . $bin;
+    }
+    return $bin;
   }
 
   /**
