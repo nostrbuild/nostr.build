@@ -34,59 +34,38 @@ main {
   align-items: center;
 }
 
-/* TITLE */
-.title_container {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-
-  margin-bottom: 24px;
-  gap: 16px;
-}
-.title_container h1 {
-  font-weight: 700;
-
-  /* identical to box height */
-
-  text-align: center;
-
-  background: linear-gradient(184.15deg, #ffffff 47.52%, #884ea4 96.61%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-  text-fill-color: transparent;
-
-  text-shadow: 0px 4px 32px rgba(159, 108, 209, 0.46);
-}
-.title_container p {
-  font-weight: 400;
-
-  text-align: center;
-
-  /* Solid/Text Secondary */
-
-  color: #a58ead;
-
-  text-shadow: 0px 2px 16px rgba(159, 108, 209, 0.32);
-}
 .info_cards {
   display: flex;
   flex-direction: row;
-  gap: 16px;
+  gap: 8px;
   margin: 0 auto;
   flex-wrap: wrap;
   justify-content: center;
 }
 
+@media (min-width: 600px) {
+  .info_cards {
+    gap: 16px;
+  }
+}
+
+/* Each chip is ATOMIC: it never shrinks below its content and never breaks
+   internally, so a narrow viewport wraps whole chips onto the next row instead
+   of splitting "3.3M" from "files hosted". The number and label used to be two
+   shrinkable flex items inside a fixed 32px box, which squeezed the label onto
+   a second line and overflowed the chip. */
 .info_cards .info {
   display: flex;
   flex-direction: row;
   justify-content: center;
   align-items: center;
-  padding: 5px 16px;
-  gap: 8px;
+  flex-shrink: 0;
+  max-width: 100%;
+  white-space: nowrap;
+  padding: 5px 12px;
+  gap: 6px;
 
-  height: 32px;
+  min-height: 32px;
 
   background: #150d29;
   border: 1px solid #2b2157;
@@ -112,9 +91,12 @@ main {
 
 /* MARKETING LANDING */
 
-.account_banner,
+.account_bar,
 .hero_content,
 .value_props,
+.stack_props,
+.plans_band,
+.compare_band,
 .clients_strip,
 .dev_callout {
   width: 100%;
@@ -135,142 +117,59 @@ main {
   }
 }
 
-/* Account banner — prominent, always-present path to account.nostr.build */
-.account_banner {
-  position: relative;
+/* Slim account bar — a one-line path back to the dashboard. Deliberately
+   small: this used to be a full-width island that cost the fold for something
+   only returning visitors need. */
+.account_bar {
   display: flex;
-  flex-direction: row;
-  align-items: center;
   flex-wrap: wrap;
-  gap: 18px;
-  margin-top: 32px;
-  margin-bottom: 20px;
-  padding: 20px 22px;
-  background: linear-gradient(157deg, #2c2860 0%, #1c1430 100%);
-  border: 1px solid #2edf95;
-  border-radius: 18px;
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.05),
-    0 10px 30px rgba(46, 223, 149, 0.16),
-    0 2px 10px rgba(0, 0, 0, 0.28);
-  overflow: hidden;
-  animation: nbFadeUp 0.55s cubic-bezier(0.22, 0.61, 0.36, 1) both;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 16px;
+  margin-bottom: 4px;
+  min-width: 0;
 }
 
-/* Soft accent glow in the corner for depth (clipped by the card radius) */
-.account_banner::before {
-  content: "";
-  position: absolute;
-  top: -45%;
-  left: -8%;
-  width: 240px;
-  height: 240px;
-  background: radial-gradient(circle, rgba(46, 223, 149, 0.18) 0%, transparent 70%);
-  pointer-events: none;
-}
-
-/* Tighten the gap between the banner and the title below it */
-.account_banner + .title_container {
-  margin-top: 12px;
-}
-
-.account_banner_avatar {
-  position: relative;
+.account_bar_pfp {
+  width: 24px;
+  height: 24px;
   flex-shrink: 0;
-  line-height: 0;
-}
-
-/* "You're signed in" status dot */
-.account_banner_avatar::after {
-  content: "";
-  position: absolute;
-  right: 1px;
-  bottom: 1px;
-  width: 13px;
-  height: 13px;
   border-radius: 50%;
-  background: #2edf95;
-  border: 2px solid #1c1430;
-  box-shadow: 0 0 7px rgba(46, 223, 149, 0.85);
-}
-
-.account_banner_pfp {
-  width: 56px;
-  height: 56px;
-  border-radius: 50%;
-  border: 2px solid #2edf95;
-  box-shadow: 0 0 0 4px rgba(46, 223, 149, 0.12);
+  border: 1px solid #2edf95;
   object-fit: cover;
   display: block;
 }
 
-.account_banner_text {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-  flex: 1;
-  min-width: 150px;
+.account_bar_text {
+  min-width: 0;
+  font-weight: 400;
+  font-size: 13px;
+  line-height: 1.4;
+  color: #a58ead;
+  overflow-wrap: anywhere;
 }
 
-.account_banner_text h2 {
-  font-weight: 700;
-  font-size: 18px;
-  line-height: 1.25;
-  letter-spacing: -0.01em;
+.account_bar_link {
+  flex-shrink: 0;
+  font-weight: 600;
+  font-size: 13px;
+  color: #d0bed8;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.account_bar_link:hover {
   color: #ffffff;
 }
 
-.account_banner_text p {
-  font-weight: 400;
-  font-size: 13px;
-  line-height: 1.45;
-  color: #a58ead;
-}
-
-.account_banner_cta {
-  position: relative;
-  flex-shrink: 0;
-}
-
-/* Guest variant — neutral purple accent instead of the green "welcome back" */
-.account_banner_guest {
-  border-color: #3d3576;
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.05),
-    0 10px 30px rgba(57, 47, 113, 0.28),
-    0 2px 10px rgba(0, 0, 0, 0.28);
-}
-
-.account_banner_guest::before {
-  background: radial-gradient(circle, rgba(136, 78, 164, 0.22) 0%, transparent 70%);
-}
-
-.account_banner_icon {
-  position: relative;
-  width: 56px;
-  height: 56px;
-  border-radius: 50%;
-  display: grid;
-  place-items: center;
-  background: rgba(61, 53, 92, 0.45);
-  border: 1px solid #3d3576;
-  box-shadow: 0 0 0 4px rgba(136, 78, 164, 0.1);
-  flex-shrink: 0;
-}
-
 /* Staggered page-load reveal for the top of the page */
-.title_container {
-  animation: nbFadeUp 0.55s cubic-bezier(0.22, 0.61, 0.36, 1) 0.06s both;
-}
-
 .hero_content {
   animation: nbFadeUp 0.55s cubic-bezier(0.22, 0.61, 0.36, 1) 0.12s both;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .account_banner,
-  .title_container,
+  .account_bar,
   .hero_content {
     animation: none;
   }
@@ -282,8 +181,18 @@ main {
   flex-direction: column;
   align-items: center;
   text-align: center;
-  gap: 16px;
-  margin-bottom: 44px;
+  gap: 14px;
+  margin-top: 28px;
+  margin-bottom: 40px;
+}
+
+/* Objection handler under the CTA: free really does stay free. */
+.hero_reassure {
+  font-weight: 500;
+  font-size: 13px;
+  line-height: 1.5;
+  color: #a58ead;
+  max-width: 460px;
 }
 
 .hero_headline {
@@ -407,6 +316,320 @@ main {
   font-weight: 400;
   font-size: 14px;
   line-height: 1.55;
+  color: #a58ead;
+}
+
+/* THE STACK — what a plan actually gives you (media / relay / blossom) */
+.stack_props {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+  margin-bottom: 44px;
+}
+
+.stack_prop {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+  padding: 24px;
+  background: linear-gradient(180deg, #292556 0%, #1e1530 100%);
+  box-shadow: 0px 4px 24px rgba(57, 47, 113, 0.2);
+  border: 1px solid #392f73;
+  border-radius: 16px;
+}
+
+.stack_prop h3 {
+  font-weight: 700;
+  font-size: 16px;
+  line-height: 1.3;
+  color: #ffffff;
+}
+
+.stack_prop p {
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 1.55;
+  color: #a58ead;
+  overflow-wrap: anywhere;
+}
+
+.stack_link {
+  margin-top: auto;
+  padding-top: 6px;
+  font-weight: 600;
+  font-size: 13px;
+  color: #2edf95;
+  text-decoration: none;
+  overflow-wrap: anywhere;
+}
+
+.stack_link:hover {
+  text-decoration: underline;
+}
+
+/* Keeps short identifiers (name.blossom.band) from breaking mid-domain. At
+   ~17 characters this still fits a 320px viewport with the page padding. */
+.nowrap {
+  white-space: nowrap;
+}
+
+/* PLANS — rendered from account.nostr.build's public catalog. Width comes from
+   the shared page wrapper above; only the vertical rhythm is set here. */
+.plans_band,
+.compare_band {
+  margin-bottom: 44px;
+}
+
+.band_title {
+  font-weight: 700;
+  font-size: 22px;
+  line-height: 1.25;
+  text-align: center;
+  background: linear-gradient(184.15deg, #ffffff 30.23%, #884ea4 96.61%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  text-fill-color: transparent;
+}
+
+.band_sub {
+  margin: 10px auto 0;
+  max-width: 560px;
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 1.55;
+  text-align: center;
+  color: #a58ead;
+}
+
+.included_chips {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 20px;
+}
+
+.included_chips_label {
+  font-weight: 600;
+  font-size: 12px;
+  color: #d0bed8;
+}
+
+.included_chips li span {
+  display: inline-block;
+  min-width: 0;
+  max-width: 100%;
+  padding: 4px 12px;
+  font-weight: 500;
+  font-size: 12px;
+  line-height: 1.5;
+  color: #d0bed8;
+  background: #150d29;
+  border: 1px solid #2b2157;
+  border-radius: 999px;
+  overflow-wrap: anywhere;
+}
+
+.plan_cards {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+  margin-top: 20px;
+}
+
+.plan_card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+  padding: 24px;
+  background: linear-gradient(180deg, #292556 0%, #1e1530 100%);
+  box-shadow: 0px 4px 24px rgba(57, 47, 113, 0.2);
+  border: 1px solid #392f73;
+  border-radius: 16px;
+}
+
+.plan_card_popular {
+  border-color: #2edf95;
+}
+
+.plan_badge {
+  align-self: flex-start;
+  padding: 3px 10px;
+  font-weight: 700;
+  font-size: 11px;
+  line-height: 1.5;
+  color: #120a24;
+  background: #2edf95;
+  border-radius: 999px;
+}
+
+.plan_card h3 {
+  font-weight: 700;
+  font-size: 18px;
+  line-height: 1.3;
+  color: #ffffff;
+}
+
+.plan_tagline {
+  font-weight: 400;
+  font-size: 13px;
+  line-height: 1.5;
+  color: #a58ead;
+  overflow-wrap: anywhere;
+}
+
+.plan_price {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.plan_price_amount {
+  font-weight: 800;
+  font-size: 30px;
+  line-height: 1.1;
+  color: #ffffff;
+}
+
+.plan_price_term {
+  font-weight: 500;
+  font-size: 14px;
+  color: #a58ead;
+}
+
+.plan_storage {
+  font-weight: 600;
+  font-size: 14px;
+  line-height: 1.5;
+  color: #d0bed8;
+}
+
+.plan_features {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  margin-top: 4px;
+}
+
+.plan_features li {
+  position: relative;
+  min-width: 0;
+  padding-left: 18px;
+  font-weight: 400;
+  font-size: 13px;
+  line-height: 1.5;
+  color: #a58ead;
+  overflow-wrap: anywhere;
+}
+
+.plan_features li::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 7px;
+  width: 8px;
+  height: 5px;
+  border-left: 2px solid #2edf95;
+  border-bottom: 2px solid #2edf95;
+  transform: rotate(-45deg);
+}
+
+.plan_cta {
+  margin-top: auto;
+  width: 100%;
+  justify-content: center;
+  text-align: center;
+}
+
+.plans_footnote {
+  margin-top: 18px;
+  font-weight: 400;
+  font-size: 12px;
+  line-height: 1.6;
+  text-align: center;
+  color: #a58ead;
+}
+
+.plans_footnote a {
+  color: #d0bed8;
+}
+
+/* FREE VS PAID — honest objection handling */
+.compare_grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+  margin-top: 22px;
+}
+
+.compare_col {
+  min-width: 0;
+  padding: 24px;
+  background: #150d29;
+  border: 1px solid #2b2157;
+  border-radius: 16px;
+}
+
+.compare_col_paid {
+  border-color: #392f73;
+  background: linear-gradient(180deg, #292556 0%, #1e1530 100%);
+}
+
+.compare_col h3 {
+  font-weight: 700;
+  font-size: 16px;
+  line-height: 1.3;
+  color: #ffffff;
+  margin-bottom: 12px;
+}
+
+.compare_col ul {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.compare_col li {
+  position: relative;
+  min-width: 0;
+  padding-left: 16px;
+  font-weight: 400;
+  font-size: 13px;
+  line-height: 1.55;
+  color: #a58ead;
+  overflow-wrap: anywhere;
+}
+
+.compare_col li::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 8px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #884ea4;
+}
+
+.compare_col_paid li::before {
+  background: #2edf95;
+}
+
+.compare_note {
+  margin-top: 18px;
+  font-weight: 400;
+  font-size: 12px;
+  line-height: 1.6;
+  text-align: center;
   color: #a58ead;
 }
 
@@ -621,22 +844,6 @@ footer nav {
   .navigation_header::-webkit-scrollbar {
     display: none;
   }
-  .title_container {
-    width: 100%;
-    margin-top: 40px;
-  }
-  .title_container h1 {
-    font-size: 32px;
-    line-height: 36px;
-  }
-  .title_container p {
-    font-size: 13px;
-    line-height: 21px;
-    width: 340px;
-    max-width: 100%;
-    margin: 0 auto;
-    display: none;
-  }
   footer nav {
     flex-wrap: wrap;
     flex-direction: column;
@@ -644,8 +851,10 @@ footer nav {
 }
 
 @media (min-width: 600px) {
-  .account_banner_text h2 {
-    font-size: 20px;
+  /* Two-up first: four plan cards side by side need far more room than this. */
+  .plan_cards,
+  .compare_grid {
+    grid-template-columns: repeat(2, 1fr);
   }
 }
 
@@ -656,42 +865,16 @@ footer nav {
   .hero_sub {
     font-size: 17px;
   }
-  .value_props {
+  .value_props,
+  .stack_props {
     grid-template-columns: repeat(3, 1fr);
   }
-}
-
-@media (max-width: 519px) {
-  .account_banner {
-    flex-direction: column;
-    text-align: center;
-  }
-  .account_banner_text {
-    align-items: center;
-  }
-  .account_banner_cta {
-    width: 100%;
+  .band_title {
+    font-size: 28px;
   }
 }
 
 @media (min-width: 900px) {
-  .account_banner {
-    margin-top: 56px;
-  }
-  .title_container {
-    width: 730px;
-    margin-top: 80px;
-  }
-  .title_container h1 {
-    font-size: 64px;
-    line-height: 82px;
-  }
-  .title_container p {
-    font-size: 20px;
-    line-height: 32px;
-    width: unset;
-    display: block;
-  }
   footer nav {
     flex-wrap: wrap;
     flex-direction: row;

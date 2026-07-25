@@ -67,7 +67,7 @@ $morePages = $result->num_rows > $perpage ? true : false;
 	<meta name="msapplication-TileColor" content="#9f00a7">
 	<meta name="theme-color" content="#ffffff">
 
-	<link rel="stylesheet" href="/styles/index.css?v=5b9f346f2037f65228c8d5b6f42ee2aa" />
+	<link rel="stylesheet" href="/styles/index.css?v=5f778fa5254a390824630c03c36a7c50" />
 	<link rel="stylesheet" href="/styles/profile.css?v=f37768cc1536176145f323500785bf9b" />
 	<link rel="stylesheet" href="/styles/header.css?v=19cde718a50bd676387bbe7e9e24c639" />
 	<link rel="stylesheet" href="/styles/twbuild.css?v=2f53695d81711cac52335460030ec533" />

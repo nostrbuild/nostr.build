@@ -27,7 +27,7 @@ $perm = new Permission();
   <link rel="preconnect" href="https://v.nostr.build" crossorigin />
 
   <link rel="stylesheet" href="/styles/twbuild.css?v=2f53695d81711cac52335460030ec533" />
-  <link rel="stylesheet" href="/styles/index.css?v=5b9f346f2037f65228c8d5b6f42ee2aa" />
+  <link rel="stylesheet" href="/styles/index.css?v=5f778fa5254a390824630c03c36a7c50" />
   <link rel="stylesheet" href="/styles/header.css?v=19cde718a50bd676387bbe7e9e24c639" />
   <link rel="icon" href="https://cdn.nostr.build/assets/01.png" />
   <script defer src="/scripts/fw/alpinejs.min.js?v=34fbe266eb872c1a396b8bf9022b7105"></script>
