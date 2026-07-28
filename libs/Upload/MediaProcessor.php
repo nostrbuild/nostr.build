@@ -147,8 +147,15 @@ class MediaProcessor
       return ['newTmpPath' => null, 'noTransformOverride' => false];
     }
 
-    // Attempt to downsize the GIF
-    $tmpGif = $this->gifConverter->downsizeGif($tmpPath);
+    // Attempt to downsize the GIF. Optimization is best-effort: a gifsicle
+    // failure or timeout (long many-frame GIFs are capped, see GifConverter)
+    // must never fail the upload, so keep the original and move on.
+    try {
+      $tmpGif = $this->gifConverter->downsizeGif($tmpPath);
+    } catch (\Throwable $e) {
+      error_log('GIF optimization skipped, keeping original: ' . $e->getMessage());
+      return ['newTmpPath' => null, 'noTransformOverride' => true];
+    }
 
     // Check if the optimized version is at least 5% smaller
     if (filesize($tmpGif) < self::GIF_SAVINGS_THRESHOLD * filesize($tmpPath)) {
