@@ -45,6 +45,12 @@ interface ChainedValidator extends Validatable
      */
     public function between($minimum, $maximum): ChainedValidator;
 
+    /**
+     * @param mixed $minimum
+     * @param mixed $maximum
+     */
+    public function betweenExclusive($minimum, $maximum): ChainedValidator;
+
     public function boolType(): ChainedValidator;
 
     public function boolVal(): ChainedValidator;
@@ -76,6 +82,11 @@ interface ChainedValidator extends Validatable
      * @param mixed[] $needles
      */
     public function containsAny(array $needles, bool $strictCompareArray = false): ChainedValidator;
+
+    /**
+     * @param mixed $containsValue
+     */
+    public function containsCount($containsValue, int $count): ChainedValidator;
 
     public function countable(): ChainedValidator;
 
@@ -151,6 +162,8 @@ interface ChainedValidator extends Validatable
      * @param mixed $compareTo
      */
     public function greaterThan($compareTo): ChainedValidator;
+
+    public function hetu(): ChainedValidator;
 
     public function hexRgbColor(): ChainedValidator;
 

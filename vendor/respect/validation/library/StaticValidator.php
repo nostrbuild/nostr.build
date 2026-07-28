@@ -45,6 +45,12 @@ interface StaticValidator
      */
     public static function between($minimum, $maximum): ChainedValidator;
 
+    /**
+     * @param mixed $minimum
+     * @param mixed $maximum
+     */
+    public static function betweenExclusive($minimum, $maximum): ChainedValidator;
+
     public static function bic(string $countryCode): ChainedValidator;
 
     public static function boolType(): ChainedValidator;
@@ -78,6 +84,11 @@ interface StaticValidator
      * @param mixed[] $needles
      */
     public static function containsAny(array $needles, bool $strictCompareArray = false): ChainedValidator;
+
+    /**
+     * @param mixed $containsValue
+     */
+    public static function containsCount($containsValue, int $count): ChainedValidator;
 
     public static function countable(): ChainedValidator;
 
@@ -153,6 +164,8 @@ interface StaticValidator
      * @param mixed $compareTo
      */
     public static function greaterThan($compareTo): ChainedValidator;
+
+    public static function hetu(): ChainedValidator;
 
     public static function hexRgbColor(): ChainedValidator;
 

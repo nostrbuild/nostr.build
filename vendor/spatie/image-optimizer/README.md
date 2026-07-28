@@ -180,6 +180,43 @@ $optimizerChain
 
 In this example each optimizer in the chain will get a maximum 10 seconds to do it's job.
 
+### Handling errors
+
+By default, when an optimizer fails (for example its binary exits with a non-zero status), the failure is logged and the chain simply continues with the next optimizer. If you'd rather be notified, or abort the whole chain, use `throws`.
+
+Call `throws()` to make the chain rethrow the failure and stop:
+
+```php
+$optimizerChain
+    ->throws()
+    ->optimize($pathToImage);
+```
+
+Pass `false` to keep the default "log and continue" behaviour explicitly:
+
+```php
+$optimizerChain
+    ->throws(false)
+    ->optimize($pathToImage);
+```
+
+Or pass a callable to decide for yourself. The handler receives the exception, the optimizer that failed and the image being optimized. Return to continue with the next optimizer, or throw to abort the chain:
+
+```php
+use Spatie\ImageOptimizer\Image;
+use Spatie\ImageOptimizer\Optimizer;
+
+$optimizerChain
+    ->throws(function (Throwable $exception, Optimizer $optimizer, Image $image) {
+        report($exception);
+
+        // return to continue the chain, or throw to abort it
+    })
+    ->optimize($pathToImage);
+```
+
+Any exception raised while applying an optimizer, most notably a `ProcessTimedOutException` when an optimizer exceeds its [timeout](#setting-a-timeout), flows through this same mechanism. With the default (or `throws(false)`) it is caught and the chain continues; with `throws()` or a callable you get to inspect and decide what to do with it.
+
 ### Creating your own optimization chains
 
 If you want to customize the chain of optimizers you can do so by adding `Optimizer`s manually to an `OptimizerChain`.
@@ -271,6 +308,35 @@ $optimizerChain
    ->addOptimizer(new YourCustomOptimizer())
    ->optimize($pathToImage);
 ```
+
+### Writing an optimizer without a binary
+
+Sometimes an optimizer has no binary and no shell command to run, for example one that sends the image to an external optimization API. For these cases implement `Spatie\ImageOptimizer\SelfHandlingOptimizer` instead. The chain delegates execution to your `handle` method rather than building and running a process.
+
+The easiest way is to extend `Spatie\ImageOptimizer\Optimizers\BaseSelfHandlingOptimizer`, which leaves you to implement only `canHandle` and `handle`:
+
+```php
+use Psr\Log\LoggerInterface;
+use Spatie\ImageOptimizer\Image;
+use Spatie\ImageOptimizer\Optimizers\BaseSelfHandlingOptimizer;
+
+class ApiOptimizer extends BaseSelfHandlingOptimizer
+{
+    public function canHandle(Image $image): bool
+    {
+        return $image->mime() === 'image/jpeg';
+    }
+
+    public function handle(Image $image, LoggerInterface $logger): void
+    {
+        // Optimize $image->path() however you like, e.g. by calling an API,
+        // and write the optimized bytes back to that path. Throw on failure.
+        // The chain's logger is passed in so you can log your progress.
+    }
+}
+```
+
+Add it to a chain with `addOptimizer()` just like any other optimizer. Failures are governed by [`throws`](#handling-errors) in exactly the same way as binary optimizers: by default the failure is logged and the chain continues, while `throws()` (or a callable) lets you abort or handle it.
 
 ## Logging the optimization process
 
