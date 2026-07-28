@@ -26,7 +26,7 @@ $perm = new Permission();
   <link rel="preconnect" href="https://cdn.nostr.build" crossorigin />
   <link rel="preconnect" href="https://v.nostr.build" crossorigin />
 
-  <link rel="stylesheet" href="/styles/twbuild.css?v=2f53695d81711cac52335460030ec533" />
+  <link rel="stylesheet" href="/styles/twbuild.css?v=899e2989357b4c555fe9e51bf862cdab" />
   <link rel="stylesheet" href="/styles/index.css?v=5f778fa5254a390824630c03c36a7c50" />
   <link rel="stylesheet" href="/styles/header.css?v=19cde718a50bd676387bbe7e9e24c639" />
   <link rel="icon" href="https://cdn.nostr.build/assets/01.png" />
