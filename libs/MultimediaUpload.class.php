@@ -128,7 +128,15 @@ class MultimediaUpload
         $this->normalizer = new FileInputNormalizer($this->tempManager);
         $this->validator = new UploadValidator($this->uploadsData);
         $this->urlGenerator = new MediaUrlGenerator($pro);
-        $this->processor = new MediaProcessor(new GifConverter());
+        // GifConverter's 360px class default suits its original video-preview
+        // use; for uploaded GIFs it silently crushed anything over the size
+        // threshold to 360px. 720 keeps typical service GIFs (giphy/tenor,
+        // ~480px) untouched dimension-wise and only downscales genuinely
+        // oversized ones. The video-to-GIF path crops to 150px, so the higher
+        // ceiling is a no-op there.
+        $this->processor = new MediaProcessor(
+            (new GifConverter())->setMaxGifWidth(720)->setMaxGifHeight(720),
+        );
         $this->persistence = new UploadPersistence(
             $s3Service,
             $this->uploadsData,

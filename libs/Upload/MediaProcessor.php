@@ -12,8 +12,11 @@ require_once __DIR__ . '/../VideoRepackager.class.php';
  */
 class MediaProcessor
 {
-  /** GIF files larger than this are candidates for downsizing (2 MB). */
-  const GIF_SIZE_THRESHOLD = 2097152;
+  /** GIF files larger than this are candidates for downsizing (5 MB). Most
+   *  uploads come from services (giphy/tenor) whose GIFs are already optimally
+   *  encoded, so below this size the possible savings never justify the CPU:
+   *  gifsicle would run only for the >=5% savings check to discard the result. */
+  const GIF_SIZE_THRESHOLD = 5242880;
 
   /** Downsized GIF must be at least 5% smaller to be worth keeping. */
   const GIF_SAVINGS_THRESHOLD = 0.95;
