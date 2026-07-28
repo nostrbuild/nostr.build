@@ -602,19 +602,23 @@ $app->group('/internal/account', function (RouteCollectorProxy $group) {
 
   // ── Long-inactivity auto-termination (Worker Sunday sweep) ───────────────
   // The Worker's weekly ExpiredTerminationSweepWorkflow schedules accounts that
-  // have been EXPIRED for over 2 years for the SAME 30-day reversible deletion a
-  // user self-service request creates (status 'pending'), tagged
-  // category='inactivity' so the admin views/audit can tell it apart. Three
-  // SQL-only endpoints: list candidates, schedule one (atomic/idempotent), list
-  // the in-flight ones for the admin "Upcoming terminations" view. Banned
-  // accounts are included on purpose; staff (89/99) are excluded.
+  // have been EXPIRED for longer than the admin-configured threshold (the Worker
+  // sends minExpiredDays; default 730, HARD FLOOR 365 enforced here) for the
+  // SAME 30-day reversible deletion a user self-service request creates (status
+  // 'pending'), tagged category='inactivity' so the admin views/audit can tell
+  // it apart. Three SQL-only endpoints: list candidates, schedule one
+  // (atomic/idempotent), list the in-flight ones for the admin "Upcoming
+  // terminations" view. Banned accounts are included on purpose; staff (89/99)
+  // are excluded.
   $group->post('/expired-termination/candidates', function (Request $request, Response $response) {
     global $link;
     $data = json_decode($request->getBody()->getContents(), true);
     $limit = is_array($data) ? (int)($data['limit'] ?? 100) : 100;
     $limit = max(1, min(500, $limit));
     $minDays = is_array($data) ? (int)($data['minExpiredDays'] ?? 730) : 730;
-    $minDays = max(1, $minDays);
+    // HARD FLOOR: the automated sweep must never consider accounts expired for
+    // less than one year, whatever the caller sends.
+    $minDays = max(365, $minDays);
     // Offset paging for the admin "Upcoming terminations" view. The sweep itself
     // omits it (offset 0) and drains the set top-down via the exclusion list.
     $offset = is_array($data) ? max(0, (int)($data['offset'] ?? 0)) : 0;
@@ -694,6 +698,11 @@ $app->group('/internal/account', function (RouteCollectorProxy $group) {
     global $link;
     $data = json_decode($request->getBody()->getContents(), true);
     $uuid = is_array($data) ? trim((string)($data['uuid'] ?? '')) : '';
+    // The Worker passes the SAME threshold the candidate page was fetched with,
+    // so the atomic UPDATE re-checks eligibility against it. Same hard one-year
+    // floor as the candidates endpoint.
+    $minDays = is_array($data) ? (int)($data['minExpiredDays'] ?? 730) : 730;
+    $minDays = max(365, $minDays);
     if ($uuid === '') {
       $response->getBody()->write(json_encode(['ok' => false, 'error' => 'uuid required']));
       return $response->withStatus(400)->withHeader('Content-Type', 'application/json');
@@ -704,7 +713,7 @@ $app->group('/internal/account', function (RouteCollectorProxy $group) {
         $response->getBody()->write(json_encode(['ok' => false, 'error' => 'no-such-account']));
         return $response->withStatus(404)->withHeader('Content-Type', 'application/json');
       }
-      $result = $account->scheduleInactivityDeletion();
+      $result = $account->scheduleInactivityDeletion(30, $minDays);
       $response->getBody()->write(json_encode([
         'ok' => true,
         'scheduled' => $result['scheduled'],

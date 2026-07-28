@@ -1065,15 +1065,18 @@ class Account
   {
     $this->fetchAccountData();
     $windowDays = max(0, $windowDays);
-    $minExpiredDays = max(1, $minExpiredDays);
+    // HARD FLOOR: the automated sweep must never schedule an account expired for
+    // less than one year, whatever threshold the caller sends.
+    $minExpiredDays = max(365, $minExpiredDays);
     $now = date('Y-m-d H:i:s');
     $deleteAfter = date('Y-m-d H:i:s', strtotime("+{$windowDays} days"));
-    // $windowDays/$minExpiredDays are int-typed, so the inline INTERVAL is
-    // injection-safe (MySQL can't bind an INTERVAL operand to a placeholder).
+    // $windowDays/$minExpiredDays are int-typed, so the inline INTERVAL (and the
+    // interpolated reason text) is injection-safe (MySQL can't bind an INTERVAL
+    // operand to a placeholder).
     $stmt = $this->db->prepare(
       "UPDATE users
           SET deletion_status = 'pending', deletion_category = 'inactivity',
-              deletion_reason = 'Inactive (expired) for over 2 years — automated sweep',
+              deletion_reason = 'Inactive (expired) for over {$minExpiredDays} days (automated sweep)',
               deletion_actor = 'system', deletion_requested_at = ?, delete_after = ?
         WHERE uuid_id = ?
           AND deletion_status = 'none'
