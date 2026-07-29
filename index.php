@@ -83,7 +83,7 @@ SVG;
 	<meta charset="UTF-8" />
 	<meta http-equiv="X-UA-Compatible" content="IE=edge" />
 	<meta name="keywords" content="Nostr, Damus, Primal, noStrudel, Coracle.social, YakiHonne, Amethyst, snort.social, Iris.to, astril.ninja, media uploader, bitcoin media uploader, nostr videos, image uploader, image link, image, uploader, media upload, damus pictures, video uploader, nostr repository, Bitcoin ">
-	<meta name="description" content="Your media, your relay. nostr.build has hosted Nostr's media since 2022 — free uploads built into your favorite apps, and paid plans that add private storage, your own Nostr relay with unlimited history, and your own Blossom server. Bitcoin only, no ads, metadata stripped.">
+	<meta name="description" content="Your media, your relay. nostr.build has hosted Nostr's media since 2022 — free uploads built into your favorite apps, and paid plans that add private storage,  relay with unlimited history, and your own Blossom server. Bitcoin only, no ads, metadata stripped.">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
 	<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
@@ -146,7 +146,7 @@ SVG;
 			<h1 class="hero_headline">Your media, your relay</h1>
 			<h2 class="band_title">One price, per year, in Bitcoin</h2>
 			<p class="hero_sub">
-				Private storage, your own Nostr relay, & Blossom server. No subscription to cancel, no card on file.
+				Private storage,  relay, & Blossom server. No subscription to cancel, no card on file.
 			</p>
 			<!-- Handles the "is this a bait and switch" objection in one line,
 			     right where the price lands. -->
@@ -193,7 +193,7 @@ SVG;
 				<!-- Reassurance, so it sits AFTER the cards as a compact chip row.
 				     Nothing goes between the heading and the buy buttons. -->
 				<ul class="included_chips">
-					<li class="included_chips_label">Every plan includes</li>
+					<li class="included_chips_label">Plans include</li>
 					<?php foreach ($included as $item): ?>
 						<?php if (!is_array($item) || !isset($item['title'], $item['description'])) { continue; } ?>
 						<li><span title="<?= htmlspecialchars((string) $item['description']) ?>"><?= htmlspecialchars((string) $item['title']) ?></span></li>
@@ -270,20 +270,20 @@ SVG;
 						<ul>
 							<li>Private storage you own and manage, in folders</li>
 							<li>Files up to 450MB, plus PDF, SVG and ZIP on higher tiers</li>
-							<li>Your own Nostr relay — unlimited history, no expiry</li>
+							<li> relay — unlimited history, no expiry</li>
 							<li>Your own <span class="nowrap">name.blossom.band</span> server</li>
 							<li>Detailed stats, backups and AI Studio credits</li>
 						</ul>
 					</div>
 				</div>
-				<p class="compare_note">*Free uploads are not going away. Paid plans are how nostr.build covers costs, not frpm ads!</p>
+				<p class="compare_note">*Free uploads are not going away. Paid plans are how nostr.build covers costs, not ads!</p>
 			</section>
 		<?php else: ?>
 			<!-- Catalog unavailable: never block the page on it, just point at the
 			     canonical pricing page. -->
 			<section class="dev_callout">
 				<h2>Ready for storage that is yours?</h2>
-				<p>Private media storage, your own Nostr relay and your own Blossom server — one payment a year, in Bitcoin.</p>
+				<p>Private media storage,  relay and your own Blossom server — one payment a year, in Bitcoin.</p>
 				<a class="cta_button" href="https://account.nostr.build/plans">See the plans <span class="cta_arrow">→</span></a>
 			</section>
 		<?php endif; ?>
