@@ -146,7 +146,7 @@ SVG;
 			<h1 class="hero_headline">Your media, your relay</h1>
 			<h2 class="band_title">One price, per year, in Bitcoin</h2>
 			<p class="hero_sub">
-				Private storage, your own Nostr relay, & Blossom server. No subscription to cancel, no card on file, no ads.
+				Private storage, your own Nostr relay, & Blossom server. No subscription to cancel, no card on file.
 			</p>
 			<!-- Handles the "is this a bait and switch" objection in one line,
 			     right where the price lands. -->
@@ -253,7 +253,7 @@ SVG;
 			<!-- Honest free-vs-paid. Free really does stay free and generous; say
 			     exactly what money buys instead of implying free is crippled. -->
 			<section class="compare_band">
-				<h2 class="band_title">What free gives you, and what a plan adds</h2>
+				<h2 class="band_title">Free v. Paid Plans</h2>
 				<div class="compare_grid">
 					<div class="compare_col">
 						<h3>Free, forever</h3>
@@ -290,7 +290,7 @@ SVG;
 
 		<section class="dev_callout">
 			<h2>Building a Nostr client?</h2>
-			<p>Integrate free and pro uploads with NIP-98 auth and Blossom protocol support — straight from your app.</p>
+			<p>Integrate free and pro uploads with NIP-98 and Blossom — straight from your app.</p>
 			<a class="cta_button_secondary" href="https://account.nostr.build/features">See the features</a>
 		</section>
 
