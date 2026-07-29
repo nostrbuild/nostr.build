@@ -136,23 +136,18 @@ SVG;
 			    so it is a quiet text link now.
 		-->
 		<section class="hero_content">
-			<h1 class="hero_headline">Your media, your relay.</h1>
-			<p class="hero_sub">
-				Private storage, your own Nostr relay, and your own Blossom server<?= $fromPrice !== null ? ' — from $' . (int) $fromPrice . ' a year, paid in Bitcoin' : '' ?>.
-			</p>
-			<!-- Labels kept short so all three chips fit a 320px viewport in two
+						<!-- Labels kept short so all three chips fit a 320px viewport in two
 			     clean rows; each chip is atomic, so they wrap as whole units. -->
 			<div class="info_cards">
 				<div class="info"><span><?= $proof_files ?></span> files</div>
 				<div class="info"><span><?= $proof_size ?></span> stored</div>
 				<div class="info"><span>since 2022</span></div>
 			</div>
-			<div class="cta_row">
-				<?php if ($isGuest): ?>
-					<a class="cta_button" href="#plans">Plans<?= $fromPrice !== null ? ' — $' . (int) $fromPrice . '/yr' : '' ?> <span class="cta_arrow">→</span></a>
-				<?php endif; ?>
-				<a class="cta_button_secondary" href="https://account.nostr.build/features">Features</a>
-			</div>
+			<h1 class="hero_headline">Your media, your relay.</h1>
+			<h2 class="band_title">One price, per year, in Bitcoin</h2>
+			<p class="hero_sub">
+				Private storage, your own Nostr relay, and your own Blossom server<?= $fromPrice !== null ? ' — from $' . (int) $fromPrice . ' a year, paid in Bitcoin' : '' ?>. No subscription to cancel, no card on file, no upsells.
+			</p>
 			<!-- Handles the "is this a bait and switch" objection in one line,
 			     right where the price lands. -->
 		</section>
@@ -161,8 +156,6 @@ SVG;
 		<!-- Rendered from account.nostr.build's public catalog, so prices and
 		     feature bullets here can never drift from the checkout page. -->
 		<section class="plans_band" id="plans">
-			<h2 class="band_title">One price, per year, in Bitcoin</h2>
-			<p class="band_sub">No subscriptions to cancel, no card on file, no upsells in the product. Pick a size and it is yours for the year.</p>
 
 			<div class="plan_cards">
 				<?php foreach ($plans as $plan): ?>
