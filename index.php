@@ -83,7 +83,7 @@ SVG;
 	<meta charset="UTF-8" />
 	<meta http-equiv="X-UA-Compatible" content="IE=edge" />
 	<meta name="keywords" content="Nostr, Damus, Primal, noStrudel, Coracle.social, YakiHonne, Amethyst, snort.social, Iris.to, astril.ninja, media uploader, bitcoin media uploader, nostr videos, image uploader, image link, image, uploader, media upload, damus pictures, video uploader, nostr repository, Bitcoin ">
-	<meta name="description" content="Your media, your relay, your keys. nostr.build has hosted Nostr's media since 2022 — free uploads built into your favorite apps, and paid plans that add private storage, your own Nostr relay with unlimited history, and your own Blossom server. Bitcoin only, no ads, metadata stripped.">
+	<meta name="description" content="Your media, your relay. nostr.build has hosted Nostr's media since 2022 — free uploads built into your favorite apps, and paid plans that add private storage, your own Nostr relay with unlimited history, and your own Blossom server. Bitcoin only, no ads, metadata stripped.">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
 	<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
@@ -136,7 +136,7 @@ SVG;
 			    so it is a quiet text link now.
 		-->
 		<section class="hero_content">
-			<h1 class="hero_headline">Your media, your relay, your keys.</h1>
+			<h1 class="hero_headline">Your media, your relay.</h1>
 			<p class="hero_sub">
 				Private storage, your own Nostr relay, and your own Blossom server<?= $fromPrice !== null ? ' — from $' . (int) $fromPrice . ' a year, paid in Bitcoin' : '' ?>.
 			</p>
@@ -149,20 +149,19 @@ SVG;
 			</div>
 			<div class="cta_row">
 				<?php if ($isGuest): ?>
-					<a class="cta_button" href="#plans">See the plans<?= $fromPrice !== null ? ' — $' . (int) $fromPrice . '/yr' : '' ?> <span class="cta_arrow">→</span></a>
+					<a class="cta_button" href="#plans">Plans<?= $fromPrice !== null ? ' — $' . (int) $fromPrice . '/yr' : '' ?> <span class="cta_arrow">→</span></a>
 				<?php endif; ?>
-				<a class="cta_button_secondary" href="https://account.nostr.build/features">Explore features</a>
+				<a class="cta_button_secondary" href="https://account.nostr.build/features">Features</a>
 			</div>
 			<!-- Handles the "is this a bait and switch" objection in one line,
 			     right where the price lands. -->
-			<p class="hero_reassure">Free uploads stay free — straight from your client, no account needed.</p>
 		</section>
 
 		<?php if ($plans !== []): ?>
 		<!-- Rendered from account.nostr.build's public catalog, so prices and
 		     feature bullets here can never drift from the checkout page. -->
 		<section class="plans_band" id="plans">
-			<h2 class="band_title">One price, paid once a year, in Bitcoin</h2>
+			<h2 class="band_title">One price, per year, in Bitcoin</h2>
 			<p class="band_sub">No subscriptions to cancel, no card on file, no upsells in the product. Pick a size and it is yours for the year.</p>
 
 			<div class="plan_cards">
