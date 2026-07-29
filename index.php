@@ -117,10 +117,10 @@ SVG;
 			<?php if (!$isGuest): ?>
 				<img class="account_bar_pfp" src="<?= htmlspecialchars($ppic) ?>" alt="">
 				<span class="account_bar_text">Welcome back<?= $nym ? ', ' . htmlspecialchars($nym) : '' ?></span>
-				<a class="account_bar_link" href="https://account.nostr.build/">Open my account →</a>
+				<a class="account_bar_link" href="https://account.nostr.build/">Account Page→</a>
 			<?php else: ?>
 				<span class="account_bar_text">Already have an account?</span>
-				<a class="account_bar_link" href="https://account.nostr.build/">Go to your account →</a>
+				<a class="account_bar_link" href="https://account.nostr.build/">Go Here →</a>
 			<?php endif; ?>
 		</div>
 
@@ -200,7 +200,7 @@ SVG;
 					<?php endforeach; ?>
 				</ul>
 			<?php endif; ?>
-			<p class="plans_footnote">Prices are for one year. Two- and three-year terms cost less per year. Checkout, upgrades and renewals all happen at <a href="https://account.nostr.build/plans">account.nostr.build</a>.</p>
+			<p class="plans_footnote">Prices are for 1-year. 2 and 3-year terms cost less. Upgrades and renew at <a href="https://account.nostr.build/plans">account.nostr.build</a>.</p>
 		</section>
 		<?php endif; ?>
 
@@ -276,7 +276,7 @@ SVG;
 						</ul>
 					</div>
 				</div>
-				<p class="compare_note">Free uploads are not going away. Plans are how nostr.build stays paid for by the people who use it, rather than by advertisers.</p>
+				<p class="compare_note">*Free uploads are not going away. Paid plans are how nostr.build covers costs, not frpm ads!</p>
 			</section>
 		<?php else: ?>
 			<!-- Catalog unavailable: never block the page on it, just point at the
