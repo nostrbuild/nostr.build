@@ -143,10 +143,10 @@ SVG;
 				<div class="info"><span><?= $proof_size ?></span> stored</div>
 				<div class="info"><span>since 2022</span></div>
 			</div>
-			<h1 class="hero_headline">Your media, your relay.</h1>
+			<h1 class="hero_headline">Your media, your relay</h1>
 			<h2 class="band_title">One price, per year, in Bitcoin</h2>
 			<p class="hero_sub">
-				Private storage, your own Nostr relay, and your own Blossom server<?= $fromPrice !== null ? ' — from $' . (int) $fromPrice . ' a year, paid in Bitcoin' : '' ?>. No subscription to cancel, no card on file, no upsells.
+				Private storage, your own Nostr relay, and Blossom server<?= $fromPrice !== null ? ' — from $' . (int) $fromPrice . ' a year' : '' ?>. No subs to cancel, no card on file, no upsells.
 			</p>
 			<!-- Handles the "is this a bait and switch" objection in one line,
 			     right where the price lands. -->
