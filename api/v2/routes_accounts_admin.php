@@ -1715,7 +1715,7 @@ $app->group('/accounts/admin/moderation', function (RouteCollectorProxy $group) 
         "SELECT id, filename, type, usernpub, approval_status
            FROM uploads_data
           WHERE approval_status = 'pending'
-          ORDER BY usernpub, upload_date ASC
+          ORDER BY upload_date DESC
           LIMIT ?, ?"
       );
       $stmt->bind_param('ii', $start, $limit);
