@@ -247,17 +247,13 @@ $app->group('/upload', function (RouteCollectorProxy $group) {
     $npub = $request->getAttribute('npub');
     $factory = $this->get('multimediaUploadFactory');
 
-    if (null !== $npub) {
-      error_log('npub: ' . $npub . ' uploading pfp');
-      $upload = $factory->create(false, $npub);
-    } else {
+    if (null === $npub) {
       error_log('Unauthenticated upload of pfp');
-      // Return error
-      //return jsonResponse($response, 'error', 'Unauthorized, please provide a valid nip-98 token', new stdClass(), 401);
-      // Allow unauthenticated uploads for pfp for now (Mutinywallet support)
-      error_log('Unauthenticated upload of pfp');
-      $upload = $factory->create();
+      return jsonResponse($response, 'error', 'Unauthorized, please provide a valid nip-98 token', new stdClass(), 401);
     }
+
+    error_log('npub: ' . $npub . ' uploading pfp');
+    $upload = $factory->create(false, $npub);
 
     try {
       // Handle exceptions thrown by the MultimediaUpload class

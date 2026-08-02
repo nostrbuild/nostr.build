@@ -394,38 +394,36 @@ function generateUniqueCode()
  * Resolve the acting user's npub for a Worker-proxied request.
  *
  * The Worker forwards BOTH headers for common (cookie-authed) user tasks:
- *   - X-Accounts-Npub: the session's npub. HMAC-trusted (only the Worker can
- *     set it), so we use it directly — the fast path, no DB hit. This is the
- *     same value PHP keyed on before the uuid rekey.
- *   - X-Accounts-Uuid: the stable users.uuid_id. Used only when npub isn't sent
- *     (resolved uuid_id → usernpub). It's the durable identity and the long-term
- *     replacement once the DB keys by uuid natively, at which point the Worker
- *     can stop sending npub.
+ *   - X-Accounts-Uuid: the stable users.uuid_id. This is the ONE identity that
+ *     decides who the caller is.
+ *   - X-Accounts-Npub: the session's npub — a convenience echo of an attribute
+ *     of that same account.
+ *
+ * The two headers are independent inputs, so they can disagree. They must never
+ * be trusted as a pair: the upload paths gate on the npub's account (plan level,
+ * quota, ban, expiry) but persist rows under the uuid, so an npub/uuid pair
+ * naming two different accounts authorises against one account and writes into
+ * the other. Whenever a uuid is present it is therefore the sole source of
+ * truth and the npub is re-derived from it; the npub header is honoured only
+ * when it is the only identity given (and resolveIdentityUuid() then resolves
+ * the uuid from that same npub, so the pair stays coherent either way).
  *
  * Returns '' when neither yields an npub, so existing `=== ''` identity guards
- * in the routes fire unchanged.
+ * in the routes fire unchanged. An email-only account legitimately has no npub.
  */
 function resolveIdentityNpub($request): string
 {
   global $link;
 
-  // Fast path: npub already provided, no lookup needed.
-  $npub = trim((string) $request->getHeaderLine('X-Accounts-Npub'));
-  if ($npub !== '') {
-    return $npub;
+  // The uuid is authoritative: derive the npub from it and ignore any npub
+  // header, which may name a different account.
+  $uuid = trim((string) $request->getHeaderLine('X-Accounts-Uuid'));
+  if ($uuid !== '') {
+    return uuidToNpub($link, $uuid) ?? '';
   }
 
-  // Fallback: resolve from the stable uuid.
-  $uuid = trim((string) $request->getHeaderLine('X-Accounts-Uuid'));
-  if ($uuid === '') {
-    return '';
-  }
-  $stmt = $link->prepare("SELECT usernpub FROM users WHERE uuid_id = ? LIMIT 1");
-  $stmt->bind_param('s', $uuid);
-  $stmt->execute();
-  $row = $stmt->get_result()->fetch_assoc();
-  $stmt->close();
-  return is_array($row) && !empty($row['usernpub']) ? (string) $row['usernpub'] : '';
+  // No uuid sent — the npub is the only identity we have.
+  return trim((string) $request->getHeaderLine('X-Accounts-Npub'));
 }
 
 /**

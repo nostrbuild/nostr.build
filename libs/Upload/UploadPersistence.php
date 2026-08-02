@@ -152,9 +152,14 @@ class UploadPersistence
         count($uppyMetadata['folderHierarchy']) > 0) ||
       !empty($defaultFolderName)
     ) {
-      if ($this->usersImagesFolders !== null) {
+      // Resolve the folder under the SAME identity that owns the row (below,
+      // storePro writes user_uuid). Keying the folder off the npub instead put
+      // the file in a folder belonging to a different account whenever the two
+      // identities disagreed, and for an npub-less email account resolved to a
+      // NULL owner — minting a fresh ownerless folder on every upload.
+      if ($this->usersImagesFolders !== null && $this->userUuid !== '') {
         try {
-          $folderId = $this->usersImagesFolders->findFolderByNameOrCreate($this->userNpub, $folderName ?? '');
+          $folderId = $this->usersImagesFolders->findFolderByNameOrCreate($this->userUuid, $folderName ?? '');
         } catch (\Throwable $e) {
           error_log($e->getMessage());
         }

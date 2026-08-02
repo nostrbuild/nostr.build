@@ -122,6 +122,13 @@ class MultimediaUpload
         if ($this->pro && empty($this->userUuid)) {
             throw new Exception('UserUuid is required for pro uploads');
         }
+        // A pro upload MUST resolve to a real account. Without this, an identity
+        // that names no row (a stale uuid, an npub with no account) still stored
+        // a pro row, and UploadValidator's plan/quota/expiry gates — all guarded
+        // by `$account !== null` — were skipped wholesale.
+        if ($this->pro && ($this->userAccount === null || !$this->userAccount->accountExists())) {
+            throw new Exception('Unable to resolve account for pro upload');
+        }
 
         // Delegates
         $this->tempManager = new TempFileManager();

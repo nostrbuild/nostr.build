@@ -190,8 +190,14 @@ class UsersImagesFolders extends DatabaseTable
       throw new Exception('Folder name cannot be empty');
     }
     // Folders are keyed by the stable user_uuid; the legacy usernpub column is
-    // no longer written.
+    // no longer written. An unresolvable owner must fail loudly: binding NULL
+    // here made the SELECT match nothing and the INSERT create an ownerless
+    // folder — a new one on every call, since NULLs are distinct under the
+    // UNIQUE(user_uuid, folder) index.
     $userUuid = resolveOwnerUuid($this->db, $owner);
+    if ($userUuid === null || $userUuid === '') {
+      throw new Exception('Cannot resolve folder owner');
+    }
     // First, try to select the folder
     if ($parent_id) {
       $sql = "SELECT id FROM {$this->tableName} WHERE folder = ? AND user_uuid = ? AND parent_id = ?";

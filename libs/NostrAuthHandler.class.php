@@ -8,8 +8,15 @@ require_once __DIR__ . '/Bech32.class.php';
 class NostrAuthHandler
 {
   /**
+   * How far a NIP-98 event's created_at may sit from now, in either direction.
+   * Kept generous enough for slow uploads and client clock drift, and short
+   * enough to bound how long a leaked Authorization header stays usable.
+   */
+  public const MAX_EVENT_AGE_SECONDS = 600;
+
+  /**
    * Summary of event
-   * @var 
+   * @var
    */
   private $event;
   /**
@@ -85,9 +92,14 @@ class NostrAuthHandler
       throw new Exception("Invalid kind");
     }
 
-    // 2. The created_at MUST be within a reasonable time window (suggestion 60 seconds).
-    if (abs(time() - $this->event->created_at) > (60 * 10)) { // Make it 5 minutes to allow for the longer upload times
-      error_log("Timestamp out of range[{abs(time() - $this->event->created_at)} > {(60 * 10)}]: " . $this->event->created_at . " != " . time() . "\n");
+    // 2. The created_at MUST be within a reasonable time window (NIP-98 suggests
+    //    60 seconds). We allow more to cover long uploads and client clock drift.
+    //    This window is what bounds a token's usable life: a NIP-98 event carries
+    //    no nonce and we keep no spent-id cache, so a captured Authorization
+    //    header is replayable until its created_at falls outside the window.
+    $age = abs(time() - $this->event->created_at);
+    if ($age > self::MAX_EVENT_AGE_SECONDS) {
+      error_log("Timestamp out of range [{$age}s > " . self::MAX_EVENT_AGE_SECONDS . "s]: " . $this->event->created_at . " != " . time() . "\n");
       throw new Exception("Timestamp out of range");
     }
 
