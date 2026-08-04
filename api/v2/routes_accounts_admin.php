@@ -1691,14 +1691,14 @@ $app->group('/accounts/admin/moderation', function (RouteCollectorProxy $group) 
       if (strlen($searchFile) > 128 || str_contains($searchFile, '%') || str_contains($searchFile, '_')) {
         return aaError($response, 'Invalid filename prefix', 400);
       }
-      $stmt = $link->prepare("SELECT id, filename, type, usernpub, approval_status FROM uploads_data WHERE filename LIKE ? ORDER BY upload_date DESC LIMIT ?");
+      $stmt = $link->prepare("SELECT id, filename, type, usernpub, approval_status, UNIX_TIMESTAMP(upload_date) AS upload_ts FROM uploads_data WHERE filename LIKE ? ORDER BY upload_date DESC LIMIT ?");
       $like = $searchFile . '%';
       $stmt->bind_param('si', $like, $SEARCH_LIMIT);
     } elseif ($searchNpub !== '') {
       if (aaValidNpub($searchNpub) === null) {
         return aaError($response, 'Invalid npub', 400);
       }
-      $stmt = $link->prepare("SELECT id, filename, type, usernpub, approval_status FROM uploads_data WHERE usernpub = ? ORDER BY upload_date DESC LIMIT ?");
+      $stmt = $link->prepare("SELECT id, filename, type, usernpub, approval_status, UNIX_TIMESTAMP(upload_date) AS upload_ts FROM uploads_data WHERE usernpub = ? ORDER BY upload_date DESC LIMIT ?");
       $stmt->bind_param('si', $searchNpub, $SEARCH_LIMIT);
     } else {
       $limit = max(1, min(204, (int) ($q['limit'] ?? 60)));
@@ -1712,7 +1712,7 @@ $app->group('/accounts/admin/moderation', function (RouteCollectorProxy $group) 
       // not worth the write cost on this 3M-row, write-hot table to save a
       // sub-ms sort over a tiny set.
       $stmt = $link->prepare(
-        "SELECT id, filename, type, usernpub, approval_status
+        "SELECT id, filename, type, usernpub, approval_status, UNIX_TIMESTAMP(upload_date) AS upload_ts
            FROM uploads_data
           WHERE approval_status = 'pending'
           ORDER BY upload_date ASC
@@ -1748,6 +1748,10 @@ $app->group('/accounts/admin/moderation', function (RouteCollectorProxy $group) 
         'approval_status' => (string) $r['approval_status'],
         'url' => $urlBase . $filename,
         'thumb' => $thumbBase . $filename,
+        // Epoch seconds (UNIX_TIMESTAMP handles the session timezone); null when
+        // upload_date is NULL/zero. The admin app uses this to flag uploads past
+        // the VLM processing window with no VLM record.
+        'upload_ts' => isset($r['upload_ts']) ? (int) $r['upload_ts'] : null,
       ];
     }
     $stmt->close();
