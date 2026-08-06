@@ -129,18 +129,21 @@ class S3Multipart
       // account is addressable. The Worker's ownsKey accepts both prefixes.
       $key = $this->generateUploadKey($filename, $userUuid, $contentType);
 
-      // Create multipart upload
+      // Create multipart upload. Every metadata value goes through
+      // encodeMetaValue — these become SIGNED x-amz-meta-* headers, and R2
+      // rejects the whole request with SignatureDoesNotMatch if any of them
+      // does not survive header canonicalization unchanged.
       $result = $this->s3Client->createMultipartUpload([
         'Bucket' => $this->bucket,
         'Key' => $key,
         'ContentType' => $contentType,
-        'Metadata' => [
+        'Metadata' => array_map([self::class, 'encodeMetaValue'], [
           'original-filename' => $filename,
           'user-npub' => $userNpub,
           'user-uuid' => $userUuid,
           'upload-time' => (string)time(),
-          'metadata' => json_encode($metadata)
-        ]
+          'metadata' => (string)json_encode($metadata)
+        ])
       ]);
 
       $uploadId = $result['UploadId'];
@@ -391,6 +394,63 @@ class S3Multipart
   }
 
   /**
+   * Make a value safe to send as an `x-amz-meta-*` header to R2.
+   *
+   * HTTP header values are ASCII-only, and the value we SIGN must survive the
+   * receiver's canonicalization byte-for-byte or the SigV4 signature check
+   * fails. Two normalizations bite here:
+   *
+   *  - R2 RFC 2047-decodes every `x-amz-meta-*` value on ingest
+   *    (https://developers.cloudflare.com/r2/api/s3/extensions/), so raw
+   *    non-ASCII bytes are not what R2 ends up hashing.
+   *  - SigV4 canonical headers trim the value and collapse runs of whitespace,
+   *    so leading/trailing or doubled spaces sign one way and arrive another.
+   *
+   * Real S3 tolerates both; R2 rejects them with SignatureDoesNotMatch, which
+   * this class swallowed into a bare `false` → an opaque 500 with the upload
+   * never starting. Any value that is not already canonical is therefore sent
+   * as an RFC 2047 encoded-word: base64 is pure ASCII with no whitespace, so
+   * signer and receiver agree, and R2 decodes it back to Unicode for storage.
+   *
+   * @param string $value Raw metadata value
+   * @return string Value safe to sign and send
+   */
+  private static function encodeMetaValue(string $value): string
+  {
+    if ($value === '') {
+      return '';
+    }
+    // Printable-ASCII tokens joined by exactly one space: unchanged by both
+    // RFC 2047 decoding (no encoded-word) and SigV4 whitespace collapsing.
+    if (preg_match('/^[\x21-\x7E]+(?: [\x21-\x7E]+)*$/D', $value) === 1) {
+      return $value;
+    }
+    return '=?UTF-8?B?' . base64_encode($value) . '?=';
+  }
+
+  /**
+   * Inverse of encodeMetaValue for values read back off an object.
+   *
+   * Needed even for values this class never encoded: R2 RFC 2047-ENCODES any
+   * stored metadata containing Unicode before rendering it in a response, so a
+   * filename with non-ASCII comes back as a literal `=?UTF-8?B?...?=` and would
+   * otherwise be written to the DB — and shown as the media title — verbatim.
+   *
+   * Only decodes when the value actually carries an encoded-word, so a plain
+   * value that happens to contain `=?` is passed through untouched.
+   *
+   * @param string $value Metadata value as returned by R2
+   * @return string Decoded value
+   */
+  private static function decodeMetaValue(string $value): string
+  {
+    if (preg_match('/=\?[^?]+\?[BbQq]\?[^?]*\?=/', $value) !== 1) {
+      return $value;
+    }
+    return mb_decode_mimeheader($value);
+  }
+
+  /**
    * Generate unique key for upload — strictly uuid-prefixed (the stable identity
    * every account has). `uploads/{uuid}/{nanoid}.{ext}`.
    *
@@ -466,16 +526,24 @@ class S3Multipart
       $prefixIsNpub = str_starts_with($userPrefixFromPath, 'npub1');
 
       // Reconstruct the original session structure
+      // decodeMetaValue on the way out: R2 RFC 2047-encodes any stored metadata
+      // containing Unicode before returning it, and `filename` becomes the
+      // media title downstream (storeInDatabase), so an undecoded value would
+      // be persisted and shown to the user as `=?UTF-8?B?...?=`.
       return [
         'key' => $key,
-        'filename' => $metadata['original-filename'] ?? basename($key),
+        'filename' => isset($metadata['original-filename'])
+          ? self::decodeMetaValue($metadata['original-filename'])
+          : basename($key),
         'contentType' => $objectMetadata['ContentType'] ?? 'application/octet-stream',
         'userNpub' => $metadata['user-npub'] ?? ($prefixIsNpub ? $userPrefixFromPath : ''),
         // uuid is the owner identity. Prefer the metadata; fall back to the path
         // segment ONLY when it's a uuid (new key). For a legacy npub-prefixed key
         // leave this empty so storeInDatabase resolves npub→uuid via the resolver.
         'userUuid' => $metadata['user-uuid'] ?? ($prefixIsNpub ? '' : $userPrefixFromPath),
-        'metadata' => isset($metadata['metadata']) ? json_decode($metadata['metadata'], true) : [],
+        'metadata' => isset($metadata['metadata'])
+          ? json_decode(self::decodeMetaValue($metadata['metadata']), true)
+          : [],
         'createdAt' => isset($metadata['upload-time']) ? (int)$metadata['upload-time'] : time()
       ];
     } catch (Exception $e) {
@@ -520,12 +588,14 @@ class S3Multipart
         $destinationKey, // destination key with path
         $mimeType,      // mime type
         true,           // professional account
-        [               // additional metadata
+        // Same signed-header hazard as createMultipartUpload: these ride the
+        // CopyObject request as x-amz-meta-* and must canonicalize unchanged.
+        array_map([self::class, 'encodeMetaValue'], [
           'original-filename' => $originalFilename,
           'npub' => $uploadInfo['userNpub'],
           'file-size' => (string)$metadata['ContentLength'],
           'upload-method' => 'multipart-s3'
-        ]
+        ])
       );
 
       if (!$copyResult) {
