@@ -1951,25 +1951,25 @@ $app->group('/accounts', function (RouteCollectorProxy $group) {
       $npub = resolveIdentityNpub($request);
       $uuid = resolveIdentityUuid($request);
       if ($uuid === '') {
-        return jsonResponse($response, 'error', 'missing-identity', new stdClass(), 400);
+        return jsonResponse($response, 'error', 'missing-identity', new stdClass(), 400, 'bad-request');
       }
       $data = $request->getParsedBody();
       if (empty($data['filename']) || empty($data['type'])) {
-        return jsonResponse($response, 'error', 'Missing required fields: filename, type', new stdClass(), 400);
+        return jsonResponse($response, 'error', 'Missing required fields: filename, type', new stdClass(), 400, 'bad-request');
       }
       $prevNpub = $_SESSION['usernpub'] ?? null;
       $_SESSION['usernpub'] = $npub;
       try {
         $account = $npub !== '' ? new Account($npub, $link) : Account::fromUuid($uuid, $link);
         if ($account === null || !$account->accountExists()) {
-          return jsonResponse($response, 'error', 'not-found', new stdClass(), 404);
+          return jsonResponse($response, 'error', 'not-found', new stdClass(), 404, 'not-found');
         }
         // Creator (1), Professional (2), Purist (3), Advanced
         // (10), Admin (99) — every upload-eligible tier. Gating this to
         // 1/10/99 was what 403'd Professional/Purist large uploads.
         $level = (int) $account->getAccountLevel()->value;
         if (!in_array($level, [1, 2, 3, 10, 99], true)) {
-          return jsonResponse($response, 'error', 'forbidden', new stdClass(), 403);
+          return jsonResponse($response, 'error', 'account level not upload-eligible', new stdClass(), 403, 'not-eligible');
         }
         // Per-file size gate at initiation, mirroring the XHR path's
         // UploadValidator: hasSufficientStorageSpace() bounds by remaining
@@ -1978,9 +1978,12 @@ $app->group('/accounts', function (RouteCollectorProxy $group) {
         // then instead of failing every large upload in the deploy window.
         $size = isset($data['size']) && is_numeric($data['size']) ? (int) $data['size'] : 0;
         if ($size > 0 && !$account->hasSufficientStorageSpace($size)) {
-          return jsonResponse($response, 'error', 'File size exceeds the limit of ' . formatSizeUnits($account->getPerFileUploadLimit()), new stdClass(), 413);
+          return jsonResponse($response, 'error', 'File size exceeds the limit of ' . formatSizeUnits($account->getPerFileUploadLimit()), new stdClass(), 413, 'quota-exceeded');
         }
         $s3Multipart = $this->get('s3Multipart');
+        // Throws UploadRefusal carrying the reason; a bare false is no longer
+        // possible, but keep the guard so a future refactor can't silently
+        // report success on a falsy result.
         $result = $s3Multipart->createMultipartUpload(
           $data['filename'],
           $data['type'],
@@ -1989,12 +1992,17 @@ $app->group('/accounts', function (RouteCollectorProxy $group) {
           (string) $account->getAccountUuid(),
         );
         if (!$result) {
-          return jsonResponse($response, 'error', 'Failed to create multipart upload', new stdClass(), 500);
+          return jsonResponse($response, 'error', 'Failed to create multipart upload', new stdClass(), 500, 'internal');
         }
         return jsonResponse($response, 'success', 'Multipart upload created', $result);
+      } catch (UploadRefusal $e) {
+        // A classified refusal: answer with ITS status and code rather than
+        // flattening banned / locked / expired / storage-rejected into one 500.
+        error_log('uploads/multipart create refused (' . $e->errorCode . '): ' . $e->getMessage());
+        return jsonResponse($response, 'error', $e->getMessage(), new stdClass(), $e->httpStatus, $e->errorCode);
       } catch (\Throwable $e) {
         error_log('uploads/multipart create: ' . $e->getMessage());
-        return jsonResponse($response, 'error', 'Failed to create multipart upload', new stdClass(), 500);
+        return jsonResponse($response, 'error', 'Failed to create multipart upload', new stdClass(), 500, 'internal');
       } finally {
         if ($prevNpub === null) {
           unset($_SESSION['usernpub']);
@@ -2015,12 +2023,12 @@ $app->group('/accounts', function (RouteCollectorProxy $group) {
       $npub = resolveIdentityNpub($request);
       $uuid = resolveIdentityUuid($request);
       if ($uuid === '') {
-        return jsonResponse($response, 'error', 'missing-identity', new stdClass(), 400);
+        return jsonResponse($response, 'error', 'missing-identity', new stdClass(), 400, 'bad-request');
       }
       $uploadId = $args['uploadId'];
       $key = $request->getQueryParams()['key'] ?? '';
       if (empty($uploadId) || empty($key)) {
-        return jsonResponse($response, 'error', 'Missing required parameters', new stdClass(), 400);
+        return jsonResponse($response, 'error', 'Missing required parameters', new stdClass(), 400, 'bad-request');
       }
       $prevNpub = $_SESSION['usernpub'] ?? null;
       $_SESSION['usernpub'] = $npub;
@@ -2046,7 +2054,7 @@ $app->group('/accounts', function (RouteCollectorProxy $group) {
         return jsonResponse($response, 'success', 'Upload not completed', ['completed' => false]);
       } catch (\Throwable $e) {
         error_log('uploads/multipart status: ' . $e->getMessage());
-        return jsonResponse($response, 'error', 'Failed to check upload status', new stdClass(), 500);
+        return jsonResponse($response, 'error', 'Failed to check upload status', new stdClass(), 500, 'internal');
       } finally {
         if ($prevNpub === null) {
           unset($_SESSION['usernpub']);
@@ -2061,33 +2069,39 @@ $app->group('/accounts', function (RouteCollectorProxy $group) {
       $npub = resolveIdentityNpub($request);
       $uuid = resolveIdentityUuid($request);
       if ($uuid === '') {
-        return jsonResponse($response, 'error', 'missing-identity', new stdClass(), 400);
+        return jsonResponse($response, 'error', 'missing-identity', new stdClass(), 400, 'bad-request');
       }
       $uploadId = $args['uploadId'];
       $key = $request->getQueryParams()['key'] ?? '';
       $data = $request->getParsedBody();
       if (empty($uploadId) || empty($key) || empty($data['parts'])) {
-        return jsonResponse($response, 'error', 'Missing required parameters', new stdClass(), 400);
+        return jsonResponse($response, 'error', 'Missing required parameters', new stdClass(), 400, 'bad-request');
       }
       $prevNpub = $_SESSION['usernpub'] ?? null;
       $_SESSION['usernpub'] = $npub;
       try {
         $s3Multipart = $this->get('s3Multipart');
+        // Throws UploadRefusal on every failure — permanent refusals
+        // (ownership, ban-at-complete, deterministic AWS 4xx) and retryable
+        // step faults (metadata read, copy, DB insert) each carry their own
+        // status + code. The falsy/'error'-array guard below is defense only:
+        // that contract no longer exists, but a future refactor must not be
+        // able to silently report success on a falsy result.
         $result = $s3Multipart->completeMultipartUpload($uploadId, $key, $data['parts'], $npub, $uuid);
-        // completeMultipartUpload returns false on a thrown error, OR an array
-        // carrying an 'error' key when a post-assembly step (copy / DB insert)
-        // fails after the object was already assembled. Both are failures — the
-        // old `if (!$result)` missed the array form and reported success while no
-        // DB row was written, leaving the file orphaned in final storage.
         if (!$result || isset($result['error'])) {
           $reason = is_array($result) ? ($result['error'] ?? 'unknown') : 'completion returned false';
           error_log('uploads/multipart complete failed (' . substr($uploadId, 0, 10) . '): ' . $reason);
-          return jsonResponse($response, 'error', 'Failed to complete multipart upload', new stdClass(), 500);
+          return jsonResponse($response, 'error', 'Failed to complete multipart upload', new stdClass(), 500, 'internal');
         }
         return jsonResponse($response, 'success', 'Multipart upload completed', $result);
+      } catch (UploadRefusal $e) {
+        // Classified — answer with ITS status and code so a banned account or
+        // an InvalidPart is not retried, while a copy/DB blip still is.
+        error_log('uploads/multipart complete refused (' . $e->errorCode . '): ' . $e->getMessage());
+        return jsonResponse($response, 'error', $e->getMessage(), new stdClass(), $e->httpStatus, $e->errorCode);
       } catch (\Throwable $e) {
         error_log('uploads/multipart complete: ' . $e->getMessage());
-        return jsonResponse($response, 'error', 'Failed to complete multipart upload', new stdClass(), 500);
+        return jsonResponse($response, 'error', 'Failed to complete multipart upload', new stdClass(), 500, 'internal');
       } finally {
         if ($prevNpub === null) {
           unset($_SESSION['usernpub']);

@@ -11,16 +11,27 @@ use Psr\Http\Message\ResponseInterface as Response;
  * @param string $message
  * @param mixed $data
  * @param int $statusCode
+ * @param string $code Optional stable machine code for an error (see below)
  * @return Psr\Http\Message\ResponseInterface
  * Utility function to return a JSON response
+ *
+ * `$code` is the caller-facing REASON, from a fixed vocabulary shared with the
+ * accounts app (src/lib/upload/error-codes.ts). It exists because `$message` is
+ * English prose: the app cannot translate it, cannot decide from it whether a
+ * retry is worthwhile, and cannot group on it in logs. Callers that pass no
+ * code keep the exact envelope they emitted before — the key is omitted
+ * entirely rather than sent empty, so nothing downstream has to special-case it.
  */
-function jsonResponse(Response $response, string $status, string $message, $data, int $statusCode = 200): Response
+function jsonResponse(Response $response, string $status, string $message, $data, int $statusCode = 200, string $code = ''): Response
 {
   $responseBody = [
     'status' => $status,
     'message' => $message,
     'data' => $data,
   ];
+  if ($code !== '') {
+    $responseBody['code'] = $code;
+  }
   $response->getBody()->write(json_encode($responseBody));
   return $response->withHeader('Content-Type', 'application/json')->withStatus($statusCode);
 }

@@ -13,6 +13,32 @@ use Aws\S3\S3Client;
 use Aws\Exception\AwsException;
 
 /**
+ * A refusal or fault with a caller-facing reason attached.
+ *
+ * Every gate in this class used to `throw new Exception('...')` and be caught
+ * into `return false`, which the route turned into a blanket 500. A banned
+ * account, a legal hold, an expired plan and a hard R2 rejection were therefore
+ * indistinguishable to the client: all showed "HTTP 500", none could be
+ * translated, and the retry logic re-sent a permanently doomed request seven
+ * times. Carrying the code and the HTTP status on the exception lets the route
+ * answer accurately without re-deriving the reason from prose.
+ *
+ * `$errorCode` (not `$code`) because Exception::getCode() is an int and taken.
+ */
+class UploadRefusal extends Exception
+{
+  public string $errorCode;
+  public int $httpStatus;
+
+  public function __construct(string $errorCode, int $httpStatus, string $message)
+  {
+    parent::__construct($message);
+    $this->errorCode = $errorCode;
+    $this->httpStatus = $httpStatus;
+  }
+}
+
+/**
  * S3Multipart class for handling AWS S3 multipart uploads
  * 
  * This class handles the presigning of S3 multipart upload operations:
@@ -23,7 +49,11 @@ use Aws\Exception\AwsException;
  * 
  * Usage:
  * $s3Multipart = new S3Multipart($awsConfig, $db);
- * $result = $s3Multipart->createMultipartUpload($filename, $contentType, $metadata, $userNpub);
+ * try {
+ *   $result = $s3Multipart->createMultipartUpload($filename, $contentType, $metadata, $userNpub, $userUuid);
+ * } catch (UploadRefusal $e) {
+ *   // $e->errorCode / $e->httpStatus carry the caller-facing reason.
+ * }
  */
 class S3Multipart
 {
@@ -77,7 +107,10 @@ class S3Multipart
    * @param string $contentType MIME type
    * @param array $metadata Additional metadata
    * @param string $userNpub User's npub
-   * @return array|false Upload ID and key or false on failure
+   * @return array Upload ID and key
+   * @throws UploadRefusal on every failure path — policy refusals (banned,
+   *         locked, expired, not found) and classified storage faults alike.
+   *         This method never returns false.
    */
   public function createMultipartUpload(string $filename, string $contentType, array $metadata, string $userNpub, string $userUuid = '')
   {
@@ -86,7 +119,7 @@ class S3Multipart
       // account has no npub). npub stays optional and only drives the npub-keyed
       // ban check below.
       if ($userUuid === '') {
-        throw new Exception('userUuid is required');
+        throw new UploadRefusal('bad-request', 400, 'userUuid is required');
       }
 
       // Hard-fail banned npubs before we hand out any presigned URLs.
@@ -100,29 +133,29 @@ class S3Multipart
       // that have an npub; an email-only account is gated by isLocked/isExpired.
       if ($userNpub !== '' && (new LegacyBlacklist($this->db))->isNpubBanned($userNpub)) {
         error_log('S3Multipart: blocked banned npub ' . $userNpub);
-        throw new Exception('User has been flagged as rejected');
+        throw new UploadRefusal('account-banned', 403, 'npub is blacklisted');
       }
 
       // Validate user account — resolve from npub when present, else the uuid.
       $account = $userNpub !== '' ? new Account($userNpub, $this->db) : Account::fromUuid($userUuid, $this->db);
       if ($account === null || !$account->accountExists()) {
-        throw new Exception('Account not found');
+        throw new UploadRefusal('not-found', 404, 'account not found');
       }
       // Ban gate, email-aware: isBanned() checks the npub blacklist AND the email
       // blacklist, so a banned key-less account is blocked here too (the npub-only
       // fast check above can't reach it).
       if ($account->isBanned()) {
         error_log('S3Multipart: blocked banned account ' . $userUuid);
-        throw new Exception('User has been flagged as rejected');
+        throw new UploadRefusal('account-banned', 403, 'account is banned');
       }
       // Legal-hold lockout (CSAM evidence preservation) AND expiry both block
       // large uploads. isLocked covers the uuid-keyed termination path that an
       // npub-less account would otherwise miss (the npub blacklist can't reach it).
       if ($account->isLocked()) {
-        throw new Exception('Account is locked');
+        throw new UploadRefusal('account-locked', 423, 'account is under legal hold');
       }
       if ($account->isExpired()) {
-        throw new Exception('Account has expired');
+        throw new UploadRefusal('account-expired', 403, 'subscription has expired');
       }
 
       // Generate unique key for the upload — uuid-prefixed so an npub-less
@@ -157,13 +190,48 @@ class S3Multipart
         'uploadId' => $uploadId,
         'key' => $key
       ];
+    } catch (UploadRefusal $e) {
+      // Already carries its reason — let the route answer with it verbatim.
+      throw $e;
     } catch (AwsException $e) {
-      error_log('AWS Error creating multipart upload: ' . $e->getMessage());
-      return false;
+      error_log(
+        'AWS Error creating multipart upload: ' . $e->getAwsErrorCode() .
+        ' (http ' . (string)$e->getStatusCode() . '): ' . $e->getMessage()
+      );
+      throw self::refusalFromAws($e, 'create');
     } catch (Exception $e) {
+      // Detail to the log only. The refusal message travels to the client, and
+      // an unexpected throw can carry internal paths or object keys.
       error_log('Error creating multipart upload: ' . $e->getMessage());
-      return false;
+      throw new UploadRefusal('internal', 500, 'failed to create multipart upload');
     }
+  }
+
+  /**
+   * Classify an object-storage failure as permanent or retryable.
+   *
+   * The distinction is the whole point: a 4xx from R2 (SignatureDoesNotMatch,
+   * InvalidArgument, EntityTooLarge) is DETERMINISTIC — the identical request
+   * will fail identically, so retrying only burns the user's bandwidth and
+   * delays the error. That is exactly what happened when every storage failure
+   * looked like a 500 and the client's "5xx means transient" rule retried a
+   * doomed CreateMultipartUpload seven times. A 5xx or a connection error is
+   * genuinely worth another attempt.
+   *
+   * @param AwsException $e The SDK exception
+   * @param string $op Operation name, for the log line
+   * @return UploadRefusal
+   */
+  private static function refusalFromAws(AwsException $e, string $op): UploadRefusal
+  {
+    $status = (int)$e->getStatusCode();
+    $awsCode = (string)$e->getAwsErrorCode();
+    // getStatusCode() is 0 when the request never got a response (DNS, TLS,
+    // connection reset) — no server verdict, so treat it as retryable.
+    if ($status >= 400 && $status < 500) {
+      return new UploadRefusal('upstream-rejected', 502, "storage rejected $op: $awsCode");
+    }
+    return new UploadRefusal('upstream-unavailable', 503, "storage unavailable on $op: $awsCode");
   }
 
   /**
@@ -173,17 +241,24 @@ class S3Multipart
    * @param string $key Object key
    * @param array $parts Array of parts with PartNumber and ETag
    * @param string $userNpub User's npub
-   * @return array|false Success data or false on failure
+   * @return array Success data
+   * @throws UploadRefusal on every failure path, carrying the caller-facing
+   *         code + HTTP status. Permanent refusals (ownership, ban) and
+   *         retryable step faults (metadata read, copy, DB insert) are
+   *         distinguished so the client only retries what can succeed.
+   *         This method never returns false or an ['error' => ...] array.
    */
   public function completeMultipartUpload(string $uploadId, string $key, array $parts, string $userNpub, string $userUuid = '')
   {
     try {
       if ($userUuid === '') {
-        throw new Exception('userUuid is required');
+        throw new UploadRefusal('bad-request', 400, 'userUuid is required');
       }
       // Validate user owns this upload — staging keys are strictly uuid-prefixed.
+      // Code is `not-found` (never confirm a foreign key exists); status stays
+      // 403, matching the Worker route's ownsKey refusal.
       if (!$this->validateUserOwnership($key, $userUuid)) {
-        throw new Exception('User does not own this upload');
+        throw new UploadRefusal('not-found', 403, 'caller does not own this upload');
       }
 
       // Idempotency guard. A retried completion — disconnect recovery, a lost
@@ -233,7 +308,7 @@ class S3Multipart
         } catch (\Throwable $abortError) {
           error_log('S3Multipart: abort after ban-check failure: ' . $abortError->getMessage());
         }
-        throw new Exception('User has been flagged as rejected');
+        throw new UploadRefusal('account-banned', 403, 'account is banned at completion');
       }
 
       // Check if object already exists as a completed upload (disconnect scenario)
@@ -248,10 +323,9 @@ class S3Multipart
         $uploadInfo = $this->getUploadInfoFromS3($uploadId, $key);
         
         if (!$uploadInfo) {
+          // A metadata read blip — retryable, nothing has been copied yet.
           error_log("Failed to get upload info from existing S3 object for upload: " . substr($uploadId, 0, 10));
-          return [
-            'error' => 'Failed to retrieve upload information from existing object'
-          ];
+          throw new UploadRefusal('upstream-unavailable', 503, 'failed to read upload info from storage');
         }
         
       } else {
@@ -287,19 +361,18 @@ class S3Multipart
 
       if (!$uploadInfo) {
         error_log("Failed to get upload info from S3 for upload: " . substr($uploadId, 0, 10));
-        return [
-          'error' => 'Failed to retrieve upload information from storage'
-        ];
+        throw new UploadRefusal('upstream-unavailable', 503, 'failed to read upload info from storage');
       }
 
       // Copy file to final storage bucket using existing S3Service
       $copyResult = $this->copyToFinalStorage($key, $uploadInfo);
 
       if (!$copyResult) {
+        // copyToFinalStorage collapses its AwsExceptions internally, so the
+        // 4xx/5xx split is not visible here; a copy fault is overwhelmingly a
+        // transient R2/network blip and completion is idempotent — retryable.
         error_log("Failed to copy file to final storage for upload: " . substr($uploadId, 0, 10));
-        return [
-          'error' => 'Failed to copy file to final storage'
-        ];
+        throw new UploadRefusal('upstream-unavailable', 503, 'failed to copy to final storage');
       }
 
       // Store in database now that upload is complete
@@ -338,9 +411,9 @@ class S3Multipart
         } catch (\Throwable $cleanupError) {
           error_log('S3Multipart: failed to clean up orphaned final object after DB failure: ' . $cleanupError->getMessage());
         }
-        return [
-          'error' => 'Failed to store file in database'
-        ];
+        // Retryable by design: the orphaned object was just deleted, so a
+        // client re-drive gets a clean re-copy + insert (see comment above).
+        throw new UploadRefusal('upstream-unavailable', 503, 'failed to record file in database');
       }
 
       // Auto-extract video poster (best-effort, never fails the upload)
@@ -384,12 +457,23 @@ class S3Multipart
         'etag' => isset($result) ? $result['ETag'] : ($copyResult['etag'] ?? null),
         'fileData' => $fileData
       ];
+    } catch (UploadRefusal $e) {
+      // Already classified — let the route answer with its status + code.
+      throw $e;
     } catch (AwsException $e) {
-      error_log('AWS Error completing multipart upload: ' . $e->getMessage());
-      return false;
+      // The S3 completeMultipartUpload call itself failed. 4xx (InvalidPart,
+      // NoSuchUpload after expiry, SignatureDoesNotMatch) is deterministic —
+      // retrying re-sends a doomed request; 5xx/no-response is worth another
+      // attempt. Same classification as create.
+      error_log(
+        'AWS Error completing multipart upload: ' . $e->getAwsErrorCode() .
+        ' (http ' . (string)$e->getStatusCode() . '): ' . $e->getMessage()
+      );
+      throw self::refusalFromAws($e, 'complete');
     } catch (Exception $e) {
+      // Detail to the log only — the refusal message travels to the client.
       error_log('Error completing multipart upload: ' . $e->getMessage());
-      return false;
+      throw new UploadRefusal('internal', 500, 'failed to complete multipart upload');
     }
   }
 
