@@ -70,7 +70,7 @@ $morePages = $result->num_rows > $perpage ? true : false;
 	<link rel="stylesheet" href="/styles/index.css?v=5f778fa5254a390824630c03c36a7c50" />
 	<link rel="stylesheet" href="/styles/profile.css?v=f37768cc1536176145f323500785bf9b" />
 	<link rel="stylesheet" href="/styles/header.css?v=19cde718a50bd676387bbe7e9e24c639" />
-	<link rel="stylesheet" href="/styles/twbuild.css?v=899e2989357b4c555fe9e51bf862cdab" />
+	<link rel="stylesheet" href="/styles/twbuild.css?v=337e4c16538f526e3711150758c0914b" />
 
 	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/lightgallery/2.7.2/css/lightgallery-bundle.min.css" integrity="sha512-nUqPe0+ak577sKSMThGcKJauRI7ENhKC2FQAOOmdyCYSrUh0GnwLsZNYqwilpMmplN+3nO3zso8CWUgu33BDag==" crossorigin="anonymous" referrerpolicy="no-referrer" />
 
