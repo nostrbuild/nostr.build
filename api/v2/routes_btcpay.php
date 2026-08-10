@@ -542,12 +542,19 @@ $app->group('/internal/account', function (RouteCollectorProxy $group) {
       // version (legal_version = current, legal_emailed_version NULL) must NOT
       // match — and neither should legacy rows that never accepted (NULL), which
       // also dodges a mass blast on the first run after a version bump.
+      // Paying/active accounts ONLY: free signups (acctlevel 0) and expired
+      // plans are excluded — never-paid accounts routinely carry disposable
+      // addresses that bounce. "Not expired" mirrors isExpired(): plan window
+      // in the future, with staff (89/99) active regardless of plan dates.
       $stmt = $link->prepare(
         "SELECT uuid_id, email
            FROM users
           WHERE email IS NOT NULL
             AND email_verified = 1
             AND (email_notify_account IS NULL OR email_notify_account = 1)
+            AND acctlevel > 0
+            AND (acctlevel IN (89, 99)
+                 OR (plan_until_date IS NOT NULL AND plan_until_date > NOW()))
             AND legal_version IS NOT NULL
             AND legal_version <> ?
             AND (legal_emailed_version IS NULL OR legal_emailed_version <> ?)
