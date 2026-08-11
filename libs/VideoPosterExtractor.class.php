@@ -41,15 +41,18 @@ class VideoPosterExtractor
    *
    * @param string $videoInput     Local file path OR presigned HTTP URL
    * @param string $videoFilename  The video's filename in storage (e.g. "abc123.mp4")
-   * @param int    $fileId         Database ID of the video record in users_images
-   * @param string $userNpub       User's npub for R2 metadata
+   * @param int    $fileId         Database ID of the video record (users_images id
+   *                               on the paid path, uploads_data id on the free path)
+   * @param string $userNpub       User's npub for R2 metadata ('' for anonymous free uploads)
+   * @param bool   $paidAccount    Selects the tier bucket the poster lands in
    * @return bool True on success, false on failure
    */
   public function extractAndUpload(
     string $videoInput,
     string $videoFilename,
     int $fileId,
-    string $userNpub
+    string $userNpub,
+    bool $paidAccount = true
   ): bool {
     $tempDir = sys_get_temp_dir();
     $tempPrefix = generateUniqueFilename('poster_', $tempDir);
@@ -74,10 +77,15 @@ class VideoPosterExtractor
       $dimensions = $imageProcessor->getImageDimensions();
       $imageProcessor->optimiseImage();
 
-      // Step 4: Upload to R2
+      // Step 4: Upload to R2. The poster sits BESIDE the video in the same
+      // tier bucket (objects are stored flat, keyed by bare filename), so the
+      // CDN worker serves it at <video-url>/poster.jpg; the free video host
+      // 302s to a generic placeholder while the object is absent.
       $sha256 = hash_file('sha256', $bestFrame);
       $objectKey = "{$videoFilename}/poster.jpg";
-      $bucketSuffix = SiteConfig::getBucketSuffix('professional_account_video');
+      $bucketSuffix = SiteConfig::getBucketSuffix(
+        $paidAccount ? 'professional_account_video' : 'video'
+      );
       $bucket = $this->awsConfig['r2']['bucket'] . $bucketSuffix;
 
       $uploaded = storeToR2Bucket(
@@ -98,15 +106,19 @@ class VideoPosterExtractor
         return false;
       }
 
-      // Step 5: Update DB with poster dimensions
-      try {
-        $this->usersImages->update($fileId, [
-          'media_width' => $dimensions['width'],
-          'media_height' => $dimensions['height'],
-        ]);
-      } catch (\Throwable $e) {
-        // Poster is already uploaded, dimension update failure is non-critical
-        error_log("VideoPosterExtractor: DB update failed for ID {$fileId}: " . $e->getMessage());
+      // Step 5: Update DB with poster dimensions — PAID ONLY. On the free
+      // path $fileId is an uploads_data id; writing it into users_images
+      // would update an unrelated paid user's row.
+      if ($paidAccount) {
+        try {
+          $this->usersImages->update($fileId, [
+            'media_width' => $dimensions['width'],
+            'media_height' => $dimensions['height'],
+          ]);
+        } catch (\Throwable $e) {
+          // Poster is already uploaded, dimension update failure is non-critical
+          error_log("VideoPosterExtractor: DB update failed for ID {$fileId}: " . $e->getMessage());
+        }
       }
 
       error_log("VideoPosterExtractor: poster extracted and uploaded for {$videoFilename}");

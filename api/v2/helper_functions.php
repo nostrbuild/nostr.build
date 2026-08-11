@@ -283,6 +283,12 @@ function createNip96SuccessResponse(array $data, string $message, ?string $proce
 
   if (isset($data['thumbnail'])) {
     $nip94_event['tags'][] = ["thumb", $data['thumbnail']];
+    // Videos also get a NIP-94 `image` tag: their thumbnail IS the extracted
+    // poster frame (nostr.build#99), and clients building NIP-92 imeta
+    // commonly read `image` for the preview rather than `thumb`.
+    if (($data['media_type'] ?? '') === 'video') {
+      $nip94_event['tags'][] = ["image", $data['thumbnail']];
+    }
   }
 
   $metadata = [];

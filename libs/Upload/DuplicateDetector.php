@@ -175,6 +175,18 @@ class DuplicateDetector
 
             $fileData['url'] = $this->urlGenerator->mediaURL($data['filename'], $data['type']);
             $fileData['thumbnail'] = $this->urlGenerator->thumbnailURL($data['filename'], $data['type']);
+            // Video duplicates: point `thumbnail` at the poster the FIRST
+            // upload of this file generated (nostr.build#99). Mime check, not
+            // $data['type'] — audio rows are stored with type 'video' too. The
+            // free video host 302s a missing poster (pre-feature uploads) to a
+            // generic placeholder, so the URL always renders.
+            if (str_starts_with((string) $fileS3Metadata->get('ContentType'), 'video/')) {
+                $fileData['thumbnail'] = $fileData['url'] . '/poster.jpg';
+                // Lets createNip96SuccessResponse emit the NIP-94 `image` tag
+                // for the duplicate too (the fresh-upload path sets this from
+                // the detected file type).
+                $fileData['media_type'] = 'video';
+            }
             $fileData['responsive'] = $this->urlGenerator->responsiveURLs($data['filename'], $data['type']);
             $decodedMetadata = json_decode((string)($data['metadata'] ?? ''), true);
             $fileData['metadata'] = is_array($decodedMetadata) ? $decodedMetadata : [];

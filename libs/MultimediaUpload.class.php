@@ -572,29 +572,41 @@ class MultimediaUpload
                     throw new Exception('Upload to S3 failed');
                 }
 
-                // Auto-extract video poster for pro uploads (best-effort, never fails the upload)
-                if ($this->pro && $fileType['type'] === 'video' && !empty($this->awsConfig)) {
+                // Auto-extract video poster (best-effort, never fails the
+                // upload). BOTH tiers since nostr.build#99: the poster lands
+                // beside the video as <file>/poster.jpg in the tier's -av
+                // bucket, where the CDN already serves <video-url>/poster.jpg.
+                $posterOk = false;
+                if ($fileType['type'] === 'video' && !empty($this->awsConfig)) {
                     try {
                         require_once __DIR__ . '/VideoPosterExtractor.class.php';
                         $posterExtractor = new VideoPosterExtractor($this->awsConfig, $this->usersImages);
-                        $posterExtractor->extractAndUpload(
+                        $posterOk = $posterExtractor->extractAndUpload(
                             $this->file['tmp_name'],
                             $newFileName,
                             $insert_id,
-                            $this->userNpub
+                            $this->userNpub,
+                            $this->pro
                         );
                     } catch (\Throwable $e) {
                         error_log("Auto poster extraction failed: " . $e->getMessage());
                     }
                 }
 
-                // Build response
+                // Build response. For videos with a freshly extracted poster,
+                // `thumbnail` is the REAL poster frame instead of
+                // thumbnailURL's video-type fallback (which is just the video
+                // URL itself — useless as a NIP-94 `thumb`, nostr.build#99).
+                // Extraction is synchronous above, so the URL is live by now.
+                $thumbnailUrl = $posterOk
+                    ? $this->urlGenerator->mediaURL($newFileName, $fileType['type']) . '/poster.jpg'
+                    : $this->urlGenerator->thumbnailURL($newFileName, $fileType['type']);
                 $this->uploadedFiles[] = [
                     'id' => $fileData['insert_id'] ?? 0,
                     'input_name' => $this->file['input_name'],
                     'name' => $newFileName,
                     'url' => $this->urlGenerator->mediaURL($newFileName, $fileType['type']),
-                    'thumbnail' => $this->urlGenerator->thumbnailURL($newFileName, $fileType['type']),
+                    'thumbnail' => $thumbnailUrl,
                     'responsive' => $this->urlGenerator->responsiveURLs($newFileName, $fileType['type']),
                     'blurhash' => $fileData['blurhash'] ?? '',
                     'sha256' => $transformedFileSha256,
