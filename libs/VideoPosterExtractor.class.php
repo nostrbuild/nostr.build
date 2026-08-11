@@ -16,7 +16,7 @@ class VideoPosterExtractor
 {
   private string $ffmpegPath = '/usr/local/bin/ffmpeg';
   private array $awsConfig;
-  private UsersImages $usersImages;
+  private ?UsersImages $usersImages;
 
   /** Minimum mean brightness (fraction of quantum) to consider a frame non-black. */
   const BLACK_THRESHOLD = 0.04;
@@ -27,7 +27,9 @@ class VideoPosterExtractor
   /** ffmpeg timeout in seconds. */
   const TIMEOUT = 30;
 
-  public function __construct(array $awsConfig, UsersImages $usersImages)
+  // $usersImages is null on the free path (MultimediaUpload only builds it
+  // for pro); it is only used by the paid-only Step 5 dimension write.
+  public function __construct(array $awsConfig, ?UsersImages $usersImages = null)
   {
     $this->awsConfig = $awsConfig;
     $this->usersImages = $usersImages;
@@ -109,7 +111,7 @@ class VideoPosterExtractor
       // Step 5: Update DB with poster dimensions — PAID ONLY. On the free
       // path $fileId is an uploads_data id; writing it into users_images
       // would update an unrelated paid user's row.
-      if ($paidAccount) {
+      if ($paidAccount && $this->usersImages !== null) {
         try {
           $this->usersImages->update($fileId, [
             'media_width' => $dimensions['width'],
