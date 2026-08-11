@@ -145,6 +145,13 @@ class UploadPersistence
       ? json_decode($uppyMetadata['folderName']) ?? ''
       : null;
     $folderName = $folderName ?? $defaultFolderName;
+    // The magic Home name (any locale's label) is the virtual root (folder_id
+    // stays NULL) — never create a real folder row for it (nostr.build#101).
+    // Clients normally send '' for Home, but the name can arrive via API
+    // metadata or default_folder.
+    if (isHomeFolderName($folderName)) {
+      $folderName = '';
+    }
 
     if (
       (!empty($uppyMetadata['folderHierarchy']) &&
@@ -157,9 +164,11 @@ class UploadPersistence
       // the file in a folder belonging to a different account whenever the two
       // identities disagreed, and for an npub-less email account resolved to a
       // NULL owner — minting a fresh ownerless folder on every upload.
-      if ($this->usersImagesFolders !== null && $this->userUuid !== '') {
+      // An empty (or home-normalized) name means Home: skip resolution instead
+      // of feeding '' to findFolderByNameOrCreate, which throws.
+      if ($this->usersImagesFolders !== null && $this->userUuid !== '' && !empty($folderName)) {
         try {
-          $folderId = $this->usersImagesFolders->findFolderByNameOrCreate($this->userUuid, $folderName ?? '');
+          $folderId = $this->usersImagesFolders->findFolderByNameOrCreate($this->userUuid, $folderName);
         } catch (\Throwable $e) {
           error_log($e->getMessage());
         }

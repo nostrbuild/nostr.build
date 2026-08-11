@@ -103,9 +103,18 @@ function dashboardListFiles(string $folderName, $link, $start = null, $limit = n
   $folders = new UsersImagesFolders($link);
   $images = new UsersImages($link);
 
-  $folderId = ($folderName !== "Home: Main Folder")
-    ? $folders->findFolderByNameOrCreate($_SESSION['useruuid'], $folderName)
-    : null;
+  // '' and the magic name are the virtual Home (folder_id IS NULL). Any other
+  // name is LOOKED UP, never created: this is a read path, and the old
+  // findFolderByNameOrCreate call here resurrected just-deleted folders when
+  // the client's file-list refetch raced the delete (nostr.build#100).
+  $folderId = null;
+  if ($folderName !== '' && $folderName !== "Home: Main Folder") {
+    $folderId = $folders->findFolderIdByName($_SESSION['useruuid'], $folderName);
+    if ($folderId === null) {
+      // Folder doesn't exist (deleted or never created): no files.
+      return [];
+    }
+  }
 
   $imgArray = $images->getFiles($_SESSION['useruuid'], $folderId, $start, $limit, $filter);
 

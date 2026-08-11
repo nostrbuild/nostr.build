@@ -184,6 +184,29 @@ class UsersImagesFolders extends DatabaseTable
     return $result->fetch_assoc();
   }
 
+  /**
+   * Look up a folder id by name WITHOUT creating it. Read paths (file listing)
+   * must use this: creating on read resurrected folders the user had just
+   * deleted, because the client's file-list refetch fired against the deleted
+   * folder's name (nostr.build#100).
+   */
+  public function findFolderIdByName(string $owner, string $folder_name): ?int
+  {
+    if ($folder_name === '') {
+      return null;
+    }
+    $userUuid = resolveOwnerUuid($this->db, $owner);
+    if ($userUuid === null || $userUuid === '') {
+      return null;
+    }
+    $stmt = $this->db->prepare("SELECT id FROM {$this->tableName} WHERE folder = ? AND user_uuid = ? LIMIT 1");
+    $stmt->bind_param("ss", $folder_name, $userUuid);
+    $stmt->execute();
+    $data = $stmt->get_result()->fetch_assoc();
+    $stmt->close();
+    return $data ? (int) $data['id'] : null;
+  }
+
   public function findFolderByNameOrCreate(string $owner, string $folder_name, ?int $parent_id = null): int
   {
     if (empty($folder_name)) {

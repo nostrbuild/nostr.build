@@ -914,6 +914,16 @@ $app->group('/accounts', function (RouteCollectorProxy $group) {
           ->withHeader('Content-Type', 'application/json')
           ->withStatus(400);
       }
+      // The magic Home name identifies the virtual root everywhere (list SQL,
+      // file listing, client cache keys), and its localized labels render
+      // identically to Home in their locale. A real folder with any of these
+      // names is a second "Home" (nostr.build#101) — reserve them all.
+      if (isHomeFolderName($folderName)) {
+        $response->getBody()->write(json_encode(['error' => 'reserved-name']));
+        return $response
+          ->withHeader('Content-Type', 'application/json')
+          ->withStatus(400);
+      }
 
       $prevUuid = $_SESSION['useruuid'] ?? null;
       $_SESSION['useruuid'] = $uuid;
@@ -1108,6 +1118,12 @@ $app->group('/accounts', function (RouteCollectorProxy $group) {
       $pfpUrl = isset($body['pfpUrl']) ? (string) $body['pfpUrl'] : null;
       $wallet = isset($body['wallet']) ? (string) $body['wallet'] : null;
       $defaultFolder = isset($body['defaultFolder']) ? (string) $body['defaultFolder'] : '';
+      // The magic Home name (any locale's label) is the virtual root, not a
+      // folder; store '' so the upload paths never materialize a real
+      // Home-named row (nostr.build#101).
+      if (isHomeFolderName($defaultFolder)) {
+        $defaultFolder = '';
+      }
       // Accept JSON true/false OR string 'true'/'false' for parity with the
       // legacy multipart endpoint.
       $rawNl = $body['allowNostrLogin'] ?? false;

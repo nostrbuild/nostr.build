@@ -829,6 +829,15 @@ class Account
     ?int $email_notify_account = null,
     ?int $email_notify_marketing = null
   ) {
+    // The magic Home name (any locale's label — see isHomeFolderName) is the
+    // virtual root (folder_id IS NULL), never a storable default folder:
+    // upload paths treat '' as Home, and a stored Home name materialized a
+    // real second "Home" folder on every API/Blossom upload (nostr.build#101).
+    // Guard here so EVERY writer of default_folder is normalized, not just
+    // the v2 profile route.
+    if (isHomeFolderName($default_folder)) {
+      $default_folder = '';
+    }
     $updates = [
       'password' => $password,
       'pbkdf2_password' => $pbkdf2_password,

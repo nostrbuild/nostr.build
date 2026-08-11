@@ -260,7 +260,11 @@ class MultimediaUpload
 
     public function setDefaultFolderName(string $folderName): self
     {
-        $this->defaultFolderName = $folderName;
+        // The magic Home name (any locale's label) is the virtual root
+        // (folder_id IS NULL), not a real folder. A default_folder set to it
+        // made every API/Blossom upload materialize a real Home-named row — a
+        // second "Home" in the dashboard (nostr.build#101). Normalize to ''.
+        $this->defaultFolderName = isHomeFolderName($folderName) ? '' : $folderName;
         return $this;
     }
 

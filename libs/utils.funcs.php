@@ -503,3 +503,38 @@ function resolveOwnerUuid(mysqli $link, string $owner): ?string
   }
   return $owner;
 }
+
+/**
+ * Reserved "virtual Home" folder names. 'Home: Main Folder' is the wire
+ * identity of the folder_id-IS-NULL bucket; the rest are the account app's
+ * localized display labels for it (messages/<locale>.json, key
+ * files_homeFolderName — keep this list in sync). A REAL folder row named any
+ * of these renders indistinguishably from the virtual Home in that locale, so
+ * folder creation and default_folder must treat them all as "Home", never as
+ * a creatable folder name (nostr.build#101).
+ *
+ * Accepts mixed because two callers feed it raw json_decode() output.
+ */
+function isHomeFolderName(mixed $name): bool
+{
+  if (!is_string($name)) {
+    return false;
+  }
+  static $reserved = [
+    'Home: Main Folder',            // en (wire identity)
+    'Start: Hauptordner',           // de
+    'Inicio: carpeta principal',    // es
+    'Accueil : dossier principal',  // fr
+    'Beranda: Folder Utama',        // id
+    'Home: cartella principale',    // it
+    'ホーム：メインフォルダー',       // ja
+    '홈: 메인 폴더',                 // ko
+    'Início: pasta principal',      // pt
+    'Главная: основная папка',      // ru
+    'หน้าหลัก: โฟลเดอร์หลัก',          // th
+    'Ana Sayfa: Ana Klasör',        // tr
+    'Trang chủ: Thư mục chính',     // vi
+    '主目录：主文件夹',              // zh
+  ];
+  return in_array($name, $reserved, true);
+}

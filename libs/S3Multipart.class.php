@@ -730,8 +730,10 @@ class S3Multipart
 
       // Find or create folder if we have folder information. Folders are keyed by
       // the stable uuid (findFolderByNameOrCreate resolves owner→uuid), so the
-      // uuid works for npub and email-only accounts alike.
-      if (!empty($folder_name)) {
+      // uuid works for npub and email-only accounts alike. The magic Home name
+      // (any locale's label) is the virtual root — never a real folder row
+      // (nostr.build#101).
+      if (!empty($folder_name) && !isHomeFolderName($folder_name)) {
         try {
           $folder_id = $this->usersImagesFolders->findFolderByNameOrCreate($userUuid, $folder_name);
         } catch (Exception $e) {
