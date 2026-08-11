@@ -98,10 +98,22 @@ function buildFileListEntry(array $row): array
   ];
 }
 
+// List files by folder ID — the modern path. The app resolves the id from its
+// cached folder list and sends it directly; no name lookup happens here at
+// all. The wire sentinel 0 means the virtual Home (folder_id IS NULL — a real
+// folder id is never 0), translated here so every caller shares one contract.
+// getFiles scopes by user_uuid AND folder_id, so a foreign or stale id simply
+// returns no rows.
+function dashboardListFilesById(int $folderId, $link, $start = null, $limit = null, $filter = null): array
+{
+  $images = new UsersImages($link);
+  $imgArray = $images->getFiles($_SESSION['useruuid'], $folderId === 0 ? null : $folderId, $start, $limit, $filter);
+  return array_map('buildFileListEntry', $imgArray);
+}
+
 function dashboardListFiles(string $folderName, $link, $start = null, $limit = null, $filter = null): array
 {
   $folders = new UsersImagesFolders($link);
-  $images = new UsersImages($link);
 
   // '' and the magic name are the virtual Home (folder_id IS NULL). Any other
   // name is LOOKED UP, never created: this is a read path, and the old
@@ -116,9 +128,7 @@ function dashboardListFiles(string $folderName, $link, $start = null, $limit = n
     }
   }
 
-  $imgArray = $images->getFiles($_SESSION['useruuid'], $folderId, $start, $limit, $filter);
-
-  return array_map('buildFileListEntry', $imgArray);
+  return dashboardListFilesById($folderId ?? 0, $link, $start, $limit, $filter);
 }
 
 // Files the logged-in user owns that the DOWNGRADE TARGET tier can't host, across

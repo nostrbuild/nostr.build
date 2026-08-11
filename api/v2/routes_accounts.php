@@ -512,7 +512,13 @@ $app->group('/accounts', function (RouteCollectorProxy $group) {
 
       $params = $request->getQueryParams();
       $folder = $params['folder'] ?? null;
-      if (empty($folder)) {
+      // Preferred: list by folder id (0 = Home), resolved client-side from the
+      // cached folder list — no name lookup server-side. `folder` (a name)
+      // remains the fallback for clients that don't send the id.
+      $folderIdParam = ctype_digit((string) ($params['folderId'] ?? ''))
+        ? intval($params['folderId'])
+        : null;
+      if ($folderIdParam === null && empty($folder)) {
         $response->getBody()->write(json_encode(['error' => 'missing-folder']));
         return $response
           ->withHeader('Content-Type', 'application/json')
@@ -534,7 +540,9 @@ $app->group('/accounts', function (RouteCollectorProxy $group) {
       $prevUuid = $_SESSION['useruuid'] ?? null;
       $_SESSION['useruuid'] = $uuid;
       try {
-        $files = dashboardListFiles((string) $folder, $link, $start, $limit, $filter);
+        $files = $folderIdParam !== null
+          ? dashboardListFilesById($folderIdParam, $link, $start, $limit, $filter)
+          : dashboardListFiles((string) $folder, $link, $start, $limit, $filter);
       } finally {
         if ($prevUuid === null) {
           unset($_SESSION['useruuid']);
