@@ -367,8 +367,8 @@ function getUniqueNanoId(): string
 {
   $nano = new Client();
   $alphabet = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
-  // 16 characters long ID
-  return $nano->formattedId(alphabet: $alphabet, size: 16);
+  // 22 characters × log2(62) ≈ 131 bits of entropy
+  return $nano->formattedId(alphabet: $alphabet, size: 22);
 }
 
 /**
