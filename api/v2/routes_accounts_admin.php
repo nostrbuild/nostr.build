@@ -1667,6 +1667,41 @@ $app->group('/accounts/admin/csam', function (RouteCollectorProxy $group) {
 // is empty on HMAC-proxied calls; ProxiedAdminMiddleware is the canonical gate
 // for every action here, including ban/csam (admin-only by construction).
 
+/**
+ * Build one moderation media row from an uploads_data record (keys: id,
+ * filename, type, usernpub, approval_status, upload_ts). URL mapping mirrors
+ * approve.php; unknown types return null (the caller skips them, as
+ * approve.php did). upload_ts is epoch seconds (UNIX_TIMESTAMP handles the
+ * session timezone); null when upload_date is NULL or the zero date
+ * (UNIX_TIMESTAMP returns 0 for '0000-00-00', which must not read as 1970 -
+ * the app treats old timestamps as "missed the VLM window").
+ */
+function aaModerationMediaRow(array $r): ?array
+{
+  $type = (string) $r['type'];
+  $filename = (string) $r['filename'];
+  [$urlBase, $thumbBase, $media] = match ($type) {
+    'picture' => [SiteConfig::getFullyQualifiedUrl('image'), SiteConfig::getThumbnailUrl('image'), 'image'],
+    'profile' => [SiteConfig::getFullyQualifiedUrl('profile_picture'), SiteConfig::getThumbnailUrl('profile_picture'), 'image'],
+    'video'   => [SiteConfig::getFullyQualifiedUrl('video'), SiteConfig::getThumbnailUrl('video'), 'video'],
+    default   => [null, null, null],
+  };
+  if ($urlBase === null) {
+    return null;
+  }
+  return [
+    'id' => (int) $r['id'],
+    'filename' => $filename,
+    'type' => $type,
+    'media' => $media,
+    'usernpub' => (string) $r['usernpub'],
+    'approval_status' => (string) $r['approval_status'],
+    'url' => $urlBase . $filename,
+    'thumb' => $thumbBase . $filename,
+    'upload_ts' => isset($r['upload_ts']) && (int) $r['upload_ts'] > 0 ? (int) $r['upload_ts'] : null,
+  ];
+}
+
 $app->group('/accounts/admin/moderation', function (RouteCollectorProxy $group) {
 
   /**
@@ -1727,36 +1762,74 @@ $app->group('/accounts/admin/moderation', function (RouteCollectorProxy $group) 
     $rs = $stmt->get_result();
     $rows = [];
     while ($r = $rs->fetch_assoc()) {
-      $type = (string) $r['type'];
-      $filename = (string) $r['filename'];
-      // URL mapping mirrors approve.php; unknown types are skipped there too.
-      [$urlBase, $thumbBase, $media] = match ($type) {
-        'picture' => [SiteConfig::getFullyQualifiedUrl('image'), SiteConfig::getThumbnailUrl('image'), 'image'],
-        'profile' => [SiteConfig::getFullyQualifiedUrl('profile_picture'), SiteConfig::getThumbnailUrl('profile_picture'), 'image'],
-        'video'   => [SiteConfig::getFullyQualifiedUrl('video'), SiteConfig::getThumbnailUrl('video'), 'video'],
-        default   => [null, null, null],
-      };
-      if ($urlBase === null) {
-        continue;
+      $row = aaModerationMediaRow($r);
+      if ($row !== null) {
+        $rows[] = $row;
       }
-      $rows[] = [
-        'id' => (int) $r['id'],
-        'filename' => $filename,
-        'type' => $type,
-        'media' => $media,
-        'usernpub' => (string) $r['usernpub'],
-        'approval_status' => (string) $r['approval_status'],
-        'url' => $urlBase . $filename,
-        'thumb' => $thumbBase . $filename,
-        // Epoch seconds (UNIX_TIMESTAMP handles the session timezone); null when
-        // upload_date is NULL/zero. The admin app uses this to flag uploads past
-        // the VLM processing window with no VLM record.
-        'upload_ts' => isset($r['upload_ts']) ? (int) $r['upload_ts'] : null,
-      ];
     }
     $stmt->close();
 
     return aaJson($response, ['rows' => $rows, 'total' => $total, 'count' => count($rows)]);
+  });
+
+  /**
+   * GET /accounts/admin/moderation/browse
+   * Browse already-classified uploads by status + kind, newest first
+   * (?status=approved|adult, ?kind=img|gif|vid, ?page=, ?limit= ≤204). Mirrors
+   * the public freeview/adultview/viewall queries. Deliberately NO COUNT on
+   * this ~3M-row table; hasMore comes from fetching limit+1 rows.
+   */
+  $group->get('/browse', function (Request $request, Response $response) {
+    global $link;
+    $q = $request->getQueryParams();
+
+    $status = (string) ($q['status'] ?? '');
+    if (!in_array($status, ['approved', 'adult'], true)) {
+      return aaError($response, 'Invalid status, expecting approved|adult', 400);
+    }
+    $kind = (string) ($q['kind'] ?? 'img');
+    if (!in_array($kind, ['img', 'gif', 'vid'], true)) {
+      return aaError($response, 'Invalid kind, expecting img|gif|vid', 400);
+    }
+    // Server-decided page size (vid rows are heavy); explicit ?limit= still
+    // wins within the cap. Page is clamped so $page * $limit can never
+    // overflow int64 into a float (bind_param 'i' would garble it).
+    $limit = max(1, min(204, (int) ($q['limit'] ?? ($kind === 'vid' ? 60 : 204))));
+    $page  = max(0, min(1000000, (int) ($q['page'] ?? 0)));
+    $start = $page * $limit;
+    $fetch = $limit + 1;
+
+    $kindWhere = match ($kind) {
+      'img' => "type = 'picture' AND file_extension IN ('jpg','jpeg','png','webp')",
+      'gif' => "type = 'picture' AND file_extension = 'gif'",
+      'vid' => "type = 'video'",
+    };
+    $stmt = $link->prepare(
+      "SELECT id, filename, type, usernpub, approval_status, UNIX_TIMESTAMP(upload_date) AS upload_ts
+         FROM uploads_data
+        WHERE approval_status = ? AND $kindWhere
+        ORDER BY upload_date DESC, id DESC
+        LIMIT ? OFFSET ?"
+    );
+    $stmt->bind_param('sii', $status, $fetch, $start);
+    $stmt->execute();
+    $rs = $stmt->get_result();
+    $raw = [];
+    while ($r = $rs->fetch_assoc()) {
+      $raw[] = $r;
+    }
+    $stmt->close();
+
+    $hasMore = count($raw) > $limit;
+    $rows = [];
+    foreach (array_slice($raw, 0, $limit) as $r) {
+      $row = aaModerationMediaRow($r);
+      if ($row !== null) {
+        $rows[] = $row;
+      }
+    }
+
+    return aaJson($response, ['rows' => $rows, 'hasMore' => $hasMore]);
   });
 
   /**
