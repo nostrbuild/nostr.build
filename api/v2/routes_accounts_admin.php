@@ -1885,7 +1885,23 @@ $app->group('/accounts/admin/moderation', function (RouteCollectorProxy $group) 
     $stmt = $link->prepare("UPDATE uploads_data SET approval_status = ? WHERE id = ?");
     $stmt->bind_param('si', $status, $id);
     $stmt->execute();
+    $affected = $stmt->affected_rows;
     $stmt->close();
+
+    if ($affected === 0) {
+      // affected_rows is 0 for BOTH "row missing" and "same-value no-op";
+      // only the former is an error. Rejected uploads are deleted outright
+      // (row and all), so reclassifying one must not report success on thin
+      // air - the UI would flip the badge on a file that no longer exists.
+      $chk = $link->prepare('SELECT 1 FROM uploads_data WHERE id = ?');
+      $chk->bind_param('i', $id);
+      $chk->execute();
+      $exists = $chk->get_result()->fetch_row() !== null;
+      $chk->close();
+      if (!$exists) {
+        return aaError($response, 'Upload not found (already deleted)', 404);
+      }
+    }
 
     return aaJson($response, ['success' => true, 'id' => $id, 'status' => $status]);
   });
