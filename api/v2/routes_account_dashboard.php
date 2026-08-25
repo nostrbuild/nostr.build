@@ -111,6 +111,19 @@ function dashboardListFilesById(int $folderId, $link, $start = null, $limit = nu
   return array_map('buildFileListEntry', $imgArray);
 }
 
+// Single-file lookup by id, scoped to the caller (getFiles/getFilesById scope
+// by folder; this scopes by ui.id + user_uuid instead: the shape a route that
+// resolves one :fileId, like the Bookshelf EPUB streamer, needs). Returns null
+// when the row doesn't exist or isn't owned by this user, never someone else's
+// row; same the-uuid-column-is-the-only-authority contract as getFiles.
+function dashboardGetFile(int $fileId, $link): ?array
+{
+  $images = new UsersImages($link);
+  $row = $images->getFile($_SESSION['useruuid'], $fileId);
+  if (empty($row)) return null;
+  return buildFileListEntry($row);
+}
+
 function dashboardListFiles(string $folderName, $link, $start = null, $limit = null, $filter = null): array
 {
   $folders = new UsersImagesFolders($link);

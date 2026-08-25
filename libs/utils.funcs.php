@@ -13,9 +13,9 @@ const FILE_TYPE_EXTENSIONS = [
   'audio' => ['mp3', 'ogg', 'wav', 'weba', 'aac', 'flac', 'aif', 'wma', 'm4a', 'm4b', 'm4p', 'm4r', 'mp2', 'mpa', 'mpga', 'mp4a', 'mpga', 'mpg', 'mpv2', 'mp2v', 'mpe', 'm2a', 'm2v', 'm2s', 'm2t', 'm2ts', 'm2v', 'm3a'],
   'video' => ['mp4', 'webm', 'ogv', 'avi', 'wmv', 'mov', 'mpeg', '3gp', '3g2', 'flv', 'm4v', 'mkv', 'mpg', 'm2v', 'm4p', 'mp2', 'mpa', 'mpe', 'mpv', 'm2ts', 'mts', 'ts', 'mxf', 'asf', 'rm', 'rmvb', 'vob', 'f4v', 'm2v', 'm2ts', 'mts', 'ts', 'mxf', 'asf', 'rm', 'rmvb', 'vob', 'f4v'],
   'archive' => ['zip', 'tar', 'gz', 'bz2', 'xz', 'lz', 'tar.gz', 'tar.bz', 'tar.xz'],
-  'document' => ['pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'odt', 'ods', 'odp', 'rtf'],
+  'document' => ['pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'odt', 'ods', 'odp', 'rtf', 'epub'],
   'text' => ['txt', 'html', 'css', 'js', 'json', 'xml', 'yaml', 'toml', 'md', 'tex', 'rst', 'adoc', 'org', 'texinfo', 'roff'],
-  'other' => ['svg', 'epub', 'mobi', 'psd'],
+  'other' => ['svg', 'mobi', 'psd'],
 ];
 
 // Assign file types
@@ -84,8 +84,8 @@ function getAllowedMimesArray(int $acctlevel = 0): array
     'image/jpm' => 'jpm', // JPEG 2000 Part 6 (Compound) image
     'image/jxr' => 'jxr', // JPEG XR image
     'image/pipeg' => 'jfif', // JPEG File Interchange Format (JFIF)
-    //'image/x-icon' => 'ico', // Icon format
-    //'image/vnd.microsoft.icon' => 'ico', // Microsoft Icon format
+    'image/x-icon' => 'ico', // Icon format
+    'image/vnd.microsoft.icon' => 'ico', // Microsoft Icon format
 
     // Audio
     'audio/mpeg' => 'mp3', // MP3 audio
@@ -141,6 +141,7 @@ function getAllowedMimesArray(int $acctlevel = 0): array
   $mimeTypesAddonDocs = [
     // Documents
     'application/pdf' => 'pdf', // Portable Document Format (PDF)
+    'application/epub+zip' => 'epub', // EPUB e-book
 
     // SVG, for now...
     'image/svg+xml' => 'svg', // SVG vector image
@@ -174,6 +175,21 @@ function detectFileExt($file, int $acctlevel = 0)
   finfo_close($finfo);
   // DEBUG
   error_log("\nMIME type: $mimeType\n");
+
+  // Older libmagic DBs sniff EPUB as application/zip. The EPUB OCF spec pins
+  // the archive's first entry: an uncompressed file literally named
+  // "mimetype" containing "application/epub+zip", so it sits at a fixed
+  // offset and a 64-byte read disambiguates without unzipping.
+  if ($mimeType === 'application/zip') {
+    $head = file_get_contents($file, false, null, 0, 64);
+    if (
+      $head !== false && strlen($head) >= 58 &&
+      substr($head, 30, 8) === 'mimetype' &&
+      substr($head, 38, 20) === 'application/epub+zip'
+    ) {
+      $mimeType = 'application/epub+zip';
+    }
+  }
 
   // Map MIME types to extensions and file types
   $mimeTypes = getAllowedMimesArray($acctlevel);

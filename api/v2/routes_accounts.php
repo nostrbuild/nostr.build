@@ -557,6 +557,46 @@ $app->group('/accounts', function (RouteCollectorProxy $group) {
         ->withStatus(200);
     });
 
+    // GET /api/v2/accounts/dashboard/files/{id}: single-file lookup by id, scoped
+    // to the caller. Backs the Bookshelf EPUB streamer's :fileId→file resolution
+    // (Worker needs url/mime/sha256 for one file without listing every folder).
+    // {id} is digits-only so it never shadows /files/downgrade-ineligible.
+    $sub->get('/files/{id:[0-9]+}', function (Request $request, Response $response, array $args) {
+      global $link;
+      $uuid = resolveIdentityUuid($request);
+      if ($uuid === '') {
+        $response->getBody()->write(json_encode(['error' => 'missing-identity']));
+        return $response
+          ->withHeader('Content-Type', 'application/json')
+          ->withStatus(400);
+      }
+
+      $fileId = intval($args['id']);
+      $prevUuid = $_SESSION['useruuid'] ?? null;
+      $_SESSION['useruuid'] = $uuid;
+      try {
+        $file = dashboardGetFile($fileId, $link);
+      } finally {
+        if ($prevUuid === null) {
+          unset($_SESSION['useruuid']);
+        } else {
+          $_SESSION['useruuid'] = $prevUuid;
+        }
+      }
+
+      if ($file === null) {
+        $response->getBody()->write(json_encode(['error' => 'not-found']));
+        return $response
+          ->withHeader('Content-Type', 'application/json')
+          ->withStatus(404);
+      }
+
+      $response->getBody()->write(json_encode($file));
+      return $response
+        ->withHeader('Content-Type', 'application/json')
+        ->withStatus(200);
+    });
+
     // GET /api/v2/accounts/dashboard/files/downgrade-ineligible?targetLevel=N
     // Files the logged-in user owns that the DOWNGRADE TARGET tier can't host,
     // across ALL folders: wrong MIME for the tier (the SAME getAllowedMimesArray

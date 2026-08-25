@@ -85,7 +85,7 @@ class UsersImages extends DatabaseTable
       'videos' => "AND ui.mime_type LIKE 'video%'",
       'audio' => "AND ui.mime_type LIKE 'audio%'",
       'gifs' => "AND ui.mime_type = 'image/gif'",
-      'documents' => "AND ui.mime_type = 'application/pdf'",
+      'documents' => "AND ui.mime_type IN ('application/pdf', 'application/epub+zip')",
       'archives' => "AND ui.mime_type IN ('application/x-tar', 'application/zip')",
       'others' => "AND ui.mime_type IN ('image/svg+xml')",
     ];
@@ -148,7 +148,10 @@ class UsersImages extends DatabaseTable
     }
   }
 
-  public function getFile(string $owner, int $fileId): array
+  // Nullable: fetch_assoc() returns null when no row matches (id not found, or
+  // the row isn't this user's), and a strict `: array` return turned every such
+  // miss into an uncaught TypeError -> 500 instead of the caller's 404.
+  public function getFile(string $owner, int $fileId): ?array
   {
     $userUuid = resolveOwnerUuid($this->db, $owner);
     $sql = "
