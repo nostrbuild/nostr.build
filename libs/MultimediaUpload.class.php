@@ -593,11 +593,31 @@ class MultimediaUpload
                     }
                 }
 
-                // Build response. For videos with a freshly extracted poster,
-                // `thumbnail` is the REAL poster frame instead of
-                // thumbnailURL's video-type fallback (which is just the video
-                // URL itself — useless as a NIP-94 `thumb`, nostr.build#99).
-                // Extraction is synchronous above, so the URL is live by now.
+                // Auto-extract EPUB cover (best-effort, never fails the
+                // upload). Documents are Professional+ only, so there is no
+                // free-tier branch to consider. Mirrors the video poster
+                // convention exactly: the cover lands beside the document as
+                // <file>/poster.jpg in the professional_account_document
+                // bucket ('-pro-data').
+                if ($fileType['type'] === 'document' && $fileType['mime'] === 'application/epub+zip' && !empty($this->awsConfig)) {
+                    try {
+                        require_once __DIR__ . '/EpubCoverExtractor.class.php';
+                        $coverExtractor = new EpubCoverExtractor($this->awsConfig);
+                        $posterOk = $coverExtractor->extractAndUpload(
+                            $this->file['tmp_name'],
+                            $newFileName,
+                            $this->userNpub
+                        );
+                    } catch (\Throwable $e) {
+                        error_log("Auto EPUB cover extraction failed: " . $e->getMessage());
+                    }
+                }
+
+                // Build response. For videos/EPUBs with a freshly extracted
+                // poster/cover, `thumbnail` is the REAL frame/cover instead of
+                // thumbnailURL's fallback (which is just the file URL itself,
+                // useless as a NIP-94 `thumb`, nostr.build#99). Extraction is
+                // synchronous above, so the URL is live by now.
                 $thumbnailUrl = $posterOk
                     ? $this->urlGenerator->mediaURL($newFileName, $fileType['type']) . '/poster.jpg'
                     : $this->urlGenerator->thumbnailURL($newFileName, $fileType['type']);

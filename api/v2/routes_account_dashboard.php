@@ -56,6 +56,13 @@ function buildFileListEntry(array $row): array
 
   $image_url = $base_url . $filename;
   $thumb_url = SiteConfig::getThumbnailUrl($professional_type) . $filename;
+  // EPUBs: the upload pipeline extracts the book's cover the same way a
+  // video poster is extracted (EpubCoverExtractor), storing it beside the
+  // file at "<filename>/poster.jpg" in the document bucket. No on-the-fly
+  // thumbnail transform exists for documents, so this is a plain URL, not
+  // getThumbnailUrl(); mirrors src/lib/media/video-poster.ts's convention
+  // on the account.nostr.build client.
+  $isEpub = $row['mime_type'] === 'application/epub+zip';
 
   $resolutionToWidth = [
     "240p"  => "426",
@@ -77,7 +84,7 @@ function buildFileListEntry(array $row): array
     "flag" => ($row['flag'] === '1') ? 1 : 0,
     "name" => $filename,
     "url" => $image_url,
-    "thumb" => $type === 'image' ? $thumb_url : null,
+    "thumb" => $type === 'image' ? $thumb_url : ($isEpub ? $image_url . '/poster.jpg' : null),
     "responsive" => $responsive,
     "mime" => $row['mime_type'],
     "size" => $row['file_size'],
