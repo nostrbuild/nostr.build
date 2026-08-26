@@ -29,9 +29,23 @@ class EpubCoverExtractor
    *  a \Throwable, so no catch block downstream can save us from it). */
   const MAX_XML_BYTES = 1 * 1024 * 1024;
 
+  /** Cap on the SVG-wrapper cover entry. Standard Ebooks (and other
+   *  publishers using the same convention) declare the cover as an SVG
+   *  document that embeds the real raster image as a base64 data URI, so
+   *  this entry is the base64-inflated raster plus SVG markup, larger than
+   *  MAX_XML_BYTES allows but still bounded. Same statIndex-before-read cap
+   *  discipline as MAX_XML_BYTES, just a bigger ceiling. */
+  const MAX_SVG_BYTES = 12 * 1024 * 1024;
+
   /** Manifest media-types accepted for a cover image. Anything else
-   *  (including SVG) is rejected before its bytes ever reach Imagick. */
+   *  (including SVG) is rejected before its bytes ever reach Imagick. SVG
+   *  is handled separately, as a wrapper to unwrap, never as bytes handed
+   *  to Imagick directly. */
   const ALLOWED_MEDIA_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+
+  /** data: URI prefixes recognized inside an SVG wrapper's <image> element,
+   *  mapped to the sniffed format sniffImageFormat() must confirm. */
+  const SVG_DATA_URI_PATTERN = '/data:image\/(jpeg|png|webp|gif);base64,([A-Za-z0-9+\/=]+)/i';
 
   private array $awsConfig;
 
@@ -82,24 +96,28 @@ class EpubCoverExtractor
       }
       [$coverHref, $coverMediaType] = $cover;
 
-      // Reject anything the manifest didn't declare as one of the four
-      // raster formats we're willing to hand to Imagick, BEFORE we even
-      // look at the bytes (SVG in particular must never reach here: it is
-      // a legal EPUB cover media-type but Imagick's SVG delegate parses
-      // MSL/MVG payloads that are not safe on untrusted input).
+      $opfDir = dirname($opfPath);
+      $opfDir = ($opfDir === '.' || $opfDir === '/') ? '' : $opfDir . '/';
+
+      // Standard Ebooks (and other publishers using the same convention)
+      // declare the cover manifest item as image/svg+xml: an SVG wrapper
+      // whose single <image> embeds the real raster as a base64 data URI
+      // (or, less commonly, references a sibling raster file by relative
+      // href). Unwrap it as text; the SVG document itself is NEVER handed
+      // to Imagick, only the raster bytes found inside it, and those still
+      // go through the exact same sniff gate as every other path here.
+      if ($coverMediaType === 'image/svg+xml' || preg_match('/\.svg$/i', $coverHref) === 1) {
+        return self::extractFromSvgCover($zip, $opfDir, $coverHref);
+      }
+
+      // Reject anything else the manifest didn't declare as one of the
+      // four raster formats we're willing to hand to Imagick, BEFORE we
+      // even look at the bytes.
       if (!in_array($coverMediaType, self::ALLOWED_MEDIA_TYPES, true)) {
         return null;
       }
 
-      $opfDir = dirname($opfPath);
-      $opfDir = ($opfDir === '.' || $opfDir === '/') ? '' : $opfDir . '/';
-      $coverEntryName = self::normalizeZipPath($opfDir . rawurldecode($coverHref));
-
-      $index = $zip->locateName($coverEntryName);
-      if ($index === false) {
-        // Last-resort fallback for malformed hrefs: try the bare decoded href.
-        $index = $zip->locateName(rawurldecode($coverHref));
-      }
+      $index = self::locateEntry($zip, $opfDir, $coverHref);
       if ($index === false) {
         return null;
       }
@@ -156,6 +174,104 @@ class EpubCoverExtractor
     }
 
     return $bytes;
+  }
+
+  /**
+   * Resolve a (possibly relative, possibly percent-encoded) href against a
+   * base directory into a zip entry index, trying the normalized path
+   * first and falling back to the bare decoded href for malformed hrefs.
+   * Returns false when neither resolves to a real entry.
+   */
+  private static function locateEntry(\ZipArchive $zip, string $baseDir, string $href): int|false
+  {
+    $decodedHref = rawurldecode($href);
+    $entryName = self::normalizeZipPath($baseDir . $decodedHref);
+
+    $index = $zip->locateName($entryName);
+    if ($index === false) {
+      $index = $zip->locateName($decodedHref);
+    }
+    return $index;
+  }
+
+  /**
+   * Unwrap an SVG-wrapper cover (the Standard Ebooks convention): read the
+   * SVG as text, capped at MAX_SVG_BYTES via the same statIndex-before-read
+   * discipline used everywhere else, then pull the real raster out of it.
+   * Tries, in order:
+   *   1. A data:image/(jpeg|png|webp|gif);base64,... URI on an
+   *      xlink:href/href attribute (the common case: the raster is
+   *      embedded directly in the SVG).
+   *   2. A relative href pointing at a sibling raster file, resolved
+   *      against the SVG entry's own directory.
+   * Either way, the resulting bytes go through the same sniff gate as
+   * every other path (self::sniffImageFormat()); the SVG's own markup is
+   * never passed to Imagick, and neither is anything that fails the sniff.
+   */
+  private static function extractFromSvgCover(\ZipArchive $zip, string $opfDir, string $svgHref): ?string
+  {
+    $svgIndex = self::locateEntry($zip, $opfDir, $svgHref);
+    if ($svgIndex === false) {
+      return null;
+    }
+
+    $stat = $zip->statIndex($svgIndex);
+    if (!is_array($stat) || (int) $stat['size'] <= 0 || (int) $stat['size'] > self::MAX_SVG_BYTES) {
+      return null;
+    }
+
+    $svgText = $zip->getFromIndex($svgIndex);
+    if (!is_string($svgText) || $svgText === '') {
+      return null;
+    }
+
+    // Case 1: embedded base64 data URI.
+    if (preg_match(self::SVG_DATA_URI_PATTERN, $svgText, $m) === 1) {
+      $decoded = base64_decode($m[2], true);
+      if ($decoded === false || $decoded === '' || strlen($decoded) > self::MAX_COVER_BYTES) {
+        return null;
+      }
+      return self::sniffImageFormat($decoded) !== null ? $decoded : null;
+    }
+
+    // Case 2: a relative href to a sibling raster file, resolved against
+    // the SVG's own directory (not the OPF's), since that is what the
+    // href inside the SVG document is relative to.
+    if (preg_match_all('/(?:xlink:href|href)\s*=\s*"([^"]+)"/i', $svgText, $mAll) > 0) {
+      $svgStatName = $stat['name'] ?? '';
+      $svgDir = dirname((string) $svgStatName);
+      $svgDir = ($svgDir === '.' || $svgDir === '/') ? '' : $svgDir . '/';
+
+      foreach ($mAll[1] as $candidateHref) {
+        if ($candidateHref === '' || str_starts_with($candidateHref, 'data:') || str_starts_with($candidateHref, '#')) {
+          continue;
+        }
+        if (preg_match('/\.(jpe?g|png|gif|webp)$/i', $candidateHref) !== 1) {
+          continue;
+        }
+
+        $rasterIndex = self::locateEntry($zip, $svgDir, $candidateHref);
+        if ($rasterIndex === false) {
+          continue;
+        }
+
+        $rasterStat = $zip->statIndex($rasterIndex);
+        if (!is_array($rasterStat) || (int) $rasterStat['size'] <= 0 || (int) $rasterStat['size'] > self::MAX_COVER_BYTES) {
+          continue;
+        }
+
+        $rasterBytes = $zip->getFromIndex($rasterIndex);
+        if (!is_string($rasterBytes) || $rasterBytes === '') {
+          continue;
+        }
+
+        if (self::sniffImageFormat($rasterBytes) !== null) {
+          return $rasterBytes;
+        }
+      }
+    }
+
+    return null;
   }
 
   /**
