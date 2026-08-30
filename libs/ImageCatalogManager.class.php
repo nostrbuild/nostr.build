@@ -336,7 +336,7 @@ class ImageCatalogManager
    * @param int $imageId The ID of the image to update.
    * @param string|null $title The new title of the image. If not provided, the title will remain unchanged.
    * @param string|null $description The new description of the image. If not provided, the description will remain unchanged.
-   * @return array An array containing the updated image ID.
+   * @return array An array containing the updated image ID, or [] when nothing was updated.
    */
   public function updateMediaMetadata(int $imageId, ?string $title = '', ?string $description = ''): array
   {
@@ -348,6 +348,14 @@ class ImageCatalogManager
       if (!$stmt->execute()) {
         throw new Exception("Failed to update metadata");
       }
+      // 0 affected rows means either the id isn't this user's (or doesn't
+      // exist) or the values written are identical to what was already stored.
+      // Only the first is a failure — a no-op rewrite still counts as updated —
+      // so disambiguate with one uuid-scoped existence probe. Without this, a
+      // foreign or bogus id reported success to every caller.
+      if ($stmt->affected_rows === 0 && !$this->mediaExists($imageId)) {
+        return [];
+      }
     } catch (Exception $e) {
       error_log("Error occurred while updating metadata: " . $e->getMessage());
       return [];
@@ -357,5 +365,23 @@ class ImageCatalogManager
       }
     }
     return [$imageId];
+  }
+
+  /**
+   * Does this image id exist AND belong to the calling user? Scoped by
+   * user_uuid, the only ownership authority, like every other query here.
+   *
+   * @param int $imageId
+   * @return bool
+   */
+  private function mediaExists(int $imageId): bool
+  {
+    $stmt = $this->link->prepare("SELECT 1 FROM users_images WHERE id = ? AND user_uuid = ? LIMIT 1");
+    $stmt->bind_param('is', $imageId, $this->userUuid);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $exists = $result ? $result->fetch_row() !== null : false;
+    $stmt->close();
+    return $exists;
   }
 }
