@@ -350,7 +350,7 @@ class ImageCatalogManager
       }
       // 0 affected rows means either the id isn't this user's (or doesn't
       // exist) or the values written are identical to what was already stored.
-      // Only the first is a failure — a no-op rewrite still counts as updated —
+      // Only the first is a failure (a no-op rewrite still counts as updated),
       // so disambiguate with one uuid-scoped existence probe. Without this, a
       // foreign or bogus id reported success to every caller.
       if ($stmt->affected_rows === 0 && !$this->mediaExists($imageId)) {
