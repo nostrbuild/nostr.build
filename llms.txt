@@ -1,0 +1,23 @@
+# nostr.build
+
+> Free and paid media hosting for the Nostr ecosystem: upload and share images,
+> video and audio, organize a library with folders, generate images with AI, and
+> let AI agents manage it all over MCP.
+
+## For AI agents
+
+- [Agent setup](https://account.nostr.build/agent-setup.md): connect to a user's
+  account over MCP (streamable HTTP with a bearer token), with the full tool list,
+  scopes, per-client config snippets and etiquette
+- MCP endpoint: https://account.nostr.build/mcp - tokens are minted by the account
+  owner from the Connected agents button in the dashboard header
+
+## Product
+
+- [Account dashboard](https://account.nostr.build/): manage media, folders, plans
+  and connected agents (sign in required)
+- [Features](https://account.nostr.build/features): what accounts include, tier by tier
+- [Plans](https://account.nostr.build/plans): pricing and how payment works
+- [About](https://account.nostr.build/about): who runs nostr.build and why
+- [Terms of service](https://account.nostr.build/tos)
+- [Privacy policy](https://account.nostr.build/privacy)
