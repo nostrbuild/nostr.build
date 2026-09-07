@@ -790,6 +790,60 @@ $app->group('/internal/account', function (RouteCollectorProxy $group) {
     }
   });
 
+  // OVERDUE self-service/inactivity deletions: 'pending' rows whose delete_after
+  // passed at least `minOverdueDays` days ago and that are STILL pending — i.e.
+  // the DeletionWorkflow that should have purged them never finalized (it errored
+  // past its retry budget, or its instance was lost). The admin worker's daily
+  // re-drive reads this (minOverdueDays past the workflow's own multi-day retry
+  // window, so a still-retrying instance is never doubled) and the Upcoming
+  // Terminations view uses it for the "overdue" banner. Admin 'admin'/'forced'
+  // terminations are excluded on purpose: those are tracked admin_jobs and are
+  // re-run from Account Review. Ordered oldest-overdue first.
+  $group->get('/overdue-deletions', function (Request $request, Response $response) {
+    global $link;
+    $qp = $request->getQueryParams();
+    $limit = max(1, min(500, (int)($qp['limit'] ?? 100)));
+    $minOverdueDays = max(0, min(3650, (int)($qp['minOverdueDays'] ?? 0)));
+    try {
+      $where = "deletion_status = 'pending' AND delete_after IS NOT NULL
+                AND delete_after <= (NOW() - INTERVAL ? DAY)";
+      $sql = "SELECT uuid_id, usernpub, nym, ppic, plan_until_date, delete_after,
+                     deletion_requested_at, deletion_category
+              FROM users WHERE {$where}
+              ORDER BY delete_after ASC
+              LIMIT {$limit}";
+      $stmt = $link->prepare($sql);
+      $stmt->bind_param('i', $minOverdueDays);
+      $stmt->execute();
+      $result = $stmt->get_result();
+      $rows = [];
+      while ($row = $result->fetch_assoc()) {
+        $rows[] = [
+          'uuid' => $row['uuid_id'],
+          'npub' => $row['usernpub'],
+          'nym' => $row['nym'],
+          'pfpUrl' => $row['ppic'],
+          'planUntilDate' => $row['plan_until_date'],
+          'deleteAfter' => $row['delete_after'] !== null ? strtotime($row['delete_after']) : null,
+          'requestedAt' => $row['deletion_requested_at'] !== null ? strtotime($row['deletion_requested_at']) : null,
+          'category' => $row['deletion_category'],
+        ];
+      }
+      $stmt->close();
+      $cstmt = $link->prepare("SELECT COUNT(*) AS c FROM users WHERE {$where}");
+      $cstmt->bind_param('i', $minOverdueDays);
+      $cstmt->execute();
+      $total = (int)($cstmt->get_result()->fetch_assoc()['c'] ?? 0);
+      $cstmt->close();
+      $response->getBody()->write(json_encode(['ok' => true, 'rows' => $rows, 'total' => $total]));
+      return $response->withHeader('Content-Type', 'application/json');
+    } catch (\Throwable $e) {
+      error_log('internal/account/overdue-deletions error: ' . $e->getMessage());
+      $response->getBody()->write(json_encode(['ok' => false, 'rows' => [], 'total' => 0]));
+      return $response->withStatus(500)->withHeader('Content-Type', 'application/json');
+    }
+  });
+
   // Server-initiated cancel of an INACTIVITY-sweep 'pending' deletion — used when
   // an admin HOLDS an in-flight inactivity termination. Cancels ONLY a
   // category='inactivity' 'pending' schedule, so it can never undo a USER's own
