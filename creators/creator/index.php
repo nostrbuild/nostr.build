@@ -189,7 +189,7 @@ function cr_media(array $row): array
 	<?php if ($display === 'video' && $rows) : ?>
 		<!-- video.js 10 (web components); the entry pulls its content-hashed chunks from the same pinned version -->
 		<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@videojs/cdn@10.0.0-rc.2/global.css" integrity="sha384-sFBM9ObyqV3UmK167VmRaSHqUDFMgg7tJukVLDainDgtCn2j5m5t8sgvobK5EqTc" crossorigin="anonymous" />
-		<script type="module" src="https://cdn.jsdelivr.net/npm/@videojs/cdn@10.0.0-rc.2/video.js" integrity="sha384-abrZCKrwYhxBXf2wcYgNPCIBaKE/ALYmJyu3fqvAmSNOZq7XZKp/cHQZmS05BPs5" crossorigin="anonymous"></script>
+		<script type="module" src="https://cdn.jsdelivr.net/npm/@videojs/cdn@10.0.0-rc.2/video-minimal.js" integrity="sha384-VbaUvgQ6AFoNE/ke6tzSH2S5vMGJXLJM5WPFXPulwsIFqM59r1brTtIHgK0CetyR" crossorigin="anonymous"></script>
 	<?php endif; ?>
 
 	<title><?= e($ogTitle) ?></title>
@@ -1248,7 +1248,7 @@ function cr_media(array $row): array
 			overflow: hidden;
 		}
 
-		.cr-pswp-video video-skin {
+		.cr-pswp-video video-minimal-skin {
 			--media-accent-color: #a8a3db;
 			--media-accent-text-color: #24204b;
 			--media-border-color: transparent;
@@ -1410,7 +1410,7 @@ function cr_media(array $row): array
 							$isVideo = $display === 'video';
 							$thumbSrc = $isVideo ? $m['poster'] : $m['thumb'];
 						?>
-							<a class="cr-tile" href="<?= e($m['full']) ?>" target="_blank" rel="noopener"
+							<a class="cr-tile" href="<?= e($isVideo ? $m['embed'] : $m['full']) ?>" target="_blank" rel="noopener"
 								style="--r:<?= number_format($layoutRatio, 4, '.', '') ?>"
 								<?php if ($isVideo) : ?>
 								data-pswp-type="video" data-pswp-video-src="<?= e($m['full']) ?>" data-pswp-mime="<?= e($row['mime_type']) ?>"
@@ -1419,7 +1419,7 @@ function cr_media(array $row): array
 								<?php endif; ?>
 								<?php if ($w > 0 && $h > 0) : ?>data-pswp-width="<?= $w ?>" data-pswp-height="<?= $h ?>" <?php endif; ?>
 								<?php if (!empty($row['blurhash'])) : ?>data-blurhash="<?= e($row['blurhash']) ?>" <?php endif; ?>
-								data-open-url="<?= e($m['full']) ?>">
+								data-open-url="<?= e($isVideo ? $m['embed'] : $m['full']) ?>">
 								<canvas class="cr-ph" width="32" height="32" aria-hidden="true"></canvas>
 								<img src="<?= e($thumbSrc) ?>" <?= (!$isVideo && $m['srcset']) ? 'srcset="' . e($m['srcset']) . '" sizes="(max-width: 640px) 50vw, (max-width: 1100px) 33vw, 25vw"' : '' ?>
 									alt="<?= e($title) ?>" loading="lazy" decoding="async" <?= $hasDims ? "width=\"{$w}\" height=\"{$h}\"" : '' ?>>
@@ -1603,11 +1603,12 @@ function cr_media(array $row): array
 			// Images without stored dimensions: derive from the loaded thumbnail (aspect is what matters)
 			lightbox.addFilter('domItemData', (itemData, element) => {
 				if (!itemData.width || !itemData.height) {
+					// No stored dimensions: take the aspect from the loaded thumbnail, else assume 4:3
 					const img = element.querySelector('img');
-					if (img && img.naturalWidth) {
-						itemData.width = itemData.w = img.naturalWidth * 4;
-						itemData.height = itemData.h = img.naturalHeight * 4;
-					}
+					const w = img && img.naturalWidth ? img.naturalWidth * 4 : 1600;
+					const h = img && img.naturalWidth ? img.naturalHeight * 4 : 1200;
+					itemData.width = itemData.w = w;
+					itemData.height = itemData.h = h;
 				}
 				if (element.dataset.pswpType === 'video') {
 					itemData.type = 'video';
@@ -1625,7 +1626,7 @@ function cr_media(array $row): array
 					order: 8,
 					isButton: true,
 					tagName: 'a',
-					title: 'Open original in new tab',
+					title: 'Open in new tab',
 					html: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><path d="M15 3h6v6"/><path d="M10 14 21 3"/></svg>',
 					onInit: (el) => {
 						el.setAttribute('target', '_blank');
@@ -1649,7 +1650,15 @@ function cr_media(array $row): array
 				});
 			});
 
-			/* Video slides: video.js mounted into a custom PhotoSwipe content element */
+			/* Video slides: video.js 10 mounted into a custom PhotoSwipe content element.
+			   The skin positions its popup menus with CSS anchor positioning when available; on iOS Safari
+			   that lands the menu far from the player once the slide sits inside PhotoSwipe's transformed
+			   wrappers. Answer "no" to that one probe so the skin uses its rect-based fallback instead. */
+			if (window.CSS && typeof CSS.supports === 'function' && !CSS.__nbPatched) {
+				const nativeSupports = CSS.supports.bind(CSS);
+				CSS.supports = (a, b) => (String(a).includes('anchor-name') ? false : (b === undefined ? nativeSupports(a) : nativeSupports(a, b)));
+				CSS.__nbPatched = true;
+			}
 			const isVideo = (c) => c && c.data && c.data.type === 'video';
 
 			lightbox.addFilter('isContentZoomable', (z, c) => isVideo(c) ? false : z);
@@ -1667,10 +1676,11 @@ function cr_media(array $row): array
 				wrap.className = 'cr-pswp-video';
 				const player = document.createElement('video-player');
 				if (content.data.msrc) player.setAttribute('poster', content.data.msrc);
-				const skin = document.createElement('video-skin');
+				const skin = document.createElement('video-minimal-skin');
 				const video = document.createElement('video');
 				video.setAttribute('playsinline', '');
-				video.setAttribute('preload', 'metadata');
+				// Neighbouring slides are prepared ahead of time; only the active one may download
+				video.setAttribute('preload', 'none');
 				video.src = content.data.videoSrc;
 				skin.appendChild(video);
 				player.appendChild(skin);
@@ -1680,18 +1690,25 @@ function cr_media(array $row): array
 				wrap.addEventListener('keydown', (ev) => {
 					const pswp = lightbox.pswp;
 					if (!pswp) return;
-					const onSlider = ev.target.closest && ev.target.closest('[role="slider"]');
+					const path = ev.composedPath ? ev.composedPath() : [ev.target];
+					const onSlider = path.some((n) => n.getAttribute && n.getAttribute('role') === 'slider');
 					if (ev.key === 'Escape') { ev.preventDefault(); ev.stopPropagation(); pswp.close(); }
 					else if (!onSlider && ev.key === 'ArrowRight') { ev.preventDefault(); ev.stopPropagation(); pswp.next(); }
 					else if (!onSlider && ev.key === 'ArrowLeft') { ev.preventDefault(); ev.stopPropagation(); pswp.prev(); }
 				}, true);
+				// Arrows on a slider belong to the slider: let it handle them, then keep them from PhotoSwipe
+				wrap.addEventListener('keydown', (ev) => {
+					if (ev.key === 'ArrowRight' || ev.key === 'ArrowLeft') ev.stopPropagation();
+				});
 				content._video = video;
 				content.element = wrap;
 				// Poster preload drives the "loaded" state, like the official video plugin does
 				const img = new Image();
-				img.onload = img.onerror = () => content.onLoaded();
+				let done = false;
+				const loaded = () => { if (!done) { done = true; content.onLoaded(); } };
+				img.onload = img.onerror = loaded;
 				img.src = content.data.msrc || '';
-				if (img.complete) content.onLoaded();
+				if (img.complete) loaded();
 			});
 
 			lightbox.on('contentAppend', (e) => {
@@ -1718,7 +1735,9 @@ function cr_media(array $row): array
 			});
 
 			lightbox.on('contentActivate', ({ content }) => {
-				if (isVideo(content) && content._video) content._video.play()?.catch(() => { });
+				if (!isVideo(content) || !content._video) return;
+				content._video.preload = 'auto';
+				content._video.play()?.catch(() => { });
 			});
 			lightbox.on('contentDeactivate', ({ content }) => {
 				if (isVideo(content) && content._video) content._video.pause();
@@ -1736,8 +1755,9 @@ function cr_media(array $row): array
 				const pswp = lightbox.pswp;
 				// Leave the player's controls to video.js; PhotoSwipe must not treat them as drag/tap
 				pswp.on('pointerDown', (e) => {
-					const t = e.originalEvent?.target;
-					if (t && t.closest && t.closest('media-controls, media-play-button, media-menu, media-popover, media-dialog, [role="slider"], button')) e.preventDefault();
+					const path = e.originalEvent?.composedPath ? e.originalEvent.composedPath() : [];
+					const onControl = path.some((n) => n.tagName && /^(MEDIA-CONTROLS|MEDIA-MENU|MEDIA-POPOVER|MEDIA-DIALOG|MEDIA-PLAY-BUTTON|BUTTON)$/.test(n.tagName));
+					if (onControl) e.preventDefault();
 				});
 				// A tap on the player belongs to the skin (play/controls), not to PhotoSwipe's UI toggle
 				pswp.on('tapAction', (e) => {
