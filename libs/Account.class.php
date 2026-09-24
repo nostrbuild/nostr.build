@@ -323,7 +323,7 @@ class Account
     $this->setAccountFlags($flags);
   }
 
-  public function updateAccountDataFromNostrApi(bool $force = false, bool $update_db = true): void
+  public function updateAccountDataFromNostrApi(bool $force = false, bool $update_db = true, bool $waitForLookup = false): void
   {
     $apiQueryUrl = SiteConfig::getNostrApiBaseUrl() . urlencode($this->npub);
 
@@ -334,34 +334,29 @@ class Account
       return;
     }
 
-    // Initialize and set cURL options
-    $ch = curl_init();
-    curl_setopt_array($ch, [
-      CURLOPT_URL => $apiQueryUrl,
-      CURLOPT_RETURNTRANSFER => true,
-      CURLOPT_HEADER => false,
-      CURLOPT_FOLLOWLOCATION => true,
-      CURLOPT_HTTPHEADER => ['Content-Type: application/json', 'Accept: application/json'],
-    ]);
-
-    // Execute cURL and close
-    $response = curl_exec($ch);
-    $curlErrNo = curl_errno($ch);
-    $ch = null;
-
-    // Handle cURL errors
-    if ($response === false || $curlErrNo !== CURLE_OK) {
-      error_log("Error fetching account data from Nostr API");
+    $responseData = $this->fetchNostrProfile($apiQueryUrl);
+    // null = no record: either zap.observer is still looking up a key it had not
+    // seen, or no relay has a kind 0 for it (that stays null for a while too).
+    // Signup asks once more after the lookup (and the ~5 s edge cache of that
+    // answer) has had time to land; the Worker warms the record at npub
+    // verification, so this wait is the rare case. Other callers never wait.
+    if ($responseData === null && $waitForLookup) {
+      sleep(6);
+      $responseData = $this->fetchNostrProfile($apiQueryUrl);
+    }
+    // A stub (`lookup`, no fields) means no relay has a kind 0 for the key.
+    if ($responseData === false || $responseData === null || isset($responseData->lookup)) {
       return;
     }
-
-    // Decode JSON
-    $responseData = json_decode($response ?? '{}');
-    if (json_last_error() !== JSON_ERROR_NONE || $responseData === null) {
-      error_log("Error decoding JSON response from Nostr API: " . json_last_error_msg());
-      return;
+    // Clients that only set display_name still get a nym.
+    if (empty($responseData->name) && !empty($responseData->display_name)) {
+      $responseData->name = $responseData->display_name;
     }
-    $responseData = json_decode($responseData->content);
+    // A kind 0's picture is whatever the client wrote (raw base64 is seen in the
+    // wild); ppic is rendered as an image URL, so keep only http(s) ones.
+    if (isset($responseData->picture) && !preg_match('#^https?://#i', (string) $responseData->picture)) {
+      unset($responseData->picture);
+    }
 
     // Check if we should update account data
     $shouldUpdate = $responseData !== null &&
@@ -383,6 +378,39 @@ class Account
         $this->blossomFrontEndAPI->updateAccount($this->npub, $newData);
       }
     }
+  }
+
+  /**
+   * One GET of the profile endpoint. Returns the profile object, null when the
+   * key has no record yet, or false on any transport/HTTP/JSON failure.
+   */
+  private function fetchNostrProfile(string $url): object|null|false
+  {
+    $ch = curl_init();
+    curl_setopt_array($ch, [
+      CURLOPT_URL => $url,
+      CURLOPT_RETURNTRANSFER => true,
+      CURLOPT_HEADER => false,
+      CURLOPT_FOLLOWLOCATION => true,
+      CURLOPT_CONNECTTIMEOUT => 3,
+      CURLOPT_TIMEOUT => 5,
+      CURLOPT_HTTPHEADER => ['Accept: application/json'],
+    ]);
+    $response = curl_exec($ch);
+    $curlErrNo = curl_errno($ch);
+    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    $ch = null;
+
+    if ($response === false || $curlErrNo !== CURLE_OK || $httpCode !== 200) {
+      error_log("Error fetching account data from Nostr API: curl {$curlErrNo}, HTTP {$httpCode}");
+      return false;
+    }
+    $data = json_decode($response);
+    if (json_last_error() !== JSON_ERROR_NONE || !is_object($data) || !property_exists($data, 'profile')) {
+      error_log("Error decoding JSON response from Nostr API: " . json_last_error_msg());
+      return false;
+    }
+    return is_object($data->profile) ? $data->profile : null;
   }
 
   /**
@@ -594,7 +622,7 @@ class Account
 
     // Update account data from API
     try {
-      $this->updateAccountDataFromNostrApi();
+      $this->updateAccountDataFromNostrApi(waitForLookup: true);
     } catch (Exception $e) {
       error_log("Error getting user info from API: " . $e->getMessage());
     }
@@ -1983,11 +2011,6 @@ class Account
   {
     if ($force || $this->isNpubLoginAllowed() === false) {
       return false;
-    }
-    try {
-      $this->updateAccountDataFromNostrApi();
-    } catch (Exception $e) {
-      error_log("Error getting user info from API: " . $e->getMessage());
     }
     $this->setSessionParameters();
     $_SESSION['loggedin'] = true;

@@ -310,8 +310,10 @@ class SiteConfig
     return self::STORAGE_LIMITS[$acctLevel]['message'];
   }
 
+  // zap.observer's profile endpoint: GET <base><npub> answers { profile: {...} }
+  // with the kind 0 fields as published (docs: https://zap.observer/api/docs).
   public static function getNostrApiBaseUrl()
   {
-    return 'https://nostrstuff.com/api/users/';
+    return 'https://zap.observer/api/p/';
   }
 }

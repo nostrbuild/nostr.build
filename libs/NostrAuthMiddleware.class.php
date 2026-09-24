@@ -193,7 +193,6 @@ class NostrLoginMiddleware implements MiddlewareInterface
       } else {
         error_log('Account does not exist or is not valid');
         $npubVerified = true;
-        $account->updateAccountDataFromNostrApi(true, false); // Update account data from Nostr API, but do not touch DB
         $account->setSessionParameters();
       }
     } catch (\Exception $e) {
