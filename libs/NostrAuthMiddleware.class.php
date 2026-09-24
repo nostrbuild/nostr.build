@@ -41,6 +41,7 @@ class NostrAuthMiddleware implements MiddlewareInterface
     $accountUploadEligible = true;  // Assume the account is eligible by default
     $accountDefaultFolder = null; // Initialize as null
     $uploadLimitInBytes = SiteConfig::FREE_UPLOAD_LIMIT; // Default to free upload limit
+    $accountUploadLimitInBytes = null; // The account's per-file limit, used only if every check below passes
 
     try {
       // Initialize NostrAuthHandler
@@ -82,8 +83,8 @@ class NostrAuthMiddleware implements MiddlewareInterface
           $accountUploadEligible = false;
         } else {
           error_log('User ' . $npub . ' has sufficient storage space to upload the file:' . $account->getPerFileUploadLimit() . ' bytes');
-          // Set the upload limit to the remaining storage space
-          $uploadLimitInBytes = $account->getPerFileUploadLimit();
+          // The remaining storage space, if the account is still eligible after the checks below
+          $accountUploadLimitInBytes = $account->getPerFileUploadLimit();
         }
 
         // Validate account expiration. Expired accounts can't upload to a paid
@@ -101,6 +102,12 @@ class NostrAuthMiddleware implements MiddlewareInterface
     } catch (\Exception $e) {
       error_log('NostrAuthHandler error: ' . $e->getMessage());
       $accountUploadEligible = false;
+    }
+
+    // An expired, banned or out-of-storage account uploads at the free limit,
+    // so that is the limit it is told (GET /api/v2/upload/limit).
+    if ($accountUploadEligible && $accountUploadLimitInBytes !== null) {
+      $uploadLimitInBytes = $accountUploadLimitInBytes;
     }
 
     // Lastly, add the npub to the request attributes
