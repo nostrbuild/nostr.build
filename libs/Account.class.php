@@ -337,11 +337,12 @@ class Account
     $responseData = $this->fetchNostrProfile($apiQueryUrl);
     // null = no record: either zap.observer is still looking up a key it had not
     // seen, or no relay has a kind 0 for it (that stays null for a while too).
-    // Signup asks once more after the lookup (and the ~5 s edge cache of that
-    // answer) has had time to land; the Worker warms the record at npub
-    // verification, so this wait is the rare case. Other callers never wait.
-    if ($responseData === null && $waitForLookup) {
-      sleep(6);
+    // Its relay lookup runs up to ~6 s and that null answer is edge-cached ~5 s,
+    // so signup asks again every 5 s, up to three times (~15 s), stopping at the
+    // first record. The Worker warms the record at npub verification, so this
+    // wait is the rare case. Other callers never wait.
+    for ($i = 0; $responseData === null && $waitForLookup && $i < 3; $i++) {
+      sleep(5);
       $responseData = $this->fetchNostrProfile($apiQueryUrl);
     }
     // A stub (`lookup`, no fields) means no relay has a kind 0 for the key.
@@ -392,8 +393,8 @@ class Account
       CURLOPT_RETURNTRANSFER => true,
       CURLOPT_HEADER => false,
       CURLOPT_FOLLOWLOCATION => true,
-      CURLOPT_CONNECTTIMEOUT => 3,
-      CURLOPT_TIMEOUT => 5,
+      CURLOPT_CONNECTTIMEOUT => 5,
+      CURLOPT_TIMEOUT => 10,
       CURLOPT_HTTPHEADER => ['Accept: application/json'],
     ]);
     $response = curl_exec($ch);
