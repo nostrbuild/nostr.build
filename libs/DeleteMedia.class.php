@@ -99,6 +99,14 @@ class DeleteMedia
         return true;
       }
 
+      // Protected (GIF library) files are never deleted by the owner: drop the
+      // user's claim on the file and answer the same success as a delete.
+      if ($this->isProtected($mediaData)) {
+        $this->unlinkProtectedMedia($mediaData);
+        $this->deleteUploadAttempts($assocIds);
+        return true;
+      }
+
       $this->processMediaDeletion($mediaData);
       $this->deleteUploadAttempts($assocIds);
     } catch (Exception $e) {
@@ -183,7 +191,6 @@ class DeleteMedia
     $uploadId = $mediaData['id'];
     $mediaType = $mediaData['type'];
     $mediaMimeType = $mediaData['mime'] ?? null;
-    $blossomHash = $mediaData['blossom_hash'] ?? null;
 
     $objectKey = $this->getObjectKey($mediaData['filename'], $mediaType);
 
@@ -191,12 +198,36 @@ class DeleteMedia
     $purgeFilename = $mediaData['filename'];
     error_log('Purging: ' . $purgeFilename);
     $this->CFClient->purgeFiles([$purgeFilename]);
-    // Blossom
+    $this->removeUserBlossomLink($mediaData);
+
+    $this->deleteFromUploadsData($uploadId);
+  }
+
+  // filename is UNIQUE in uploads_data (one row, one object per file), so
+  // the row's own flag decides.
+  private function isProtected(array $mediaData): bool
+  {
+    return (int)($mediaData['protected'] ?? 0) === 1;
+  }
+
+  // The row keeps its owner (usernpub, user_uuid) so admin tools, the CSAM
+  // purge among them, still find it by npub. What the user loses is their
+  // claim on the file: their upload_attempts rows (the caller deletes them)
+  // and their Blossom link.
+  private function unlinkProtectedMedia(array $mediaData): void
+  {
+    $this->removeUserBlossomLink($mediaData);
+    error_log('Protected media unlinked, not deleted: id=' . $mediaData['id'] . ' filename=' . $mediaData['filename'] . ' npub=' . $this->userNpub);
+  }
+
+  // Blossom links are per user. On the Blossom path the worker has already
+  // removed this user's link before calling us.
+  private function removeUserBlossomLink(array $mediaData): void
+  {
+    $blossomHash = $mediaData['blossom_hash'] ?? null;
     if (!$this->blossomFrontendCall && !empty($blossomHash)) {
       $this->blossomFrontEndAPI->deleteMedia($this->userNpub, $blossomHash);
     }
-
-    $this->deleteFromUploadsData($uploadId);
   }
 
   private function getObjectKey(string $filename, string $mediaType): string

@@ -1969,9 +1969,11 @@ $app->group('/accounts/admin/moderation', function (RouteCollectorProxy $group) 
       return aaError($response, 'Invalid npub', 400);
     }
 
+    // Protected GIF-library files are skipped by ban-purge; single-file admin
+    // actions and the CSAM purge still delete them.
     $total = null;
     if ($afterId === 0) {
-      $cStmt = $link->prepare("SELECT COUNT(*) AS c FROM uploads_data WHERE usernpub = ?");
+      $cStmt = $link->prepare("SELECT COUNT(*) AS c FROM uploads_data WHERE usernpub = ? AND protected = 0");
       $cStmt->bind_param('s', $npub);
       $cStmt->execute();
       $total = (int) ($cStmt->get_result()->fetch_assoc()['c'] ?? 0);
@@ -1982,7 +1984,7 @@ $app->group('/accounts/admin/moderation', function (RouteCollectorProxy $group) 
     // next page (id > cursor) skips them — no infinite loop.
     $stmt = $link->prepare(
       "SELECT id, filename, type, blossom_hash FROM uploads_data
-        WHERE usernpub = ? AND usernpub <> '' AND usernpub IS NOT NULL AND id > ?
+        WHERE usernpub = ? AND usernpub <> '' AND usernpub IS NOT NULL AND protected = 0 AND id > ?
         ORDER BY id ASC LIMIT ?"
     );
     $stmt->bind_param('sii', $npub, $afterId, $limit);
