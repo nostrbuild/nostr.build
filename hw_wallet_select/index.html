@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Hardware Wallet Finder</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Condensed:wght@500;600;700&family=Atkinson+Hyperlegible:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#E6E8E4; --surface:#F7F8F5; --ink:#1D242B; --muted:#5B6570; --line:#C7CCC6;
+  --teal:#0F5C63; --teal-soft:#D5E6E4; --amber:#B77F00; --amber-soft:#F4E6C2; --miss:#9A3A2E;
+  --head:"IBM Plex Sans Condensed","Arial Narrow",system-ui,sans-serif;
+  --body:"Atkinson Hyperlegible",system-ui,-apple-system,"Segoe UI",sans-serif;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#15191D; --surface:#1E2328; --ink:#E7EAE6; --muted:#9AA3AB; --line:#343B42;
+    --teal:#5CB8B0; --teal-soft:#1D3A3A; --amber:#E2B347; --amber-soft:#3A3120; --miss:#E48B7C;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#15191D; --surface:#1E2328; --ink:#E7EAE6; --muted:#9AA3AB; --line:#343B42;
+  --teal:#5CB8B0; --teal-soft:#1D3A3A; --amber:#E2B347; --amber-soft:#3A3120; --miss:#E48B7C;
+}
+*,*::before,*::after{box-sizing:inherit}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 var(--body)}
+a{color:var(--teal)}
+.wrap{max-width:1180px;margin:0 auto;padding:2rem 1.25rem 3rem}
+header h1{font-family:var(--head);font-weight:700;font-size:clamp(2rem,5vw,3.1rem);line-height:1.05;margin:0 0 .5rem;letter-spacing:-.01em}
+header p{margin:0;color:var(--muted);max-width:60ch}
+.layout{display:grid;grid-template-columns:minmax(300px,380px) 1fr;gap:1.75rem;margin-top:2rem;align-items:start}
+@media (max-width:860px){.layout{grid-template-columns:1fr}}
+
+/* Filters */
+.filters{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:1.25rem;position:sticky;top:calc(1rem + env(safe-area-inset-top,0px))}
+@media (max-width:860px){.filters{position:static}}
+.filters h2{font-family:var(--head);font-size:1.25rem;margin:0 0 .25rem}
+.filters .hint{color:var(--muted);font-size:.9rem;margin:0 0 1rem}
+.f{padding:.8rem 0;border-top:1px solid var(--line)}
+.f-label{font-weight:700;font-size:.95rem;margin-bottom:.45rem;display:block}
+.seg{display:flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.seg button{flex:1;font:inherit;font-size:.88rem;padding:.45rem .3rem;border:0;background:transparent;color:var(--ink);cursor:pointer;border-left:1px solid var(--line)}
+.seg button:first-child{border-left:0}
+.seg button[aria-pressed="true"]{background:var(--teal);color:var(--surface);font-weight:700}
+.seg button:focus-visible,.chip:focus-visible,.reset:focus-visible{outline:3px solid var(--amber);outline-offset:2px}
+.chips{display:flex;flex-wrap:wrap;gap:.4rem}
+.chip{font:inherit;font-size:.85rem;padding:.3rem .7rem;border-radius:999px;border:1px solid var(--line);background:transparent;color:var(--ink);cursor:pointer}
+.chip[aria-pressed="true"]{background:var(--teal);border-color:var(--teal);color:var(--surface);font-weight:700}
+.reset{margin-top:1rem;width:100%;font:inherit;font-weight:700;padding:.6rem;border-radius:8px;border:1px solid var(--ink);background:transparent;color:var(--ink);cursor:pointer}
+
+/* Results */
+.summary{font-family:var(--head);font-size:1.5rem;font-weight:600;margin:0 0 1rem;line-height:1.2}
+.summary small{display:block;font-family:var(--body);font-size:.95rem;font-weight:400;color:var(--muted);margin-top:.25rem}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:1rem}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:1.1rem 1.1rem 1rem;display:flex;flex-direction:column;gap:.7rem}
+.card.match{border:2px solid var(--teal)}
+.card.miss{opacity:.62}
+.card h3{font-family:var(--head);font-weight:700;font-size:1.35rem;line-height:1.1;margin:0}
+.origin{color:var(--muted);font-size:.88rem;margin-top:.15rem}
+.status{font-size:.85rem;font-weight:700;padding:.3rem .6rem;border-radius:6px;align-self:flex-start}
+.status.ok{background:var(--teal-soft);color:var(--teal)}
+.status.no{background:transparent;color:var(--miss);border:1px solid currentColor}
+.missing{margin:0;padding:0;list-style:none;font-size:.88rem;color:var(--miss)}
+.missing li::before{content:"✕ ";font-weight:700}
+dl{margin:0;display:grid;grid-template-columns:auto 1fr;gap:.25rem .75rem;font-size:.88rem;border-top:1px solid var(--line);padding-top:.7rem}
+dt{color:var(--muted)}
+dd{margin:0;font-weight:700}
+dd.caveat{color:var(--amber)}
+.note{font-size:.82rem;color:var(--muted);margin:0}
+@media (prefers-reduced-motion:no-preference){.card{transition:opacity .2s, border-color .2s}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Find your hardware wallet</h1>
+    <p>Pick the features that matter to you. Wallets that meet every choice rise to the top; the rest show exactly what they're missing.</p>
+  </header>
+
+  <div class="layout">
+    <aside class="filters" aria-label="Feature filters">
+      <h2>Features</h2>
+      <p class="hint">Leave anything on "Any" if you don't care about it.</p>
+      <div id="filterControls"></div>
+      <div class="f">
+        <span class="f-label" id="countryLabel">Country of origin</span>
+        <div class="chips" id="countryChips" role="group" aria-labelledby="countryLabel"></div>
+      </div>
+      <button class="reset" id="reset" type="button">Clear all filters</button>
+    </aside>
+
+    <main>
+      <p class="summary" id="summary" aria-live="polite"></p>
+      <div class="grid" id="grid"></div>
+    </main>
+  </div>
+</div>
+
+<script>
+const wallets = [
+  {name:"Foundation Prime", country:"USA", open:"yes", chip:"EAL6+", se:true, eal6:true, multisig:"yes", seed:"yes", camera:"yes", large:"no", exploit:"no", backups:"yes"},
+  {name:"Blockstream Jade", country:"Canada", open:"yes", chip:"Blind Oracle (no secure element)", se:false, eal6:false, multisig:"yes", seed:"yes", camera:"yes", large:"no", exploit:"yes", exploitNote:"LiquidBTC", backups:"no"},
+  {name:"BitBox02 Nova", country:"Switzerland", open:"yes", chip:"EAL6+", se:true, eal6:true, multisig:"yes", seed:"yes", camera:"no", large:"no", exploit:"no", backups:"no"},
+  {name:"SeedSigner", country:"USA", open:"yes", chip:"None", se:false, eal6:false, multisig:"yes", seed:"yes", camera:"yes", large:"no", exploit:"no", backups:"no"},
+  {name:"Block BitKey", country:"USA", open:"no", chip:"EAL6+", se:true, eal6:true, multisig:"partial", multisigNote:"Native 2-of-3 only", seed:"no", camera:"no", large:"yes", exploit:"no", backups:"yes"},
+  {name:"Coinkite Q MK5", country:"Canada", open:"yes", chip:"2 secure elements", chipLink:"https://coldcard.com/docs/physical-notes/", se:true, eal6:false, multisig:"yes", seed:"yes", camera:"yes", large:"no", exploit:"yes", exploitNote:"RNG seeds", backups:"no"},
+  {name:"OneKey", country:"Hong Kong", open:"yes", chip:"EAL6+", se:true, eal6:true, multisig:"yes", seed:"yes", camera:"no", large:"yes", exploit:"no", backups:"no"},
+  {name:"Trezor", country:"Czech Republic", open:"yes", chip:"EAL6+", se:true, eal6:true, multisig:"yes", seed:"yes", camera:"no", large:"yes", exploit:"yes", exploitNote:"Sales data leak", backups:"no"},
+  {name:"Ledger", country:"France", open:"no", chip:"EAL5+, EAL6+", se:true, eal6:true, multisig:"yes", seed:"yes", camera:"no", large:"yes", exploit:"yes", exploitNote:"Sales data leak", backups:"yes"}
+];
+
+// Each filter: key, label, options [value,label], and how to test + describe a miss
+const filters = [
+  {key:"open", label:"Open source", opts:[["any","Any"],["yes","Yes"],["no","No"]]},
+  {key:"chip", label:"Security chip", opts:[["any","Any"],["se","Has one"],["eal6","EAL6+"]],
+    test:(w,v)=> v==="se" ? w.se : w.eal6,
+    miss:(w,v)=> v==="se" ? "No secure element" : "Not EAL6+ certified"},
+  {key:"multisig", label:"Multisig support", opts:[["any","Any"],["yes","Yes"],["no","No"]],
+    test:(w,v)=> v==="yes" ? w.multisig!=="no" : w.multisig==="no"},
+  {key:"seed", label:"Seed phrase access", opts:[["any","Any"],["yes","Yes"],["no","No"]]},
+  {key:"camera", label:"Air-gap camera", opts:[["any","Any"],["yes","Yes"],["no","No"]]},
+  {key:"large", label:"Large company", opts:[["any","Any"],["yes","Yes"],["no","No"]]},
+  {key:"exploit", label:"Major exploit history", opts:[["any","Any"],["no","None"],["yes","Has one"]]},
+  {key:"backups", label:"Easy backups (inheritance, contacts, emergency exit)", opts:[["any","Any"],["yes","Yes"],["no","No"]]}
+];
+
+const state = {countries:new Set()};
+filters.forEach(f=>state[f.key]="any");
+const countries = [...new Set(wallets.map(w=>w.country))];
+
+function defaultMiss(f,v){
+  const word = f.opts.find(o=>o[0]===v)[1];
+  if(f.key==="exploit") return v==="no" ? "Has a major exploit" : "No major exploit";
+  return (v==="yes" ? "No " : "Has ") + f.label.toLowerCase().split(" (")[0];
+}
+
+function evaluate(w){
+  const misses=[];
+  filters.forEach(f=>{
+    const v=state[f.key];
+    if(v==="any") return;
+    const ok = f.test ? f.test(w,v) : w[f.key]===v;
+    if(!ok) misses.push(f.miss ? f.miss(w,v) : defaultMiss(f,v));
+  });
+  if(state.countries.size && !state.countries.has(w.country)) misses.push("Made in "+w.country);
+  return misses;
+}
+
+function yn(v){return v==="yes"?"Yes":v==="no"?"No":"Partial"}
+
+function render(){
+  const results = wallets.map(w=>({w,misses:evaluate(w)}))
+    .sort((a,b)=>a.misses.length-b.misses.length);
+  const matches = results.filter(r=>!r.misses.length).length;
+  const active = filters.filter(f=>state[f.key]!=="any").length + (state.countries.size?1:0);
+
+  const s=document.getElementById("summary");
+  if(!active){
+    s.innerHTML=`All ${wallets.length} wallets<small>Choose features on the left to narrow the list.</small>`;
+  } else if(matches===0){
+    s.innerHTML=`No wallet has all of those<small>The closest options are listed first. Try setting one feature back to "Any".</small>`;
+  } else {
+    s.innerHTML=`${matches} ${matches===1?"wallet matches":"wallets match"}<small>Matching ${active} ${active===1?"feature":"features"}.</small>`;
+  }
+
+  document.getElementById("grid").innerHTML = results.map(({w,misses})=>{
+    const isMatch=!misses.length;
+    const chip = w.chipLink ? `<a href="${w.chipLink}" target="_blank" rel="noopener">${w.chip}</a>` : w.chip;
+    return `<article class="card ${active?(isMatch?"match":"miss"):""}">
+      <div><h3>${w.name}</h3><div class="origin">${w.country}</div></div>
+      ${active ? (isMatch ? `<span class="status ok">Matches everything</span>`
+        : `<span class="status no">Missing ${misses.length}</span><ul class="missing">${misses.map(m=>`<li>${m}</li>`).join("")}</ul>`) : ""}
+      <dl>
+        <dt>Open source</dt><dd>${yn(w.open)}</dd>
+        <dt>Security chip</dt><dd>${chip}</dd>
+        <dt>Multisig</dt><dd class="${w.multisig==="partial"?"caveat":""}">${w.multisig==="partial"?w.multisigNote:yn(w.multisig)}</dd>
+        <dt>Seed phrase access</dt><dd>${yn(w.seed)}</dd>
+        <dt>Air-gap camera</dt><dd>${yn(w.camera)}</dd>
+        <dt>Large company</dt><dd>${yn(w.large)}</dd>
+        <dt>Major exploit</dt><dd class="${w.exploit==="yes"?"caveat":""}">${w.exploit==="yes"?w.exploitNote:"None"}</dd>
+        <dt>Easy backups</dt><dd>${yn(w.backups)}</dd>
+      </dl>
+    </article>`;
+  }).join("");
+}
+
+function buildControls(){
+  const box=document.getElementById("filterControls");
+  box.innerHTML = filters.map(f=>`
+    <div class="f">
+      <span class="f-label" id="lbl-${f.key}">${f.label}</span>
+      <div class="seg" role="group" aria-labelledby="lbl-${f.key}">
+        ${f.opts.map(([v,l])=>`<button type="button" data-key="${f.key}" data-val="${v}" aria-pressed="${state[f.key]===v}">${l}</button>`).join("")}
+      </div>
+    </div>`).join("");
+  box.querySelectorAll("button").forEach(b=>b.addEventListener("click",()=>{
+    state[b.dataset.key]=b.dataset.val;
+    box.querySelectorAll(`button[data-key="${b.dataset.key}"]`).forEach(x=>x.setAttribute("aria-pressed",x===b));
+    render();
+  }));
+
+  const cc=document.getElementById("countryChips");
+  cc.innerHTML = countries.map(c=>`<button type="button" class="chip" data-c="${c}" aria-pressed="${state.countries.has(c)}">${c}</button>`).join("");
+  cc.querySelectorAll("button").forEach(b=>b.addEventListener("click",()=>{
+    const c=b.dataset.c;
+    state.countries.has(c)?state.countries.delete(c):state.countries.add(c);
+    b.setAttribute("aria-pressed",state.countries.has(c));
+    render();
+  }));
+}
+
+document.getElementById("reset").addEventListener("click",()=>{
+  filters.forEach(f=>state[f.key]="any");
+  state.countries.clear();
+  buildControls(); render();
+});
+
+buildControls(); render();
+</script>
+</body>
+</html>
