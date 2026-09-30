@@ -556,8 +556,10 @@ class MultimediaUpload
                         $fileData['dimensions']['height'] ?? 0,
                         $fileData['blurhash'] ?? null,
                         $fileType['mime'],
-                        !empty($file['title']) ? $file['title'] : $originalFileName,
-                        !empty($file['ai_prompt']) ? $file['ai_prompt'] : '',
+                        // Uppy-style uploads (the dashboard, MCP, AI Studio v2)
+                        // may carry the title and the AI prompt as form fields.
+                        !empty($file['title']) ? $file['title'] : (!empty($this->uppyMetadata['title']) ? mb_substr((string) $this->uppyMetadata['title'], 0, 255) : $originalFileName),
+                        !empty($file['ai_prompt']) ? $file['ai_prompt'] : (!empty($this->uppyMetadata['ai_prompt']) ? (string) $this->uppyMetadata['ai_prompt'] : ''),
                         $blossom && $no_transform ? $sha256 : ($blossom ? $transformedFileSha256 : null),
                         $this->uppyMetadata,
                         $this->defaultFolderName,
