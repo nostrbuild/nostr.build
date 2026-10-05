@@ -251,6 +251,7 @@ require_once __DIR__ . '/routes_blossom.php'; // Include blossom routes
 require_once __DIR__ . '/routes_accounts.php'; // Include accounts BFF routes
 require_once __DIR__ . '/routes_account_dashboard.php'; // Account dashboard shared helpers (used by the /accounts BFF subgroup; no routes of its own)
 require_once __DIR__ . '/routes_accounts_admin.php'; // Proxied admin routes (Worker → PHP via HMAC + npub-level check)
+require_once __DIR__ . '/routes_internal_gif_contributions.php'; // GIF contributions (Worker → PHP via HMAC: candidates, register, withdraw)
 apiTimingLog('all route files loaded', $__routesStart);
 
 $contentLengthMiddleware = new ContentLengthMiddleware();
