@@ -768,8 +768,9 @@ class S3Multipart
         // Send upload hook
         // We only accept two types now, video or archive, TODO: Update for new types
         $fileType = str_starts_with($fileData['mimeType'], 'video/') ? 'video' : 'archive';
-        $fileTooLarge = $fileData['fileSize'] > 8 * 1024 * 1024; // 8 MB
-        $doVirusScan = in_array($fileType, ['archive', 'document', 'text', 'other']) && !$fileTooLarge;
+        // Every non-video file is served from d.nostr.build, which withholds unscanned files (403), so each one must
+        // be queued whatever its size: a size cap here left large uploads blocked forever.
+        $doVirusScan = in_array($fileType, ['archive', 'document', 'text', 'other']);
         $nameWithoutExtension = pathinfo($fileData['filename'], PATHINFO_FILENAME);
         $this->uploadWebhook->createPayload(
           fileHash: $nameWithoutExtension,
@@ -785,7 +786,7 @@ class S3Multipart
           uploadNpub: $uploadInfo['userNpub'] ?? null,
           uploadUserUUID: $uploadInfo['userUuid'] ?? null,
           fileOriginalUrl: null,
-          doVirusScan: $doVirusScan, // TODO: Figureout how to deal with oversized archives that are hard to scan.
+          doVirusScan: $doVirusScan,
           orginalSha256Hash: $fileData['checksum_sha256'] ?? null,
           currentSha256Hash: $fileData['checksum_sha256'] ?? null,
         );
