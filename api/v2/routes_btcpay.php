@@ -876,6 +876,34 @@ $app->group('/internal/account', function (RouteCollectorProxy $group) {
     }
   });
 
+  // A signed-in user accepted the current Terms/Privacy in the app's
+  // "Terms updated" dialog. The Worker has already checked the session and that
+  // `version` is its current LEGAL_VERSION; this only stamps the users row.
+  $group->post('/accept-legal', function (Request $request, Response $response) {
+    global $link;
+    $data = json_decode($request->getBody()->getContents(), true);
+    $uuid = is_array($data) ? trim((string)($data['uuid'] ?? '')) : '';
+    $version = is_array($data) ? trim((string)($data['version'] ?? '')) : '';
+    if ($uuid === '' || $version === '') {
+      $response->getBody()->write(json_encode(['ok' => false, 'error' => 'uuid and version required']));
+      return $response->withStatus(400)->withHeader('Content-Type', 'application/json');
+    }
+    try {
+      $account = Account::fromUuid($uuid, $link);
+      if ($account === null) {
+        $response->getBody()->write(json_encode(['ok' => false, 'error' => 'no-such-account']));
+        return $response->withStatus(404)->withHeader('Content-Type', 'application/json');
+      }
+      $account->recordLegalAcceptance($version);
+      $response->getBody()->write(json_encode(['ok' => true, 'legalVersion' => $version]));
+      return $response->withHeader('Content-Type', 'application/json');
+    } catch (\Throwable $e) {
+      error_log('internal/account/accept-legal error: ' . $e->getMessage());
+      $response->getBody()->write(json_encode(['ok' => false, 'error' => 'accept-legal failed']));
+      return $response->withStatus(500)->withHeader('Content-Type', 'application/json');
+    }
+  });
+
   // EMERGENCY bulk cancel — reset EVERY in-flight inactivity-sweep deletion back
   // to 'none' in one statement (mirrors Account::cancelDeletion's column reset).
   // Scoped to category='inactivity' so it can NEVER undo a user's self-service

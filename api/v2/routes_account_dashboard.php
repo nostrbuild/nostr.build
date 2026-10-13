@@ -277,6 +277,10 @@ function dashboardGetAccountData($link, $account): array
     // the dashboard can surface the delete-account CTA only for long-dead
     // accounts (>365 days). Admins/moderators report 0 (never eligible).
     "daysPastExpiration" => $account->getDaysPastSubscriptionExpiration(),
+    // Version of the Terms/Privacy the user last accepted (null = never
+    // recorded, e.g. accounts older than the legal pages). The app compares it
+    // with its current LEGAL_VERSION and asks for acceptance when they differ.
+    "legalVersion" => $info['legal_version'] ?? null,
   ];
 }
 
