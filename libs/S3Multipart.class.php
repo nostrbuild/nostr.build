@@ -364,6 +364,17 @@ class S3Multipart
         throw new UploadRefusal('upstream-unavailable', 503, 'failed to read upload info from storage');
       }
 
+      // An image takes the same pipeline as a small upload: private metadata
+      // stripped (or the upload refused), orientation fixed, HEIC/TIFF
+      // converted, dimensions, blurhash, the image CDN and the image webhook.
+      // The copy below would publish the original bytes untouched, as a plain
+      // download. Sniffed from the bytes as well as the declared type: the
+      // type is the client's word, and no image may skip the stripping by its
+      // label.
+      if ($this->isImageUpload($key, (string)($uploadInfo['contentType'] ?? ''))) {
+        return $this->completeImageUpload($key, $uploadInfo, $userNpub, $userUuid, $result ?? null);
+      }
+
       // Copy file to final storage bucket using existing S3Service
       $copyResult = $this->copyToFinalStorage($key, $uploadInfo);
 
@@ -474,6 +485,217 @@ class S3Multipart
       // Detail to the log only — the refusal message travels to the client.
       error_log('Error completing multipart upload: ' . $e->getMessage());
       throw new UploadRefusal('internal', 500, 'failed to complete multipart upload');
+    }
+  }
+
+  /**
+   * Whether a completed upload is an image: by its declared type, or by its
+   * first bytes when the declared type says otherwise.
+   *
+   * @throws UploadRefusal when the head cannot be read (fails closed: bytes
+   *         nobody looked at are never published as a plain download)
+   */
+  private function isImageUpload(string $key, string $declaredType): bool
+  {
+    if (str_starts_with(strtolower($declaredType), 'image/')) {
+      return true;
+    }
+    try {
+      $head = $this->s3Client->getObject([
+        'Bucket' => $this->bucket,
+        'Key' => $key,
+        'Range' => 'bytes=0-4095',
+      ]);
+    } catch (AwsException $e) {
+      error_log('S3Multipart: could not read the upload head to sniff its type: ' . $e->getMessage());
+      throw new UploadRefusal('upstream-unavailable', 503, 'failed to read upload from storage');
+    }
+    $sniffed = (new finfo(FILEINFO_MIME_TYPE))->buffer((string)$head['Body']);
+    return is_string($sniffed) && str_starts_with($sniffed, 'image/');
+  }
+
+  /**
+   * Finish an image upload through MultimediaUpload, the pipeline small
+   * uploads take, instead of copying the original to final storage. It
+   * validates, strips private metadata (a no-transform upload that carries
+   * any is refused), stores the row and sends the upload webhook itself.
+   *
+   * The pipeline names the file itself, so the filename guard in
+   * completeMultipartUpload cannot recognise a retried completion. Instead
+   * the stored file's id goes into a small record object once the pipeline
+   * succeeds, and a lock per upload makes a re-drive that arrives while the
+   * first completion is still processing wait for it, then find that id.
+   * The upload object is left in place, as the copy path leaves it.
+   *
+   * @param mixed $s3Result The S3 completion result, or null on a re-drive
+   * @throws UploadRefusal on every failure
+   */
+  private function completeImageUpload(string $key, array $uploadInfo, string $userNpub, string $userUuid, $s3Result): array
+  {
+    require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/MultimediaUpload.class.php';
+    require_once $_SERVER['DOCUMENT_ROOT'] . '/api/v2/helper_functions.php';
+
+    // GET_LOCK names are capped at 64 characters. The connection is
+    // persistent, so a lock a fatal error left on this connection is cleared
+    // first (one left on another worker's connection times the wait out). The
+    // wait stays under the ~100 s an upstream proxy allows, so a waiter
+    // answers 503 itself rather than leaving a busy worker behind a timeout.
+    $lockName = $this->db->real_escape_string('mp-image:' . substr(hash('sha256', $key), 0, 48));
+    $this->db->query('SELECT RELEASE_ALL_LOCKS()');
+    $locked = $this->db->query("SELECT GET_LOCK('{$lockName}', 60) AS l");
+    $lockRow = $locked ? $locked->fetch_assoc() : null;
+    if ((int)($lockRow['l'] ?? 0) !== 1) {
+      throw new UploadRefusal('upstream-unavailable', 503, 'the upload is still being completed');
+    }
+
+    $tmpPath = false;
+    try {
+      $recorded = $this->recordedImageRow($key, $userUuid);
+      if ($recorded !== null) {
+        error_log('S3Multipart: image complete is a no-op, file already recorded: ' . substr(basename($key), 0, 16));
+        $fileData = $this->getFileDataById((int)$recorded['id'], $uploadInfo, [
+          'filename' => $recorded['image'],
+          'mimeType' => $recorded['mime_type'],
+          'fileSize' => $recorded['file_size'],
+        ]);
+        $fileData['url'] = (new MediaUrlGenerator(true))->mediaURL(
+          $recorded['image'],
+          explode('/', (string)$recorded['mime_type'])[0]
+        );
+        return $this->imageCompleteResult($key, $s3Result, $fileData);
+      }
+
+      $tmpPath = tempnam(sys_get_temp_dir(), 'mp_image_');
+      if ($tmpPath === false) {
+        throw new UploadRefusal('internal', 500, 'failed to prepare the image');
+      }
+      try {
+        $this->s3Client->getObject(['Bucket' => $this->bucket, 'Key' => $key, 'SaveAs' => $tmpPath]);
+      } catch (AwsException $e) {
+        error_log('S3Multipart: could not download the image upload: ' . $e->getMessage());
+        throw new UploadRefusal('upstream-unavailable', 503, 'failed to read upload from storage');
+      }
+
+      // A type the pipeline does not take (camera RAW, PSD, a format outside
+      // the plan) is refused for good here: inside the pipeline it would end
+      // as a retryable 500, re-driven and re-downloaded every time.
+      $account = Account::fromUuid($userUuid, $this->db);
+      try {
+        detectFileExt($tmpPath, $account !== null ? $account->getAccountLevelInt() : 0);
+      } catch (InvalidArgumentException $e) {
+        throw new UploadRefusal('bad-request', 415, 'This image type is not supported');
+      }
+
+      $metadata = is_array($uploadInfo['metadata'] ?? null) ? $uploadInfo['metadata'] : [];
+      $upload = new MultimediaUpload($this->db, new S3Service($this->awsConfig), true, $userNpub, $this->awsConfig, $userUuid);
+      $upload->setRawFiles([[
+        'input_name' => 'file',
+        'name' => $uploadInfo['filename'],
+        'type' => $uploadInfo['contentType'],
+        'tmp_name' => $tmpPath,
+        'error' => UPLOAD_ERR_OK,
+        'size' => filesize($tmpPath),
+      ]]);
+      $upload->setUppyMetadata($metadata);
+      [$ok, $status, $message] = $upload->uploadFiles();
+      if (!$ok) {
+        // The same refusal the small-upload path gives for this file: a 4xx
+        // is permanent (validation, private metadata), anything else retryable.
+        $status = (int)$status;
+        $code = match (true) {
+          $status === 413 => 'quota-exceeded',
+          $status === 403 => 'not-eligible',
+          $status >= 400 && $status < 500 => 'bad-request',
+          default => 'internal',
+        };
+        throw new UploadRefusal($code, $status >= 400 && $status < 600 ? $status : 500, (string)$message);
+      }
+      $files = $upload->getUploadedFiles();
+      if (empty($files)) {
+        throw new UploadRefusal('internal', 500, 'image upload stored no file');
+      }
+      $fileData = createSuccessResponse([$files[0]])['fileData'];
+      $this->markImageRecorded($key, (int)$fileData['id']);
+      return $this->imageCompleteResult($key, $s3Result, $fileData);
+    } catch (UploadRefusal $e) {
+      throw $e;
+    } catch (\Throwable $e) {
+      error_log('S3Multipart: image complete failed: ' . $e->getMessage());
+      throw new UploadRefusal('internal', 500, 'failed to complete the image upload');
+    } finally {
+      if ($tmpPath !== false && is_file($tmpPath)) {
+        @unlink($tmpPath);
+      }
+      $this->db->query("SELECT RELEASE_LOCK('{$lockName}')");
+    }
+  }
+
+  /** The completion answer, shaped like the copy path's. */
+  private function imageCompleteResult(string $key, $s3Result, array $fileData): array
+  {
+    return [
+      'location' => $s3Result['Location'] ?? null,
+      'bucket' => $s3Result['Bucket'] ?? $this->bucket,
+      'key' => $key,
+      'etag' => $s3Result['ETag'] ?? null,
+      'fileData' => $fileData,
+    ];
+  }
+
+  /** Where an image upload's stored file id is recorded: outside the
+   *  uploads/ prefix, one small object per upload key. */
+  private static function imageRecordKey(string $key): string
+  {
+    return 'recorded/' . hash('sha256', $key);
+  }
+
+  /**
+   * The row an earlier completion of this upload stored, from the file id it
+   * recorded. Null when none was recorded, or the row is gone or belongs to
+   * someone else (then the upload is processed afresh).
+   *
+   * @throws UploadRefusal when the record cannot be read (a blip must not
+   *         turn into a second copy of the file)
+   */
+  private function recordedImageRow(string $key, string $userUuid): ?array
+  {
+    try {
+      $record = $this->s3Client->getObject(['Bucket' => $this->bucket, 'Key' => self::imageRecordKey($key)]);
+    } catch (AwsException $e) {
+      if ($e->getAwsErrorCode() === 'NoSuchKey' || $e->getStatusCode() === 404) {
+        return null;
+      }
+      error_log('S3Multipart: could not read the image upload record: ' . $e->getMessage());
+      throw new UploadRefusal('upstream-unavailable', 503, 'failed to read upload from storage');
+    }
+    $fileId = (int)trim((string)$record['Body']);
+    if ($fileId <= 0) {
+      return null;
+    }
+    try {
+      // get() throws when the row is gone (deleted since).
+      $row = $this->usersImages->get($fileId);
+    } catch (\Throwable $e) {
+      return null;
+    }
+    return is_array($row) && ($row['user_uuid'] ?? '') === $userUuid ? $row : null;
+  }
+
+  /**
+   * Record the stored file's id for recordedImageRow. Best effort: the file
+   * is stored either way, and a failure only costs a retry its no-op.
+   */
+  private function markImageRecorded(string $key, int $fileId): void
+  {
+    try {
+      $this->s3Client->putObject([
+        'Bucket' => $this->bucket,
+        'Key' => self::imageRecordKey($key),
+        'Body' => (string)$fileId,
+        'ContentType' => 'text/plain',
+      ]);
+    } catch (\Throwable $e) {
+      error_log('S3Multipart: could not record the image upload: ' . $e->getMessage());
     }
   }
 

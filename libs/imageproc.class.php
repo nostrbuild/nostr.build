@@ -435,9 +435,31 @@ class ImageProcessor
    */
   public function stripImageMetadata(): self
   {
-    // Do nothing for formats that don't support metadata
     $imageFormat = strtolower($this->imagick->getImageFormat());
-    if ($imageFormat !== 'jpeg' && $imageFormat !== 'heic' && $imageFormat !== 'heif' && $imageFormat !== 'webp' && $imageFormat !== 'tiff') {
+    // A PNG carries EXIF (GPS included) and text chunks too, and one over
+    // 4096 px skips oxipng's strip in optimiseImage. stripImage() would also
+    // drop the colour chunks (it excludes iCCP, sRGB, gAMA and more from the
+    // PNG writer), so drop only what can hold private metadata: every
+    // profile but the ICC one, and every property, since ImageMagick 6 keeps
+    // the EXIF it read as exif:* properties and writes properties back out.
+    // zTXt stays allowed: excluding it drops the ICC profile as well.
+    if ($imageFormat === 'png') {
+      foreach ($this->imagick->getImageProfiles('*', false) as $profile) {
+        if ($profile !== 'icc') {
+          $this->imagick->removeImageProfile($profile);
+        }
+      }
+      foreach (array_keys($this->imagick->getImageProperties('*')) as $property) {
+        if (!preg_match('/^(date|png):/', $property)) {
+          $this->imagick->deleteImageProperty($property);
+        }
+      }
+      $this->imagick->setImageArtifact('png:exclude-chunk', 'eXIf,tEXt,iTXt,tIME');
+      $this->isSaved = false;
+      return $this;
+    }
+    // Do nothing for formats that don't support metadata. AVIF carries EXIF.
+    if (!in_array($imageFormat, ['jpeg', 'heic', 'heif', 'webp', 'tiff', 'avif'], true)) {
       return $this;
     }
     // Save the ICC profile if one exists
