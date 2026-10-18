@@ -919,7 +919,7 @@ class MultimediaUpload
             fileType: $whFileType,
             shouldTranscode: false,
             uploadAccountType: $this->pro ? 'subscriber' : 'free',
-            uploadedFileInfo: $clientInfoOverride ?? $_SERVER['CLIENT_REQUEST_INFO'] ?? null,
+            uploadedFileInfo: !empty($clientInfoOverride) ? $clientInfoOverride : ($_SERVER['CLIENT_REQUEST_INFO'] ?? null),
             uploadNpub: $this->userNpub ?? null,
             uploadUserUUID: $this->userUuid ?? null,
             fileOriginalUrl: null,
@@ -956,7 +956,9 @@ class MultimediaUpload
             fileType: $whFileType,
             shouldTranscode: false,
             uploadAccountType: $this->pro ? 'subscriber' : 'free',
-            uploadedFileInfo: $webhookData['clientInfo'] ?? $_SERVER['CLIENT_REQUEST_INFO'] ?? null,
+            // !empty, not ??: DuplicateDetector sets clientInfo to '' when none was passed, and
+            // '' ?? x is '', so every non-Blossom duplicate was logged with no IP/UA (2026-03-16..).
+            uploadedFileInfo: !empty($webhookData['clientInfo']) ? $webhookData['clientInfo'] : ($_SERVER['CLIENT_REQUEST_INFO'] ?? null),
             uploadNpub: $this->userNpub ?? null,
             uploadUserUUID: $this->userUuid ?? null,
             fileOriginalUrl: null,
