@@ -875,7 +875,7 @@ $app->group('/accounts', function (RouteCollectorProxy $group) {
       return $response
         ->withHeader('Content-Type', 'application/json')
         ->withStatus(200);
-    });
+    })->add(new ClientInfoMiddleware());
 
     // POST /api/v2/accounts/dashboard/nostrland/activate
     $sub->post('/nostrland/activate', function (Request $request, Response $response) {
@@ -1998,7 +1998,7 @@ $app->group('/accounts', function (RouteCollectorProxy $group) {
           $_SESSION['useruuid'] = $prevUuid;
         }
       }
-    });
+    })->add(new ClientInfoMiddleware());
   });
 
   // Multipart S3 — large files. Mirrors api/v2/routes_s3.php /multipart/*.

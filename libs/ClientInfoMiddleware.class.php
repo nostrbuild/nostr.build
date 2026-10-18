@@ -23,9 +23,12 @@ use Psr\Http\Server\RequestHandlerInterface as RequestHandler;
  * blossom-band's `x-blossom-client-info` produces — see how routes_blossom.php
  * does the equivalent swap inline for the public Blossom path.
  *
- * Scope: attach this only to the proxied upload routes (the only paths whose
- * downstream code currently consumes CLIENT_REQUEST_INFO). Dashboard
- * mutations get the header too but don't need the swap.
+ * Scope: attach this to every proxied route that creates a file (the paths
+ * whose downstream code consumes CLIENT_REQUEST_INFO): the multipart group,
+ * /uploads/uppy, /dashboard/media/import and /dashboard/ai/generate. A
+ * file-creating route without it records the Cloudflare egress IP as the
+ * uploader's in the upload ledger. Other dashboard mutations get the header
+ * too but don't need the swap.
  */
 class ClientInfoMiddleware implements MiddlewareInterface
 {
