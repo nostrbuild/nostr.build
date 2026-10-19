@@ -1793,7 +1793,7 @@ $app->group('/accounts/admin/moderation', function (RouteCollectorProxy $group) 
     $dim = fn($v) => $v !== null && (int) $v > 0 ? (int) $v : null;
     $epoch = fn($v) => $v !== null && (int) $v > 0 ? (int) $v : null;
 
-    $stmt = $link->prepare("SELECT id, image, mime_type, file_size, created_at, UNIX_TIMESTAMP(created_at) AS created_ts, media_width, media_height FROM users_images WHERE image = ? ORDER BY id DESC LIMIT 1");
+    $stmt = $link->prepare("SELECT id, image, mime_type, file_size, created_at, UNIX_TIMESTAMP(created_at) AS created_ts, media_width, media_height, blossom_hash FROM users_images WHERE image = ? ORDER BY id DESC LIMIT 1");
     $stmt->bind_param('s', $name);
     $stmt->execute();
     $paid = $stmt->get_result()->fetch_assoc();
@@ -1812,6 +1812,8 @@ $app->group('/accounts/admin/moderation', function (RouteCollectorProxy $group) 
         'size' => $row['size'],
         'uploadedAt' => $epoch($paid['created_ts']),
         'status' => null,
+        // The content sha256 the Worker keys paid CSAM cases by (null on legacy rows).
+        'blossomHash' => ($paid['blossom_hash'] ?? '') !== '' ? (string) $paid['blossom_hash'] : null,
       ]]);
     }
 
@@ -1842,6 +1844,7 @@ $app->group('/accounts/admin/moderation', function (RouteCollectorProxy $group) 
       'size' => (int) ($free['file_size'] ?? 0),
       'uploadedAt' => $row['upload_ts'],
       'status' => $status,
+      'blossomHash' => null,
     ]]);
   });
 
