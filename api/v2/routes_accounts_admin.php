@@ -1780,8 +1780,9 @@ $app->group('/accounts/admin/moderation', function (RouteCollectorProxy $group) 
    * owner or account. URLs come from the same row builders as Account Review
    * and the queue (SiteConfig), so the app never maps hosts itself. `thumb`
    * is set for images only; `status` is the free moderation status (null for
-   * paid media). found=false when neither table has the name, or a free row's
-   * type has no URL mapping.
+   * paid media, or a value outside the four). found=false when neither table
+   * has the name; with recorded=true when a free row has it but its type has no
+   * URL mapping (no preview, yet the file is ours).
    */
   $group->get('/file', function (Request $request, Response $response) {
     global $link;
@@ -1819,10 +1820,15 @@ $app->group('/accounts/admin/moderation', function (RouteCollectorProxy $group) 
     $stmt->execute();
     $free = $stmt->get_result()->fetch_assoc();
     $stmt->close();
-    $row = $free ? aaModerationMediaRow($free) : null;
-    if ($row === null) {
-      return aaJson($response, ['found' => false]);
+    if (!$free) {
+      return aaJson($response, ['found' => false, 'recorded' => false]);
     }
+    $row = aaModerationMediaRow($free);
+    if ($row === null) {
+      return aaJson($response, ['found' => false, 'recorded' => true]);
+    }
+    $status = in_array($row['approval_status'], ['approved', 'pending', 'rejected', 'adult'], true)
+      ? $row['approval_status'] : null;
     return aaJson($response, ['found' => true, 'file' => [
       'source' => 'free',
       'filename' => $row['filename'],
@@ -1834,7 +1840,7 @@ $app->group('/accounts/admin/moderation', function (RouteCollectorProxy $group) 
       'height' => $dim($free['media_height']),
       'size' => (int) ($free['file_size'] ?? 0),
       'uploadedAt' => $row['upload_ts'],
-      'status' => $row['approval_status'],
+      'status' => $status,
     ]]);
   });
 
