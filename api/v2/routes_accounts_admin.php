@@ -1773,6 +1773,72 @@ $app->group('/accounts/admin/moderation', function (RouteCollectorProxy $group) 
   });
 
   /**
+   * GET /accounts/admin/moderation/file?filename=<exact served name>
+   * One file by its exact name, for a small preview (the app's Analytics >
+   * Traffic file dialog, keyed by the CDN logs' file name): the paid record
+   * (users_images) first, else the free one (uploads_data). Media only, no
+   * owner or account. URLs come from the same row builders as Account Review
+   * and the queue (SiteConfig), so the app never maps hosts itself. `thumb`
+   * is set for images only; `status` is the free moderation status (null for
+   * paid media). found=false when neither table has the name, or a free row's
+   * type has no URL mapping.
+   */
+  $group->get('/file', function (Request $request, Response $response) {
+    global $link;
+    $name = (string) ($request->getQueryParams()['filename'] ?? '');
+    if ($name === '' || strlen($name) > 1024 || preg_match('/[\x00-\x1f\x7f\/]/', $name)) {
+      return aaError($response, 'Invalid filename', 400);
+    }
+    $dim = fn($v) => $v !== null && (int) $v > 0 ? (int) $v : null;
+    $epoch = fn($v) => $v !== null && (int) $v > 0 ? (int) $v : null;
+
+    $stmt = $link->prepare("SELECT id, image, mime_type, file_size, created_at, UNIX_TIMESTAMP(created_at) AS created_ts, media_width, media_height FROM users_images WHERE image = ? ORDER BY id DESC LIMIT 1");
+    $stmt->bind_param('s', $name);
+    $stmt->execute();
+    $paid = $stmt->get_result()->fetch_assoc();
+    $stmt->close();
+    if ($paid) {
+      $row = aaReviewMediaRow($paid);
+      return aaJson($response, ['found' => true, 'file' => [
+        'source' => 'subscriber',
+        'filename' => $row['filename'],
+        'mediaType' => $row['mediaType'],
+        'mime' => $row['mime'],
+        'url' => $row['url'],
+        'thumb' => $row['thumb'],
+        'width' => $dim($paid['media_width']),
+        'height' => $dim($paid['media_height']),
+        'size' => $row['size'],
+        'uploadedAt' => $epoch($paid['created_ts']),
+        'status' => null,
+      ]]);
+    }
+
+    $stmt = $link->prepare("SELECT id, filename, type, usernpub, approval_status, UNIX_TIMESTAMP(upload_date) AS upload_ts, media_width, media_height, file_size FROM uploads_data WHERE filename = ? ORDER BY upload_date DESC LIMIT 1");
+    $stmt->bind_param('s', $name);
+    $stmt->execute();
+    $free = $stmt->get_result()->fetch_assoc();
+    $stmt->close();
+    $row = $free ? aaModerationMediaRow($free) : null;
+    if ($row === null) {
+      return aaJson($response, ['found' => false]);
+    }
+    return aaJson($response, ['found' => true, 'file' => [
+      'source' => 'free',
+      'filename' => $row['filename'],
+      'mediaType' => $row['media'],
+      'mime' => '',
+      'url' => $row['url'],
+      'thumb' => $row['media'] === 'image' ? $row['thumb'] : null,
+      'width' => $dim($free['media_width']),
+      'height' => $dim($free['media_height']),
+      'size' => (int) ($free['file_size'] ?? 0),
+      'uploadedAt' => $row['upload_ts'],
+      'status' => $row['approval_status'],
+    ]]);
+  });
+
+  /**
    * GET /accounts/admin/moderation/browse
    * Browse already-classified uploads by status + kind, newest first
    * (?status=approved|adult, ?kind=img|gif|vid, ?page=, ?limit= ≤204). Mirrors
