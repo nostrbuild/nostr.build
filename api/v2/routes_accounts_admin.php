@@ -1779,8 +1779,8 @@ $app->group('/accounts/admin/moderation', function (RouteCollectorProxy $group) 
    * (users_images) first, else the free one (uploads_data). Media only, no
    * owner or account. URLs come from the same row builders as Account Review
    * and the queue (SiteConfig), so the app never maps hosts itself. `thumb`
-   * is set for images only; `status` is the free moderation status (null for
-   * paid media, or a value outside the four). found=false when neither table
+   * is set for images only; `status` is the free moderation status as stored
+   * (null for paid media). found=false when neither table
    * has the name; with recorded=true when a free row has it but its type has no
    * URL mapping (no preview, yet the file is ours).
    */
@@ -1827,8 +1827,9 @@ $app->group('/accounts/admin/moderation', function (RouteCollectorProxy $group) 
     if ($row === null) {
       return aaJson($response, ['found' => false, 'recorded' => true]);
     }
-    $status = in_array($row['approval_status'], ['approved', 'pending', 'rejected', 'adult'], true)
-      ? $row['approval_status'] : null;
+    // Passed through as stored (approved, pending, rejected, adult, csam...):
+    // the app decides what it may show. '' (an invalid enum) is null.
+    $status = $row['approval_status'] !== '' ? $row['approval_status'] : null;
     return aaJson($response, ['found' => true, 'file' => [
       'source' => 'free',
       'filename' => $row['filename'],
