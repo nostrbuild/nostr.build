@@ -113,6 +113,10 @@ final class IpAccessControl
     $info = $_SERVER['CLIENT_REQUEST_INFO'] ?? null;
     if (is_string($info) && $info !== '') {
       $decoded = json_decode($info, true);
+      // A file that arrived by email has no end-user IP. Never fall back to
+      // the transport address: that is the account Worker's egress, and an IP
+      // gate or report keyed on it would hit Cloudflare's fleet.
+      if (is_array($decoded) && ($decoded['source'] ?? null) === 'email') return null;
       if (is_array($decoded) && !empty($decoded['realIp'])) {
         $ip = self::normalizeIpString((string) $decoded['realIp']);
         if ($ip !== null) return $ip;

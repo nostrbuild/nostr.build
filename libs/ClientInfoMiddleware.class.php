@@ -23,6 +23,11 @@ use Psr\Http\Server\RequestHandlerInterface as RequestHandler;
  * blossom-band's `x-blossom-client-info` produces — see how routes_blossom.php
  * does the equivalent swap inline for the public Blossom path.
  *
+ * A file that arrived by email (account Worker, email.pictures) has no end
+ * user request, so its envelope is `{"source":"email","ingestId":...}` with no
+ * realIp. It is accepted as is: IpAccessControl::extractClientIp() answers
+ * null for it, and PhotoDNA reports carry no IP but the ingest id.
+ *
  * Scope: attach this to every proxied route that creates a file (the paths
  * whose downstream code consumes CLIENT_REQUEST_INFO): the multipart group,
  * /uploads/uppy, /dashboard/media/import and /dashboard/ai/generate. A

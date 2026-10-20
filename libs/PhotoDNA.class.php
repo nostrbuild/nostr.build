@@ -292,12 +292,14 @@ class PhotoDNA
 
     $IncidentTime = $utcISODate;
     $ReporteeName = empty($this->uploaderNpub) ? 'Unknown' : $this->uploaderNpub;
-    $ReporteeIPAddress = $userUploadInfoOtherInfo['realIp'];
+    // A file that arrived by email (source "email") has no uploader IP; its
+    // envelope carries the ingest id instead, which leads to the sealed sender.
+    $ReporteeIPAddress = $userUploadInfoOtherInfo['realIp'] ?? null;
     $ViolationContentCollection = [];
     $ViolationContentCollection['Name'] = ''; // The filename of the image that is being reported
     $ViolationContentCollection['Value'] = ''; // The base-64 encoded value of the content being reported
     $ViolationContentCollection['Location'] = $fileGPSLocation;
-    $ViolationContentCollection['UploadIpAddress'] = $userUploadInfoOtherInfo['realIp'];
+    $ViolationContentCollection['UploadIpAddress'] = $userUploadInfoOtherInfo['realIp'] ?? null;
     $ViolationContentCollection['UploadDateTime'] = $utcISODate;
     $ViolationContentCollection['AdditionalMetadata']['publiclyAvailable'] = false;
     $ViolationContentCollection['AdditionalMetadata']['additionalInfo'] = json_decode($_SERVER['CLIENT_REQUEST_INFO'], true, 512, JSON_THROW_ON_ERROR);
