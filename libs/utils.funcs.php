@@ -220,19 +220,19 @@ function checkUrlSanity(string $url): bool
     throw new InvalidArgumentException('Invalid URL');
   }
 
-  // Checking for private IPs and localhost
-  $hostname = $parsedUrl['host'] ?? '';
-
   // Checking for valid scheme
   if (!in_array($parsedUrl['scheme'] ?? '', ['http', 'https'])) {
     throw new InvalidArgumentException('Only HTTP and HTTPS schemes are allowed');
   }
 
-  // Checking for private IPs and localhost
-  if (
-    filter_var($hostname, FILTER_VALIDATE_IP) !== false &&
-    filter_var($hostname, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE) === false
-  ) {
+  // Lowercase ASCII host
+  $hostname = normalizeUrlHost($parsedUrl['host'] ?? '');
+  $labels = explode('.', $hostname);
+  $tld = end($labels);
+
+  // Checking for private IP literals (names are checked after resolving, in
+  // resolvePublicHostAddresses)
+  if (filter_var($hostname, FILTER_VALIDATE_IP) !== false && !isPublicIpAddress($hostname)) {
     throw new InvalidArgumentException('Access to the private IP ranges or localhost is not allowed');
   }
 
@@ -246,71 +246,44 @@ function checkUrlSanity(string $url): bool
     throw new InvalidArgumentException('AWS EC2-like hostnames are not allowed');
   }
 
-  // Perform DNS lookup
-  $ips = gethostbynamel($hostname);
-
-  // If the hostname could not be resolved, skip the check
-  if ($ips !== false) {
-    foreach ($ips as $ip) {
-      if (
-        filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE) === false
-      ) {
-        throw new InvalidArgumentException('DNS rebinding attacks are not allowed');
-      }
-    }
-  }
-
-  // Checking for AWS TLDs
-  if (preg_match("/\.aws$/", $hostname)) {
-    throw new InvalidArgumentException('AWS TLDs are not allowed');
-  }
-
   // Checking for localhost
   if ($hostname === 'localhost') {
     throw new InvalidArgumentException('Access to localhost is not allowed');
   }
 
-  // Checking for special-use domain names
-  $specialDomains = ['test', 'example', 'invalid', 'localhost', 'local'];
-  foreach ($specialDomains as $domain) {
-    if (strpos($hostname, $domain) !== false) {
-      throw new InvalidArgumentException("Access to the special-use domain '{$domain}' is not allowed");
-    }
+  // Checking for single-label hosts (db, redis): the resolver would try them
+  // under the server's own search domains
+  if (count($labels) < 2 && filter_var($hostname, FILTER_VALIDATE_IP) === false) {
+    throw new InvalidArgumentException('Invalid URL host');
   }
 
-  // Checking for internal TLDs
-  $internalTlds = ['internal', 'corp', 'home', 'lan'];
-  foreach ($internalTlds as $tld) {
-    if (preg_match("/\b{$tld}$/", $hostname)) {
-      throw new InvalidArgumentException("Access to the internal TLD '{$tld}' is not allowed");
-    }
+  // Checking for special-use and internal TLDs (whole last label only, so
+  // public hosts that merely contain these words still work)
+  $specialTlds = ['test', 'example', 'invalid', 'localhost', 'local', 'internal', 'corp', 'home', 'lan', 'aws', 'arpa'];
+  if (count($labels) > 1 && in_array($tld, $specialTlds, true)) {
+    throw new InvalidArgumentException("Access to the special-use domain '{$tld}' is not allowed");
   }
 
   // Checking for server IP
-  if ($hostname === $_SERVER['SERVER_ADDR']) {
+  if ($hostname === ($_SERVER['SERVER_ADDR'] ?? '')) {
     throw new InvalidArgumentException('Access to the server\'s IP address is not allowed');
   }
 
-  // Checking for server hostname
-  if ($hostname === $_SERVER['SERVER_NAME']) {
-    throw new InvalidArgumentException('Access to the server\'s hostname is not allowed');
-  }
-
   // Checking for *.blossom.band or blossom.band domains
-  if (preg_match("/\.blossom\.band$/", $hostname) || $hostname === 'blossom.band') {
+  if (hostIsWithinDomain($hostname, 'blossom.band')) {
     throw new InvalidArgumentException('Access to Blossom domains is not allowed');
   }
 
-  // Checking for server domain
-  $serverDomain = substr($_SERVER['SERVER_NAME'], strpos($_SERVER['SERVER_NAME'], '.') + 1);
-  if (strpos($hostname, $serverDomain) !== false) {
-    throw new InvalidArgumentException('Access to the server\'s domain name is not allowed');
-  }
-
-  // Checking for http host
-  $httpHostDomain = substr($_SERVER['HTTP_HOST'], strpos($_SERVER['HTTP_HOST'], '.') + 1);
-  if (strpos($hostname, $httpHostDomain) !== false) {
-    throw new InvalidArgumentException('Access to the HTTP host\'s domain is not allowed');
+  // Checking for the server's own domain and the HTTP host's domain (the last
+  // two labels, e.g. nostr.build for staging.nostr.build), and their subdomains
+  foreach (['SERVER_NAME', 'HTTP_HOST'] as $key) {
+    $own = strtolower(preg_replace('/:\d+$/', '', (string)($_SERVER[$key] ?? '')));
+    if ($own !== '' && filter_var($own, FILTER_VALIDATE_IP) === false) {
+      $ownDomain = implode('.', array_slice(explode('.', rtrim($own, '.')), -2));
+      if (hostIsWithinDomain($hostname, $ownDomain)) {
+        throw new InvalidArgumentException('Access to the server\'s domain name is not allowed');
+      }
+    }
   }
 
   // Checking for non-standard ports
@@ -324,6 +297,211 @@ function checkUrlSanity(string $url): bool
   }
 
   return true;
+}
+
+// The URL host as curl will connect to it: lowercase ASCII (IDN converted to
+// punycode), no trailing dot, IPv6 literals without brackets. Refuses
+// percent-encoding and any character a hostname cannot hold, because curl
+// decodes those itself and would then look up a name we never checked.
+function normalizeUrlHost(string $host): string
+{
+  $bare = strtolower(trim($host, '[]'));
+  if ($bare !== '' && filter_var($bare, FILTER_VALIDATE_IP) !== false) {
+    return $bare;
+  }
+  if (preg_match('/[^\x21-\x7e]/', $bare)) {
+    $ascii = function_exists('idn_to_ascii')
+      ? idn_to_ascii($bare, IDNA_NONTRANSITIONAL_TO_ASCII, INTL_IDNA_VARIANT_UTS46)
+      : false;
+    if (!is_string($ascii) || $ascii === '') {
+      throw new InvalidArgumentException('Invalid URL host');
+    }
+    $bare = strtolower($ascii);
+  }
+  $bare = rtrim($bare, '.');
+  if (strlen($bare) > 253 || !preg_match('/^[a-z0-9_]([a-z0-9_-]*[a-z0-9_])?(\.[a-z0-9_]([a-z0-9_-]*[a-z0-9_])?)*$/', $bare)) {
+    throw new InvalidArgumentException('Invalid URL host');
+  }
+  return $bare;
+}
+
+// True when $host is $domain or one of its subdomains (both lowercase).
+function hostIsWithinDomain(string $host, string $domain): bool
+{
+  return $domain !== '' && ($host === $domain || str_ends_with($host, '.' . $domain));
+}
+
+// True when an IP address is publicly routable. IPv4 carried inside IPv6
+// (mapped ::ffff:0:0/96, translated ::ffff:0:0:0/96, compatible ::/96, NAT64
+// 64:ff9b::/96, 6to4 2002::/16) is judged as that IPv4, since it reaches the
+// same host. Local NAT64 (64:ff9b:1::/48) and Teredo (2001::/32) hide which
+// IPv4 they reach, so they are refused, as are multicast and site-local.
+function isPublicIpAddress(string $ip): bool
+{
+  $packed = @inet_pton($ip);
+  if ($packed === false) {
+    return false;
+  }
+  if (strlen($packed) === 16) {
+    $prefix = substr($packed, 0, 12);
+    if (
+      $prefix === str_repeat("\0", 10) . "\xff\xff"
+      || $prefix === str_repeat("\0", 8) . "\xff\xff\0\0"
+      || $prefix === str_repeat("\0", 12)
+      || $prefix === "\x00\x64\xff\x9b" . str_repeat("\0", 8)
+    ) {
+      return isPublicIpAddress(inet_ntop(substr($packed, 12)));
+    }
+    if (substr($packed, 0, 2) === "\x20\x02") {
+      return isPublicIpAddress(inet_ntop(substr($packed, 2, 4)));
+    }
+    if (substr($packed, 0, 6) === "\x00\x64\xff\x9b\x00\x01" || substr($packed, 0, 4) === "\x20\x01\x00\x00") {
+      return false;
+    }
+    // ff00::/8 multicast, fec0::/10 site-local
+    if ($packed[0] === "\xff" || ($packed[0] === "\xfe" && (ord($packed[1]) & 0xc0) === 0xc0)) {
+      return false;
+    }
+  } elseif ((ord($packed[0]) & 0xf0) === 0xe0) {
+    // 224.0.0.0/4 multicast
+    return false;
+  }
+  $flags = FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE;
+  if (defined('FILTER_FLAG_GLOBAL_RANGE')) {
+    $flags |= FILTER_FLAG_GLOBAL_RANGE;
+  }
+  return filter_var(inet_ntop($packed), FILTER_VALIDATE_IP, $flags) !== false;
+}
+
+// Resolve a normalized host (A and AAAA) and return the addresses to connect
+// to, IPv4 first, at most four. Every answer must be public, and the caller
+// pins curl to these addresses, so a second DNS answer (rebinding) cannot send
+// curl elsewhere. The name is looked up as absolute (trailing dot) so the
+// server's search domains are never tried, and "does not resolve" and
+// "resolves somewhere private" give the same message, so the import cannot
+// be used to list internal names.
+function resolvePublicHostAddresses(string $host): array
+{
+  $bare = normalizeUrlHost($host);
+  if (filter_var($bare, FILTER_VALIDATE_IP) !== false) {
+    if (!isPublicIpAddress($bare)) {
+      throw new InvalidArgumentException('Access to the private IP ranges or localhost is not allowed');
+    }
+    return [$bare];
+  }
+
+  $addresses = [];
+  // One query per type: a failing AAAA lookup must not throw away the A records.
+  foreach ([[DNS_A, 'ip'], [DNS_AAAA, 'ipv6']] as [$type, $field]) {
+    $records = @dns_get_record($bare . '.', $type);
+    foreach (is_array($records) ? $records : [] as $record) {
+      if (isset($record[$field])) {
+        $addresses[] = $record[$field];
+      }
+    }
+  }
+  if ($addresses === [] || in_array(false, array_map('isPublicIpAddress', $addresses), true)) {
+    throw new InvalidArgumentException('The URL host cannot be used');
+  }
+  return array_slice(array_values(array_unique($addresses)), 0, 4);
+}
+
+// One curl request to a URL a user gave us. Redirects are followed by hand,
+// at most $maxRedirects: every hop goes through checkUrlSanity() again and
+// curl connects only to an address resolvePublicHostAddresses() checked
+// (CURLOPT_CONNECT_TO with an empty host matches whatever spelling curl ends
+// up with); when one address cannot be reached the next one is tried.
+// $options are the request's own curl options; the safety options win over
+// them. A CURLOPT_TIMEOUT in $options is the budget for all hops together.
+// With CURLOPT_FILE, a redirect's body is cleared before the next hop.
+// Returns [curl_exec result, final HTTP status]; throws
+// InvalidArgumentException for a refused URL or hop and RuntimeException
+// (code = curl errno) for a transport failure.
+function curlUserUrl(string $url, array $options, int $maxRedirects = 5): array
+{
+  $file = $options[CURLOPT_FILE] ?? null;
+  $deadline = isset($options[CURLOPT_TIMEOUT]) ? microtime(true) + $options[CURLOPT_TIMEOUT] : null;
+  unset($options[CURLOPT_TIMEOUT]);
+  $protocols = defined('CURLOPT_PROTOCOLS_STR')
+    ? [CURLOPT_PROTOCOLS_STR => 'http,https']
+    : [CURLOPT_PROTOCOLS => CURLPROTO_HTTP | CURLPROTO_HTTPS];
+  $defaults = [
+    CURLOPT_CONNECTTIMEOUT => 10,
+    // Abort a transfer that stalls below 1 KB/s for a minute.
+    CURLOPT_LOW_SPEED_LIMIT => 1024,
+    CURLOPT_LOW_SPEED_TIME => 60,
+  ];
+
+  for ($hop = 0; $hop <= $maxRedirects; $hop++) {
+    if ($deadline !== null && microtime(true) >= $deadline) {
+      throw new RuntimeException('Operation timed out', CURLE_OPERATION_TIMEDOUT);
+    }
+    checkUrlSanity($url);
+    $parsedUrl = parse_url($url);
+    $port = $parsedUrl['port'] ?? (($parsedUrl['scheme'] ?? '') === 'https' ? 443 : 80);
+    $addresses = resolvePublicHostAddresses($parsedUrl['host'] ?? '');
+
+    foreach ($addresses as $i => $ip) {
+      $safety = [
+        CURLOPT_FOLLOWLOCATION => false,
+        CURLOPT_CONNECT_TO => ['::' . (str_contains($ip, ':') ? "[{$ip}]" : $ip) . ":{$port}"],
+        // A proxy would resolve the host itself and skip the pin.
+        CURLOPT_PROXY => '',
+        CURLOPT_NOPROXY => '*',
+      ] + $protocols;
+      if ($deadline !== null) {
+        $remainingMs = (int)floor(($deadline - microtime(true)) * 1000);
+        if ($remainingMs <= 0) {
+          throw new RuntimeException('Operation timed out', CURLE_OPERATION_TIMEDOUT);
+        }
+        $safety[CURLOPT_TIMEOUT_MS] = $remainingMs;
+      }
+
+      $ch = curl_init($url);
+      if ($ch === false) {
+        throw new RuntimeException('Failed to initialize cURL');
+      }
+      if (!curl_setopt_array($ch, $safety + $options + $defaults)) {
+        $ch = null;
+        throw new RuntimeException('Failed to set cURL options');
+      }
+
+      $result = curl_exec($ch);
+      if ($result === false) {
+        $error = curl_error($ch);
+        $errno = curl_errno($ch);
+        $neverConnected = (int)curl_getinfo($ch, CURLINFO_CONNECT_TIME_T) === 0;
+        $ch = null;
+        $unreachable = $errno === CURLE_COULDNT_CONNECT || ($errno === CURLE_OPERATION_TIMEDOUT && $neverConnected);
+        if ($unreachable && $i < count($addresses) - 1) {
+          continue;
+        }
+        // A host that never answered is a connect failure, not a slow download.
+        throw new RuntimeException('Curl error: ' . $error, $unreachable ? CURLE_COULDNT_CONNECT : $errno);
+      }
+      $status = (int)curl_getinfo($ch, CURLINFO_RESPONSE_CODE);
+      $next = curl_getinfo($ch, CURLINFO_REDIRECT_URL);
+      $ch = null;
+
+      if ($status < 300 || $status >= 400 || !is_string($next) || $next === '') {
+        return [$result, $status];
+      }
+      if ($file !== null) {
+        ftruncate($file, 0);
+        rewind($file);
+      }
+      // curl hands back a Location as sent; encode what it would refuse in a
+      // URL (spaces, raw UTF-8), as it did itself when following redirects.
+      $url = preg_replace_callback(
+        '/[^A-Za-z0-9\-._~:\/?#\[\]@!$&\'()*+,;=%]/',
+        fn($m) => rawurlencode($m[0]),
+        $next
+      );
+      continue 2;
+    }
+  }
+
+  throw new InvalidArgumentException('Too many redirects');
 }
 
 // Replacement for uniqid which is prone to collisions

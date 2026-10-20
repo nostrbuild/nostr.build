@@ -711,66 +711,73 @@ class MultimediaUpload
         }
 
         // Download the file
-        $ch = curl_init($url);
-        if ($ch === false) {
-            error_log('Failed to initialize cURL');
-            return [false, 500, 'Server error, please try again later'];
-        }
-
-        curl_setopt($ch, CURLOPT_NOBODY, false);
-        curl_setopt($ch, CURLOPT_HEADER, false);
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, false);
-        curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
-
         $tempFile = tempnam(sys_get_temp_dir(), 'url_download');
         if ($tempFile === false) {
             error_log('Failed to create temporary file');
-            $ch = null;
             return [false, 500, 'Server error, please try again later'];
         }
         $fp = fopen($tempFile, 'wb');
 
         if ($fp === false) {
             error_log('Failed to open file for writing');
-            $ch = null;
             @unlink($tempFile);
             return [false, 500, 'Server error, please try again later'];
         }
 
-        curl_setopt($ch, CURLOPT_FILE, $fp);
-
         // Size limit enforcement during download
         $fileSize = 0;
         $curlSizeExceeded = false;
-        curl_setopt($ch, CURLOPT_NOPROGRESS, false);
-        curl_setopt($ch, CURLOPT_PROGRESSFUNCTION, function ($ch, $downloadSize, $downloaded, $uploadSize, $uploaded) use (&$fileSize, $sizeLimit, &$curlSizeExceeded) {
-            $fileSize = $downloaded;
-            if ($fileSize > $sizeLimit) {
-                $curlSizeExceeded = true;
-                return 1;
+        $failure = null;
+        // curlUserUrl() re-checks every redirect hop (the GET may redirect
+        // differently from the HEAD above).
+        try {
+            [, $status] = curlUserUrl($url, [
+                CURLOPT_NOBODY => false,
+                CURLOPT_HEADER => false,
+                CURLOPT_RETURNTRANSFER => false,
+                CURLOPT_FILE => $fp,
+                // Whole download, all redirect hops included: 10 minutes plus
+                // 1 s per MiB of the size the HEAD reported (already capped by
+                // the size limit), so a slow-drip origin cannot hold a worker.
+                CURLOPT_TIMEOUT => 600 + intdiv(max(0, intval($metadata['size'])), 1048576),
+                CURLOPT_NOPROGRESS => false,
+                CURLOPT_PROGRESSFUNCTION => function ($ch, $downloadSize, $downloaded, $uploadSize, $uploaded) use (&$fileSize, $sizeLimit, &$curlSizeExceeded) {
+                    $fileSize = $downloaded;
+                    if ($fileSize > $sizeLimit) {
+                        $curlSizeExceeded = true;
+                        return 1;
+                    }
+                    return 0;
+                },
+            ]);
+            if ($status < 200 || $status >= 300) {
+                error_log('URL returned HTTP ' . $status);
+                $failure = [false, 400, 'URL returned HTTP ' . $status];
             }
-            return 0;
-        });
-
-        $success = curl_exec($ch);
+        } catch (InvalidArgumentException $e) {
+            error_log($e->getMessage());
+            $failure = [false, 400, $e->getMessage()];
+        } catch (Exception $e) {
+            if ($fileSize > $sizeLimit || $curlSizeExceeded) {
+                error_log('File size exceeds the limit of ' . formatSizeUnits($sizeLimit));
+                $failure = [false, 413, 'File size exceeds the limit of ' . formatSizeUnits($sizeLimit)];
+            } elseif ($e->getCode() === CURLE_OPERATION_TIMEDOUT) {
+                error_log('URL download timed out: ' . $e->getMessage());
+                $failure = [false, 400, 'The download took too long'];
+            } else {
+                error_log('cURL error: ' . $e->getMessage());
+                $failure = [false, 500, 'Server error, please try again later'];
+            }
+        }
         fclose($fp);
 
-        if ($success === false) {
+        if ($failure !== null) {
             if (is_file($tempFile)) {
                 @unlink($tempFile);
             }
             $this->tempManager->release($tempFile);
-            if ($fileSize > $sizeLimit || $curlSizeExceeded) {
-                error_log('File size exceeds the limit of ' . formatSizeUnits($sizeLimit));
-                $ch = null;
-                return [false, 413, 'File size exceeds the limit of ' . formatSizeUnits($sizeLimit)];
-            }
-            error_log('cURL error: ' . curl_error($ch));
-            $ch = null;
-            return [false, 500, 'Server error, please try again later'];
+            return $failure;
         }
-
-        $ch = null;
 
         $resolvedTmpPath = realpath($tempFile);
         $resolvedTmpPath = is_string($resolvedTmpPath) && $resolvedTmpPath !== '' ? $resolvedTmpPath : $tempFile;
@@ -804,37 +811,29 @@ class MultimediaUpload
      */
     public function getUrlMetadata(string $url): array
     {
+        // curlUserUrl() runs checkUrlSanity() on the URL and on every redirect.
         try {
-            $sanity = checkUrlSanity($url);
-        } catch (Exception $e) {
+            [$headers, $status] = curlUserUrl($url, [
+                CURLOPT_NOBODY => true,
+                CURLOPT_HEADER => true,
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_TIMEOUT => 30,
+            ]);
+        } catch (InvalidArgumentException $e) {
             error_log($e->getMessage());
             throw new Exception($e->getMessage());
+        } catch (Exception $e) {
+            // Transport detail (connect refused, TLS, timeout) stays in the log,
+            // so the import cannot be used to probe hosts and ports.
+            error_log($e->getMessage());
+            throw new Exception('Unable to fetch the URL');
         }
 
-        if (!$sanity) {
-            throw new Exception('URL sanity check failed');
-        }
-
-        $ch = curl_init($url);
-        if ($ch === false) {
-            throw new Exception('Failed to initialize cURL');
-        }
-
-        curl_setopt($ch, CURLOPT_NOBODY, true);
-        curl_setopt($ch, CURLOPT_HEADER, true);
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
-
-        $headers = curl_exec($ch);
-
-        if (curl_errno($ch)) {
-            $curlError = curl_error($ch);
-            $ch = null;
-            throw new Exception('Curl error: ' . $curlError);
+        if ($status < 200 || $status >= 300) {
+            throw new Exception('URL returned HTTP ' . $status);
         }
 
         if (!is_string($headers) || $headers === '') {
-            $ch = null;
             throw new Exception('Failed to read URL metadata headers');
         }
 
@@ -847,8 +846,6 @@ class MultimediaUpload
                 $headerMap[$headerName] = trim($parts[1]);
             }
         }
-
-        $ch = null;
 
         if (!isset($headerMap['content-length'])) {
             throw new Exception('Unable to determine file size');
