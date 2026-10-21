@@ -1187,6 +1187,20 @@ class Account
   }
 
   /**
+   * True for the blank free shell wipeForDeletion() leaves: no deletion
+   * schedule, level 0 and no plan dates. A finalize retried after one that
+   * committed (its answer lost) finds this and answers 'finalized'; a renewed
+   * or cancelled account keeps its plan dates or level.
+   */
+  public function isWipedShell(): bool
+  {
+    return $this->getDeletionStatus() === 'none'
+      && (int)($this->account['acctlevel'] ?? -1) === 0
+      && ($this->account['plan_until_date'] ?? null) === null
+      && ($this->account['plan_start_date'] ?? null) === null;
+  }
+
+  /**
    * Terminal account-deletion WIPE (the 30-day timer elapsed): reset the account
    * to an empty free shell while KEEPING usernpub + the row + login intact. Blanks
    * the profile view fields (nym/wallet/ppic), drops to free (acctlevel 0), clears

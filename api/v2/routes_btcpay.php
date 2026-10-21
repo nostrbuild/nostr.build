@@ -354,6 +354,9 @@ $app->group('/internal/account', function (RouteCollectorProxy $group) {
         'deletionStatus' => $account->getDeletionStatus(),
         'deleteAfter' => $deleteAfterTs,
         'due' => $due,
+        // The legal-hold lock, so the DeletionWorkflow halts on it without
+        // waiting for the account's mirrored snapshot (which a ban clears).
+        'locked' => $account->isLocked(),
       ]));
       return $response->withHeader('Content-Type', 'application/json');
     } catch (\Throwable $e) {
@@ -367,7 +370,9 @@ $app->group('/internal/account', function (RouteCollectorProxy $group) {
   // user's media bytes from R2+E2. DB-ONLY: drop the users_images + folders rows
   // and reset the account to a blank free shell (keeps npub + login). PHP no
   // longer does any S3 work for deletion - the Worker owns the byte-deletion.
-  // Re-checks 'pending' so a renewed/cancelled account is never finalized.
+  // Re-checks 'pending' so a renewed/cancelled account is never finalized, and
+  // keeps the rows of an account under a legal-hold lock ('locked'), except the
+  // CSAM takedown's own wipe (legalHoldWipe true on a 'forced' schedule).
   $group->post('/finalize-deletion', function (Request $request, Response $response) {
     global $link;
     $data = json_decode($request->getBody()->getContents(), true);
@@ -377,21 +382,11 @@ $app->group('/internal/account', function (RouteCollectorProxy $group) {
       return $response->withStatus(400)->withHeader('Content-Type', 'application/json');
     }
     try {
-      $account = Account::fromUuid($uuid, $link);
-      if ($account === null) {
+      if (Account::fromUuid($uuid, $link) === null) {
         $response->getBody()->write(json_encode(['ok' => false, 'error' => 'no-such-account']));
         return $response->withStatus(404)->withHeader('Content-Type', 'application/json');
       }
-      // Mirror /deletion-state: self-service stays expired-only; admin
-      // terminations ('admin'/'forced') finalize regardless of expiry. Anything
-      // else (cancelled/renewed/already-finalized) is an idempotent no-op.
-      $status = $account->getDeletionStatus();
-      $dueNow = ($status === 'pending' && $account->isExpired())
-        || $status === 'admin' || $status === 'forced';
-      if (!$dueNow) {
-        $response->getBody()->write(json_encode(['ok' => true, 'status' => 'not-pending']));
-        return $response->withHeader('Content-Type', 'application/json');
-      }
+      $legalHoldWipe = is_array($data) && ($data['legalHoldWipe'] ?? false) === true;
       // DB-only row cleanup (bytes already gone, deleted by the Worker). The
       // users_nostr_images rows would cascade from users_images / users_nostr_notes,
       // but we clear child-first explicitly inside the same transaction. The
@@ -399,6 +394,59 @@ $app->group('/internal/account', function (RouteCollectorProxy $group) {
       // wipeForDeletion() — it owns the "account wiped" semantics.
       $link->begin_transaction();
       try {
+        // Lock the users row first, then read the account fresh: a renewal, a
+        // cancel or a legal-hold lock being written now waits for this
+        // transaction or is seen by it, so none lands between the checks and
+        // the deletes.
+        $rowLock = $link->prepare('SELECT uuid_id FROM users WHERE uuid_id = ? FOR UPDATE');
+        if (!$rowLock) {
+          throw new Exception('Failed to prepare finalize-deletion row lock');
+        }
+        $rowLock->bind_param('s', $uuid);
+        if (!$rowLock->execute()) {
+          throw new Exception('Failed to lock the account row: ' . $rowLock->error);
+        }
+        $rowLock->close();
+        $account = Account::fromUuid($uuid, $link);
+        if ($account === null) {
+          $link->rollback();
+          $response->getBody()->write(json_encode(['ok' => false, 'error' => 'no-such-account']));
+          return $response->withStatus(404)->withHeader('Content-Type', 'application/json');
+        }
+        // Mirror /deletion-state: self-service stays expired-only; admin
+        // terminations ('admin'/'forced') finalize regardless of expiry.
+        $status = $account->getDeletionStatus();
+        $dueNow = ($status === 'pending' && $account->isExpired())
+          || $status === 'admin' || $status === 'forced';
+        if (!$dueNow) {
+          $link->rollback();
+          // Not due, three cases, each an idempotent no-op here. The shell a
+          // finalize leaves: a retry after one that committed (its answer
+          // lost), so 'finalized' and the Worker cleans up. A locked account
+          // (an admin cancelled its schedule, say): 'locked', the Worker halts
+          // and clears nothing, unless it is the takedown's own wipe. Otherwise
+          // renewed or cancelled: 'not-pending', and the Worker stops.
+          $answer = $account->isWipedShell()
+            ? 'finalized'
+            : ($account->isLocked() && !$legalHoldWipe ? 'locked' : 'not-pending');
+          $response->getBody()->write(json_encode([
+            'ok' => true,
+            'status' => $answer,
+            'deletionStatus' => $status,
+          ]));
+          return $response->withHeader('Content-Type', 'application/json');
+        }
+        // A legal-hold lock keeps the rows, except for the CSAM takedown's own
+        // wipe (legalHoldWipe true on a 'forced' schedule).
+        if ($account->isLocked() && !($legalHoldWipe && $status === 'forced')) {
+          $link->rollback();
+          $response->getBody()->write(json_encode([
+            'ok' => true,
+            'status' => 'locked',
+            'deletionStatus' => $status,
+          ]));
+          return $response->withHeader('Content-Type', 'application/json');
+        }
         foreach (['users_nostr_images', 'users_images', 'users_images_folders'] as $table) {
           $del = $link->prepare("DELETE FROM {$table} WHERE user_uuid = ?");
           if (!$del) {
@@ -409,6 +457,9 @@ $app->group('/internal/account', function (RouteCollectorProxy $group) {
             throw new Exception('Failed to delete rows from ' . $table . ': ' . $del->error);
           }
           $del->close();
+          // Closed: the catch below must not close it again (that throws and
+          // would skip the rollback, leaving the row locked).
+          $del = null;
         }
         // Reset the profile to a blank free shell (keeps npub + login).
         $account->wipeForDeletion();
@@ -421,7 +472,13 @@ $app->group('/internal/account', function (RouteCollectorProxy $group) {
         throw $e;
       }
 
-      $response->getBody()->write(json_encode(['ok' => true, 'status' => 'finalized']));
+      // The schedule judged in the transaction ('forced' keeps the Worker's
+      // Trust & Safety material through its cleanup).
+      $response->getBody()->write(json_encode([
+        'ok' => true,
+        'status' => 'finalized',
+        'deletionStatus' => $status,
+      ]));
       return $response->withHeader('Content-Type', 'application/json');
     } catch (\Throwable $e) {
       error_log('internal/account/finalize-deletion error: ' . $e->getMessage());
