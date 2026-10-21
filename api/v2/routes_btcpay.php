@@ -420,15 +420,17 @@ $app->group('/internal/account', function (RouteCollectorProxy $group) {
           || $status === 'admin' || $status === 'forced';
         if (!$dueNow) {
           $link->rollback();
-          // Not due, three cases, each an idempotent no-op here. The shell a
-          // finalize leaves: a retry after one that committed (its answer
-          // lost), so 'finalized' and the Worker cleans up. A locked account
-          // (an admin cancelled its schedule, say): 'locked', the Worker halts
-          // and clears nothing, unless it is the takedown's own wipe. Otherwise
-          // renewed or cancelled: 'not-pending', and the Worker stops.
-          $answer = $account->isWipedShell()
-            ? 'finalized'
-            : ($account->isLocked() && !$legalHoldWipe ? 'locked' : 'not-pending');
+          // Not due, three cases, each an idempotent no-op here. The lock comes
+          // first: a locked account (an admin cancelled its schedule, say)
+          // answers 'locked', the Worker halts and clears nothing. Only the
+          // takedown's own wipe skips that, as its retry after a finalize that
+          // committed finds the wiped shell still locked. Then the shell a
+          // finalize leaves (that retry, its answer lost): 'finalized', and the
+          // Worker cleans up. Otherwise renewed or cancelled: 'not-pending',
+          // and the Worker stops.
+          $answer = $account->isLocked() && !$legalHoldWipe
+            ? 'locked'
+            : ($account->isWipedShell() ? 'finalized' : 'not-pending');
           $response->getBody()->write(json_encode([
             'ok' => true,
             'status' => $answer,
@@ -437,8 +439,12 @@ $app->group('/internal/account', function (RouteCollectorProxy $group) {
           return $response->withHeader('Content-Type', 'application/json');
         }
         // A legal-hold lock keeps the rows, except for the CSAM takedown's own
-        // wipe (legalHoldWipe true on a 'forced' schedule).
-        if ($account->isLocked() && !($legalHoldWipe && $status === 'forced')) {
+        // wipe: the Worker says so (legalHoldWipe), and PHP's own schedule
+        // agrees, 'forced' with the 'legal' category the takedown records. A
+        // ban's forced wipe of a locked account is kept.
+        $takedownWipe = $legalHoldWipe && $status === 'forced'
+          && $account->getDeletionCategory() === 'legal';
+        if ($account->isLocked() && !$takedownWipe) {
           $link->rollback();
           $response->getBody()->write(json_encode([
             'ok' => true,
