@@ -683,6 +683,14 @@ class MultimediaUpload
     // Upload from URL
     // =========================================================================
 
+    // A paid account's limit is mostly its storage left (Account::uploadSizeRefusal).
+    private function sizeRefusal(int $size, int $sizeLimit): string
+    {
+        return $this->pro
+            ? $this->userAccount->uploadSizeRefusal($size)
+            : 'File size exceeds the limit of ' . formatSizeUnits($sizeLimit);
+    }
+
     public function uploadFileFromUrl(string $url, bool $pfp = false, ?string $title = '', ?string $ai_prompt = '', ?bool $no_transform = false, ?bool $blossom = false, ?string $sha256 = '', ?string $clientInfo = ''): array
     {
         $sizeLimit = $this->pro
@@ -706,8 +714,9 @@ class MultimediaUpload
 
         // Validate size
         if (intval($metadata['size']) > $sizeLimit) {
-            error_log('File size exceeds the limit of ' . formatSizeUnits($sizeLimit));
-            return [false, 413, 'File size exceeds the limit of ' . formatSizeUnits($sizeLimit)];
+            $refusal = $this->sizeRefusal(intval($metadata['size']), $sizeLimit);
+            error_log($refusal);
+            return [false, 413, $refusal];
         }
 
         // Download the file
@@ -759,8 +768,9 @@ class MultimediaUpload
             $failure = [false, 400, $e->getMessage()];
         } catch (Exception $e) {
             if ($fileSize > $sizeLimit || $curlSizeExceeded) {
-                error_log('File size exceeds the limit of ' . formatSizeUnits($sizeLimit));
-                $failure = [false, 413, 'File size exceeds the limit of ' . formatSizeUnits($sizeLimit)];
+                $refusal = $this->sizeRefusal($fileSize, $sizeLimit);
+                error_log($refusal);
+                $failure = [false, 413, $refusal];
             } elseif ($e->getCode() === CURLE_OPERATION_TIMEDOUT) {
                 error_log('URL download timed out: ' . $e->getMessage());
                 $failure = [false, 400, 'The download took too long'];

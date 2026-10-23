@@ -2042,7 +2042,7 @@ $app->group('/accounts', function (RouteCollectorProxy $group) {
         // then instead of failing every large upload in the deploy window.
         $size = isset($data['size']) && is_numeric($data['size']) ? (int) $data['size'] : 0;
         if ($size > 0 && !$account->hasSufficientStorageSpace($size)) {
-          return jsonResponse($response, 'error', 'File size exceeds the limit of ' . formatSizeUnits($account->getPerFileUploadLimit()), new stdClass(), 413, 'quota-exceeded');
+          return jsonResponse($response, 'error', $account->uploadSizeRefusal($size), new stdClass(), 413, 'quota-exceeded');
         }
         $s3Multipart = $this->get('s3Multipart');
         // Throws UploadRefusal carrying the reason; a bare false is no longer

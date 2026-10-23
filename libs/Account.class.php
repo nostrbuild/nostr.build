@@ -1513,6 +1513,23 @@ class Account
     return $remaining;
   }
 
+  /**
+   * Why a file of $size bytes over getPerFileUploadLimit() is refused, as the
+   * user reads it: that limit is usually the storage left on the account, not
+   * a file size limit ("File size exceeds the limit of 337.82 KB" read as one).
+   */
+  public function uploadSizeRefusal(int $size): string
+  {
+    if ($this->getAccountLevel() === AccountLevel::Purist && $size > SiteConfig::PURIST_PER_FILE_UPLOAD_LIMIT) {
+      return 'File is larger than the per-file limit of ' . formatSizeUnits(SiteConfig::PURIST_PER_FILE_UPLOAD_LIMIT);
+    }
+    $remaining = max(0, $this->getRemainingStorageSpace());
+    if ($remaining === 0) {
+      return 'No storage space left on your account';
+    }
+    return 'Not enough storage space: ' . formatSizeUnits($remaining) . ' left on your account';
+  }
+
   public function getPerFileUploadLimit(): int
   {
     // If account is level 3 (Purist) we also need to account for the SiteConfig::PURIST_PER_FILE_UPLOAD_LIMIT, which would be max for any uploads for that account

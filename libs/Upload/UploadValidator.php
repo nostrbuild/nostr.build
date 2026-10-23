@@ -148,8 +148,9 @@ class UploadValidator
       }
       // TODO: Need to validate array of files, so we do not allow to go over the limit with batch
       if (!$account->hasSufficientStorageSpace($file['size'])) {
-        error_log('File size exceeds the remaining space of ' . formatSizeUnits($account->getPerFileUploadLimit()));
-        return [false, 413, "File size exceeds the remaining space of " . formatSizeUnits($account->getPerFileUploadLimit())];
+        $refusal = $account->uploadSizeRefusal((int) $file['size']);
+        error_log($refusal);
+        return [false, 413, $refusal];
       }
     }
 
