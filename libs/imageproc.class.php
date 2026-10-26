@@ -1,5 +1,6 @@
 <?php
 require $_SERVER['DOCUMENT_ROOT'] . '/vendor/autoload.php';
+require_once __DIR__ . '/UploadErrors.php';
 
 use Spatie\ImageOptimizer\OptimizerChain;
 use Spatie\ImageOptimizer\Image;
@@ -108,11 +109,17 @@ class ImageProcessor
   private $isOversize = false;
 
   /**
-   * Summary of __construct
+   * $clientFile: the path is the client's own upload, as received. Only then is
+   * an image ImageMagick can't decode the client's fault (UnreadableFile, 422)
+   * and an image format we don't handle UnsupportedFileType (415); for a file
+   * the server produced both stay server errors.
+   *
    * @param mixed $imagePath
-   * @throws \InvalidArgumentException
+   * @throws \InvalidArgumentException (UnsupportedFileType with $clientFile)
+   * @throws \UnreadableFile with $clientFile
+   * @throws \ImagickException
    */
-  public function __construct($imagePath)
+  public function __construct($imagePath, bool $clientFile = false)
   {
     if (!class_exists('Imagick')) {
       throw new RuntimeException('Imagick extension is required for image processing');
@@ -132,13 +139,14 @@ class ImageProcessor
     }
 
     $this->imagePath = $resolvedPath;
-    $this->imagick = new Imagick($resolvedPath);
+    $this->imagick = self::openImage($resolvedPath, $clientFile);
     $width = $this->imagick->getImageWidth();
     $height = $this->imagick->getImageHeight();
     $this->isOversize = $width > 4096 || $height > 4096;
 
     if (!self::isSupported($this->imagick->getImageFormat())) {
-      throw new InvalidArgumentException("Image format not supported: {$this->imagick->getImageFormat()}");
+      $message = "Image format not supported: {$this->imagick->getImageFormat()}";
+      throw $clientFile ? new UnsupportedFileType($message) : new InvalidArgumentException($message);
     }
   }
 
@@ -753,6 +761,58 @@ class ImageProcessor
       }
     }
     $this->isSaved = true;
+  }
+
+  /**
+   * ImageMagick's codes (its severity) seen for bytes it can't decode:
+   * CorruptImageError 425 (not an image, a broken header), CoderError 450 (a
+   * damaged PNG on ImageMagick 6.9.12: "Read Exception"). Imagick's own code
+   * 1 ("Failed to read the file", no detail: the same PNG in production) is
+   * also used for a file it can't open, so it counts only for the formats
+   * ImageMagick decodes itself (PNG, JPEG, GIF), where no delegate can fail
+   * silently. Either way a decode failure counts only when PHP itself reads
+   * the file fine (fileReadable). BlobError 435 (seen only for a file the
+   * server couldn't open), resource or policy limits and a missing delegate
+   * are ours.
+   */
+  private const UNDECODABLE_CODES = [425, 450];
+  private const NO_DETAIL_FORMATS = ['image/png', 'image/jpeg', 'image/gif'];
+
+  private static function openImage(string $path, bool $clientFile): Imagick
+  {
+    try {
+      return new Imagick($path);
+    } catch (ImagickException $e) {
+      if (!$clientFile) {
+        throw $e;
+      }
+      $undecodable = in_array($e->getCode(), self::UNDECODABLE_CODES, true)
+        || ($e->getCode() === 1 && in_array(self::sniffedMime($path), self::NO_DETAIL_FORMATS, true));
+      if (!$undecodable || !self::fileReadable($path)) {
+        throw $e;
+      }
+      throw new UnreadableFile('The image could not be read: it may be damaged or truncated', 0, $e);
+    }
+  }
+
+  private static function sniffedMime(string $path): string
+  {
+    $finfo = finfo_open(FILEINFO_MIME_TYPE);
+    $mime = $finfo === false ? false : @finfo_file($finfo, $path);
+    return is_string($mime) ? $mime : '';
+  }
+
+  // Whether this process can open and read the file: if not, a failed decode
+  // is a server fault (permissions, a vanished temp file, no file handles).
+  private static function fileReadable(string $path): bool
+  {
+    $handle = @fopen($path, 'rb');
+    if ($handle === false) {
+      return false;
+    }
+    $byte = fread($handle, 1);
+    fclose($handle);
+    return $byte !== false && $byte !== '';
   }
 
   /**

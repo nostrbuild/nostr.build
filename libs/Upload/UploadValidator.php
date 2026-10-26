@@ -65,7 +65,15 @@ class UploadValidator
       error_log('Failed to get account level: ' . $e->getMessage());
     }
 
-    $fileType = detectFileExt($file['tmp_name'], $userAccountLevel);
+    // The client's own bytes: a type this upload may not carry is a 415, so it
+    // isn't retried. A file that couldn't be read throws RuntimeException on
+    // (a 500).
+    try {
+      $fileType = detectFileExt($file['tmp_name'], $userAccountLevel);
+    } catch (InvalidArgumentException $e) {
+      error_log('Upload refused: ' . $e->getMessage());
+      return [false, 415, 'Unsupported file type'];
+    }
     $multiplierSize = 1;
     // Check if uploaded file is an image, and add a fuzz factor to account for future optimization
     if ($fileType['type'] === 'image' && !$noTransform) {

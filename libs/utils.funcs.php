@@ -173,6 +173,12 @@ function detectFileExt($file, int $acctlevel = 0)
   $finfo = finfo_open(FILEINFO_MIME_TYPE);
   $mimeType = finfo_file($finfo, $file);
   finfo_close($finfo);
+  // The file couldn't be read: the server's fault, not the file's type, so
+  // not an InvalidArgumentException (which callers read as "type not
+  // accepted").
+  if ($mimeType === false) {
+    throw new RuntimeException("Could not read the file's type");
+  }
   // DEBUG
   error_log("\nMIME type: $mimeType\n");
 

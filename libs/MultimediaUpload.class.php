@@ -273,6 +273,16 @@ class MultimediaUpload
         return $this->defaultFolderName ?? '';
     }
 
+    // A refusal for the client's own file (libs/UploadErrors.php): 415 for a
+    // type we don't accept, 422 for an image that can't be read.
+    private static function clientFileRefusal(UnsupportedFileType|UnreadableFile $e): array
+    {
+        error_log('Upload refused: ' . $e->getMessage() . ($e->getPrevious() ? ' (' . $e->getPrevious()->getMessage() . ')' : ''));
+        return $e instanceof UnsupportedFileType
+            ? [false, 415, 'Unsupported file type']
+            : [false, 422, $e->getMessage()];
+    }
+
     // =========================================================================
     // Upload Profile Picture
     // =========================================================================
@@ -285,7 +295,13 @@ class MultimediaUpload
 
         try {
             $this->file = $this->filesArray[0];
-            $fileType = detectFileExt($this->file['tmp_name']);
+            try {
+                $fileType = detectFileExt($this->file['tmp_name']);
+            } catch (InvalidArgumentException $e) {
+                // The client's own bytes, a type not accepted: not retried.
+                error_log('Profile picture refused: ' . $e->getMessage());
+                return [false, 415, 'Unsupported file type'];
+            }
             if ($fileType['type'] !== 'image' && $fileType['type'] !== 'video') {
                 return [false, 400, 'Invalid file type, only images and videos are allowed'];
             }
@@ -359,6 +375,8 @@ class MultimediaUpload
                 'dimensionsString' => isset($fileData['dimensions']) ? sprintf('%dx%d', $fileData['dimensions']['width'] ?? 0, $fileData['dimensions']['height'] ?? 0) : '0x0',
                 'blurhash' => $fileData['blurhash'] ?? '',
             ];
+        } catch (UnsupportedFileType | UnreadableFile $e) {
+            return self::clientFileRefusal($e);
         } catch (Exception $e) {
             error_log("Profile picture upload failed: " . $e->getMessage());
             return [false, 500, 'Server error, please try again later'];
@@ -405,7 +423,11 @@ class MultimediaUpload
         $successfulUploads = 0;
 
         $baseNoTransform = $this->no_transform;
+        // A file that failed for no recorded reason; then the request answers
+        // 500, never another file's 4xx, so the client retries.
+        $serverFault = false;
         foreach ($this->filesArray as $file) {
+            $errorsAtStart = count($returnError);
             try {
                 $this->file = $file;
                 $this->no_transform = $baseNoTransform; // Reset per file to prevent cross-contamination
@@ -642,8 +664,17 @@ class MultimediaUpload
                     'dimensionsString' => isset($fileData['dimensions']) ? sprintf('%dx%d', $fileData['dimensions']['width'] ?? 0, $fileData['dimensions']['height'] ?? 0) : '0x0',
                 ];
                 $successfulUploads++;
+            } catch (UnsupportedFileType | UnreadableFile $e) {
+                // The client's own file, not our fault: a 4xx, so it isn't retried.
+                $lastError = $e;
+                $returnError[] = self::clientFileRefusal($e);
+                continue;
             } catch (Exception $e) {
                 $lastError = $e;
+                // No reason recorded: a server fault the client may retry.
+                if (count($returnError) === $errorsAtStart) {
+                    $serverFault = true;
+                }
                 error_log("File loop exception: " . $lastError->getMessage());
                 continue;
             }
@@ -667,12 +698,17 @@ class MultimediaUpload
 
         // Determine return status
         if ($successfulUploads === 0 && ($lastError !== null || $returnError !== [])) {
-            if ($lastError !== null && $returnError === []) {
+            if ($serverFault || $returnError === []) {
                 return [false, 500, 'Server error, please try again later'];
-            } else {
-                return $returnError[0];
             }
-        } elseif ($successfulUploads > 0 && $returnError !== []) {
+            // A server error a file recorded wins over another file's refusal.
+            foreach ($returnError as $error) {
+                if ($error[1] >= 500) {
+                    return $error;
+                }
+            }
+            return $returnError[0];
+        } elseif ($successfulUploads > 0 && ($returnError !== [] || $serverFault)) {
             return [true, 200, 'Some files failed to upload'];
         }
 

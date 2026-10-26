@@ -141,7 +141,7 @@ class MediaProcessor
       return ['newTmpPath' => null, 'noTransformOverride' => false];
     }
 
-    $img = new ImageProcessor($tmpPath);
+    $img = new ImageProcessor($tmpPath, clientFile: true);
     if (!$img->isAnimated()) {
       return ['newTmpPath' => null, 'noTransformOverride' => false];
     }
@@ -197,7 +197,8 @@ class MediaProcessor
     $effectivePath = $newTmpPath ?? $tmpPath;
     $effectiveNoTransform = $noTransform || $noTransformOverride;
 
-    $img = new ImageProcessor($effectivePath);
+    // The client's own file unless a downsized GIF replaced it.
+    $img = new ImageProcessor($effectivePath, clientFile: $newTmpPath === null);
 
     if (!$effectiveNoTransform) {
       $img->convertHeicToJpeg()
@@ -243,7 +244,8 @@ class MediaProcessor
     $effectivePath = $newTmpPath ?? $tmpPath;
     $effectiveNoTransform = $noTransform || $noTransformOverride;
 
-    $img = new ImageProcessor($effectivePath);
+    // The client's own file unless a downsized GIF replaced it.
+    $img = new ImageProcessor($effectivePath, clientFile: $newTmpPath === null);
 
     if (!$effectiveNoTransform) {
       $img->convertHeicToJpeg()
@@ -296,7 +298,7 @@ class MediaProcessor
     } else {
       // Process static image
       $effectivePath = $tmpPath;
-      $img = new ImageProcessor($effectivePath);
+      $img = new ImageProcessor($effectivePath, clientFile: true);
       $img->fixImageOrientation()
         ->cropSquare()
         ->resizeImage(self::PROFILE_DIMENSION, self::PROFILE_DIMENSION)
