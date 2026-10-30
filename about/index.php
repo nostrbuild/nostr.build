@@ -116,7 +116,7 @@ $perm = new Permission();
       <b>Account features include:</b><br />
       - <font color="#D3D3D3">Global CDN network:</font> super fast access for all media including videos<br />
       - <font color="#D3D3D3">AI Studio:</font> Image Generation and more for Creator and Advanced accounts<br />
-      - <font color="#D3D3D3">Large Video Support:</font> upload videos up to account sizes 10/30/100GB<br />
+      - <font color="#D3D3D3">Large Video Support:</font> on Professional and up, one video can use the storage you have left, up to 100GB<br />
       - <font color="#D3D3D3">Delete:</font> your media after posted by clicking the checkbox<br />
       - <font color="#D3D3D3">Private Folders:</font> Click on ‘New Folder’ in the left menu bar, name your folder and click Create<br />
       - <font color="#D3D3D3">Backup on S3:</font> Content is backed up on seperate providers, S3 amnd Cloudflare<br />

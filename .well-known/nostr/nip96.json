@@ -25,7 +25,7 @@
       "name": "Professional",
       "is_nip98_required": true,
       "url": "https://nostr.build/plans/",
-      "max_byte_size": 10737418240,
+      "max_byte_size": 53687091200,
       "file_expiration": [0, 0],
       "media_transformations": {
         "image": [
@@ -41,7 +41,7 @@
       "name": "Creator",
       "is_nip98_required": true,
       "url": "https://nostr.build/plans/",
-      "max_byte_size": 32212254720,
+      "max_byte_size": 107374182400,
       "file_expiration": [0, 0],
       "media_transformations": {
         "image": [

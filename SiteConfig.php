@@ -177,9 +177,9 @@ class SiteConfig
     '5' => ['limit' => 5 * 1024 * 1024 * 1024, 'message' => '5GB'],
     '4' => ['limit' => 0, 'message' => 'No Storage, consider upgrading'],
     '3' => ['limit' => 5 * 1024 * 1024 * 1024, 'message' => '5GB'],
-    '2' => ['limit' => 25 * 1024 * 1024 * 1024, 'message' => '25GB'],
-    '1' => ['limit' => 100 * 1024 * 1024 * 1024, 'message' => '100GB'],
-    '10' => ['limit' => 500 * 1024 * 1024 * 1024, 'message' => '500GB'],
+    '2' => ['limit' => 50 * 1024 * 1024 * 1024, 'message' => '50GB'],
+    '1' => ['limit' => 200 * 1024 * 1024 * 1024, 'message' => '200GB'],
+    '10' => ['limit' => 1024 * 1024 * 1024 * 1024, 'message' => '1TB'],
     '0' => ['limit' => 0, 'message' => 'No Storage, consider upgrading'],
   ];
 

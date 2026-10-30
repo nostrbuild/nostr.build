@@ -179,7 +179,10 @@ SVG;
 							<span class="plan_price_amount">$<?= (int) $plan['priceUsd'] ?></span>
 							<span class="plan_price_term">/year</span>
 						</p>
-						<p class="plan_storage"><?= htmlspecialchars((string) $plan['storage']) ?> private storage</p>
+						<p class="plan_storage">
+							<?php if (is_string($plan['storageBefore'] ?? null)): ?><s><?= htmlspecialchars($plan['storageBefore']) ?></s> <?php endif; ?>
+							<?= htmlspecialchars((string) $plan['storage']) ?> private storage
+						</p>
 						<ul class="plan_features">
 							<?php foreach ($planFeatures as $feature): ?>
 								<li><?= htmlspecialchars((string) $feature) ?></li>
