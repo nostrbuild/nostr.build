@@ -1637,6 +1637,9 @@ $app->group('/accounts/admin/csam', function (RouteCollectorProxy $group) {
         'type' => $type,
         'mime' => $mime,
         'blossomHash' => ($hash !== null && $hash !== '') ? (string) $hash : null,
+        // Public CDN URL, the same one Account Review shows: the media takedown
+        // workflow PATCHes it to restrict the file and lists it in the notice.
+        'url' => aaPaidMediaUrl((string) $r['image'], $mime),
       ];
     }
     $rs->free();
@@ -2287,21 +2290,37 @@ $app->group('/accounts/admin/moderation', function (RouteCollectorProxy $group) 
  * url from the per-type CDN base, thumb for images only — the client derives
  * video posters + other-type icons.
  */
+/** Paid media type: extension-derived, with the mime's first segment as the fallback. */
+function aaPaidMediaType(string $image, string $mime): string
+{
+  $type = getFileTypeFromName($image);
+  return $type === 'unknown' ? explode('/', $mime)[0] : $type;
+}
+
+/**
+ * Public CDN URL of a paid file, from the per-type professional_account_* base.
+ * An unknown CDN mapping falls back to the public /p/ path so the row still
+ * resolves rather than vanishing.
+ */
+function aaPaidMediaUrl(string $image, string $mime): string
+{
+  $filename = pathinfo($image, PATHINFO_BASENAME);
+  try {
+    return SiteConfig::getFullyQualifiedUrl('professional_account_' . aaPaidMediaType($image, $mime)) . $filename;
+  } catch (\Throwable $e) {
+    return SiteConfig::ACCESS_SCHEME . '://' . SiteConfig::DOMAIN_NAME . '/p/' . $filename;
+  }
+}
+
 function aaReviewMediaRow(array $r): array
 {
   $filename = pathinfo((string) $r['image'], PATHINFO_BASENAME);
-  $type = getFileTypeFromName((string) $r['image']);
-  if ($type === 'unknown') {
-    $type = explode('/', (string) $r['mime_type'])[0];
-  }
+  $type = aaPaidMediaType((string) $r['image'], (string) $r['mime_type']);
   $ptype = 'professional_account_' . $type;
+  $url = aaPaidMediaUrl((string) $r['image'], (string) $r['mime_type']);
   try {
-    $url   = SiteConfig::getFullyQualifiedUrl($ptype) . $filename;
     $thumb = $type === 'image' ? (SiteConfig::getThumbnailUrl($ptype) . $filename) : null;
   } catch (\Throwable $e) {
-    // Unknown CDN mapping — fall back to the public path so the row still
-    // resolves rather than vanishing from the review.
-    $url   = SiteConfig::ACCESS_SCHEME . '://' . SiteConfig::DOMAIN_NAME . '/p/' . $filename;
     $thumb = null;
   }
   return [
