@@ -31,6 +31,7 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/WorkerEventsClient.class.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/IpAccessControl.class.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/LegacyBlacklist.class.php';
 require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/utils.funcs.php'; // getFileTypeFromName (canonical type map)
+require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/ReportedFilename.funcs.php'; // aaReportedFilename
 require_once __DIR__ . '/helper_functions.php';
 
 require $_SERVER['DOCUMENT_ROOT'] . '/vendor/autoload.php';
@@ -2335,45 +2336,30 @@ function aaReviewMediaRow(array $r): array
   ];
 }
 
-/**
- * The stored filename a report points to: the last path segment of a URL in
- * any form (any host, /_r/ resize, thumb / resp paths, a query string) or a
- * bare filename. A derivative's trailing /poster.jpg names its parent file.
- * Null when it can't be a stored filename.
- */
-function aaReportedFilename(string $q): ?string
-{
-  $path = str_contains($q, '://') ? (string) parse_url($q, PHP_URL_PATH) : preg_split('/[?#]/', $q)[0];
-  $segs = array_values(array_filter(explode('/', $path), fn($s) => $s !== ''));
-  if ($segs === []) return null;
-  $name = rawurldecode($segs[count($segs) - 1]);
-  if (strcasecmp($name, 'poster.jpg') === 0 && count($segs) > 1) {
-    $name = rawurldecode($segs[count($segs) - 2]);
-  }
-  return preg_match('/^[A-Za-z0-9._-]{1,255}$/', $name) ? $name : null;
-}
-
 // A partial name must be at least this long (names are content hashes).
 const AA_PREFIX_MIN = 8;
 // The most matches a lookup lists to pick from.
 const AA_CANDIDATES_MAX = 20;
 
 /**
- * users_images rows + their owner for a reported filename: the exact name,
- * else the names starting with it (AA_PREFIX_MIN+ characters). Always an
- * exact or prefix match, so the image index serves it, never a scan of all
- * paid media. At most AA_CANDIDATES_MAX + 1 rows (the extra one says "more").
+ * Non-staff users_images rows + their owner for a reported filename: the
+ * exact name, else the names starting with it (AA_PREFIX_MIN+ characters).
+ * Always an exact or prefix match ordered by the name itself, so the image
+ * index serves it (never a walk of all paid media); the prefix rows are then
+ * listed newest first. At most AA_CANDIDATES_MAX + 1 rows (the extra one says
+ * "more"). Staff-owned files are not subject to review and never listed.
  */
 function aaFindReportedMedia(mysqli $link, string $name): array
 {
   $sql = "SELECT ui.id, ui.user_uuid, ui.image, ui.mime_type, ui.file_size, ui.created_at,
-                 u.usernpub, u.nym, u.acctlevel
+                 u.usernpub, u.nym
           FROM users_images ui JOIN users u ON u.uuid_id = ui.user_uuid
-          WHERE ui.image %s ? AND ui.user_uuid <> ''
-          ORDER BY ui.id DESC LIMIT " . (AA_CANDIDATES_MAX + 1);
-  $run = function (string $op, string $arg) use ($link, $sql): array {
+          WHERE ui.image %s ? AND ui.user_uuid <> '' AND u.acctlevel < ?
+          ORDER BY ui.image LIMIT " . (AA_CANDIDATES_MAX + 1);
+  $staff = AccountLevel::Moderator->value;
+  $run = function (string $op, string $arg) use ($link, $sql, $staff): array {
     $stmt = $link->prepare(sprintf($sql, $op));
-    $stmt->bind_param('s', $arg);
+    $stmt->bind_param('si', $arg, $staff);
     $stmt->execute();
     $rows = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
     $stmt->close();
@@ -2383,38 +2369,43 @@ function aaFindReportedMedia(mysqli $link, string $name): array
   if ($rows === [] && strlen($name) >= AA_PREFIX_MIN) {
     $rows = $run('LIKE', addcslashes($name, '%_\\') . '%');
   }
+  usort($rows, fn($a, $b) => (int) $b['id'] <=> (int) $a['id']);
   return $rows;
 }
 
-/** One users_images row + owner by its id (the pick list's and the ledger's exact link). */
-function aaFindMediaById(mysqli $link, int $id): array
+/** One of an account's media rows by id (the reported file of `file=`), or null. */
+function aaFindOwnedMedia(mysqli $link, string $ownerUuid, int $id): ?array
 {
-  $stmt = $link->prepare("SELECT ui.id, ui.user_uuid, ui.image, ui.mime_type, ui.file_size, ui.created_at,
-                                 u.usernpub, u.nym, u.acctlevel
-                          FROM users_images ui JOIN users u ON u.uuid_id = ui.user_uuid
-                          WHERE ui.id = ? AND ui.user_uuid <> ''");
-  $stmt->bind_param('i', $id);
+  $stmt = $link->prepare("SELECT id, user_uuid, image, mime_type, file_size, created_at
+                          FROM users_images WHERE id = ? AND user_uuid = ?");
+  $stmt->bind_param('is', $id, $ownerUuid);
   $stmt->execute();
-  $rows = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+  $row = $stmt->get_result()->fetch_assoc();
   $stmt->close();
-  return $rows;
+  return $row ?: null;
 }
 
 $app->group('/accounts/admin/account-review', function (RouteCollectorProxy $group) {
 
   /**
-   * GET /accounts/admin/account-review/resolve?q=<url|filename|prefix|id:N|npub|uuid>
-   * Turn a report into the owning account. npub/uuid resolve directly. A URL
-   * in any form, a bare filename or a filename prefix (8+ characters) is
-   * matched to its users_images row; `id:<users_images.id>` names one row
-   * exactly. One match returns the full account snapshot (real latest ban
-   * reason, not the hardcoded one) and the matched item; several return
-   * `candidates` to pick from (staff-owned files are never listed).
+   * GET /accounts/admin/account-review/resolve?q=<url|filename|prefix|npub|uuid>[&file=<id>]
+   * Turn a report into the owning account. npub/uuid resolve directly, and
+   * `file` names one of that account's files as the reported item (absent
+   * once deleted: the account still resolves). A URL in any form, a bare
+   * filename or a filename prefix (8+ characters) is matched to its
+   * users_images row. One match returns the full account snapshot (real
+   * latest ban reason, not the hardcoded one) and the matched item; several
+   * return `candidates` to pick from (staff-owned files are never listed).
    */
   $group->get('/resolve', function (Request $request, Response $response) {
     global $link;
-    $q = trim((string) ($request->getQueryParams()['q'] ?? ''));
+    $params = $request->getQueryParams();
+    $q = trim((string) ($params['q'] ?? ''));
     if ($q === '' || strlen($q) > 2048) return aaError($response, 'invalid-query', 400);
+    // A pasted identifier: drop a nostr: URI prefix; a uuid in any case.
+    $q = preg_replace('/^nostr:/i', '', $q);
+    if (preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $q)) $q = strtolower($q);
+    $fileId = preg_match('/^\d{1,18}$/', (string) ($params['file'] ?? '')) ? (int) $params['file'] : null;
 
     $matchedItemId = null;
     $matchedItem = null;
@@ -2435,26 +2426,17 @@ $app->group('/accounts/admin/account-review', function (RouteCollectorProxy $gro
       if ($account === null || !$account->accountExists()) return aaError($response, 'not-found', 404);
       $npub = (string) $account->getNpub();
     } else {
-      // A media report: one row by id, or by its (partial) filename.
-      if (preg_match('/^id:(\d{1,18})$/', $q, $m)) {
-        $rows = aaFindMediaById($link, (int) $m[1]);
-      } else {
-        $name = aaReportedFilename($q);
-        if ($name === null) return aaError($response, 'invalid-query', 400);
-        $rows = aaFindReportedMedia($link, $name);
-      }
+      // A media report: the file by its (partial) filename.
+      $name = aaReportedFilename($q);
+      if ($name === null) return aaError($response, 'invalid-query', 400);
+      $rows = aaFindReportedMedia($link, $name);
       if ($rows === []) {
         return aaJson($response, ['found' => false, 'note' => 'No paid-account media matches that.']);
       }
-      // Internal staff are not subject to Account Review (checked again below).
-      $open = array_values(array_filter($rows, fn($r) => (int) $r['acctlevel'] < AccountLevel::Moderator->value));
-      if ($open === []) {
-        return aaJson($response, ['found' => false, 'note' => 'This is an internal staff account and is not subject to review.']);
-      }
-      if (count($open) > 1) {
+      if (count($rows) > 1) {
         $candidates = array_map(fn($r) => aaReviewMediaRow($r) + [
           'owner' => ['uuidId' => (string) $r['user_uuid'], 'npub' => $r['usernpub'] ?: null, 'nym' => $r['nym'] ?: null],
-        ], array_slice($open, 0, AA_CANDIDATES_MAX));
+        ], array_slice($rows, 0, AA_CANDIDATES_MAX));
         return aaJson($response, [
           'found' => false,
           'candidates' => $candidates,
@@ -2462,7 +2444,7 @@ $app->group('/accounts/admin/account-review', function (RouteCollectorProxy $gro
           'note' => 'Several files match. Pick one.',
         ]);
       }
-      $hit = $open[0];
+      $hit = $rows[0];
       // Resolve to the CURRENT owner via the stable uuid (rotation-safe; the
       // media row no longer stores npub) and KEEP that account.
       $account = Account::fromUuid((string) $hit['user_uuid'], $link);
@@ -2481,6 +2463,17 @@ $app->group('/accounts/admin/account-review', function (RouteCollectorProxy $gro
     // data or media (mirrored by the terminate route below).
     if ($account->getAccountLevelInt() >= AccountLevel::Moderator->value) {
       return aaJson($response, ['found' => false, 'note' => 'This is an internal staff account and is not subject to review.']);
+    }
+
+    // `file`: the reported item of an account lookup (a picked candidate, a
+    // ledger or appeal link). Only this account's own file; a deleted one
+    // leaves just the account.
+    if ($matchedItem === null && $fileId !== null) {
+      $owned = aaFindOwnedMedia($link, (string) $account->getAccountUuid(), $fileId);
+      if ($owned !== null) {
+        $matchedItemId = (int) $owned['id'];
+        $matchedItem = aaReviewMediaRow($owned);
+      }
     }
 
     $snap = aaUserSnapshot($account, $link);
