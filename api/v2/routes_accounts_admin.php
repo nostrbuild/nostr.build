@@ -2366,11 +2366,26 @@ function aaFindReportedMedia(mysqli $link, string $name): array
     return $rows;
   };
   $rows = $run('=', $name);
-  if ($rows === [] && strlen($name) >= AA_PREFIX_MIN) {
+  if ($rows === [] && strlen($name) >= AA_PREFIX_MIN && !aaStaffOwnsFile($link, $name)) {
     $rows = $run('LIKE', addcslashes($name, '%_\\') . '%');
   }
-  usort($rows, fn($a, $b) => (int) $b['id'] <=> (int) $a['id']);
-  return $rows;
+  // The first AA_CANDIDATES_MAX by name (plus the "more" row), newest first.
+  $listed = array_slice($rows, 0, AA_CANDIDATES_MAX);
+  usort($listed, fn($a, $b) => (int) $b['id'] <=> (int) $a['id']);
+  return count($rows) > AA_CANDIDATES_MAX ? [...$listed, $rows[AA_CANDIDATES_MAX]] : $listed;
+}
+
+/** Whether a staff account owns a file of exactly this name (it is not subject to review). */
+function aaStaffOwnsFile(mysqli $link, string $name): bool
+{
+  $staff = AccountLevel::Moderator->value;
+  $stmt = $link->prepare("SELECT 1 FROM users_images ui JOIN users u ON u.uuid_id = ui.user_uuid
+                          WHERE ui.image = ? AND u.acctlevel >= ? LIMIT 1");
+  $stmt->bind_param('si', $name, $staff);
+  $stmt->execute();
+  $hit = $stmt->get_result()->fetch_row() !== null;
+  $stmt->close();
+  return $hit;
 }
 
 /** One of an account's media rows by id (the reported file of `file=`), or null. */
@@ -2402,10 +2417,11 @@ $app->group('/accounts/admin/account-review', function (RouteCollectorProxy $gro
     $params = $request->getQueryParams();
     $q = trim((string) ($params['q'] ?? ''));
     if ($q === '' || strlen($q) > 2048) return aaError($response, 'invalid-query', 400);
-    // A pasted identifier: drop a nostr: URI prefix; a uuid in any case.
+    // A pasted identifier: drop a nostr: URI prefix; npub and uuid in any case.
     $q = preg_replace('/^nostr:/i', '', $q);
-    if (preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $q)) $q = strtolower($q);
-    $fileId = preg_match('/^\d{1,18}$/', (string) ($params['file'] ?? '')) ? (int) $params['file'] : null;
+    if (preg_match('/^npub1[0-9a-z]+\z/i', $q)) $q = strtolower($q);
+    if (preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\z/i', $q)) $q = strtolower($q);
+    $fileId = preg_match('/^\d{1,18}\z/', (string) ($params['file'] ?? '')) ? (int) $params['file'] : null;
 
     $matchedItemId = null;
     $matchedItem = null;
@@ -2431,7 +2447,10 @@ $app->group('/accounts/admin/account-review', function (RouteCollectorProxy $gro
       if ($name === null) return aaError($response, 'invalid-query', 400);
       $rows = aaFindReportedMedia($link, $name);
       if ($rows === []) {
-        return aaJson($response, ['found' => false, 'note' => 'No paid-account media matches that.']);
+        $note = aaStaffOwnsFile($link, $name)
+          ? 'This is an internal staff account and is not subject to review.'
+          : 'No paid-account media matches that.';
+        return aaJson($response, ['found' => false, 'note' => $note]);
       }
       if (count($rows) > 1) {
         $candidates = array_map(fn($r) => aaReviewMediaRow($r) + [
