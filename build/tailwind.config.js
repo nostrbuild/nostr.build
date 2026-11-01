@@ -35,15 +35,15 @@ module.exports = {
     'grid-cols-12',
     'grid-cols-16',
   ],
+  // Only the PHP pages that still render with this CSS (everything else is
+  // served by account.nostr.build). Scanning the whole repo pulled in vendor/
+  // and node_modules and ran the staging build out of memory.
   content: [
-    "./src/*.js",
-    "./css/*.css",
-    "../**/*.php",
-    "../**/*.html",
-    "../**/*.js",
-    "../*.php",
-    "!./",
-    "!./vendor/",
+    './src/*.js',
+    '../delete/*.php',
+    '../freeview/*.php',
+    '../components/mainnav.php',
+    '../components/footer.php',
   ],
   theme: {
     screens: {
@@ -166,8 +166,6 @@ module.exports = {
   },
   plugins: [
     require('@tailwindcss/forms'),
-    require('@tailwindcss/aspect-ratio'),
-    require('@tailwindcss/typography'),
   ],
 }
 

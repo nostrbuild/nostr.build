@@ -1,45 +1,21 @@
 {
   "name": "nostrbuild",
   "version": "1.0.0",
-  "description": "JS Libraries for use in nostr.build app",
-  "source": "src/index.js",
-  "browserslist": "> 0.5%, last 2 versions, not dead",
+  "private": true,
+  "description": "Assets for the PHP pages still served by nostr.build: /delete's script and the Tailwind CSS of /delete and /freeview",
   "scripts": {
-    "clean": "rm -r ../scripts/dist",
-    "build": "esbuild src/*.js --bundle --minify --outdir=../scripts/dist --format=esm --target=es2020 && npx tailwindcss -o ../styles/twbuild.css --minify && npm run update-versions",
+    "build": "rm -rf ../scripts/dist && esbuild src/delete.js --bundle --minify --outdir=../scripts/dist --format=esm --target=es2020 && tailwindcss -o ../styles/twbuild.css --minify && npm run update-versions",
     "update-versions": "/usr/bin/env python3 bump_css_js_version.py"
   },
   "author": "Fishcake",
   "license": "MIT",
   "dependencies": {
-    "@alpinejs/focus": "^3.15.12",
-    "@alpinejs/intersect": "^3.15.12",
-    "@alpinejs/persist": "^3.15.12",
-    "@headlessui/tailwindcss": "^0.2.2",
-    "@tailwindcss/aspect-ratio": "^0.4.2",
-    "@tailwindcss/forms": "^0.5.11",
-    "@tailwindcss/typography": "^0.5.19",
-    "alpinejs": "^3.15.12",
-    "nostr-tools": "2.12.0",
-    "vidstack": "1.11.22"
+    "alpinejs": "^3.17.5",
+    "nostr-tools": "2.25.4"
   },
   "devDependencies": {
-    "@types/alpinejs": "^3.13.11",
-    "autoprefixer": "^10.5.0",
-    "buffer": "^6.0.3",
-    "cssnano": "^7.1.8",
-    "esbuild": "0.25.9",
-    "postcss": "^8.5.13",
-    "postcss-import": "^16.1.1",
-    "process": "^0.11.10",
+    "@tailwindcss/forms": "^0.5.11",
+    "esbuild": "0.28.2",
     "tailwindcss": "^3.4.19"
-  },
-  "targets": {
-    "default": {
-      "distDir": "../scripts/dist"
-    }
-  },
-  "@parcel/resolver-default": {
-    "packageExports": true
   }
 }
