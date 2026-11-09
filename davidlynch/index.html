@@ -1,272 +1,442 @@
 <!doctype html>
-<html>
+<html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Tribute to David Lynch</title>
-<link href="css/dl.css" rel="stylesheet" type="text/css">
+<meta name="description" content="A tribute to David Lynch, 1946 to 2025. Watch Twin Peaks, seasons 1 to 3, and Fire Walk With Me.">
+<meta name="theme-color" content="#0c0a09">
+<meta property="og:title" content="Tribute to David Lynch">
+<meta property="og:description" content="David Lynch, 1946 to 2025. Watch Twin Peaks and Fire Walk With Me.">
+<meta property="og:image" content="https://i.nostr.build/eJVfaBQBzTCpMSVu.jpg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&display=swap">
+<link rel="stylesheet" href="css/dl.css">
+<script>document.documentElement.classList.add('js')</script>
 </head>
 <body>
-<!-- Main Container -->
-<div class="container"> 
-  <!-- Header -->
-  <header class="header">
-	  <h4 class="logo">Tribute to David Lynch</h4>
-  </header>
-  <!-- Hero Section -->
-  <section class="intro" >
-    <div class="column"><img src="https://i.nostr.build/eJVfaBQBzTCpMSVu.jpg" alt="" class="profile"></div>
-    <div class="column">
-      <p>David Lynch was more than just a film maker, he was an artist, with masterpieces that took you to another place and time. While most movies can be easily predicted, none of his creations had any known path, often leaving the viewer mezmorized, not only questioning the movie, but questioning their own life, existance, and reality.</p>
-	  <p>There is no way to explain David Lynch in words, you have to watch his movies.</p>
-		<iframe src="https://e.nostr.build/v_IkMxqvMkUrvzcUVQ_mp4?t=ZPc86BhnG8Wyf6zP.mp4&by=nostr.build&w=480px&h=272px" style="border: 0; display: block; aspect-ratio: 480/272" allow="fullscreen; encrypted-media; picture-in-picture" loading="lazy" title="ZPc86BhnG8Wyf6zP.mp4" class="center"></iframe>
+
+<header class="hero">
+  <div class="wrap">
+    <p class="kicker">Tribute to</p>
+    <h1>David Lynch</h1>
+    <p class="years">1946 · 2025</p>
+    <nav aria-label="Watch">
+      <ul class="quick">
+        <li><a href="#season-1">Season 1</a></li>
+        <li><a href="#season-2">Season 2</a></li>
+        <li><a href="#season-3">Season 3</a></li>
+      </ul>
+    </nav>
+  </div>
+</header>
+<div class="zigzag" aria-hidden="true"></div>
+
+<main>
+  <section class="photos wrap" aria-label="Photographs of David Lynch">
+    <ul class="strip">
+        <li><figure><img src="https://upload.wikimedia.org/wikipedia/commons/d/de/David_Lynch_at_the_1990_Emmy_Awards.jpg" alt="David Lynch, 1990, Emmy Awards" loading="lazy" decoding="async" style="object-position:50% 30%"><figcaption>1990, Emmy Awards</figcaption></figure></li>
+        <li><figure><img src="https://upload.wikimedia.org/wikipedia/commons/0/06/David_Lynch_Paris_Oct_2007.jpg" alt="David Lynch, 2007, Paris" loading="lazy" decoding="async" style="object-position:50% 25%"><figcaption>2007, Paris</figcaption></figure></li>
+        <li><figure><img src="https://thumb.wikimedia.org/wikipedia/commons/thumb/0/03/David_Lynch_by_Kargaltsev.jpg/960px-David_Lynch_by_Kargaltsev.jpg" alt="David Lynch, 2009, Moscow" loading="lazy" decoding="async" style="object-position:52% 40%"><figcaption>2009, Moscow</figcaption></figure></li>
+        <li class="keep-color"><figure><img src="https://upload.wikimedia.org/wikipedia/commons/4/41/David_Lynch_Red.jpg" alt="David Lynch, 2009" loading="lazy" decoding="async" style="object-position:62% 50%"><figcaption>2009</figcaption></figure></li>
+        <li><figure><img src="https://thumb.wikimedia.org/wikipedia/commons/thumb/4/45/David_Lynch_2016.jpg/960px-David_Lynch_2016.jpg" alt="David Lynch, 2016" loading="lazy" decoding="async" style="object-position:50% 35%"><figcaption>2016</figcaption></figure></li>
+        <li><figure><img src="https://upload.wikimedia.org/wikipedia/commons/0/00/David_Lynch_Cannes_2017.jpg" alt="David Lynch, 2017, Cannes" loading="lazy" decoding="async" style="object-position:50% 30%"><figcaption>2017, Cannes</figcaption></figure></li>
+    </ul>
+  </section>
+
+  <section class="about wrap" aria-label="About David Lynch">
+    <figure class="portrait"><img src="https://i.nostr.build/eJVfaBQBzTCpMSVu.jpg" alt="Portrait of David Lynch" width="262" height="304"></figure>
+    <div class="bio">
+      <p>David Lynch was more than just a filmmaker, he was an artist, with masterpieces that took you to another place and time. While most movies can be easily predicted, none of his creations had any known path, often leaving the viewer mesmerized, not only questioning the movie, but questioning their own life, existence, and reality.</p>
+      <p class="coda">There is no way to explain David Lynch in words, you have to watch his movies.</p>
+      <div class="intro-clip"><video controls playsinline preload="none" poster="https://v.nostr.build/ZPc86BhnG8Wyf6zP.mp4/poster.jpg" width="480" height="272" src="https://v.nostr.build/ZPc86BhnG8Wyf6zP.mp4"></video></div>
     </div>
   </section>
-  <!-- Stats Gallery Section -->
-  <div class="gallery" style="background-color:black;">
-    <div class="thumbnail"><iframe src="https://e.nostr.build/v_bIaqrzw6R8PosDj6_mp4?t=Twin.Peaks.S01E01.Northwest.Passage.1080p.10bit.BluRay.6CH.x265.HEVC-PSA.mp4&by=nostr.build&w=1440px&h=1080px" style="border: 0; width: 100%; aspect-ratio: 1.24/1" allow="fullscreen; encrypted-media; picture-in-picture" loading="lazy" title="Twin.Peaks.S01E01.Northwest.Passage.1080p.10bit.BluRay.6CH.x265.HEVC-PSA.mp4"></iframe>
-      <h4>Northwest Passage</h4>
-      <p class="tag">Season 1 Episode 1</p>
-    </div>
-    <div class="thumbnail"><iframe src="https://e.nostr.build/v_g2WnjS2vv1xwcw8T_mp4?t=Twin.Peaks.S01E02.Traces.to.Nowhere.1080p.10bit.BluRay.6CH.x265.HEVC-PSA.mp4&by=nostr.build&w=1440px&h=1080px" style="border: 0; width: 100%; aspect-ratio: 1.24/1" allow="fullscreen; encrypted-media; picture-in-picture" loading="lazy" title="Twin.Peaks.S01E02.Traces.to.Nowhere.1080p.10bit.BluRay.6CH.x265.HEVC-PSA.mp4"></iframe>
-      <h4>Traces to Nowhere</h4>
-      <p class="tag">Season 1 Episode 2</p>
-    </div>
-    <div class="thumbnail"><iframe src="https://e.nostr.build/v_WeHPRTx8GZ7mzEjq_mp4?t=Twin.Peaks.S01E03.Zen.or.the.Skill.to.Catch.a.Killer.1080p.10bit.BluRay.6CH.x265.HEVC-PSA.mp4&by=nostr.build&w=1440px&h=1080px" style="border: 0; width: 100%; aspect-ratio: 1.24/1" allow="fullscreen; encrypted-media; picture-in-picture" loading="lazy" title="Twin.Peaks.S01E03.Zen.or.the.Skill.to.Catch.a.Killer.1080p.10bit.BluRay.6CH.x265.HEVC-PSA.mp4"></iframe>
-      <h4>To Catch a Killer</h4>
-      <p class="tag">Season 1 Episode 3</p>
-    </div>
-    <div class="thumbnail"><iframe src="https://e.nostr.build/v_cfBhM9ysGQdMyI6q_mp4?t=Twin.Peaks.S01E04.Rest.in.Pain.1080p.10bit.BluRay.6CH.x265.HEVC-PSA.mp4&by=nostr.build&w=1440px&h=1080px" style="border: 0; width: 100%; aspect-ratio: 1.24/1" allow="fullscreen; encrypted-media; picture-in-picture" loading="lazy" title="Twin.Peaks.S01E04.Rest.in.Pain.1080p.10bit.BluRay.6CH.x265.HEVC-PSA.mp4"></iframe>
-      <h4>Rest in Pain</h4>
-      <p class="tag">Season 1 Episode 4</p>
-    </div>
-  </div>
-  <div class="gallery" style="background-color:black;">
-    <div class="thumbnail"><iframe src="https://e.nostr.build/v_bSTT0Es91avmf41S_mp4?t=Twin.Peaks.S01E05.The.One-Armed.Man.1080p.10bit.BluRay.6CH.x265.HEVC-PSA.mp4&by=nostr.build&w=1440px&h=1080px" style="border: 0; width: 100%; aspect-ratio: 1.24/1" allow="fullscreen; encrypted-media; picture-in-picture" loading="lazy" title="Twin.Peaks.S01E05.The.One-Armed.Man.1080p.10bit.BluRay.6CH.x265.HEVC-PSA.mp4"></iframe>
-      <h4>The One-Armed Man</h4>
-      <p class="tag">Season 1 Episode 5</p>
-    </div>
-    <div class="thumbnail"><iframe src="https://e.nostr.build/v_T4uKXWluWJRypaIE_mp4?t=Twin.Peaks.S01E06.Cooper%27s.Dreams.1080p.10bit.BluRay.6CH.x265.HEVC-PSA.mp4&by=nostr.build&w=1440px&h=1080px" style="border: 0; width: 100%; aspect-ratio: 1.24/1" allow="fullscreen; encrypted-media; picture-in-picture" loading="lazy" title="Twin.Peaks.S01E06.Cooper's.Dreams.1080p.10bit.BluRay.6CH.x265.HEVC-PSA.mp4"></iframe>
-      <h4>Cooper's Dreams</h4>
-      <p class="tag">Season 1 Episode 6</p>
-    </div>
-    <div class="thumbnail"><iframe src="https://e.nostr.build/v_YFDWAcJHynxCebWH_mp4?t=Twin.Peaks.S01E07.Realization.Time.1080p.10bit.BluRay.6CH.x265.HEVC-PSA.mp4&by=nostr.build&w=1440px&h=1080px" style="border: 0; width: 100%; aspect-ratio: 1.24/1" allow="fullscreen; encrypted-media; picture-in-picture" loading="lazy" title="Twin.Peaks.S01E07.Realization.Time.1080p.10bit.BluRay.6CH.x265.HEVC-PSA.mp4"></iframe>
-      <h4>Realization Time</h4>
-      <p class="tag">Season 1 Episode 7</p>
-    </div>
-    <div class="thumbnail"><iframe src="https://e.nostr.build/v_XZMwTJSMCxQZK1tT_mp4?t=Twin.Peaks.S01E08.The.Last.Evening.1080p.10bit.BluRay.6CH.x265.HEVC-PSA.mp4&by=nostr.build&w=1440px&h=1080px" style="border: 0; width: 100%; aspect-ratio: 1.24/1" allow="fullscreen; encrypted-media; picture-in-picture" loading="lazy" title="Twin.Peaks.S01E08.The.Last.Evening.1080p.10bit.BluRay.6CH.x265.HEVC-PSA.mp4"></iframe>
-      <h4>The Last Evening</h4>
-      <p class="tag">Season 1 Episode 8</p>
-    </div>
-  </div>
-	
- <div class="gallery" style="background-color:black;">
-    <div class="thumbnail"><iframe src="https://e.nostr.build/v_ncoyiVcAWlIx1S2E_mp4?t=Twin.Peaks.S02E01.May.the.Giant.Be.with.You.1080p.10bit.BluRay.6CH.x265.HEVC-PSA.mp4&by=nostr.build&w=1440px&h=1080px" style="border: 0; width: 100%; aspect-ratio: 1.24/1" allow="fullscreen; encrypted-media; picture-in-picture" loading="lazy" title="Twin.Peaks.S02E01.May.the.Giant.Be.with.You.1080p.10bit.BluRay.6CH.x265.HEVC-PSA.mp4"></iframe>
-      <h4>Giant Be With You</h4>
-      <p class="tag">Season 2 Episode 1</p>
-    </div>
-    <div class="thumbnail"><iframe src="https://e.nostr.build/v_lyoSNtbfyA5MPoda_mp4?t=Twin.Peaks.S02E02.Coma.1080p.10bit.BluRay.6CH.x265.HEVC-PSA.mp4&by=nostr.build&w=1440px&h=1080px" style="border: 0; width: 100%; aspect-ratio: 1.24/1" allow="fullscreen; encrypted-media; picture-in-picture" loading="lazy" title="Twin.Peaks.S02E02.Coma.1080p.10bit.BluRay.6CH.x265.HEVC-PSA.mp4"></iframe>
-      <h4>Coma</h4>
-      <p class="tag">Season 2 Episode 2</p>
-    </div>
-    <div class="thumbnail"><iframe src="https://e.nostr.build/v_UE4TmcYXpvHvfCI5_mp4?t=Twin.Peaks.S02E03.The.Man.Behind.the.Glass.1080p.10bit.BluRay.6CH.x265.HEVC-PSA.mp4&by=nostr.build&w=1440px&h=1080px" style="border: 0; width: 100%; aspect-ratio: 1.24/1" allow="fullscreen; encrypted-media; picture-in-picture" loading="lazy" title="Twin.Peaks.S02E03.The.Man.Behind.the.Glass.1080p.10bit.BluRay.6CH.x265.HEVC-PSA.mp4"></iframe>
-      <h4>The Man Behind the Glass</h4>
-      <p class="tag">Season 2 Episode 3</p>
-    </div>
-    <div class="thumbnail"><iframe src="https://e.nostr.build/v_bi2zCFG6e04RUtxY_mp4?t=Twin.Peaks.S02E04.Laura%27s.Secret.Diary.1080p.10bit.BluRay.6CH.x265.HEVC-PSA.mp4&by=nostr.build&w=1440px&h=1080px" style="border: 0; width: 100%; aspect-ratio: 1.24/1" allow="fullscreen; encrypted-media; picture-in-picture" loading="lazy" title="Twin.Peaks.S02E04.Laura's.Secret.Diary.1080p.10bit.BluRay.6CH.x265.HEVC-PSA.mp4"></iframe>
-      <h4>Laura's Secret Diary</h4>
-      <p class="tag">Season 2 Episode 4</p>
-    </div>
-  </div>
-	
- <div class="gallery" style="background-color:black;">
-    <div class="thumbnail"><iframe src="https://e.nostr.build/v_9g4ZkGkjJtA1vqlX_mp4?t=Twin.Peaks.S02E05.The.Orchid%27s.Curse.1080p.10bit.BluRay.6CH.x265.HEVC-PSA.mp4&by=nostr.build&w=1440px&h=1080px" style="border: 0; width: 100%; aspect-ratio: 1.24/1" allow="fullscreen; encrypted-media; picture-in-picture" loading="lazy" title="Twin.Peaks.S02E05.The.Orchid's.Curse.1080p.10bit.BluRay.6CH.x265.HEVC-PSA.mp4"></iframe>
-      <h4>The Orchid's Curse</h4>
-      <p class="tag">Season 2 Episode 5</p>
-    </div>
-    <div class="thumbnail"><iframe src="https://e.nostr.build/v_b1jpSTWRUJzJ5M4O_mp4?t=Twin.Peaks.S02E06.Demons.1080p.10bit.BluRay.6CH.x265.HEVC-PSA.mp4&by=nostr.build&w=1440px&h=1080px" style="border: 0; width: 100%; aspect-ratio: 1.24/1" allow="fullscreen; encrypted-media; picture-in-picture" loading="lazy" title="Twin.Peaks.S02E06.Demons.1080p.10bit.BluRay.6CH.x265.HEVC-PSA.mp4"></iframe>
-      <h4>Demons</h4>
-      <p class="tag">Season 2 Episode 6</p>
-    </div>
-    <div class="thumbnail"><iframe src="https://e.nostr.build/v_Roh1lpg65lrzhZ0Q_mp4?t=Twin.Peaks.S02E07.Lonely.Souls.1080p.10bit.BluRay.6CH.x265.HEVC-PSA.mp4&by=nostr.build&w=1440px&h=1080px" style="border: 0; width: 100%; aspect-ratio: 1.24/1" allow="fullscreen; encrypted-media; picture-in-picture" loading="lazy" title="Twin.Peaks.S02E07.Lonely.Souls.1080p.10bit.BluRay.6CH.x265.HEVC-PSA.mp4"></iframe>
-      <h4>Lonely Souls</h4>
-      <p class="tag">Season 2 Episode 7</p>
-    </div>
-    <div class="thumbnail"><iframe src="https://e.nostr.build/v_fCJzvKbPMxHv6BaW_mp4?t=Twin.Peaks.S02E08.Drive.with.a.Dead.Girl.1080p.10bit.BluRay.6CH.x265.HEVC-PSA.mp4&by=nostr.build&w=1440px&h=1080px" style="border: 0; width: 100%; aspect-ratio: 1.24/1" allow="fullscreen; encrypted-media; picture-in-picture" loading="lazy" title="Twin.Peaks.S02E08.Drive.with.a.Dead.Girl.1080p.10bit.BluRay.6CH.x265.HEVC-PSA.mp4"></iframe>
-      <h4>Drive With a Dead Girl</h4>
-      <p class="tag">Season 2 Episode 8</p>
-    </div>
-  </div>
-	
- <div class="gallery" style="background-color:black;">
-    <div class="thumbnail"><iframe src="https://e.nostr.build/v_n8O9SoFmUnNVBmfB_mp4?t=Twin.Peaks.S02E09.Arbitrary.Law.1080p.10bit.BluRay.6CH.x265.HEVC-PSA.mp4&by=nostr.build&w=1432px&h=1080px" style="border: 0; width: 100%; aspect-ratio: 1.24/1" allow="fullscreen; encrypted-media; picture-in-picture" loading="lazy" title="Twin.Peaks.S02E09.Arbitrary.Law.1080p.10bit.BluRay.6CH.x265.HEVC-PSA.mp4"></iframe>
-      <h4>Arbitrary Law</h4>
-      <p class="tag">Season 2 Episode 9</p>
-    </div>
-    <div class="thumbnail"><iframe src="https://e.nostr.build/v_YpYab9naqhpJIWK5_mp4?t=Twin.Peaks.S02E10.Dispute.Between.Brothers.1080p.10bit.BluRay.6CH.x265.HEVC-PSA.mp4&by=nostr.build" style="border: 0; width: 100%; aspect-ratio: 1.24/1" allow="fullscreen; encrypted-media; picture-in-picture" loading="lazy" title="Twin.Peaks.S02E10.Dispute.Between.Brothers.1080p.10bit.BluRay.6CH.x265.HEVC-PSA.mp4"></iframe>
-      <h4>Dispute Between Brothers</h4>
-      <p class="tag">Season 2 Episode 10</p>
-    </div>
-    <div class="thumbnail"><iframe src="https://e.nostr.build/v_Fu21DjPzsaalPx9t_mp4?t=Twin.Peaks.S02E11.Masked.Ball.1080p.10bit.BluRay.6CH.x265.HEVC-PSA.mp4&by=nostr.build" style="border: 0; width: 100%; aspect-ratio: 1.24/1" allow="fullscreen; encrypted-media; picture-in-picture" loading="lazy" title="Twin.Peaks.S02E11.Masked.Ball.1080p.10bit.BluRay.6CH.x265.HEVC-PSA.mp4"></iframe>
-      <h4>Masked Ball</h4>
-      <p class="tag">Season 2 Episode 11</p>
-    </div>
-    <div class="thumbnail"><iframe src="https://e.nostr.build/v_sXQICFO4coOoTLXR_mp4?t=Twin.Peaks.S02E12.The.Black.Widow.1080p.10bit.BluRay.6CH.x265.HEVC-PSA.mp4&by=nostr.build&w=1440px&h=1080px" style="border: 0; width: 100%; aspect-ratio: 1.24/1" allow="fullscreen; encrypted-media; picture-in-picture" loading="lazy" title="Twin.Peaks.S02E12.The.Black.Widow.1080p.10bit.BluRay.6CH.x265.HEVC-PSA.mp4"></iframe>
-      <h4>The Black Widow</h4>
-      <p class="tag">Season 2 Episode 12</p>
-    </div>
-  </div>
 
- <div class="gallery" style="background-color:black;">
-    <div class="thumbnail"><iframe src="https://e.nostr.build/v_sKpYrCljhHRJv9CA_mp4?t=Twin.Peaks.S02E13.Checkmate.1080p.10bit.BluRay.6CH.x265.HEVC-PSA.mp4&by=nostr.build&w=1440px&h=1080px" style="border: 0; width: 100%; aspect-ratio: 1.24/1" allow="fullscreen; encrypted-media; picture-in-picture" loading="lazy" title="Twin.Peaks.S02E13.Checkmate.1080p.10bit.BluRay.6CH.x265.HEVC-PSA.mp4"></iframe>
-      <h4>Checkmate</h4>
-      <p class="tag">Season 2 Episode 13</p>
-    </div>
-    <div class="thumbnail"><iframe src="https://e.nostr.build/v_RKZOeJF78hmYRIt3_mp4?t=Twin.Peaks.S02E14.Double.Play.1080p.10bit.BluRay.6CH.x265.HEVC-PSA.mp4&by=nostr.build&w=1440px&h=1080px" style="border: 0; width: 100%; aspect-ratio: 1.24/1" allow="fullscreen; encrypted-media; picture-in-picture" loading="lazy" title="Twin.Peaks.S02E14.Double.Play.1080p.10bit.BluRay.6CH.x265.HEVC-PSA.mp4"></iframe>
-      <h4>Double Play</h4>
-      <p class="tag">Season 2 Episode 14</p>
-    </div>
-    <div class="thumbnail"><iframe src="https://e.nostr.build/v_B5A7EdzaiNjwZWWk_mp4?t=Twin.Peaks.S02E15.Slaves.and.Masters.1080p.10bit.BluRay.6CH.x265.HEVC-PSA.mp4&by=nostr.build&w=1440px&h=1080px" style="border: 0; width: 100%; aspect-ratio: 1.24/1" allow="fullscreen; encrypted-media; picture-in-picture" loading="lazy" title="Twin.Peaks.S02E15.Slaves.and.Masters.1080p.10bit.BluRay.6CH.x265.HEVC-PSA.mp4"></iframe>
-      <h4>Slaves and Masters</h4>
-      <p class="tag">Season 2 Episode 15</p>
-    </div>
-    <div class="thumbnail"><iframe src="https://e.nostr.build/v_oGqlyvbLver7N5EA_mp4?t=Twin.Peaks.S02E16.The.Condemned.Woman.1080p.10bit.BluRay.6CH.x265.HEVC-PSA.mp4&by=nostr.build&w=1440px&h=1080px" style="border: 0; width: 100%; aspect-ratio: 1.24/1" allow="fullscreen; encrypted-media; picture-in-picture" loading="lazy" title="Twin.Peaks.S02E16.The.Condemned.Woman.1080p.10bit.BluRay.6CH.x265.HEVC-PSA.mp4"></iframe>
-      <h4>The Condemed Woman</h4>
-      <p class="tag">Season 2 Episode 16</p>
-    </div>
-  </div>
-	
- <div class="gallery" style="background-color:black;">
-    <div class="thumbnail"><iframe src="https://e.nostr.build/v_4L6BrRkyDywINExH_mp4?t=Twin.Peaks.S02E17.Wounds.and.Scars.1080p.10bit.BluRay.6CH.x265.HEVC-PSA.mp4&by=nostr.build&w=1440px&h=1080px" style="border: 0; width: 100%; aspect-ratio: 1.24/1" allow="fullscreen; encrypted-media; picture-in-picture" loading="lazy" title="Twin.Peaks.S02E17.Wounds.and.Scars.1080p.10bit.BluRay.6CH.x265.HEVC-PSA.mp4"></iframe>
-      <h4>Wounds and Scars</h4>
-      <p class="tag">Season 2 Episode 17</p>
-    </div>
-    <div class="thumbnail"><iframe src="https://e.nostr.build/v_LWcZ1LQ0aAwWLQFf_mp4?t=Twin.Peaks.S02E18.On.the.Wings.of.Love.1080p.10bit.BluRay.6CH.x265.HEVC-PSA.mp4&by=nostr.build&w=1440px&h=1080px" style="border: 0; width: 100%; aspect-ratio: 1.24/1" allow="fullscreen; encrypted-media; picture-in-picture" loading="lazy" title="Twin.Peaks.S02E18.On.the.Wings.of.Love.1080p.10bit.BluRay.6CH.x265.HEVC-PSA.mp4"></iframe>
-      <h4>On the Wings of Love</h4>
-      <p class="tag">Season 2 Episode 18</p>
-    </div>
-    <div class="thumbnail"><iframe src="https://e.nostr.build/v_bhaLybE5czaWiaJP_mp4?t=Twin.Peaks.S02E19.Variations.and.Relations.1080p.10bit.BluRay.6CH.x265.HEVC-PSA.mp4&by=nostr.build&w=1440px&h=1080px" style="border: 0; width: 100%; aspect-ratio: 1.24/1" allow="fullscreen; encrypted-media; picture-in-picture" loading="lazy" title="Twin.Peaks.S02E19.Variations.and.Relations.1080p.10bit.BluRay.6CH.x265.HEVC-PSA.mp4"></iframe>
-      <h4>Variations and Relations</h4>
-      <p class="tag">Season 2 Episode 19</p>
-    </div>
-    <div class="thumbnail"><iframe src="https://e.nostr.build/v_ROw6lOUpshA1KF98_mp4?t=Twin.Peaks.S02E20.The.Path.to.the.Black.Lodge.1080p.10bit.BluRay.6CH.x265.HEVC-PSA.mp4&by=nostr.build&w=1440px&h=1080px" style="border: 0; width: 100%; aspect-ratio: 1.24/1" allow="fullscreen; encrypted-media; picture-in-picture" loading="lazy" title="Twin.Peaks.S02E20.The.Path.to.the.Black.Lodge.1080p.10bit.BluRay.6CH.x265.HEVC-PSA.mp4"></iframe>
-      <h4>The Path to the Black Lodge</h4>
-      <p class="tag">Season 2 Episode 20</p>
-    </div>
-  </div>
-	
- <div class="gallery" style="background-color:black;">
-    <div class="thumbnail"><iframe src="https://e.nostr.build/v_rRmycD74zaseaUh1_mp4?t=Twin.Peaks.S02E21.The.Night.of.the.Decision.1080p.10bit.BluRay.6CH.x265.HEVC-PSA.mp4&by=nostr.build&w=1440px&h=1080px" style="border: 0; width: 100%; aspect-ratio: 1.24/1" allow="fullscreen; encrypted-media; picture-in-picture" loading="lazy" title="Twin.Peaks.S02E21.The.Night.of.the.Decision.1080p.10bit.BluRay.6CH.x265.HEVC-PSA.mp4"></iframe>
-      <h4>The Night of the Decision</h4>
-      <p class="tag">Season 2 Episode 21</p>
-    </div>
-    <div class="thumbnail"><iframe src="https://e.nostr.build/v_6fpCakA9Wek31wfs_mp4?t=Twin.Peaks.S02E22.Beyond.Life.and.Death.1080p.10bit.BluRay.6CH.x265.HEVC-PSA.mp4&by=nostr.build&w=1440px&h=1080px" style="border: 0; width: 100%; aspect-ratio: 1.24/1" allow="fullscreen; encrypted-media; picture-in-picture" loading="lazy" title="Twin.Peaks.S02E22.Beyond.Life.and.Death.1080p.10bit.BluRay.6CH.x265.HEVC-PSA.mp4"></iframe>
-      <h4>Beyond Life and Death</h4>
-      <p class="tag">Season 2 Episode 22</p>
-    </div>
-    <div class="thumbnail"><iframe src="https://e.nostr.build/v_Bd5FJD2Z8PXvekum_mp4?t=Twin.Peaks.Fire.Walk.with.Me.1992.The.Missing.Pieces.1080p.BluRay.H264.AAC-RARBG.mp4&by=nostr.build&w=1920px&h=1080px" style="border: 0; width: 100%; aspect-ratio: 1.24/1" allow="fullscreen; encrypted-media; picture-in-picture" loading="lazy" title="Twin.Peaks.Fire.Walk.with.Me.1992.The.Missing.Pieces.1080p.BluRay.H264.AAC-RARBG.mp4"></iframe>
-      <h4>Fire Walk With Me</h4>
-      <p class="tag">Twin Peaks - Movie</p>
-    </div>
-  </div>
+  <section class="watch wrap" id="watch" aria-labelledby="watch-title">
+    <h2 id="watch-title">Twin Peaks</h2>
+    <p class="sub">Pick an episode. It plays here, and picks up where you left off.</p>
 
-  <div class="gallery" style="background-color:black;">
-    <div class="thumbnail"><iframe src="https://e.nostr.build/v_0ZmTV2DAOtX54dCp_mp4?t=Twin.Peaks.S03E01.1080p.BluRay.X264-REWARD.mp4&by=nostr.build&w=1920px&h=1080px" style="border: 0; width: 100%; aspect-ratio: 16/9" allow="fullscreen; encrypted-media; picture-in-picture" loading="lazy" title="Twin.Peaks.S03E01.1080p.BluRay.X264-REWARD.mp4"></iframe>
-      <h4>My Log Has a Message for You</h4>
-      <p class="tag">Season 3 Episode 1</p>
+    <div class="theater" id="theater" hidden>
+      <div class="screen"><video id="player" controls playsinline preload="metadata"></video></div>
+      <div class="now">
+        <div class="now-text">
+          <p class="now-label" id="now-label"></p>
+          <h3 class="now-title" id="now-title"></h3>
+        </div>
+        <div class="now-actions">
+          <button type="button" class="btn" id="prev">Previous</button>
+          <button type="button" class="btn btn-primary" id="next">Next episode</button>
+        </div>
+      </div>
     </div>
-    <div class="thumbnail"><iframe src="https://e.nostr.build/v_4DsC7QLKTunDI1zr_mp4?t=Twin.Peaks.S03E02.1080p.BluRay.X264-REWARD.mp4&by=nostr.build&w=1912px&h=1080px" style="border: 0; width: 100%; aspect-ratio: 16/9" allow="fullscreen; encrypted-media; picture-in-picture" loading="lazy" title="Twin.Peaks.S03E02.1080p.BluRay.X264-REWARD.mp4"></iframe>
-      <h4>The Stars Turn</h4>
-      <p class="tag">Season 3 Episode 2</p>
-    </div>
-    <div class="thumbnail"><iframe src="https://e.nostr.build/v_xEKY10kZPONaDZeY_mp4?t=Twin.Peaks.S03E03.1080p.BluRay.X264-REWARD.mp4&by=nostr.build&w=1920px&h=1080px" style="border: 0; width: 100%; aspect-ratio: 16/9" allow="fullscreen; encrypted-media; picture-in-picture" loading="lazy" title="Twin.Peaks.S03E03.1080p.BluRay.X264-REWARD.mp4"></iframe>
-      <h4>Call for Help</h4>
-      <p class="tag">Season 3 Episode 3</p>
-    </div>
-    <div class="thumbnail"><iframe src="https://e.nostr.build/v_4Nh1p3qA0NF4pF7N_mp4?t=Twin.Peaks.S03E04.1080p.BluRay.X264-REWARD.mp4&by=nostr.build&w=1920px&h=1080px" style="border: 0; width: 100%; aspect-ratio: 16/9" allow="fullscreen; encrypted-media; picture-in-picture" loading="lazy" title="Twin.Peaks.S03E04.1080p.BluRay.X264-REWARD.mp4"></iframe>
-      <h4>Brings Back Some Memories..</h4>
-      <p class="tag">Season 3 Episode 4</p>
-    </div>
-  </div>
-	
-  <div class="gallery" style="background-color:black;">
-    <div class="thumbnail"><iframe src="https://e.nostr.build/v_FkY9mjNPLsJBItrR_mp4?t=Twin.Peaks.S03E05.1080p.BluRay.X264-REWARD.mp4&by=nostr.build&w=1920px&h=1080px" style="border: 0; width: 100%; aspect-ratio: 16/9" allow="fullscreen; encrypted-media; picture-in-picture" loading="lazy" title="Twin.Peaks.S03E05.1080p.BluRay.X264-REWARD.mp4"></iframe>
-      <h4>Case Files</h4>
-      <p class="tag">Season 3 Episode 5</p>
-    </div>
-    <div class="thumbnail"><iframe src="https://e.nostr.build/v_l6wPfAvKhowg06gu_mp4?t=Twin.Peaks.S03E06.1080p.BluRay.X264-REWARD.mp4&by=nostr.build&w=1920px&h=1080px" style="border: 0; width: 100%; aspect-ratio: 16/9" allow="fullscreen; encrypted-media; picture-in-picture" loading="lazy" title="Twin.Peaks.S03E06.1080p.BluRay.X264-REWARD.mp4"></iframe>
-      <h4>Don't Die</h4>
-      <p class="tag">Season 3 Episode 6</p>
-    </div>
-    <div class="thumbnail"><iframe src="https://e.nostr.build/v_GrXDhOXgorffKYJ8_mp4?t=Twin.Peaks.S03E07.1080p.BluRay.X264-REWARD.mp4&by=nostr.build&w=1920px&h=1080px" style="border: 0; width: 100%; aspect-ratio: 16/9" allow="fullscreen; encrypted-media; picture-in-picture" loading="lazy" title="Twin.Peaks.S03E07.1080p.BluRay.X264-REWARD.mp4"></iframe>
-      <h4>There's A Body All Right</h4>
-      <p class="tag">Season 3 Episode 7</p>
-    </div>
-    <div class="thumbnail"><iframe src="https://e.nostr.build/v_xqy2PeneNsJOaMTw_mp4?t=Twin.Peaks.S03E08.1080p.BluRay.X264-REWARD.mp4&by=nostr.build&w=1898px&h=1056px" style="border: 0; width: 100%; aspect-ratio: 16/9" allow="fullscreen; encrypted-media; picture-in-picture" loading="lazy" title="Twin.Peaks.S03E08.1080p.BluRay.X264-REWARD.mp4"></iframe>
-      <h4>Gotta Light?</h4>
-      <p class="tag">Season 3 Episode 8</p>
-    </div>
-  </div>
-	
-  <div class="gallery" style="background-color:black;">
-    <div class="thumbnail"><iframe src="https://e.nostr.build/v_3zbihReqXQ5aiLic_mp4?t=Twin.Peaks.S03E09.1080p.BluRay.X264-REWARD.mp4&by=nostr.build&w=1920px&h=1080px" style="border: 0; width: 100%; aspect-ratio: 16/9" allow="fullscreen; encrypted-media; picture-in-picture" loading="lazy" title="Twin.Peaks.S03E09.1080p.BluRay.X264-REWARD.mp4"></iframe>
-      <h4>This is the Chair</h4>
-      <p class="tag">Season 3 Episode 9</p>
-    </div>
-    <div class="thumbnail"><iframe src="https://e.nostr.build/v_n7XtxMSfqJlJ70Ms_mp4?t=Twin.Peaks.S03E10.1080p.BluRay.X264-REWARD.mp4&by=nostr.build&w=1920px&h=1080px" style="border: 0; width: 100%; aspect-ratio: 16/9" allow="fullscreen; encrypted-media; picture-in-picture" loading="lazy" title="Twin.Peaks.S03E10.1080p.BluRay.X264-REWARD.mp4"></iframe>
-      <h4>Laura is the One</h4>
-      <p class="tag">Season 3 Episode 10</p>
-    </div>
-    <div class="thumbnail"><iframe src="https://e.nostr.build/v_e7CcsHXOWv1hBrXL_mp4?t=Twin.Peaks.S03E11.1080p.BluRay.X264-REWARD.mp4&by=nostr.build&w=1920px&h=1080px" style="border: 0; width: 100%; aspect-ratio: 16/9" allow="fullscreen; encrypted-media; picture-in-picture" loading="lazy" title="Twin.Peaks.S03E11.1080p.BluRay.X264-REWARD.mp4"></iframe>
-      <h4>There's Fire Were You're Going</h4>
-      <p class="tag">Season 3 Episode 11</p>
-    </div>
-    <div class="thumbnail"><iframe src="https://e.nostr.build/v_yzK3lLKeggYcbTKh_mp4?t=Twin.Peaks.S03E12.1080p.BluRay.X264-REWARD.mp4&by=nostr.build&w=1918px&h=1080px" style="border: 0; width: 100%; aspect-ratio: 16/9" allow="fullscreen; encrypted-media; picture-in-picture" loading="lazy" title="Twin.Peaks.S03E12.1080p.BluRay.X264-REWARD.mp4"></iframe>
-      <h4>Let's Rock</h4>
-      <p class="tag">Season 3 Episode 12</p>
-    </div>
-  </div>
 
-  <div class="gallery" style="background-color:black;">
-    <div class="thumbnail"><iframe src="https://e.nostr.build/v_SpDhYkZOiDSoXQz1_mp4?t=Twin.Peaks.S03E13.1080p.BluRay.X264-REWARD.mp4&by=nostr.build&w=1920px&h=1080px" style="border: 0; width: 100%; aspect-ratio: 16/9" allow="fullscreen; encrypted-media; picture-in-picture" loading="lazy" title="Twin.Peaks.S03E13.1080p.BluRay.X264-REWARD.mp4"></iframe>
-      <h4>What Story Is That, Charlie?</h4>
-      <p class="tag">Season 3 Episode 13</p>
+    <div class="tabs" role="tablist" aria-label="Seasons">
+        <button type="button" role="tab" id="tab-1" aria-controls="season-1" aria-selected="true" data-hash="season-1">Season 1</button>
+        <button type="button" role="tab" id="tab-2" aria-controls="season-2" aria-selected="false" data-hash="season-2" tabindex="-1">Season 2</button>
+        <button type="button" role="tab" id="tab-3" aria-controls="season-3" aria-selected="false" data-hash="season-3" tabindex="-1">Season 3</button>
     </div>
-    <div class="thumbnail"><iframe src="https://e.nostr.build/v_DbkJOYuOjaJonQdl_mp4?t=Twin.Peaks.S03E14.1080p.BluRay.X264-REWARD.mp4&by=nostr.build&w=1920px&h=1080px" style="border: 0;  width: 100%; aspect-ratio: 16/9" allow="fullscreen; encrypted-media; picture-in-picture" loading="lazy" title="Twin.Peaks.S03E14.1080p.BluRay.X264-REWARD.mp4"></iframe>
-      <h4>We are Like the Dreamer</h4>
-      <p class="tag">Season 3 Episode 14</p>
-    </div>
-    <div class="thumbnail"><iframe src="https://e.nostr.build/v_uZRsKKF4mGJKitPR_mp4?t=Twin.Peaks.S03E15.1080p.BluRay.X264-REWARD.mp4&by=nostr.build&w=1920px&h=1080px" style="border: 0; width: 100%; aspect-ratio: 16/9" allow="fullscreen; encrypted-media; picture-in-picture" loading="lazy" title="Twin.Peaks.S03E15.1080p.BluRay.X264-REWARD.mp4"></iframe>
-      <h4>Fear in Letting Go</h4>
-      <p class="tag">Season 3 Episode 15</p>
-    </div>
-    <div class="thumbnail"><iframe src="https://e.nostr.build/v_UVTgIuTQ6vo1Tx32_mp4?t=Twin.Peaks.S03E16.1080p.BluRay.X264-REWARD.mp4&by=nostr.build&w=1920px&h=1080px" style="border: 0; width: 100%; aspect-ratio: 16/9" allow="fullscreen; encrypted-media; picture-in-picture" loading="lazy" title="Twin.Peaks.S03E16.1080p.BluRay.X264-REWARD.mp4"></iframe>
-      <h4>No Nock No Doorbell</h4>
-      <p class="tag">Season 3 Episode 16</p>
-    </div>
-  </div>
-	
-  <div class="gallery" style="background-color:black;">
-    <div class="thumbnail"><iframe src="https://e.nostr.build/v_kiRXlZMSJugQBNOi_mp4?t=Twin.Peaks.S03E17.1080p.BluRay.X264-REWARD.mp4&by=nostr.build&w=1920px&h=1080px" style="border: 0; width: 100%; aspect-ratio: 16/9" allow="fullscreen; encrypted-media; picture-in-picture" loading="lazy" title="Twin.Peaks.S03E17.1080p.BluRay.X264-REWARD.mp4"></iframe>
-      <h4>The Past Dictates the Future</h4>
-      <p class="tag">Season 3 Episode 17</p>
-    </div>
-    <div class="thumbnail"><iframe src="https://e.nostr.build/v_939a7AFzAdiNEXQQ_mp4?t=Twin.Peaks.S03E18.1080p.BluRay.X264-REWARD.mp4&by=nostr.build&w=1920px&h=1080px" style="border: 0; width: 100%; aspect-ratio: 16/9" allow="fullscreen; encrypted-media; picture-in-picture" loading="lazy" title="Twin.Peaks.S03E18.1080p.BluRay.X264-REWARD.mp4"></iframe>
-      <h4>What is Your Name?</h4>
-      <p class="tag">Season 3 Episode 18</p>
-    </div>
-  </div>
+      <div class="panel is-active" role="tabpanel" tabindex="0" id="season-1" aria-labelledby="tab-1">
+        <p class="panel-meta">1990 · 8 episodes</p>
+        <ol class="eps">
+        <li><a class="ep" href="https://e.nostr.build/v_bIaqrzw6R8PosDj6_mp4" data-id="bIaqrzw6R8PosDj6" data-key="s1e1" data-src="https://v.nostr.build/bIaqrzw6R8PosDj6.mp4" data-poster="https://v.nostr.build/bIaqrzw6R8PosDj6.mp4/poster.jpg" data-w="1440" data-h="1080" data-dur="5643" data-title="Northwest Passage" data-label="Season 1 · Episode 1">
+          <span class="ep-art"><img src="https://v.nostr.build/bIaqrzw6R8PosDj6.mp4/poster.jpg" alt="" width="1440" height="1080" loading="lazy" decoding="async"><span class="ep-num">1</span><span class="ep-prog" hidden><i></i></span></span>
+          <span class="ep-text"><span class="ep-title">Northwest Passage</span><span class="ep-meta">94 min</span></span>
+        </a></li>
+        <li><a class="ep" href="https://e.nostr.build/v_g2WnjS2vv1xwcw8T_mp4" data-id="g2WnjS2vv1xwcw8T" data-key="s1e2" data-src="https://v.nostr.build/g2WnjS2vv1xwcw8T.mp4" data-poster="https://v.nostr.build/g2WnjS2vv1xwcw8T.mp4/poster.jpg" data-w="1440" data-h="1080" data-dur="2788" data-title="Traces to Nowhere" data-label="Season 1 · Episode 2">
+          <span class="ep-art"><img src="https://v.nostr.build/g2WnjS2vv1xwcw8T.mp4/poster.jpg" alt="" width="1440" height="1080" loading="lazy" decoding="async"><span class="ep-num">2</span><span class="ep-prog" hidden><i></i></span></span>
+          <span class="ep-text"><span class="ep-title">Traces to Nowhere</span><span class="ep-meta">46 min</span></span>
+        </a></li>
+        <li><a class="ep" href="https://e.nostr.build/v_WeHPRTx8GZ7mzEjq_mp4" data-id="WeHPRTx8GZ7mzEjq" data-key="s1e3" data-src="https://v.nostr.build/WeHPRTx8GZ7mzEjq.mp4" data-poster="https://v.nostr.build/WeHPRTx8GZ7mzEjq.mp4/poster.jpg" data-w="1440" data-h="1080" data-dur="2896" data-title="Zen, or the Skill to Catch a Killer" data-label="Season 1 · Episode 3">
+          <span class="ep-art"><img src="https://v.nostr.build/WeHPRTx8GZ7mzEjq.mp4/poster.jpg" alt="" width="1440" height="1080" loading="lazy" decoding="async"><span class="ep-num">3</span><span class="ep-prog" hidden><i></i></span></span>
+          <span class="ep-text"><span class="ep-title">Zen, or the Skill to Catch a Killer</span><span class="ep-meta">48 min</span></span>
+        </a></li>
+        <li><a class="ep" href="https://e.nostr.build/v_cfBhM9ysGQdMyI6q_mp4" data-id="cfBhM9ysGQdMyI6q" data-key="s1e4" data-src="https://v.nostr.build/cfBhM9ysGQdMyI6q.mp4" data-poster="https://v.nostr.build/cfBhM9ysGQdMyI6q.mp4/poster.jpg" data-w="1440" data-h="1080" data-dur="2817" data-title="Rest in Pain" data-label="Season 1 · Episode 4">
+          <span class="ep-art"><img src="https://v.nostr.build/cfBhM9ysGQdMyI6q.mp4/poster.jpg" alt="" width="1440" height="1080" loading="lazy" decoding="async"><span class="ep-num">4</span><span class="ep-prog" hidden><i></i></span></span>
+          <span class="ep-text"><span class="ep-title">Rest in Pain</span><span class="ep-meta">47 min</span></span>
+        </a></li>
+        <li><a class="ep" href="https://e.nostr.build/v_bSTT0Es91avmf41S_mp4" data-id="bSTT0Es91avmf41S" data-key="s1e5" data-src="https://v.nostr.build/bSTT0Es91avmf41S.mp4" data-poster="https://v.nostr.build/bSTT0Es91avmf41S.mp4/poster.jpg" data-w="1440" data-h="1080" data-dur="2820" data-title="The One-Armed Man" data-label="Season 1 · Episode 5">
+          <span class="ep-art"><img src="https://v.nostr.build/bSTT0Es91avmf41S.mp4/poster.jpg" alt="" width="1440" height="1080" loading="lazy" decoding="async"><span class="ep-num">5</span><span class="ep-prog" hidden><i></i></span></span>
+          <span class="ep-text"><span class="ep-title">The One-Armed Man</span><span class="ep-meta">47 min</span></span>
+        </a></li>
+        <li><a class="ep" href="https://e.nostr.build/v_T4uKXWluWJRypaIE_mp4" data-id="T4uKXWluWJRypaIE" data-key="s1e6" data-src="https://v.nostr.build/T4uKXWluWJRypaIE.mp4" data-poster="https://v.nostr.build/T4uKXWluWJRypaIE.mp4/poster.jpg" data-w="1440" data-h="1080" data-dur="2787" data-title="Cooper's Dreams" data-label="Season 1 · Episode 6">
+          <span class="ep-art"><img src="https://v.nostr.build/T4uKXWluWJRypaIE.mp4/poster.jpg" alt="" width="1440" height="1080" loading="lazy" decoding="async"><span class="ep-num">6</span><span class="ep-prog" hidden><i></i></span></span>
+          <span class="ep-text"><span class="ep-title">Cooper's Dreams</span><span class="ep-meta">46 min</span></span>
+        </a></li>
+        <li><a class="ep" href="https://e.nostr.build/v_YFDWAcJHynxCebWH_mp4" data-id="YFDWAcJHynxCebWH" data-key="s1e7" data-src="https://v.nostr.build/YFDWAcJHynxCebWH.mp4" data-poster="https://v.nostr.build/YFDWAcJHynxCebWH.mp4/poster.jpg" data-w="1440" data-h="1080" data-dur="2817" data-title="Realization Time" data-label="Season 1 · Episode 7">
+          <span class="ep-art"><img src="https://v.nostr.build/YFDWAcJHynxCebWH.mp4/poster.jpg" alt="" width="1440" height="1080" loading="lazy" decoding="async"><span class="ep-num">7</span><span class="ep-prog" hidden><i></i></span></span>
+          <span class="ep-text"><span class="ep-title">Realization Time</span><span class="ep-meta">47 min</span></span>
+        </a></li>
+        <li><a class="ep" href="https://e.nostr.build/v_XZMwTJSMCxQZK1tT_mp4" data-id="XZMwTJSMCxQZK1tT" data-key="s1e8" data-src="https://v.nostr.build/XZMwTJSMCxQZK1tT.mp4" data-poster="https://v.nostr.build/XZMwTJSMCxQZK1tT.mp4/poster.jpg" data-w="1440" data-h="1080" data-dur="2808" data-title="The Last Evening" data-label="Season 1 · Episode 8">
+          <span class="ep-art"><img src="https://v.nostr.build/XZMwTJSMCxQZK1tT.mp4/poster.jpg" alt="" width="1440" height="1080" loading="lazy" decoding="async"><span class="ep-num">8</span><span class="ep-prog" hidden><i></i></span></span>
+          <span class="ep-text"><span class="ep-title">The Last Evening</span><span class="ep-meta">47 min</span></span>
+        </a></li>
+        </ol>
+      </div>
+      <div class="panel" role="tabpanel" tabindex="0" id="season-2" aria-labelledby="tab-2">
+        <p class="panel-meta">1990 to 1991 · 22 episodes</p>
+        <ol class="eps">
+        <li><a class="ep" href="https://e.nostr.build/v_ncoyiVcAWlIx1S2E_mp4" data-id="ncoyiVcAWlIx1S2E" data-key="s2e1" data-src="https://v.nostr.build/ncoyiVcAWlIx1S2E.mp4" data-poster="https://v.nostr.build/ncoyiVcAWlIx1S2E.mp4/poster.jpg" data-w="1440" data-h="1080" data-dur="5653" data-title="May the Giant Be With You" data-label="Season 2 · Episode 1">
+          <span class="ep-art"><img src="https://v.nostr.build/ncoyiVcAWlIx1S2E.mp4/poster.jpg" alt="" width="1440" height="1080" loading="lazy" decoding="async"><span class="ep-num">1</span><span class="ep-prog" hidden><i></i></span></span>
+          <span class="ep-text"><span class="ep-title">May the Giant Be With You</span><span class="ep-meta">94 min</span></span>
+        </a></li>
+        <li><a class="ep" href="https://e.nostr.build/v_lyoSNtbfyA5MPoda_mp4" data-id="lyoSNtbfyA5MPoda" data-key="s2e2" data-src="https://v.nostr.build/lyoSNtbfyA5MPoda.mp4" data-poster="https://v.nostr.build/lyoSNtbfyA5MPoda.mp4/poster.jpg" data-w="1440" data-h="1080" data-dur="2815" data-title="Coma" data-label="Season 2 · Episode 2">
+          <span class="ep-art"><img src="https://v.nostr.build/lyoSNtbfyA5MPoda.mp4/poster.jpg" alt="" width="1440" height="1080" loading="lazy" decoding="async"><span class="ep-num">2</span><span class="ep-prog" hidden><i></i></span></span>
+          <span class="ep-text"><span class="ep-title">Coma</span><span class="ep-meta">47 min</span></span>
+        </a></li>
+        <li><a class="ep" href="https://e.nostr.build/v_UE4TmcYXpvHvfCI5_mp4" data-id="UE4TmcYXpvHvfCI5" data-key="s2e3" data-src="https://v.nostr.build/UE4TmcYXpvHvfCI5.mp4" data-poster="https://v.nostr.build/UE4TmcYXpvHvfCI5.mp4/poster.jpg" data-w="1440" data-h="1080" data-dur="2827" data-title="The Man Behind the Glass" data-label="Season 2 · Episode 3">
+          <span class="ep-art"><img src="https://v.nostr.build/UE4TmcYXpvHvfCI5.mp4/poster.jpg" alt="" width="1440" height="1080" loading="lazy" decoding="async"><span class="ep-num">3</span><span class="ep-prog" hidden><i></i></span></span>
+          <span class="ep-text"><span class="ep-title">The Man Behind the Glass</span><span class="ep-meta">47 min</span></span>
+        </a></li>
+        <li><a class="ep" href="https://e.nostr.build/v_bi2zCFG6e04RUtxY_mp4" data-id="bi2zCFG6e04RUtxY" data-key="s2e4" data-src="https://v.nostr.build/bi2zCFG6e04RUtxY.mp4" data-poster="https://v.nostr.build/bi2zCFG6e04RUtxY.mp4/poster.jpg" data-w="1440" data-h="1080" data-dur="2818" data-title="Laura's Secret Diary" data-label="Season 2 · Episode 4">
+          <span class="ep-art"><img src="https://v.nostr.build/bi2zCFG6e04RUtxY.mp4/poster.jpg" alt="" width="1440" height="1080" loading="lazy" decoding="async"><span class="ep-num">4</span><span class="ep-prog" hidden><i></i></span></span>
+          <span class="ep-text"><span class="ep-title">Laura's Secret Diary</span><span class="ep-meta">47 min</span></span>
+        </a></li>
+        <li><a class="ep" href="https://e.nostr.build/v_9g4ZkGkjJtA1vqlX_mp4" data-id="9g4ZkGkjJtA1vqlX" data-key="s2e5" data-src="https://v.nostr.build/9g4ZkGkjJtA1vqlX.mp4" data-poster="https://v.nostr.build/9g4ZkGkjJtA1vqlX.mp4/poster.jpg" data-w="1440" data-h="1080" data-dur="2828" data-title="The Orchid's Curse" data-label="Season 2 · Episode 5">
+          <span class="ep-art"><img src="https://v.nostr.build/9g4ZkGkjJtA1vqlX.mp4/poster.jpg" alt="" width="1440" height="1080" loading="lazy" decoding="async"><span class="ep-num">5</span><span class="ep-prog" hidden><i></i></span></span>
+          <span class="ep-text"><span class="ep-title">The Orchid's Curse</span><span class="ep-meta">47 min</span></span>
+        </a></li>
+        <li><a class="ep" href="https://e.nostr.build/v_b1jpSTWRUJzJ5M4O_mp4" data-id="b1jpSTWRUJzJ5M4O" data-key="s2e6" data-src="https://v.nostr.build/b1jpSTWRUJzJ5M4O.mp4" data-poster="https://v.nostr.build/b1jpSTWRUJzJ5M4O.mp4/poster.jpg" data-w="1440" data-h="1080" data-dur="2844" data-title="Demons" data-label="Season 2 · Episode 6">
+          <span class="ep-art"><img src="https://v.nostr.build/b1jpSTWRUJzJ5M4O.mp4/poster.jpg" alt="" width="1440" height="1080" loading="lazy" decoding="async"><span class="ep-num">6</span><span class="ep-prog" hidden><i></i></span></span>
+          <span class="ep-text"><span class="ep-title">Demons</span><span class="ep-meta">47 min</span></span>
+        </a></li>
+        <li><a class="ep" href="https://e.nostr.build/v_Roh1lpg65lrzhZ0Q_mp4" data-id="Roh1lpg65lrzhZ0Q" data-key="s2e7" data-src="https://v.nostr.build/Roh1lpg65lrzhZ0Q.mp4" data-poster="https://v.nostr.build/Roh1lpg65lrzhZ0Q.mp4/poster.jpg" data-w="1440" data-h="1080" data-dur="2848" data-title="Lonely Souls" data-label="Season 2 · Episode 7">
+          <span class="ep-art"><img src="https://v.nostr.build/Roh1lpg65lrzhZ0Q.mp4/poster.jpg" alt="" width="1440" height="1080" loading="lazy" decoding="async"><span class="ep-num">7</span><span class="ep-prog" hidden><i></i></span></span>
+          <span class="ep-text"><span class="ep-title">Lonely Souls</span><span class="ep-meta">47 min</span></span>
+        </a></li>
+        <li><a class="ep" href="https://e.nostr.build/v_fCJzvKbPMxHv6BaW_mp4" data-id="fCJzvKbPMxHv6BaW" data-key="s2e8" data-src="https://v.nostr.build/fCJzvKbPMxHv6BaW.mp4" data-poster="https://v.nostr.build/fCJzvKbPMxHv6BaW.mp4/poster.jpg" data-w="1440" data-h="1080" data-dur="2840" data-title="Drive With a Dead Girl" data-label="Season 2 · Episode 8">
+          <span class="ep-art"><img src="https://v.nostr.build/fCJzvKbPMxHv6BaW.mp4/poster.jpg" alt="" width="1440" height="1080" loading="lazy" decoding="async"><span class="ep-num">8</span><span class="ep-prog" hidden><i></i></span></span>
+          <span class="ep-text"><span class="ep-title">Drive With a Dead Girl</span><span class="ep-meta">47 min</span></span>
+        </a></li>
+        <li><a class="ep" href="https://e.nostr.build/v_n8O9SoFmUnNVBmfB_mp4" data-id="n8O9SoFmUnNVBmfB" data-key="s2e9" data-src="https://v.nostr.build/n8O9SoFmUnNVBmfB.mp4" data-poster="https://v.nostr.build/n8O9SoFmUnNVBmfB.mp4/poster.jpg" data-w="1432" data-h="1080" data-dur="2807" data-title="Arbitrary Law" data-label="Season 2 · Episode 9">
+          <span class="ep-art"><img src="https://v.nostr.build/n8O9SoFmUnNVBmfB.mp4/poster.jpg" alt="" width="1432" height="1080" loading="lazy" decoding="async"><span class="ep-num">9</span><span class="ep-prog" hidden><i></i></span></span>
+          <span class="ep-text"><span class="ep-title">Arbitrary Law</span><span class="ep-meta">47 min</span></span>
+        </a></li>
+        <li><a class="ep" href="https://e.nostr.build/v_YpYab9naqhpJIWK5_mp4" data-id="YpYab9naqhpJIWK5" data-key="s2e10" data-src="https://v.nostr.build/YpYab9naqhpJIWK5.mp4" data-poster="https://v.nostr.build/YpYab9naqhpJIWK5.mp4/poster.jpg" data-w="1440" data-h="1080" data-dur="2841" data-title="Dispute Between Brothers" data-label="Season 2 · Episode 10">
+          <span class="ep-art"><img src="https://v.nostr.build/YpYab9naqhpJIWK5.mp4/poster.jpg" alt="" width="1440" height="1080" loading="lazy" decoding="async"><span class="ep-num">10</span><span class="ep-prog" hidden><i></i></span></span>
+          <span class="ep-text"><span class="ep-title">Dispute Between Brothers</span><span class="ep-meta">47 min</span></span>
+        </a></li>
+        <li><a class="ep" href="https://e.nostr.build/v_Fu21DjPzsaalPx9t_mp4" data-id="Fu21DjPzsaalPx9t" data-key="s2e11" data-src="https://v.nostr.build/Fu21DjPzsaalPx9t.mp4" data-poster="https://v.nostr.build/Fu21DjPzsaalPx9t.mp4/poster.jpg" data-w="1440" data-h="1080" data-dur="2844" data-title="Masked Ball" data-label="Season 2 · Episode 11">
+          <span class="ep-art"><img src="https://v.nostr.build/Fu21DjPzsaalPx9t.mp4/poster.jpg" alt="" width="1440" height="1080" loading="lazy" decoding="async"><span class="ep-num">11</span><span class="ep-prog" hidden><i></i></span></span>
+          <span class="ep-text"><span class="ep-title">Masked Ball</span><span class="ep-meta">47 min</span></span>
+        </a></li>
+        <li><a class="ep" href="https://e.nostr.build/v_sXQICFO4coOoTLXR_mp4" data-id="sXQICFO4coOoTLXR" data-key="s2e12" data-src="https://v.nostr.build/sXQICFO4coOoTLXR.mp4" data-poster="https://v.nostr.build/sXQICFO4coOoTLXR.mp4/poster.jpg" data-w="1440" data-h="1080" data-dur="2788" data-title="The Black Widow" data-label="Season 2 · Episode 12">
+          <span class="ep-art"><img src="https://v.nostr.build/sXQICFO4coOoTLXR.mp4/poster.jpg" alt="" width="1440" height="1080" loading="lazy" decoding="async"><span class="ep-num">12</span><span class="ep-prog" hidden><i></i></span></span>
+          <span class="ep-text"><span class="ep-title">The Black Widow</span><span class="ep-meta">46 min</span></span>
+        </a></li>
+        <li><a class="ep" href="https://e.nostr.build/v_sKpYrCljhHRJv9CA_mp4" data-id="sKpYrCljhHRJv9CA" data-key="s2e13" data-src="https://v.nostr.build/sKpYrCljhHRJv9CA.mp4" data-poster="https://v.nostr.build/sKpYrCljhHRJv9CA.mp4/poster.jpg" data-w="1440" data-h="1080" data-dur="2815" data-title="Checkmate" data-label="Season 2 · Episode 13">
+          <span class="ep-art"><img src="https://v.nostr.build/sKpYrCljhHRJv9CA.mp4/poster.jpg" alt="" width="1440" height="1080" loading="lazy" decoding="async"><span class="ep-num">13</span><span class="ep-prog" hidden><i></i></span></span>
+          <span class="ep-text"><span class="ep-title">Checkmate</span><span class="ep-meta">47 min</span></span>
+        </a></li>
+        <li><a class="ep" href="https://e.nostr.build/v_RKZOeJF78hmYRIt3_mp4" data-id="RKZOeJF78hmYRIt3" data-key="s2e14" data-src="https://v.nostr.build/RKZOeJF78hmYRIt3.mp4" data-poster="https://v.nostr.build/RKZOeJF78hmYRIt3.mp4/poster.jpg" data-w="1440" data-h="1080" data-dur="2771" data-title="Double Play" data-label="Season 2 · Episode 14">
+          <span class="ep-art"><img src="https://v.nostr.build/RKZOeJF78hmYRIt3.mp4/poster.jpg" alt="" width="1440" height="1080" loading="lazy" decoding="async"><span class="ep-num">14</span><span class="ep-prog" hidden><i></i></span></span>
+          <span class="ep-text"><span class="ep-title">Double Play</span><span class="ep-meta">46 min</span></span>
+        </a></li>
+        <li><a class="ep" href="https://e.nostr.build/v_B5A7EdzaiNjwZWWk_mp4" data-id="B5A7EdzaiNjwZWWk" data-key="s2e15" data-src="https://v.nostr.build/B5A7EdzaiNjwZWWk.mp4" data-poster="https://v.nostr.build/B5A7EdzaiNjwZWWk.mp4/poster.jpg" data-w="1440" data-h="1080" data-dur="2807" data-title="Slaves and Masters" data-label="Season 2 · Episode 15">
+          <span class="ep-art"><img src="https://v.nostr.build/B5A7EdzaiNjwZWWk.mp4/poster.jpg" alt="" width="1440" height="1080" loading="lazy" decoding="async"><span class="ep-num">15</span><span class="ep-prog" hidden><i></i></span></span>
+          <span class="ep-text"><span class="ep-title">Slaves and Masters</span><span class="ep-meta">47 min</span></span>
+        </a></li>
+        <li><a class="ep" href="https://e.nostr.build/v_oGqlyvbLver7N5EA_mp4" data-id="oGqlyvbLver7N5EA" data-key="s2e16" data-src="https://v.nostr.build/oGqlyvbLver7N5EA.mp4" data-poster="https://v.nostr.build/oGqlyvbLver7N5EA.mp4/poster.jpg" data-w="1440" data-h="1080" data-dur="2840" data-title="The Condemned Woman" data-label="Season 2 · Episode 16">
+          <span class="ep-art"><img src="https://v.nostr.build/oGqlyvbLver7N5EA.mp4/poster.jpg" alt="" width="1440" height="1080" loading="lazy" decoding="async"><span class="ep-num">16</span><span class="ep-prog" hidden><i></i></span></span>
+          <span class="ep-text"><span class="ep-title">The Condemned Woman</span><span class="ep-meta">47 min</span></span>
+        </a></li>
+        <li><a class="ep" href="https://e.nostr.build/v_4L6BrRkyDywINExH_mp4" data-id="4L6BrRkyDywINExH" data-key="s2e17" data-src="https://v.nostr.build/4L6BrRkyDywINExH.mp4" data-poster="https://v.nostr.build/4L6BrRkyDywINExH.mp4/poster.jpg" data-w="1440" data-h="1080" data-dur="2760" data-title="Wounds and Scars" data-label="Season 2 · Episode 17">
+          <span class="ep-art"><img src="https://v.nostr.build/4L6BrRkyDywINExH.mp4/poster.jpg" alt="" width="1440" height="1080" loading="lazy" decoding="async"><span class="ep-num">17</span><span class="ep-prog" hidden><i></i></span></span>
+          <span class="ep-text"><span class="ep-title">Wounds and Scars</span><span class="ep-meta">46 min</span></span>
+        </a></li>
+        <li><a class="ep" href="https://e.nostr.build/v_LWcZ1LQ0aAwWLQFf_mp4" data-id="LWcZ1LQ0aAwWLQFf" data-key="s2e18" data-src="https://v.nostr.build/LWcZ1LQ0aAwWLQFf.mp4" data-poster="https://v.nostr.build/LWcZ1LQ0aAwWLQFf.mp4/poster.jpg" data-w="1440" data-h="1080" data-dur="2810" data-title="On the Wings of Love" data-label="Season 2 · Episode 18">
+          <span class="ep-art"><img src="https://v.nostr.build/LWcZ1LQ0aAwWLQFf.mp4/poster.jpg" alt="" width="1440" height="1080" loading="lazy" decoding="async"><span class="ep-num">18</span><span class="ep-prog" hidden><i></i></span></span>
+          <span class="ep-text"><span class="ep-title">On the Wings of Love</span><span class="ep-meta">47 min</span></span>
+        </a></li>
+        <li><a class="ep" href="https://e.nostr.build/v_bhaLybE5czaWiaJP_mp4" data-id="bhaLybE5czaWiaJP" data-key="s2e19" data-src="https://v.nostr.build/bhaLybE5czaWiaJP.mp4" data-poster="https://v.nostr.build/bhaLybE5czaWiaJP.mp4/poster.jpg" data-w="1440" data-h="1080" data-dur="2819" data-title="Variations and Relations" data-label="Season 2 · Episode 19">
+          <span class="ep-art"><img src="https://v.nostr.build/bhaLybE5czaWiaJP.mp4/poster.jpg" alt="" width="1440" height="1080" loading="lazy" decoding="async"><span class="ep-num">19</span><span class="ep-prog" hidden><i></i></span></span>
+          <span class="ep-text"><span class="ep-title">Variations and Relations</span><span class="ep-meta">47 min</span></span>
+        </a></li>
+        <li><a class="ep" href="https://e.nostr.build/v_ROw6lOUpshA1KF98_mp4" data-id="ROw6lOUpshA1KF98" data-key="s2e20" data-src="https://v.nostr.build/ROw6lOUpshA1KF98.mp4" data-poster="https://v.nostr.build/ROw6lOUpshA1KF98.mp4/poster.jpg" data-w="1440" data-h="1080" data-dur="2808" data-title="The Path to the Black Lodge" data-label="Season 2 · Episode 20">
+          <span class="ep-art"><img src="https://v.nostr.build/ROw6lOUpshA1KF98.mp4/poster.jpg" alt="" width="1440" height="1080" loading="lazy" decoding="async"><span class="ep-num">20</span><span class="ep-prog" hidden><i></i></span></span>
+          <span class="ep-text"><span class="ep-title">The Path to the Black Lodge</span><span class="ep-meta">47 min</span></span>
+        </a></li>
+        <li><a class="ep" href="https://e.nostr.build/v_rRmycD74zaseaUh1_mp4" data-id="rRmycD74zaseaUh1" data-key="s2e21" data-src="https://v.nostr.build/rRmycD74zaseaUh1.mp4" data-poster="https://v.nostr.build/rRmycD74zaseaUh1.mp4/poster.jpg" data-w="1440" data-h="1080" data-dur="2783" data-title="The Night of the Decision" data-label="Season 2 · Episode 21">
+          <span class="ep-art"><img src="https://v.nostr.build/rRmycD74zaseaUh1.mp4/poster.jpg" alt="" width="1440" height="1080" loading="lazy" decoding="async"><span class="ep-num">21</span><span class="ep-prog" hidden><i></i></span></span>
+          <span class="ep-text"><span class="ep-title">The Night of the Decision</span><span class="ep-meta">46 min</span></span>
+        </a></li>
+        <li><a class="ep" href="https://e.nostr.build/v_6fpCakA9Wek31wfs_mp4" data-id="6fpCakA9Wek31wfs" data-key="s2e22" data-src="https://v.nostr.build/6fpCakA9Wek31wfs.mp4" data-poster="https://v.nostr.build/6fpCakA9Wek31wfs.mp4/poster.jpg" data-w="1440" data-h="1080" data-dur="3030" data-title="Beyond Life and Death" data-label="Season 2 · Episode 22">
+          <span class="ep-art"><img src="https://v.nostr.build/6fpCakA9Wek31wfs.mp4/poster.jpg" alt="" width="1440" height="1080" loading="lazy" decoding="async"><span class="ep-num">22</span><span class="ep-prog" hidden><i></i></span></span>
+          <span class="ep-text"><span class="ep-title">Beyond Life and Death</span><span class="ep-meta">51 min</span></span>
+        </a></li>
+        </ol>
+        <h3 class="film-head">The film</h3>
+        <a class="ep film" href="https://e.nostr.build/v_Bd5FJD2Z8PXvekum_mp4" data-id="Bd5FJD2Z8PXvekum" data-key="fire-walk-with-me" data-src="https://v.nostr.build/Bd5FJD2Z8PXvekum.mp4" data-poster="https://v.nostr.build/Bd5FJD2Z8PXvekum.mp4/poster.jpg" data-w="1920" data-h="1080" data-dur="5485" data-title="Fire Walk With Me" data-label="Twin Peaks · The film">
+          <span class="ep-art film-art"><span class="film-play" aria-hidden="true"></span><span class="ep-prog" hidden><i></i></span></span>
+          <span class="ep-text"><span class="film-kicker">Twin Peaks</span><span class="ep-title">Fire Walk With Me</span><span class="ep-meta">91 min · Play the film</span></span>
+        </a>
+      </div>
+      <div class="panel" role="tabpanel" tabindex="0" id="season-3" aria-labelledby="tab-3">
+        <p class="panel-meta">2017 · 18 episodes</p>
+        <ol class="eps">
+        <li><a class="ep" href="https://e.nostr.build/v_0ZmTV2DAOtX54dCp_mp4" data-id="0ZmTV2DAOtX54dCp" data-key="s3e1" data-src="https://v.nostr.build/0ZmTV2DAOtX54dCp.mp4" data-poster="https://v.nostr.build/0ZmTV2DAOtX54dCp.mp4/poster.jpg" data-w="1920" data-h="1080" data-dur="3636" data-title="My Log Has a Message for You" data-label="Season 3 · Episode 1">
+          <span class="ep-art"><img src="https://v.nostr.build/0ZmTV2DAOtX54dCp.mp4/poster.jpg" alt="" width="1920" height="1080" loading="lazy" decoding="async"><span class="ep-num">1</span><span class="ep-prog" hidden><i></i></span></span>
+          <span class="ep-text"><span class="ep-title">My Log Has a Message for You</span><span class="ep-meta">61 min</span></span>
+        </a></li>
+        <li><a class="ep" href="https://e.nostr.build/v_4DsC7QLKTunDI1zr_mp4" data-id="4DsC7QLKTunDI1zr" data-key="s3e2" data-src="https://v.nostr.build/4DsC7QLKTunDI1zr.mp4" data-poster="https://v.nostr.build/4DsC7QLKTunDI1zr.mp4/poster.jpg" data-w="1912" data-h="1080" data-dur="3275" data-title="The Stars Turn" data-label="Season 3 · Episode 2">
+          <span class="ep-art"><img src="https://v.nostr.build/4DsC7QLKTunDI1zr.mp4/poster.jpg" alt="" width="1912" height="1080" loading="lazy" decoding="async"><span class="ep-num">2</span><span class="ep-prog" hidden><i></i></span></span>
+          <span class="ep-text"><span class="ep-title">The Stars Turn</span><span class="ep-meta">55 min</span></span>
+        </a></li>
+        <li><a class="ep" href="https://e.nostr.build/v_xEKY10kZPONaDZeY_mp4" data-id="xEKY10kZPONaDZeY" data-key="s3e3" data-src="https://v.nostr.build/xEKY10kZPONaDZeY.mp4" data-poster="https://v.nostr.build/xEKY10kZPONaDZeY.mp4/poster.jpg" data-w="1920" data-h="1080" data-dur="3532" data-title="Call for Help" data-label="Season 3 · Episode 3">
+          <span class="ep-art"><img src="https://v.nostr.build/xEKY10kZPONaDZeY.mp4/poster.jpg" alt="" width="1920" height="1080" loading="lazy" decoding="async"><span class="ep-num">3</span><span class="ep-prog" hidden><i></i></span></span>
+          <span class="ep-text"><span class="ep-title">Call for Help</span><span class="ep-meta">59 min</span></span>
+        </a></li>
+        <li><a class="ep" href="https://e.nostr.build/v_4Nh1p3qA0NF4pF7N_mp4" data-id="4Nh1p3qA0NF4pF7N" data-key="s3e4" data-src="https://v.nostr.build/4Nh1p3qA0NF4pF7N.mp4" data-poster="https://v.nostr.build/4Nh1p3qA0NF4pF7N.mp4/poster.jpg" data-w="1920" data-h="1080" data-dur="3417" data-title="Brings Back Some Memories" data-label="Season 3 · Episode 4">
+          <span class="ep-art"><img src="https://v.nostr.build/4Nh1p3qA0NF4pF7N.mp4/poster.jpg" alt="" width="1920" height="1080" loading="lazy" decoding="async"><span class="ep-num">4</span><span class="ep-prog" hidden><i></i></span></span>
+          <span class="ep-text"><span class="ep-title">Brings Back Some Memories</span><span class="ep-meta">57 min</span></span>
+        </a></li>
+        <li><a class="ep" href="https://e.nostr.build/v_FkY9mjNPLsJBItrR_mp4" data-id="FkY9mjNPLsJBItrR" data-key="s3e5" data-src="https://v.nostr.build/FkY9mjNPLsJBItrR.mp4" data-poster="https://v.nostr.build/FkY9mjNPLsJBItrR.mp4/poster.jpg" data-w="1920" data-h="1080" data-dur="3498" data-title="Case Files" data-label="Season 3 · Episode 5">
+          <span class="ep-art"><img src="https://v.nostr.build/FkY9mjNPLsJBItrR.mp4/poster.jpg" alt="" width="1920" height="1080" loading="lazy" decoding="async"><span class="ep-num">5</span><span class="ep-prog" hidden><i></i></span></span>
+          <span class="ep-text"><span class="ep-title">Case Files</span><span class="ep-meta">58 min</span></span>
+        </a></li>
+        <li><a class="ep" href="https://e.nostr.build/v_l6wPfAvKhowg06gu_mp4" data-id="l6wPfAvKhowg06gu" data-key="s3e6" data-src="https://v.nostr.build/l6wPfAvKhowg06gu.mp4" data-poster="https://v.nostr.build/l6wPfAvKhowg06gu.mp4/poster.jpg" data-w="1920" data-h="1080" data-dur="3484" data-title="Don't Die" data-label="Season 3 · Episode 6">
+          <span class="ep-art"><img src="https://v.nostr.build/l6wPfAvKhowg06gu.mp4/poster.jpg" alt="" width="1920" height="1080" loading="lazy" decoding="async"><span class="ep-num">6</span><span class="ep-prog" hidden><i></i></span></span>
+          <span class="ep-text"><span class="ep-title">Don't Die</span><span class="ep-meta">58 min</span></span>
+        </a></li>
+        <li><a class="ep" href="https://e.nostr.build/v_GrXDhOXgorffKYJ8_mp4" data-id="GrXDhOXgorffKYJ8" data-key="s3e7" data-src="https://v.nostr.build/GrXDhOXgorffKYJ8.mp4" data-poster="https://v.nostr.build/GrXDhOXgorffKYJ8.mp4/poster.jpg" data-w="1920" data-h="1080" data-dur="3455" data-title="There's a Body All Right" data-label="Season 3 · Episode 7">
+          <span class="ep-art"><img src="https://v.nostr.build/GrXDhOXgorffKYJ8.mp4/poster.jpg" alt="" width="1920" height="1080" loading="lazy" decoding="async"><span class="ep-num">7</span><span class="ep-prog" hidden><i></i></span></span>
+          <span class="ep-text"><span class="ep-title">There's a Body All Right</span><span class="ep-meta">58 min</span></span>
+        </a></li>
+        <li><a class="ep" href="https://e.nostr.build/v_xqy2PeneNsJOaMTw_mp4" data-id="xqy2PeneNsJOaMTw" data-key="s3e8" data-src="https://v.nostr.build/xqy2PeneNsJOaMTw.mp4" data-poster="https://v.nostr.build/xqy2PeneNsJOaMTw.mp4/poster.jpg" data-w="1898" data-h="1056" data-dur="3499" data-title="Gotta Light?" data-label="Season 3 · Episode 8">
+          <span class="ep-art"><img src="https://v.nostr.build/xqy2PeneNsJOaMTw.mp4/poster.jpg" alt="" width="1898" height="1056" loading="lazy" decoding="async"><span class="ep-num">8</span><span class="ep-prog" hidden><i></i></span></span>
+          <span class="ep-text"><span class="ep-title">Gotta Light?</span><span class="ep-meta">58 min</span></span>
+        </a></li>
+        <li><a class="ep" href="https://e.nostr.build/v_3zbihReqXQ5aiLic_mp4" data-id="3zbihReqXQ5aiLic" data-key="s3e9" data-src="https://v.nostr.build/3zbihReqXQ5aiLic.mp4" data-poster="https://v.nostr.build/3zbihReqXQ5aiLic.mp4/poster.jpg" data-w="1920" data-h="1080" data-dur="3500" data-title="This is the Chair" data-label="Season 3 · Episode 9">
+          <span class="ep-art"><img src="https://v.nostr.build/3zbihReqXQ5aiLic.mp4/poster.jpg" alt="" width="1920" height="1080" loading="lazy" decoding="async"><span class="ep-num">9</span><span class="ep-prog" hidden><i></i></span></span>
+          <span class="ep-text"><span class="ep-title">This is the Chair</span><span class="ep-meta">58 min</span></span>
+        </a></li>
+        <li><a class="ep" href="https://e.nostr.build/v_n7XtxMSfqJlJ70Ms_mp4" data-id="n7XtxMSfqJlJ70Ms" data-key="s3e10" data-src="https://v.nostr.build/n7XtxMSfqJlJ70Ms.mp4" data-poster="https://v.nostr.build/n7XtxMSfqJlJ70Ms.mp4/poster.jpg" data-w="1920" data-h="1080" data-dur="3204" data-title="Laura is the One" data-label="Season 3 · Episode 10">
+          <span class="ep-art"><img src="https://v.nostr.build/n7XtxMSfqJlJ70Ms.mp4/poster.jpg" alt="" width="1920" height="1080" loading="lazy" decoding="async"><span class="ep-num">10</span><span class="ep-prog" hidden><i></i></span></span>
+          <span class="ep-text"><span class="ep-title">Laura is the One</span><span class="ep-meta">53 min</span></span>
+        </a></li>
+        <li><a class="ep" href="https://e.nostr.build/v_e7CcsHXOWv1hBrXL_mp4" data-id="e7CcsHXOWv1hBrXL" data-key="s3e11" data-src="https://v.nostr.build/e7CcsHXOWv1hBrXL.mp4" data-poster="https://v.nostr.build/e7CcsHXOWv1hBrXL.mp4/poster.jpg" data-w="1920" data-h="1080" data-dur="3434" data-title="There's Fire Where You're Going" data-label="Season 3 · Episode 11">
+          <span class="ep-art"><img src="https://v.nostr.build/e7CcsHXOWv1hBrXL.mp4/poster.jpg" alt="" width="1920" height="1080" loading="lazy" decoding="async"><span class="ep-num">11</span><span class="ep-prog" hidden><i></i></span></span>
+          <span class="ep-text"><span class="ep-title">There's Fire Where You're Going</span><span class="ep-meta">57 min</span></span>
+        </a></li>
+        <li><a class="ep" href="https://e.nostr.build/v_yzK3lLKeggYcbTKh_mp4" data-id="yzK3lLKeggYcbTKh" data-key="s3e12" data-src="https://v.nostr.build/yzK3lLKeggYcbTKh.mp4" data-poster="https://v.nostr.build/yzK3lLKeggYcbTKh.mp4/poster.jpg" data-w="1918" data-h="1080" data-dur="3293" data-title="Let's Rock" data-label="Season 3 · Episode 12">
+          <span class="ep-art"><img src="https://v.nostr.build/yzK3lLKeggYcbTKh.mp4/poster.jpg" alt="" width="1918" height="1080" loading="lazy" decoding="async"><span class="ep-num">12</span><span class="ep-prog" hidden><i></i></span></span>
+          <span class="ep-text"><span class="ep-title">Let's Rock</span><span class="ep-meta">55 min</span></span>
+        </a></li>
+        <li><a class="ep" href="https://e.nostr.build/v_SpDhYkZOiDSoXQz1_mp4" data-id="SpDhYkZOiDSoXQz1" data-key="s3e13" data-src="https://v.nostr.build/SpDhYkZOiDSoXQz1.mp4" data-poster="https://v.nostr.build/SpDhYkZOiDSoXQz1.mp4/poster.jpg" data-w="1920" data-h="1080" data-dur="3559" data-title="What Story Is That, Charlie?" data-label="Season 3 · Episode 13">
+          <span class="ep-art"><img src="https://v.nostr.build/SpDhYkZOiDSoXQz1.mp4/poster.jpg" alt="" width="1920" height="1080" loading="lazy" decoding="async"><span class="ep-num">13</span><span class="ep-prog" hidden><i></i></span></span>
+          <span class="ep-text"><span class="ep-title">What Story Is That, Charlie?</span><span class="ep-meta">59 min</span></span>
+        </a></li>
+        <li><a class="ep" href="https://e.nostr.build/v_DbkJOYuOjaJonQdl_mp4" data-id="DbkJOYuOjaJonQdl" data-key="s3e14" data-src="https://v.nostr.build/DbkJOYuOjaJonQdl.mp4" data-poster="https://v.nostr.build/DbkJOYuOjaJonQdl.mp4/poster.jpg" data-w="1920" data-h="1080" data-dur="3376" data-title="We Are Like the Dreamer" data-label="Season 3 · Episode 14">
+          <span class="ep-art"><img src="https://v.nostr.build/DbkJOYuOjaJonQdl.mp4/poster.jpg" alt="" width="1920" height="1080" loading="lazy" decoding="async"><span class="ep-num">14</span><span class="ep-prog" hidden><i></i></span></span>
+          <span class="ep-text"><span class="ep-title">We Are Like the Dreamer</span><span class="ep-meta">56 min</span></span>
+        </a></li>
+        <li><a class="ep" href="https://e.nostr.build/v_uZRsKKF4mGJKitPR_mp4" data-id="uZRsKKF4mGJKitPR" data-key="s3e15" data-src="https://v.nostr.build/uZRsKKF4mGJKitPR.mp4" data-poster="https://v.nostr.build/uZRsKKF4mGJKitPR.mp4/poster.jpg" data-w="1920" data-h="1080" data-dur="3309" data-title="Fear in Letting Go" data-label="Season 3 · Episode 15">
+          <span class="ep-art"><img src="https://v.nostr.build/uZRsKKF4mGJKitPR.mp4/poster.jpg" alt="" width="1920" height="1080" loading="lazy" decoding="async"><span class="ep-num">15</span><span class="ep-prog" hidden><i></i></span></span>
+          <span class="ep-text"><span class="ep-title">Fear in Letting Go</span><span class="ep-meta">55 min</span></span>
+        </a></li>
+        <li><a class="ep" href="https://e.nostr.build/v_UVTgIuTQ6vo1Tx32_mp4" data-id="UVTgIuTQ6vo1Tx32" data-key="s3e16" data-src="https://v.nostr.build/UVTgIuTQ6vo1Tx32.mp4" data-poster="https://v.nostr.build/UVTgIuTQ6vo1Tx32.mp4/poster.jpg" data-w="1920" data-h="1080" data-dur="3468" data-title="No Knock, No Doorbell" data-label="Season 3 · Episode 16">
+          <span class="ep-art"><img src="https://v.nostr.build/UVTgIuTQ6vo1Tx32.mp4/poster.jpg" alt="" width="1920" height="1080" loading="lazy" decoding="async"><span class="ep-num">16</span><span class="ep-prog" hidden><i></i></span></span>
+          <span class="ep-text"><span class="ep-title">No Knock, No Doorbell</span><span class="ep-meta">58 min</span></span>
+        </a></li>
+        <li><a class="ep" href="https://e.nostr.build/v_kiRXlZMSJugQBNOi_mp4" data-id="kiRXlZMSJugQBNOi" data-key="s3e17" data-src="https://v.nostr.build/kiRXlZMSJugQBNOi.mp4" data-poster="https://v.nostr.build/kiRXlZMSJugQBNOi.mp4/poster.jpg" data-w="1920" data-h="1080" data-dur="3564" data-title="The Past Dictates the Future" data-label="Season 3 · Episode 17">
+          <span class="ep-art"><img src="https://v.nostr.build/kiRXlZMSJugQBNOi.mp4/poster.jpg" alt="" width="1920" height="1080" loading="lazy" decoding="async"><span class="ep-num">17</span><span class="ep-prog" hidden><i></i></span></span>
+          <span class="ep-text"><span class="ep-title">The Past Dictates the Future</span><span class="ep-meta">59 min</span></span>
+        </a></li>
+        <li><a class="ep" href="https://e.nostr.build/v_939a7AFzAdiNEXQQ_mp4" data-id="939a7AFzAdiNEXQQ" data-key="s3e18" data-src="https://v.nostr.build/939a7AFzAdiNEXQQ.mp4" data-poster="https://v.nostr.build/939a7AFzAdiNEXQQ.mp4/poster.jpg" data-w="1920" data-h="1080" data-dur="3430" data-title="What is Your Name?" data-label="Season 3 · Episode 18">
+          <span class="ep-art"><img src="https://v.nostr.build/939a7AFzAdiNEXQQ.mp4/poster.jpg" alt="" width="1920" height="1080" loading="lazy" decoding="async"><span class="ep-num">18</span><span class="ep-prog" hidden><i></i></span></span>
+          <span class="ep-text"><span class="ep-title">What is Your Name?</span><span class="ep-meta">57 min</span></span>
+        </a></li>
+        </ol>
+      </div>
+  </section>
+</main>
 
+<footer class="foot">
+  <div class="wrap">
+    <img class="signature" src="https://upload.wikimedia.org/wikipedia/commons/4/4a/David_Lynch_signature.svg" alt="David Lynch's signature" width="248" height="75" loading="lazy">
+    <p class="dates"><span>January 20, 1946</span> · <span>January 16, 2025</span></p>
+    <p class="credits">Photographs from Wikimedia Commons, shown in black and white except the 2009 red photo: <a href="https://commons.wikimedia.org/wiki/File:David_Lynch_at_the_1990_Emmy_Awards.jpg">1990, Emmy Awards</a> by Alan Light, <a href="https://creativecommons.org/licenses/by/2.0/">CC BY 2.0</a>; <a href="https://commons.wikimedia.org/wiki/File:David_Lynch_Paris_Oct_2007.jpg">2007, Paris</a> by Patrick Nicolas, <a href="https://creativecommons.org/licenses/by/2.0/">CC BY 2.0</a>; <a href="https://commons.wikimedia.org/wiki/File:David_Lynch_by_Kargaltsev.jpg">2009, Moscow</a> by Sasha Kargaltsev, <a href="https://creativecommons.org/licenses/by/2.0/">CC BY 2.0</a>; <a href="https://commons.wikimedia.org/wiki/File:David_Lynch_Red.jpg">2009</a> by cuttlefish, <a href="https://creativecommons.org/licenses/by/2.0/">CC BY 2.0</a>; <a href="https://commons.wikimedia.org/wiki/File:David_Lynch_2016.jpg">2016</a> by Msubrizi, <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a>; <a href="https://commons.wikimedia.org/wiki/File:David_Lynch_Cannes_2017.jpg">2017, Cannes</a> by Georges Biard, <a href="https://creativecommons.org/licenses/by-sa/3.0/">CC BY-SA 3.0</a>. Signature: public domain.</p>
+  </div>
+</footer>
 
-  <!-- Footer Section -->
-  <footer id="contact" style="background-color:black;">
-	  <p class="hero_header"></p><br>
-    <div></div>
-  </footer>
-  <!-- Copyrights Section -->
-  <div class="copyright"><strong>David Lynch : 1/20/1946 - 1/16/2025</strong></div>
-</div>
-<!-- Main Container Ends -->
+<script>
+(() => {
+  const $ = (s) => document.querySelector(s);
+  const $$ = (s) => Array.from(document.querySelectorAll(s));
+  const store = {
+    get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } },
+    set(k, v) { try { localStorage.setItem(k, v); } catch (e) {} },
+  };
+  const tabs = $$('[role="tab"]');
+  const panels = $$('[role="tabpanel"]');
+  const eps = $$('a.ep');
+  const theater = $('#theater');
+  const screen = $('.screen');
+  const video = $('#player');
+  const prevBtn = $('#prev');
+  const nextBtn = $('#next');
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  let current = null;
+  let ready = false;
+  let lastSave = 0;
+
+  const saved = (a) => Number(store.get('dl:' + a.dataset.id)) || 0;
+  function paint(a) {
+    const p = Math.min(1, saved(a) / Number(a.dataset.dur));
+    const bar = a.querySelector('.ep-prog');
+    bar.hidden = p < 0.01;
+    bar.style.setProperty('--p', p.toFixed(3));
+  }
+  eps.forEach(paint);
+
+  function selectTab(tab, focus) {
+    tabs.forEach((t) => {
+      const on = t === tab;
+      t.setAttribute('aria-selected', String(on));
+      t.tabIndex = on ? 0 : -1;
+    });
+    panels.forEach((p) => p.classList.toggle('is-active', p.id === tab.getAttribute('aria-controls')));
+    if (focus) tab.focus();
+  }
+  tabs.forEach((t, i) => {
+    t.addEventListener('click', () => {
+      selectTab(t);
+      history.replaceState(null, '', '#' + t.dataset.hash);
+    });
+    t.addEventListener('keydown', (e) => {
+      const last = tabs.length - 1;
+      const to = { ArrowRight: i === last ? 0 : i + 1, ArrowLeft: i === 0 ? last : i - 1, Home: 0, End: last }[e.key];
+      if (to === undefined) return;
+      e.preventDefault();
+      const n = tabs[to];
+      selectTab(n, true);
+      history.replaceState(null, '', '#' + n.dataset.hash);
+    });
+  });
+
+  function save() {
+    if (!current || !ready || !video.currentTime) return;
+    store.set('dl:' + current.dataset.id, String(Math.floor(video.currentTime)));
+    paint(current);
+  }
+
+  function play(a, opts) {
+    const o = Object.assign({ autoplay: true, scroll: true }, opts);
+    save();
+    current = a;
+    ready = false;
+    eps.forEach((x) => x.removeAttribute('aria-current'));
+    a.setAttribute('aria-current', 'true');
+    const panel = a.closest('[role="tabpanel"]');
+    if (panel && !panel.classList.contains('is-active')) {
+      selectTab(tabs.find((t) => t.getAttribute('aria-controls') === panel.id));
+    }
+    theater.hidden = false;
+    screen.style.setProperty('--ar', String(Number(a.dataset.w) / Number(a.dataset.h)));
+    video.poster = a.dataset.poster;
+    video.src = a.dataset.src;
+    $('#now-label').textContent = a.dataset.label;
+    $('#now-title').textContent = a.dataset.title;
+    const k = eps.indexOf(a);
+    prevBtn.disabled = k === 0;
+    nextBtn.disabled = k === eps.length - 1;
+    if (o.autoplay) video.play().catch(() => {});
+    if (o.scroll) theater.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' });
+    history.replaceState(null, '', '#' + a.dataset.key);
+  }
+
+  video.addEventListener('loadedmetadata', () => {
+    if (!current) return;
+    const t = saved(current);
+    if (t > 10 && t < Number(current.dataset.dur) - 30) video.currentTime = t;
+    ready = true;
+  });
+  video.addEventListener('timeupdate', () => {
+    const now = Date.now();
+    if (now - lastSave < 4000) return;
+    lastSave = now;
+    save();
+  });
+  video.addEventListener('pause', save);
+  video.addEventListener('ended', () => {
+    if (!current) return;
+    store.set('dl:' + current.dataset.id, current.dataset.dur);
+    paint(current);
+    ready = false;
+    const n = eps[eps.indexOf(current) + 1];
+    if (n) play(n, { scroll: false });
+  });
+  addEventListener('pagehide', save);
+
+  prevBtn.addEventListener('click', () => { const n = eps[eps.indexOf(current) - 1]; if (n) play(n, { scroll: false }); });
+  nextBtn.addEventListener('click', () => { const n = eps[eps.indexOf(current) + 1]; if (n) play(n, { scroll: false }); });
+
+  eps.forEach((a) => a.addEventListener('click', (e) => {
+    if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button) return;
+    e.preventDefault();
+    play(a);
+  }));
+
+  function route(initial) {
+    const h = decodeURIComponent(location.hash.slice(1));
+    const tab = tabs.find((t) => t.dataset.hash === h);
+    if (tab) {
+      selectTab(tab);
+      $('#watch').scrollIntoView({ behavior: initial || reduce ? 'auto' : 'smooth', block: 'start' });
+      return;
+    }
+    const a = eps.find((x) => x.dataset.key === h);
+    if (a) play(a, { autoplay: !initial });
+  }
+  $$('.quick a').forEach((l) => l.addEventListener('click', (e) => {
+    e.preventDefault();
+    history.replaceState(null, '', l.getAttribute('href'));
+    route(false);
+  }));
+  addEventListener('hashchange', () => route(false));
+  route(true);
+})();
+</script>
 </body>
 </html>
