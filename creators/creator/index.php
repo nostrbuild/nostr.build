@@ -188,8 +188,8 @@ function cr_media(array $row): array
 	<?php endif; ?>
 	<?php if ($display === 'video' && $rows) : ?>
 		<!-- video.js 10 (web components); the entry pulls its content-hashed chunks from the same pinned version -->
-		<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@videojs/cdn@10.0.0-rc.2/global.css" integrity="sha384-sFBM9ObyqV3UmK167VmRaSHqUDFMgg7tJukVLDainDgtCn2j5m5t8sgvobK5EqTc" crossorigin="anonymous" />
-		<script type="module" src="https://cdn.jsdelivr.net/npm/@videojs/cdn@10.0.0-rc.2/video-minimal.js" integrity="sha384-VbaUvgQ6AFoNE/ke6tzSH2S5vMGJXLJM5WPFXPulwsIFqM59r1brTtIHgK0CetyR" crossorigin="anonymous"></script>
+		<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@videojs/cdn@10.3.0/global.css" integrity="sha384-c6G5UOF9UESZo/QU/0B9sIGhCchKHsjte6KkGWIbeuXLF0V/5cANpzwt0yfJAA8d" crossorigin="anonymous" />
+		<script type="module" src="https://cdn.jsdelivr.net/npm/@videojs/cdn@10.3.0/video-neutral.js" integrity="sha384-LN5xCJzbYte6RGCw6A/lJl0gBafkMFks3+WspFDg49FTnVME068SLyqwvbDbKDTn" crossorigin="anonymous"></script>
 	<?php endif; ?>
 
 	<title><?= e($ogTitle) ?></title>
@@ -1248,7 +1248,7 @@ function cr_media(array $row): array
 			overflow: hidden;
 		}
 
-		.cr-pswp-video video-minimal-skin {
+		.cr-pswp-video video-neutral-skin {
 			--media-accent-color: #a8a3db;
 			--media-accent-text-color: #24204b;
 			--media-border-color: transparent;
@@ -1676,7 +1676,7 @@ function cr_media(array $row): array
 				wrap.className = 'cr-pswp-video';
 				const player = document.createElement('video-player');
 				if (content.data.msrc) player.setAttribute('poster', content.data.msrc);
-				const skin = document.createElement('video-minimal-skin');
+				const skin = document.createElement('video-neutral-skin');
 				const video = document.createElement('video');
 				video.setAttribute('playsinline', '');
 				// Neighbouring slides are prepared ahead of time; only the active one may download

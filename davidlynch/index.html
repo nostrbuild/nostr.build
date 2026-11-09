@@ -12,7 +12,10 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&display=swap">
-<link rel="stylesheet" href="css/dl.css">
+<link rel="stylesheet" href="/davidlynch/css/dl.css">
+<!-- video.js 10 (web components); the entry pulls its content-hashed chunks from the same pinned version -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@videojs/cdn@10.3.0/global.css" integrity="sha384-c6G5UOF9UESZo/QU/0B9sIGhCchKHsjte6KkGWIbeuXLF0V/5cANpzwt0yfJAA8d" crossorigin="anonymous">
+<script type="module" src="https://cdn.jsdelivr.net/npm/@videojs/cdn@10.3.0/video-neutral.js" integrity="sha384-LN5xCJzbYte6RGCw6A/lJl0gBafkMFks3+WspFDg49FTnVME068SLyqwvbDbKDTn" crossorigin="anonymous"></script>
 <script>document.documentElement.classList.add('js')</script>
 </head>
 <body>
@@ -50,7 +53,7 @@
     <div class="bio">
       <p>David Lynch was more than just a filmmaker, he was an artist, with masterpieces that took you to another place and time. While most movies can be easily predicted, none of his creations had any known path, often leaving the viewer mesmerized, not only questioning the movie, but questioning their own life, existence, and reality.</p>
       <p class="coda">There is no way to explain David Lynch in words, you have to watch his movies.</p>
-      <div class="intro-clip"><video controls playsinline preload="none" poster="https://v.nostr.build/ZPc86BhnG8Wyf6zP.mp4/poster.jpg" width="480" height="272" src="https://v.nostr.build/ZPc86BhnG8Wyf6zP.mp4"></video></div>
+      <div class="intro-clip"><video-player poster="https://v.nostr.build/ZPc86BhnG8Wyf6zP.mp4/poster.jpg"><video-neutral-skin><video controls playsinline preload="none" poster="https://v.nostr.build/ZPc86BhnG8Wyf6zP.mp4/poster.jpg" width="480" height="272" src="https://v.nostr.build/ZPc86BhnG8Wyf6zP.mp4"></video></video-neutral-skin></video-player></div>
     </div>
   </section>
 
@@ -59,7 +62,7 @@
     <p class="sub">Pick an episode. It plays here, and picks up where you left off.</p>
 
     <div class="theater" id="theater" hidden>
-      <div class="screen"><video id="player" controls playsinline preload="metadata"></video></div>
+      <div class="screen"><video-player id="vp"><video-neutral-skin><video id="player" controls playsinline preload="metadata"></video></video-neutral-skin></video-player></div>
       <div class="now">
         <div class="now-text">
           <p class="now-label" id="now-label"></p>
@@ -314,6 +317,13 @@
   const theater = $('#theater');
   const screen = $('.screen');
   const video = $('#player');
+  const vp = $('#vp');
+  // Native controls are the fallback if the player can't load; the skin replaces them once it's defined
+  if (window.customElements) {
+    customElements.whenDefined('video-neutral-skin').then(() => {
+      $$('video-neutral-skin > video').forEach((v) => v.removeAttribute('controls'));
+    });
+  }
   const prevBtn = $('#prev');
   const nextBtn = $('#next');
   const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -375,6 +385,7 @@
     theater.hidden = false;
     screen.style.setProperty('--ar', String(Number(a.dataset.w) / Number(a.dataset.h)));
     video.poster = a.dataset.poster;
+    vp.setAttribute('poster', a.dataset.poster);
     video.src = a.dataset.src;
     $('#now-label').textContent = a.dataset.label;
     $('#now-title').textContent = a.dataset.title;
