@@ -1741,10 +1741,15 @@ class Account
    *     renewal invoice for one paid tier that settles after the account moved
    *     to another paid tier must not move it back: that is refused
    *     ('rejected-level-mismatch') and the Worker parks the paid order for an
-   *     admin. An account on no paid tier (free, wiped) is set to the plan, as
-   *     before.
-   *   - The date math is unchanged: an active plan extends from its expiry, an
-   *     expired one starts today.
+   *     admin. The same goes for ANY other level (staff 89/99 included, whose
+   *     price is 0): only an account on level 0 (free, or wiped by a finished
+   *     deletion) is set to the plan, as before.
+   *   - The date math: an active plan extends from its expiry and keeps its
+   *     start date, an expired one starts today. "Expired" is read from the
+   *     END DATE here, not from isExpired(): that helper also answers true for
+   *     a missing or future start date and for the last partial day, and with
+   *     the window gone either would restart a plan that still has time on it
+   *     (shortening it) instead of extending it.
    *
    * The business ceiling on prepaid time lives in the account Worker (it refuses
    * the invoice). The 20-year bound here only stops a nonsense date; it must
@@ -1753,7 +1758,7 @@ class Account
    * Requires this table. Run once BEFORE deploying this file - copy as-is:
    *
    * CREATE TABLE IF NOT EXISTS plan_invoice_applications (
-   *   invoice_id        VARCHAR(64) NOT NULL,
+   *   invoice_id        VARCHAR(64) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
    *   uuid_id           VARCHAR(36) NOT NULL,
    *   plan              INT         NOT NULL,
    *   period            VARCHAR(10) NOT NULL,
@@ -1765,11 +1770,11 @@ class Account
    * ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
    *
    * @return string 'applied' | 'noop-current' (replay) | 'rejected-level-mismatch'
-   *                | 'rejected-bad-date'
+   *                | 'rejected-bad-date' | 'rejected-no-change' (no such row)
+   *                | 'rejected-invoice-mismatch' (the id belongs to another account)
    */
   private function applyRenewalForInvoice(int $planLevel, string $period, string $invoiceId): string
   {
-    require_once __DIR__ . '/Plans.class.php';
     $periodRank = ['1y' => 1, '2y' => 2, '3y' => 3];
     $periodDuration = match ($period) {
       '2y' => '+2 years',
@@ -1794,8 +1799,14 @@ class Account
       $lock->get_result();
       $lock->close();
       $this->fetchAccountData();
+      if (empty($this->account) || $this->uuid === '') {
+        // The row went away between the route's lookup and the lock.
+        $this->db->rollback();
+        error_log("set-plan renewal rejected: no account row for invoice {$invoiceId}");
+        return 'rejected-no-change';
+      }
 
-      $seen = $this->db->prepare('SELECT invoice_id FROM plan_invoice_applications WHERE invoice_id = ?');
+      $seen = $this->db->prepare('SELECT uuid_id FROM plan_invoice_applications WHERE invoice_id = ?');
       if (!$seen) {
         throw new Exception('Error preparing renewal replay check: ' . $this->db->error);
       }
@@ -1803,20 +1814,29 @@ class Account
       if (!$seen->execute()) {
         throw new Exception('Error running renewal replay check: ' . $seen->error);
       }
-      $alreadyApplied = $seen->get_result()->fetch_assoc() !== null;
+      $seenRow = $seen->get_result()->fetch_assoc();
       $seen->close();
+      $alreadyApplied = $seenRow !== null;
+      if ($alreadyApplied && (string)$seenRow['uuid_id'] !== $this->uuid) {
+        // An invoice pays for one account. Answering "already applied" to a
+        // different one would mark its order active with nothing applied.
+        $this->db->rollback();
+        error_log("set-plan renewal rejected: invoice {$invoiceId} was applied to another account, npub: " . $this->npub);
+        return 'rejected-invoice-mismatch';
+      }
 
       if (!$alreadyApplied) {
         $currentLevel = (int)($this->account['acctlevel'] ?? 0);
-        if ($currentLevel !== $planLevel && (Plans::$originalPrices[$currentLevel] ?? 0) > 0) {
+        if ($currentLevel !== $planLevel && $currentLevel !== 0) {
           $this->db->rollback();
-          error_log("set-plan renewal rejected: invoice {$invoiceId} is for level {$planLevel} but the account is on paid level {$currentLevel}, npub: " . $this->npub);
+          error_log("set-plan renewal rejected: invoice {$invoiceId} is for level {$planLevel} but the account is on level {$currentLevel}, npub: " . $this->npub);
           return 'rejected-level-mismatch';
         }
 
         $today = date('Y-m-d');
         $currentEnd = $this->account['plan_until_date'] ?? null;
-        $expired = $currentEnd === null || $this->isExpired();
+        $currentEndTs = $currentEnd === null ? false : strtotime((string)$currentEnd);
+        $expired = $currentEndTs === false || $currentEndTs <= time();
         $base = $expired ? $today : $currentEnd;
         $baseTs = strtotime($base . ' ' . $periodDuration);
         if ($baseTs === false) {
@@ -1844,7 +1864,15 @@ class Account
         if (!$upd->execute()) {
           throw new Exception('Error executing renewal update: ' . $upd->error);
         }
+        // The new expiry always differs from the old one, so 0 rows means the
+        // row is gone: never record an application that changed nothing.
+        $changed = $upd->affected_rows;
         $upd->close();
+        if ($changed < 1) {
+          $this->db->rollback();
+          error_log("set-plan renewal: no rows updated for invoice {$invoiceId}, npub: " . $this->npub);
+          return 'rejected-no-change';
+        }
 
         $rec = $this->db->prepare(
           'INSERT INTO plan_invoice_applications (invoice_id, uuid_id, plan, period, plan_until_before, plan_until_after) VALUES (?, ?, ?, ?, ?, ?)'
