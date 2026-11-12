@@ -1682,9 +1682,12 @@ class Account
    *   'noop-current'            - already at the intended state (idempotent re-run).
    *   'rejected-renewal-window' - renewal blocked: too many days remaining
    *                               (only a renewal sent WITHOUT an invoice id).
-   *   'rejected-no-change'      - the renewal WHERE guard matched no row.
+   *   'rejected-no-change'      - the renewal WHERE guard matched no row, or an
+   *                               invoice-keyed renewal found no row / no plan.
    *   'rejected-level-mismatch' - an invoice-keyed renewal for a tier the account
    *                               is no longer on (see applyRenewalForInvoice).
+   *   'rejected-invoice-mismatch' - the invoice id was applied to another account.
+   *   'rejected-bad-date'       - a computed or supplied expiry was out of bounds.
    */
   /**
    * Link a now-subscribed user's existing FREE uploads to their stable uuid.
@@ -1742,8 +1745,10 @@ class Account
    *     to another paid tier must not move it back: that is refused
    *     ('rejected-level-mismatch') and the Worker parks the paid order for an
    *     admin. The same goes for ANY other level (staff 89/99 included, whose
-   *     price is 0): only an account on level 0 (free, or wiped by a finished
-   *     deletion) is set to the plan, as before.
+   *     price is 0). An account on level 0 that still has plan dates is set to
+   *     the plan, as before; one with NO end date (a wiped shell, or never
+   *     paid) is refused ('rejected-no-change'), also as before, so a payment
+   *     never quietly reactivates a terminated account.
    *   - The date math: an active plan extends from its expiry and keeps its
    *     start date, an expired one starts today. "Expired" is read from the
    *     END DATE here, not from isExpired(): that helper also answers true for
@@ -1770,7 +1775,7 @@ class Account
    * ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
    *
    * @return string 'applied' | 'noop-current' (replay) | 'rejected-level-mismatch'
-   *                | 'rejected-bad-date' | 'rejected-no-change' (no such row)
+   *                | 'rejected-bad-date' | 'rejected-no-change' (no row, or no plan)
    *                | 'rejected-invoice-mismatch' (the id belongs to another account)
    */
   private function applyRenewalForInvoice(int $planLevel, string $period, string $invoiceId): string
@@ -1836,7 +1841,14 @@ class Account
         $today = date('Y-m-d');
         $currentEnd = $this->account['plan_until_date'] ?? null;
         $currentEndTs = $currentEnd === null ? false : strtotime((string)$currentEnd);
-        $expired = $currentEndTs === false || $currentEndTs <= time();
+        if ($currentEndTs === false) {
+          // No plan to renew (the legacy path's WHERE guard matched no such row
+          // either): park the paid order for an admin.
+          $this->db->rollback();
+          error_log("set-plan renewal rejected: no plan end date for invoice {$invoiceId}, npub: " . $this->npub);
+          return 'rejected-no-change';
+        }
+        $expired = $currentEndTs <= time();
         $base = $expired ? $today : $currentEnd;
         $baseTs = strtotime($base . ' ' . $periodDuration);
         if ($baseTs === false) {
