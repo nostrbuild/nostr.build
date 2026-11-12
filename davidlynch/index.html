@@ -25,13 +25,6 @@
     <p class="kicker">Tribute to</p>
     <h1>David Lynch</h1>
     <p class="years">1946 · 2025</p>
-    <nav aria-label="Watch">
-      <ul class="quick">
-        <li><a href="#season-1">Season 1</a></li>
-        <li><a href="#season-2">Season 2</a></li>
-        <li><a href="#season-3">Season 3</a></li>
-      </ul>
-    </nav>
   </div>
 </header>
 <div class="zigzag" aria-hidden="true"></div>
@@ -440,11 +433,6 @@
     const a = eps.find((x) => x.dataset.key === h);
     if (a) play(a, { autoplay: !initial });
   }
-  $$('.quick a').forEach((l) => l.addEventListener('click', (e) => {
-    e.preventDefault();
-    history.replaceState(null, '', l.getAttribute('href'));
-    route(false);
-  }));
   addEventListener('hashchange', () => route(false));
   route(true);
 })();
