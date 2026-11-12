@@ -1680,8 +1680,11 @@ class Account
    * order from a real success:
    *   'applied'                 - the DB row was updated.
    *   'noop-current'            - already at the intended state (idempotent re-run).
-   *   'rejected-renewal-window' - renewal blocked: too many days remaining.
+   *   'rejected-renewal-window' - renewal blocked: too many days remaining
+   *                               (only a renewal sent WITHOUT an invoice id).
    *   'rejected-no-change'      - the renewal WHERE guard matched no row.
+   *   'rejected-level-mismatch' - an invoice-keyed renewal for a tier the account
+   *                               is no longer on (see applyRenewalForInvoice).
    */
   /**
    * Link a now-subscribed user's existing FREE uploads to their stable uuid.
@@ -1711,7 +1714,196 @@ class Account
     }
   }
 
-  public function setPlan(int $planLevel, string $period = '1y', bool $new = true, ?string $planUntilOverride = null): string
+  /**
+   * Renew for ONE paid invoice, exactly once.
+   *
+   * A renewal used to be allowed only with 180 days or fewer left, and that
+   * window was also the ONLY thing that kept a retried set-plan from extending
+   * a plan twice: after a renewal more than 181 days remained, so the retry was
+   * refused. Renewals are now allowed at any time, so the guard is the invoice
+   * itself. The plan update and a row in plan_invoice_applications (invoice_id
+   * is its PRIMARY KEY) commit together under a lock on the users row:
+   *   - a replay of the same invoice finds the row and changes nothing;
+   *   - two different invoices paid back to back each extend the plan once, in
+   *     whichever order they land (each reads the expiry the other committed).
+   * Each row also keeps the expiry before and after, so it is the renewal's
+   * audit trail.
+   *
+   * What else assumed "180 days or fewer left", and what it does now:
+   *   - subscription_period. It is the rate the app credits remaining days at on
+   *     an upgrade (1y is the dearest rate per day, 3y the cheapest). Overwriting
+   *     it with the new term was harmless when at most 180 days were left; with
+   *     years left, a 3y holder renewing 1y would have every remaining day
+   *     credited at the 1y rate, more than was paid. So an ACTIVE plan keeps the
+   *     LONGER of its current period and the new one (never over-credits). An
+   *     expired plan starts a new term and takes the new period.
+   *   - The tier. The renewal UPDATE used to write acctlevel unconditionally. A
+   *     renewal invoice for one paid tier that settles after the account moved
+   *     to another paid tier must not move it back: that is refused
+   *     ('rejected-level-mismatch') and the Worker parks the paid order for an
+   *     admin. An account on no paid tier (free, wiped) is set to the plan, as
+   *     before.
+   *   - The date math is unchanged: an active plan extends from its expiry, an
+   *     expired one starts today.
+   *
+   * The business ceiling on prepaid time lives in the account Worker (it refuses
+   * the invoice). The 20-year bound here only stops a nonsense date; it must
+   * stay wide so a PAID renewal is never stranded by it.
+   *
+   * Requires this table. Run once BEFORE deploying this file - copy as-is:
+   *
+   * CREATE TABLE IF NOT EXISTS plan_invoice_applications (
+   *   invoice_id        VARCHAR(64) NOT NULL,
+   *   uuid_id           VARCHAR(36) NOT NULL,
+   *   plan              INT         NOT NULL,
+   *   period            VARCHAR(10) NOT NULL,
+   *   plan_until_before DATETIME    NULL,
+   *   plan_until_after  DATETIME    NOT NULL,
+   *   applied_at        DATETIME    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+   *   PRIMARY KEY (invoice_id),
+   *   KEY idx_plan_invoice_uuid (uuid_id)
+   * ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+   *
+   * @return string 'applied' | 'noop-current' (replay) | 'rejected-level-mismatch'
+   *                | 'rejected-bad-date'
+   */
+  private function applyRenewalForInvoice(int $planLevel, string $period, string $invoiceId): string
+  {
+    require_once __DIR__ . '/Plans.class.php';
+    $periodRank = ['1y' => 1, '2y' => 2, '3y' => 3];
+    $periodDuration = match ($period) {
+      '2y' => '+2 years',
+      '3y' => '+3 years',
+      default => '+1 year',
+    };
+
+    $applied = false;
+    $this->db->begin_transaction();
+    try {
+      // Lock the users row first, then read the account fresh: a concurrent
+      // renewal, upgrade or deletion step waits for this transaction or is seen
+      // by it, so nothing lands between the checks and the update.
+      $lock = $this->db->prepare('SELECT uuid_id FROM users WHERE uuid_id = ? FOR UPDATE');
+      if (!$lock) {
+        throw new Exception('Error preparing renewal row lock: ' . $this->db->error);
+      }
+      $lock->bind_param('s', $this->uuid);
+      if (!$lock->execute()) {
+        throw new Exception('Error locking the account row: ' . $lock->error);
+      }
+      $lock->get_result();
+      $lock->close();
+      $this->fetchAccountData();
+
+      $seen = $this->db->prepare('SELECT invoice_id FROM plan_invoice_applications WHERE invoice_id = ?');
+      if (!$seen) {
+        throw new Exception('Error preparing renewal replay check: ' . $this->db->error);
+      }
+      $seen->bind_param('s', $invoiceId);
+      if (!$seen->execute()) {
+        throw new Exception('Error running renewal replay check: ' . $seen->error);
+      }
+      $alreadyApplied = $seen->get_result()->fetch_assoc() !== null;
+      $seen->close();
+
+      if (!$alreadyApplied) {
+        $currentLevel = (int)($this->account['acctlevel'] ?? 0);
+        if ($currentLevel !== $planLevel && (Plans::$originalPrices[$currentLevel] ?? 0) > 0) {
+          $this->db->rollback();
+          error_log("set-plan renewal rejected: invoice {$invoiceId} is for level {$planLevel} but the account is on paid level {$currentLevel}, npub: " . $this->npub);
+          return 'rejected-level-mismatch';
+        }
+
+        $today = date('Y-m-d');
+        $currentEnd = $this->account['plan_until_date'] ?? null;
+        $expired = $currentEnd === null || $this->isExpired();
+        $base = $expired ? $today : $currentEnd;
+        $baseTs = strtotime($base . ' ' . $periodDuration);
+        if ($baseTs === false) {
+          throw new Exception("Renewal date arithmetic failed for base '{$base}'");
+        }
+        $newEnd = date('Y-m-d', $baseTs);
+        if ($newEnd <= $today || $newEnd > date('Y-m-d', strtotime($today . ' +20 years'))) {
+          $this->db->rollback();
+          error_log("set-plan renewal rejected: date '{$newEnd}' out of bounds for invoice {$invoiceId}, npub: " . $this->npub);
+          return 'rejected-bad-date';
+        }
+        $newStart = $expired ? $today : ($this->account['plan_start_date'] ?? $today);
+        $currentPeriod = (string)($this->account['subscription_period'] ?? '1y');
+        $newPeriod = (!$expired && ($periodRank[$currentPeriod] ?? 1) > $periodRank[$period])
+          ? $currentPeriod
+          : $period;
+
+        $upd = $this->db->prepare(
+          'UPDATE users SET acctlevel = ?, plan_start_date = ?, plan_until_date = ?, subscription_period = ? WHERE uuid_id = ?'
+        );
+        if (!$upd) {
+          throw new Exception('Error preparing renewal update: ' . $this->db->error);
+        }
+        $upd->bind_param('issss', $planLevel, $newStart, $newEnd, $newPeriod, $this->uuid);
+        if (!$upd->execute()) {
+          throw new Exception('Error executing renewal update: ' . $upd->error);
+        }
+        $upd->close();
+
+        $rec = $this->db->prepare(
+          'INSERT INTO plan_invoice_applications (invoice_id, uuid_id, plan, period, plan_until_before, plan_until_after) VALUES (?, ?, ?, ?, ?, ?)'
+        );
+        if (!$rec) {
+          throw new Exception('Error preparing renewal record: ' . $this->db->error);
+        }
+        $rec->bind_param('ssisss', $invoiceId, $this->uuid, $planLevel, $period, $currentEnd, $newEnd);
+        if (!$rec->execute()) {
+          throw new Exception('Error recording the renewal: ' . $rec->error);
+        }
+        $rec->close();
+
+        $this->fetchAccountData();
+        // Self-service deletion exit, INSIDE the transaction: a renewal is the
+        // user's only way to cancel a pending deletion, so it must never commit
+        // without the cancel (a replay after a crash would skip it, and the
+        // Worker's DeletionWorkflow would wipe a paying customer).
+        if (($this->account['deletion_status'] ?? 'none') === 'pending') {
+          $this->cancelDeletion();
+        }
+        $applied = true;
+      }
+      $this->db->commit();
+    } catch (\Throwable $e) {
+      $this->db->rollback();
+      throw $e;
+    }
+
+    // After the commit, and on a replay too (each is idempotent): a first
+    // attempt that died right after its commit never ran these.
+    $this->linkFreeUploadsToUuid();
+    $blossomUuid = $this->getAccountUuid();
+    if ($blossomUuid !== null && $blossomUuid !== '' && $this->npub !== '') {
+      try {
+        $this->blossomFrontEndAPI->linkAccountUuid($this->npub, $blossomUuid);
+      } catch (\Throwable $e) {
+        error_log('linkAccountUuid(blossom) failed for ' . $this->npub . ': ' . $e->getMessage());
+      }
+    }
+    if ($this->npub !== '') {
+      // NostrLand Plus follows the new expiry (keyed on plan_until_date, so a
+      // replay does not add time twice). Key-holders only.
+      try {
+        require_once $_SERVER['DOCUMENT_ROOT'] . '/libs/NostrLand.class.php';
+        $nostrLand = new NostrLand($this->npub, $this->db);
+        if ($nostrLand->handlePlanRenewal() !== null) {
+          error_log('NostrLand renewal activation successful for npub: ' . $this->npub);
+        }
+      } catch (Exception $e) {
+        error_log('NostrLand renewal activation failed for npub: ' . $this->npub . ' - ' . $e->getMessage());
+      }
+      $this->blossomFrontEndAPI->updateAccount($this->npub, $this->getAccountInfo());
+    }
+
+    return $applied ? 'applied' : 'noop-current';
+  }
+
+  public function setPlan(int $planLevel, string $period = '1y', bool $new = true, ?string $planUntilOverride = null, ?string $invoiceId = null): string
   {
     // Refresh account data to ensure we have latest DB state for deterministic calculations
     $this->fetchAccountData();
@@ -1823,7 +2015,15 @@ class Account
       return 'applied';
     }
 
-    // Prevent renewal if too much time remaining (business rule enforcement)
+    // A renewal that names its paid invoice can land at any time and is applied
+    // exactly once per invoice. Self-contained branch, like the downgrade above.
+    if ($new === false && $invoiceId !== null && $invoiceId !== '') {
+      return $this->applyRenewalForInvoice($planLevel, $period, $invoiceId);
+    }
+
+    // A renewal WITHOUT an invoice id (a Worker deployed before that field)
+    // keeps the old rule: the 180-day window is its only guard against a retry
+    // extending the plan twice, so it must stay for that caller.
     if ($new === false && $this->getRemainingSubscriptionDays() > $safeRenewDays) {
       error_log("Cannot renew plan when remaining subscription days is more than {$safeRenewDays} days, current remaining days: " .
         $this->getRemainingSubscriptionDays() . " days for npub: " . $this->npub);

@@ -42,6 +42,14 @@ $app->group('/internal/plans', function (RouteCollectorProxy $group) {
     if ($planUntilOverride === '') {
       $planUntilOverride = null;
     }
+    // The Worker's order invoice id. A renewal is applied exactly once per
+    // invoice (see Account::applyRenewalForInvoice). Absent from a Worker
+    // deployed before this field: that renewal keeps the 180-day window guard.
+    $invoiceId = is_array($data) && isset($data['invoiceId']) ? trim((string)$data['invoiceId']) : '';
+    if ($invoiceId !== '' && !preg_match('/\A[A-Za-z0-9_-]{1,64}\z/', $invoiceId)) {
+      $response->getBody()->write(json_encode(['ok' => false, 'error' => 'invoiceId invalid']));
+      return $response->withStatus(400)->withHeader('Content-Type', 'application/json');
+    }
     if ($uuid === '' || $plan <= 0) {
       $response->getBody()->write(json_encode(['ok' => false, 'error' => 'uuid and plan required']));
       return $response->withStatus(400)->withHeader('Content-Type', 'application/json');
@@ -55,7 +63,7 @@ $app->group('/internal/plans', function (RouteCollectorProxy $group) {
       // setPlan reports whether it actually applied; relay it (+ the resulting
       // level/expiry) so the Worker can park a PAID-but-not-applied order for an
       // admin instead of silently marking it active.
-      $status = $account->setPlan($plan, $period, $new, $planUntilOverride);
+      $status = $account->setPlan($plan, $period, $new, $planUntilOverride, $invoiceId === '' ? null : $invoiceId);
       $acct = $account->getAccount();
       $response->getBody()->write(json_encode([
         'ok' => true,
