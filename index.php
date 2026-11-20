@@ -135,7 +135,7 @@ SVG;
 				var wide = window.matchMedia('(min-width: 600px)');
 				var still = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 				function load() {
-					video.src = '/blackfriday/' + names[i] + (wide.matches ? '-desktop' : '-mobile') + '.mp4' + (still ? '#t=0.001' : '');
+					video.src = 'https://cdn.nostr.build/assets/blackfriday/' + names[i] + (wide.matches ? '-desktop' : '-mobile') + '.mp4' + (still ? '#t=0.001' : '');
 					if (!still) {
 						var p = video.play();
 						if (p && p.catch) p.catch(function () {});
