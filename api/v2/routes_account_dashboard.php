@@ -97,7 +97,8 @@ function buildFileListEntry(array $row): array
     "sha256_hash" => $row['sha256_hash'],
     "created_at" => $row['created_at'],
     "title" => $row['title'],
-    "ai_prompt" => $type === 'image' ? $row['ai_prompt'] : null,
+    // Every generated file keeps its prompt (AI Studio makes video and audio too).
+    "ai_prompt" => $row['ai_prompt'] ?? null,
     "description" => $row['description'],
     "loaded" => false,
     "show" => true,

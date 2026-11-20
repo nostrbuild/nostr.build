@@ -1119,6 +1119,10 @@ $app->group('/accounts', function (RouteCollectorProxy $group) {
       $mediaId = !empty($body['mediaId']) ? (int) $body['mediaId'] : null;
       $title = isset($body['title']) ? (string) $body['title'] : '';
       $description = isset($body['description']) ? (string) $body['description'] : '';
+      // Optional: the AI prompt of a generated file whose upload could not
+      // carry it (a large video or audio file goes up in parts). Only written
+      // when sent; capped at the column's validated length.
+      $aiPrompt = isset($body['ai_prompt']) ? mb_substr((string) $body['ai_prompt'], 0, 4096) : null;
 
       if ($mediaId === null) {
         $response->getBody()->write(json_encode(['error' => 'missing-mediaId']));
@@ -1132,7 +1136,7 @@ $app->group('/accounts', function (RouteCollectorProxy $group) {
       try {
         $s3 = new S3Service($awsConfig);
         $icm = new ImageCatalogManager($link, $s3, $uuid);
-        $updatedMedia = $icm->updateMediaMetadata($mediaId, $title, $description);
+        $updatedMedia = $icm->updateMediaMetadata($mediaId, $title, $description, $aiPrompt);
       } finally {
         if ($prevUuid === null) {
           unset($_SESSION['useruuid']);

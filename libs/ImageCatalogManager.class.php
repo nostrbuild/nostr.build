@@ -336,15 +336,22 @@ class ImageCatalogManager
    * @param int $imageId The ID of the image to update.
    * @param string|null $title The new title of the image. If not provided, the title will remain unchanged.
    * @param string|null $description The new description of the image. If not provided, the description will remain unchanged.
+   * @param string|null $aiPrompt The AI prompt of a generated file; null leaves the stored one as it is.
    * @return array An array containing the updated image ID, or [] when nothing was updated.
    */
-  public function updateMediaMetadata(int $imageId, ?string $title = '', ?string $description = ''): array
+  public function updateMediaMetadata(int $imageId, ?string $title = '', ?string $description = '', ?string $aiPrompt = null): array
   {
     error_log("Updating metadata for image: $imageId" . PHP_EOL);
     $stmt = null;
     try {
-      $stmt = $this->link->prepare("UPDATE users_images SET title = ?, description = ? WHERE user_uuid = ? AND id = ?");
-      $stmt->bind_param('sssi', $title, $description, $this->userUuid, $imageId);
+      // The AI prompt only when given: every other caller leaves it as it is.
+      if ($aiPrompt !== null) {
+        $stmt = $this->link->prepare("UPDATE users_images SET title = ?, description = ?, ai_prompt = ? WHERE user_uuid = ? AND id = ?");
+        $stmt->bind_param('ssssi', $title, $description, $aiPrompt, $this->userUuid, $imageId);
+      } else {
+        $stmt = $this->link->prepare("UPDATE users_images SET title = ?, description = ? WHERE user_uuid = ? AND id = ?");
+        $stmt->bind_param('sssi', $title, $description, $this->userUuid, $imageId);
+      }
       if (!$stmt->execute()) {
         throw new Exception("Failed to update metadata");
       }
