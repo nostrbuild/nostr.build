@@ -1881,6 +1881,7 @@ function cr_media(array $row): array
 				['bluewallet', 'BlueWallet', (b) => `bluewallet:lightning:${b}`],
 				['breez', 'Breez', (b) => `breez:${b}`],
 				['zebedee', 'Zebedee', (b) => `zebedee:lightning:${b}`],
+				['buhogo', 'BuhoGO', (b) => `buhogo:lightning:${b}`],
 			];
 			const WALLET_KEY = 'nb.zap.preferredWallet';
 			const $ = (sel) => zapDialog.querySelector(sel);
