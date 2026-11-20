@@ -961,3 +961,45 @@ footer nav {
     grid-template-columns: 100px 1fr;
   }
 }
+
+/* Black Friday banner (index.php): mobile cut 5:2, desktop cut 6:1 from 600px */
+.bf_banner {
+  display: block;
+  width: 100%;
+  max-width: 480px;
+  aspect-ratio: 5 / 2;
+  margin: 12px auto 0;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #120a24;
+}
+.bf_banner_video {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.bf_banner:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 2px;
+}
+@media (min-width: 600px) {
+  .bf_banner {
+    max-width: 960px;
+    aspect-ratio: 6 / 1;
+  }
+}
+
+/* Black Friday sale price on the plan cards (index.php) */
+.plan_price_was {
+  font-weight: 600;
+  font-size: 18px;
+  color: #a58ead;
+  text-decoration-thickness: 2px;
+}
+.plan_sale {
+  font-weight: 600;
+  font-size: 13px;
+  line-height: 1.5;
+  color: #2edf95;
+}

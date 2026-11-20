@@ -44,6 +44,15 @@ if (!is_array($included)) {
   $included = [];
 }
 
+// Black Friday '26, as set on account.nostr.build/plans: 10% off Professional
+// (2), Creator (1) and Advanced (10) until 2026-11-30 23:59 UTC. The public
+// catalog carries no promotions, so this is a copy: change it with the
+// promotion. At the end time the sale prices and the banner turn off by themselves.
+$saleEnds = new DateTimeImmutable('2026-11-30T23:59:00Z');
+$saleOn = new DateTimeImmutable('now', new DateTimeZone('UTC')) <= $saleEnds;
+$salePercent = 10;
+$salePlanIds = [2, 1, 10];
+
 header("Expires: Thu, 19 Nov 1981 08:52:00 GMT"); //Date in the past
 header("Cache-Control: no-store, no-cache, must-revalidate, post-check=0, pre-check=0"); //HTTP/1.1
 header("Pragma: no-cache");
@@ -106,6 +115,39 @@ SVG;
 	</header>
 
 	<main>
+		<?php if ($saleOn): ?>
+		<!-- Black Friday banner: a different one of the 12 on each page load, desktop or mobile cut by width. -->
+		<a class="bf_banner" href="https://nostr.build/plans/" aria-label="Black Friday: 10% off nostr.build accounts. See plans">
+			<video class="bf_banner_video" muted loop playsinline preload="auto" aria-hidden="true"></video>
+		</a>
+		<script>
+			(function () {
+				var names = ['01-eclipse', '02-gold', '03-neon', '04-harvest', '05-frost', '06-aurora', '07-brutal', '08-nokyc', '09-minimal', '10-search', '11-pixel', '12-stickers'];
+				var i;
+				try {
+					var last = parseInt(localStorage.getItem('bfBanner'), 10);
+					i = isNaN(last) ? Math.floor(Math.random() * names.length) : (last + 1) % names.length;
+					localStorage.setItem('bfBanner', String(i));
+				} catch (e) {
+					i = Math.floor(Math.random() * names.length);
+				}
+				var video = document.querySelector('.bf_banner_video');
+				var wide = window.matchMedia('(min-width: 600px)');
+				var still = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+				function load() {
+					video.src = '/blackfriday/' + names[i] + (wide.matches ? '-desktop' : '-mobile') + '.mp4' + (still ? '#t=0.001' : '');
+					if (!still) {
+						var p = video.play();
+						if (p && p.catch) p.catch(function () {});
+					}
+				}
+				load();
+				if (wide.addEventListener) wide.addEventListener('change', load);
+				else if (wide.addListener) wide.addListener(load);
+			})();
+		</script>
+		<?php endif; ?>
+
 		<!--
 			Slim account bar. This used to be a full-width island above the
 			headline, which cost the fold for something only returning users need.
@@ -168,6 +210,10 @@ SVG;
 					$planUrl = is_string($plan['checkoutUrl'] ?? null)
 						? $plan['checkoutUrl']
 						: 'https://account.nostr.build/plans';
+					// Same rounding as the checkout's applyPromotionPct.
+					$salePrice = ($saleOn && in_array((int) ($plan['id'] ?? 0), $salePlanIds, true))
+						? (int) round((int) $plan['priceUsd'] * (1 - $salePercent / 100))
+						: null;
 					?>
 					<div class="plan_card<?= $isPopular ? ' plan_card_popular' : '' ?>">
 						<?php if ($isPopular): ?><span class="plan_badge">Most popular</span><?php endif; ?>
@@ -176,9 +222,13 @@ SVG;
 							<p class="plan_tagline"><?= htmlspecialchars((string) $plan['tagline']) ?></p>
 						<?php endif; ?>
 						<p class="plan_price">
-							<span class="plan_price_amount">$<?= (int) $plan['priceUsd'] ?></span>
+							<?php if ($salePrice !== null): ?><s class="plan_price_was">$<?= (int) $plan['priceUsd'] ?></s><?php endif; ?>
+							<span class="plan_price_amount">$<?= $salePrice ?? (int) $plan['priceUsd'] ?></span>
 							<span class="plan_price_term">/year</span>
 						</p>
+						<?php if ($salePrice !== null): ?>
+							<p class="plan_sale">Black Friday: <?= $salePercent ?>% off, ends Nov 30</p>
+						<?php endif; ?>
 						<p class="plan_storage">
 							<?php if (is_string($plan['storageBefore'] ?? null)): ?><s><?= htmlspecialchars($plan['storageBefore']) ?></s> <?php endif; ?>
 							<?= htmlspecialchars((string) $plan['storage']) ?> private storage
